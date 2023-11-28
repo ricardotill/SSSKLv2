@@ -1,0 +1,53 @@
+﻿@page "/products/details"
+@inject SSSKLv2.Data.ApplicationDbContext DB
+@using SSSKLv2.Data
+@inject NavigationManager NavigationManager
+@using Microsoft.EntityFrameworkCore
+
+<PageTitle>Details</PageTitle>
+
+<h1>Details</h1>
+
+<div>
+    <h4>Product</h4>
+    <hr />
+    @if (product is null)
+    {
+        <p><em>Laden...</em></p>
+    }
+    else {
+        <dl class="row">
+            <dt class="col-sm-2">ID</dt>
+            <dd class="col-sm-10">@product.Id</dd>
+            <dt class="col-sm-2">Naam</dt>
+            <dd class="col-sm-10">@product.Name</dd>
+            <dt class="col-sm-2">Beschrijving</dt>
+            <dd class="col-sm-10">@product.Description</dd>
+            <dt class="col-sm-2">Prijs</dt>
+            <dd class="col-sm-10">@product.Price.ToString("C")</dd>
+            <dt class="col-sm-2">Voorraad</dt>
+            <dd class="col-sm-10">@product.Stock</dd>
+        </dl>
+        <div>
+            <a href="@($"/products/edit?id={product.Id}")">Aanpassen</a> |
+            <a href="@($"/products")">Terug naar lijst</a>
+        </div>
+    }
+</div>
+
+@code {
+    Product? product;
+
+    [SupplyParameterFromQuery]
+    public Guid Id { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        product = await DB.Product.FirstOrDefaultAsync(m => m.Id == Id);
+
+        if (product is null)
+        {
+            NavigationManager.NavigateTo("notfound");
+        }
+    }
+}

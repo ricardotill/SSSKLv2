@@ -1,0 +1,102 @@
+﻿@page "/Products/edit"
+@inject SSSKLv2.Data.ApplicationDbContext DB
+@using SSSKLv2.Data
+@inject NavigationManager NavigationManager
+@using Microsoft.EntityFrameworkCore
+
+<PageTitle>Aanpassen</PageTitle>
+
+<h1>Aanpassen</h1>
+
+<h4>Product</h4>
+<hr />
+@if (Product is null)
+{
+    <p><em>Laden...</em></p>
+}
+else
+{
+    <div class="row">
+        <div class="col-md-4">
+            <EditForm method="post" Model="Product" OnValidSubmit="UpdateProduct" FormName="edit" Enhance>
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+                <input type="hidden" name="Product.Id" value="@Product.Id" />
+                <div class="mb-3">
+                    <label for="name" class="form-label">Naam:</label>
+                    <InputText id="name" @bind-Value="Product.Name" class="form-control" />
+                    <ValidationMessage For="() => Product.Name" class="text-danger" />
+                </div>
+                <div class="mb-3">
+                    <label for="description" class="form-label">Description:</label>
+                    <InputText id="description" @bind-Value="Product.Description" class="form-control" />
+                    <ValidationMessage For="() => Product.Description" class="text-danger" />
+                </div>
+                <div class="mb-3">
+                    <label for="price" class="form-label">Prijs:</label>
+                    <span class="input-group-text">€</span>
+                    <InputNumber id="price" @bind-Value="Product.Price" class="form-control" />
+                    <ValidationMessage For="() => Product.Price" class="text-danger" />
+                </div>
+                <div class="mb-3">
+                    <label for="stock" class="form-label">Voorraad:</label>
+                    <InputNumber id="stock" @bind-Value="Product.Stock" class="form-control" />
+                    <ValidationMessage For="() => Product.Stock" class="text-danger" />
+                </div>
+                <button type="submit" class="btn btn-primary">Opslaan</button>
+            </EditForm>
+        </div>
+    </div>
+}
+
+<div>
+    <a href="/products">Terug naar lijst</a>
+</div>
+
+@code {
+    [SupplyParameterFromQuery]
+    public Guid Id { get; set; }
+
+    [SupplyParameterFromForm]
+    public Product? Product { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        Product ??= await DB.Product.FirstOrDefaultAsync(m => m.Id == Id);
+
+        if (Product is null)
+        {
+            NavigationManager.NavigateTo("notfound");
+        }
+    }
+
+    // To protect from overposting attacks, enable the specific properties you want to bind to.
+    // For more details, see https://aka.ms/RazorPagesCRUD.
+    public async Task UpdateProduct()
+    {
+        DB.Attach(Product!).State = EntityState.Modified;
+
+        try
+        {
+            await DB.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            if (!ProductExists(Product!.Id))
+            {
+                NavigationManager.NavigateTo("notfound");
+            }
+            else
+            {
+                throw;
+            }
+        }
+
+        NavigationManager.NavigateTo("/products");
+    }
+
+    bool ProductExists(Guid id)
+    {
+        return DB.Product.Any(e => e.Id == id);
+    }
+}

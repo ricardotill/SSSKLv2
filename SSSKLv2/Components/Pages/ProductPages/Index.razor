@@ -1,0 +1,25 @@
+﻿@page "/products"
+@using Microsoft.AspNetCore.Components.QuickGrid
+@inject SSSKLv2.Data.ApplicationDbContext DB
+@using SSSKLv2.Data
+
+<PageTitle>Productenoverzicht</PageTitle>
+
+<h1>Productenoverzicht</h1>
+
+<p>
+    <a class="btn btn-primary" href="products/create" role="button">Nieuwe aanmaken</a>
+</p>
+
+<QuickGrid Class="table" Items="DB.Product">
+    <PropertyColumn Property="product => product.Name" />
+    <PropertyColumn Property="product => product.Description" />
+    <PropertyColumn Property="product => product.Price" />
+    <PropertyColumn Property="product => product.Stock" />
+
+    <TemplateColumn Context="product">
+        <a class="btn btn-secondary btn-sm" href="@($"products/edit?id={product.Id}")" role="button">Aanpassen</a> |
+        <a class="btn btn-primary btn-sm" href="@($"products/details?id={product.Id}")" role="button">Details</a> |
+        <a class="btn btn-danger btn-sm" href="@($"products/delete?id={product.Id}")" role="button">Verwijderen</a>
+    </TemplateColumn>
+</QuickGrid>

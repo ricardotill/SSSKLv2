@@ -1,0 +1,48 @@
+﻿@page "/oldusermigrations/create"
+@inject SSSKLv2.Data.ApplicationDbContext DB
+@using SSSKLv2.Data
+@inject NavigationManager NavigationManager
+
+<PageTitle>Aanmaken</PageTitle>
+
+<h1>Aanmaken migratiegebruiker</h1>
+
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <EditForm method="post" Model="OldUserMigration" OnValidSubmit="AddOldUserMigration" FormName="create" Enhance>
+            <DataAnnotationsValidator />
+            <ValidationSummary class="text-danger" />
+            <div class="mb-3">
+                <label for="username" class="form-label">Gebruikersnaam:</label> 
+                <InputText id="username" @bind-Value="OldUserMigration.Username" class="form-control" /> 
+                <ValidationMessage For="() => OldUserMigration.Username" class="text-danger" /> 
+            </div>        
+            <div class="mb-3">
+                <label for="saldo" class="form-label">Saldo:</label> 
+                <InputNumber id="saldo" @bind-Value="OldUserMigration.Saldo" class="form-control" /> 
+                <ValidationMessage For="() => OldUserMigration.Saldo" class="text-danger" /> 
+            </div>        
+            <button type="submit" class="btn btn-primary">Create</button>
+        </EditForm>
+    </div>
+</div>
+
+<div>
+    <a href="/oldusermigrations">Terug naar lijst</a>
+</div>
+
+@code {
+
+    [SupplyParameterFromForm]
+    public OldUserMigration OldUserMigration { get; set; } = new();
+
+    // To protect from overposting attacks, see https://aka.ms/RazorPagesCRUD
+    public async Task AddOldUserMigration()
+    {
+        OldUserMigration.Id = Guid.NewGuid();
+        DB.OldUserMigration.Add(OldUserMigration);
+        await DB.SaveChangesAsync();
+        NavigationManager.NavigateTo("/oldusermigrations");
+    }
+}

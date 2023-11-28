@@ -1,0 +1,94 @@
+﻿@using SSSKLv2.Components.Account
+@using SSSKLv2.Data
+@inherits LayoutComponentBase
+@inject IdentityUserAccessor UserAccessor
+@implements IDisposable
+@inject NavigationManager NavigationManager
+
+<div class="page">
+    <div class="sidebar">
+        <NavMenu />
+    </div>
+    <main>
+        <div class="top-row px-4">
+            <div>
+                <AuthorizeView>
+                    <Authorized>
+                        @Saldo
+                    </Authorized>
+                </AuthorizeView>
+            </div>
+            <ul class="nav ml-auto">
+                <AuthorizeView>
+                    <NotAuthorized>
+                        <li class="nav-item">
+                            <NavLink class="nav-link" href="Account/Login">Login</NavLink>
+                        </li>
+                    </NotAuthorized>
+                    <Authorized>
+                        <li class="nav-item">
+                            Welkom @Name!
+                        </li>
+                        <li class="nav-item">
+                            <form action="Account/Logout" method="post">
+                                <AntiforgeryToken />
+                                <input type="hidden" name="ReturnUrl" value="@currentUrl" />
+                                <button type="submit" class="nav-link">
+                                    <span class="bi bi-arrow-bar-left-nav-menu" aria-hidden="true"></span> Logout
+                                </button>
+                            </form>
+                        </li>
+                    </Authorized>
+                </AuthorizeView>
+            </ul>
+        </div>
+        <article class="content px-4">
+            @Body
+        </article>
+    </main>
+</div>
+
+<div id="blazor-error-ui">
+    Er is een fout opgetreden.
+    <a href="" class="reload">Herladen</a>
+    <a class="dismiss">🗙</a>
+</div>
+@code{
+    public string? Name { get; set; }
+    public string? Saldo { get; set; }
+
+    private string? currentUrl;
+
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+
+    protected async override Task OnInitializedAsync()
+    {
+        currentUrl = NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
+        NavigationManager.LocationChanged += OnLocationChanged;
+
+        if (HttpContext.User.Identity.IsAuthenticated)
+        {
+            await UpdateData();
+        }
+    }
+
+    public async Task UpdateData() 
+    {
+        var user = await UserAccessor.GetRequiredUserAsync(HttpContext);
+        Name = user.Name;
+        Saldo = user.Saldo.ToString("C");
+    }
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        currentUrl = NavigationManager.ToBaseRelativePath(e.Location);
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        NavigationManager.LocationChanged -= OnLocationChanged;
+    }
+}

@@ -1,0 +1,28 @@
+﻿@page "/oldusermigrations"
+@using Microsoft.AspNetCore.Components.QuickGrid
+@inject SSSKLv2.Data.ApplicationDbContext DB
+@using SSSKLv2.Data
+
+<PageTitle>Migratiegebruikers</PageTitle>
+
+<h1>Migratiegebruikers</h1>
+
+<div class="alert alert-warning" role="alert">
+    <i class="bi bi-exclamation-circle"></i>
+    <div>
+        Hier worden de te migreren gebruikers met zijn/haar saldo opgelagen. Wanneer een te migreren gebruiker in SSSKLv2 een account aanmaakt die overeenkomt met een van de aangemaakte migratiegebruikers wordt meteen de saldo overgezet.
+    </div>
+</div>
+
+<p>
+    <a href="oldusermigrations/create">Nieuwe aanmaken</a>
+</p>
+
+<QuickGrid Class="table" Items="DB.OldUserMigration">
+    <PropertyColumn Property="oldusermigration => oldusermigration.Username" />
+    <PropertyColumn Property="oldusermigration => oldusermigration.Saldo" />
+
+    <TemplateColumn Context="oldusermigration">
+        <a class="btn btn-danger" href="@($"oldusermigrations/delete?id={oldusermigration.Id}")" role="button">Verwijderen</a>
+    </TemplateColumn>
+</QuickGrid>

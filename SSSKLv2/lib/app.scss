@@ -2,8 +2,6 @@
 
 // Variable overrides
 $primary: #c10d32;
-$body-bg: #333;
-$body-color: #fff;
 
 // Bootstrap v5
 @import "./node_modules/bootstrap/scss/bootstrap";
@@ -41,4 +39,18 @@ html, body {
 
 .blazor-error-boundary::after {
     content: "Een onverwachte fout is opgetreden. Stuur ICT (Ricardo) ff berichtje pls"
+}
+
+.desktop-hidden {
+    display: none;
+}
+
+@media (max-width: 640.98px) {
+    .mobile-hidden {
+        display: none;
+    }
+
+    .desktop-hidden {
+        display: initial;
+    }
 }

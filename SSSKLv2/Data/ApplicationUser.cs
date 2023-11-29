@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.AspNetCore.Identity;
 
 namespace SSSKLv2.Data
@@ -10,7 +11,9 @@ namespace SSSKLv2.Data
         [PersonalData]
         public string Surname {  get; set; }
         [PersonalData]
+        [Column(TypeName = "decimal(18,2)")]
         public decimal Saldo { get; set; }
+        public byte[]? ProfilePicture { get; set; }
     }
 
 }

@@ -4,6 +4,8 @@
 @inject IdentityUserAccessor UserAccessor
 @implements IDisposable
 @inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider AuthStateProvider
+
 
 <div class="page">
     <div class="sidebar">
@@ -11,13 +13,13 @@
     </div>
     <main>
         <div class="top-row px-4">
-            <div>
                 <AuthorizeView>
                     <Authorized>
-                        @Saldo
+                        <div class="me-auto">
+                            @Saldo
+                        </div>
                     </Authorized>
                 </AuthorizeView>
-            </div>
             <ul class="nav ml-auto">
                 <AuthorizeView>
                     <NotAuthorized>
@@ -27,7 +29,7 @@
                     </NotAuthorized>
                     <Authorized>
                         <li class="nav-item">
-                            Welkom @Name!
+                            <NavLink class="btn btn-link" href="Account/Manage">Welkom @Name!</NavLink>
                         </li>
                         <li class="nav-item">
                             <form action="Account/Logout" method="post">
@@ -67,7 +69,7 @@
     {
         currentUrl = NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
         NavigationManager.LocationChanged += OnLocationChanged;
-
+        
         if (HttpContext.User.Identity.IsAuthenticated)
         {
             await UpdateData();
@@ -76,9 +78,9 @@
 
     public async Task UpdateData() 
     {
-        var user = await UserAccessor.GetRequiredUserAsync(HttpContext);
-        Name = user.Name;
-        Saldo = user.Saldo.ToString("C");
+        var user = HttpContext.User;
+        Name = user.FindFirst(IdentityClaim.Name.ToString())?.Value ?? "";
+        Saldo = user.FindFirst(IdentityClaim.Saldo.ToString())?.Value ?? "";
     }
 
     private void OnLocationChanged(object? sender, LocationChangedEventArgs e)

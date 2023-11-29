@@ -8,6 +8,7 @@
 @inject SignInManager<ApplicationUser> SignInManager
 @inject IdentityUserAccessor UserAccessor
 @inject IdentityRedirectManager RedirectManager
+@inject AuthenticationStateProvider AuthStateProvider
 
 <PageTitle>Profiel</PageTitle>
 
@@ -57,10 +58,10 @@
     protected override async Task OnInitializedAsync()
     {
         user = await UserAccessor.GetRequiredUserAsync(HttpContext);
-        username = await UserManager.GetUserNameAsync(user);
+        username = user.UserName;
         name = user.Name;
         surname = user.Surname;
-        phoneNumber = await UserManager.GetPhoneNumberAsync(user);
+        phoneNumber = user.PhoneNumber;
 
         Input.PhoneNumber ??= phoneNumber;
         Input.Name ??= name;

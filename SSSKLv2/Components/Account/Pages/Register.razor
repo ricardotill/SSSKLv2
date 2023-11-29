@@ -90,6 +90,7 @@
 
         user.Name = Input.Name;
         user.Surname = Input.Surname;
+        user.LockoutEnabled = false;
 
         await UserStore.SetUserNameAsync(user, Input.Username, CancellationToken.None);
         var emailStore = GetEmailStore();

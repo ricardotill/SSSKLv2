@@ -1,0 +1,31 @@
+{
+  "name": "SSSKLv2",
+  "short_name": "SSSKLv2",
+  "description": "Progressive Web App used for administration of sold drinks, snacks and shots.",
+  "icons": [
+    {
+      "src": "icon-32.png",
+      "sizes": "32x32",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-64.png",
+      "sizes": "64x64",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-128.png",
+      "sizes": "128x128",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-200.png",
+      "sizes": "200x200",
+      "type": "image/png"
+    }
+  ],
+  "start_url": "/",
+  "display": "fullscreen",
+  "theme_color": "#c10d32",
+  "background_color": "#212529"
+}

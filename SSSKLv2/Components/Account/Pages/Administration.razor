@@ -1,0 +1,379 @@
+@page "/Account/Administration"
+
+@using Microsoft.AspNetCore.Identity;
+@using SSSKLv2.Data
+@using SSSKLv2.DTO
+@using SSSKLv2.Services
+@using SSSKLv2.Services.Interfaces
+@inject UserManager<ApplicationUser> _UserManager
+@inject IApplicationUserService _ApplicationUserService
+
+<AuthorizeView>
+    <Authorized>
+        @if (@context.User.IsInRole(ADMINISTRATION_ROLE))
+        {
+            @if (ColUsers == null)
+            {
+                <p><em>Loading...</em></p>
+            }
+            else
+            {
+                <table class="table">
+                    <tr>
+                        <th colspan="2"><h3>Administration</h3></th>
+                        <th colspan="2">
+                            <RadzenTextBox Placeholder="Search..."
+                                           @oninput="@(args => Search(args.Value.ToString(), "Search"))" />
+                        </th>
+                    </tr>
+                </table>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>User Name</th>
+                            <th>Email</th>
+                            <th>Confirmed</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var user in ColUsers.ApplicationUsers)
+                        {
+                        <tr>
+                            <td>@user.UserName</td>
+                            <td>@user.Email</td>
+                            <td>@user.EmailConfirmed</td>
+                            <td>
+                                <button class="btn btn-primary"
+                                        @onclick="(() => EditUser(user))">
+                                    Edit
+                                </button>
+                            </td>
+                        </tr>
+                        }
+                    </tbody>
+                </table>
+                <p>
+                    @if (ShowPreviousButton)
+                    {
+                        <button class="btn btn-warning"
+                                @onclick="Previous">
+                            <b>&#x3C;</b>
+                        </button>
+                    }
+                    @if (ShowNextButton)
+                    {
+                        <button class="btn btn-warning"
+                                @onclick="Next">
+                            <b>&#x3E;</b>
+                        </button>
+                    }
+                </p>
+            }
+            @if (ShowPopup)
+            {
+                <!-- This is the popup to create or edit a user -->
+                <div class="modal" tabindex="-1" style="display:block" role="dialog">
+                    <div class="modal-dialog-scrollable modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h3 class="modal-title">Edit User</h3>
+                                <!-- Button to close the popup -->
+                                <button type="button" class="close"
+                                        @onclick="ClosePopup">
+                                    <span aria-hidden="true">X</span>
+                                </button>
+                            </div>
+                            <!-- Edit form for the current forecast -->
+                            <div class="modal-body">
+                                <!-- Only allow edit if a new user -->
+                                <b>User Name</b>
+                                @if (objUser.Id != "")
+                                {
+                                    <p>@objUser.UserName</p>
+                                }
+                                else
+                                {
+                                    <input class="form-control" type="text"
+                                           @bind="objUser.UserName" /><br />
+                                }
+                                <b>Voornaam</b>
+                                <input class="form-control" type="text"
+                                       @bind="objUser.Name" />
+                                <br />
+                                <b>Achternaam</b>
+                                <input class="form-control" type="text"
+                                       @bind="objUser.Surname" />
+                                <br />
+                                <b>Email</b>
+                                <input class="form-control" type="text"
+                                       placeholder="Email"
+                                       @bind="objUser.Email" />
+                                <br /><b>Email Confirmed</b>
+                                <select class="form-control"
+                                        @bind="@EmailConfirmed">
+                                    @foreach (var option in OptionsTrueFalse)
+                                    {
+                                        <option value="@option">
+                                            @option
+                                        </option>
+                                    }
+                                </select>
+                                <br /><b>Role</b>
+                                <select class="form-control"
+                                        @bind="@CurrentUserRole">
+                                    @foreach (var option in Options)
+                                    {
+                                        <option value="@option">
+                                            @option
+                                        </option>
+                                    }
+                                </select>
+                                <br /><b>Password</b>
+                                <input class="form-control" type="password"
+                                       placeholder="Password"
+                                       @bind="objUser.PasswordHash" />
+                                <br /><br />
+                                <!-- Button to save the user -->
+                                <button class="btn btn-primary"
+                                        @onclick="SaveUser">
+                                    Save
+                                </button>
+                                <!-- Button to delete the user -->
+                                <button class="btn btn-danger"
+                                        @onclick="DeleteUser">
+                                    Delete
+                                </button>
+                                <br />
+                                <span style="color:red">@strError</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <p>Je bent niet ingelogd als @ADMINISTRATION_ROLE.</p>
+        }
+    </Authorized>
+    <NotAuthorized>
+        <h3>Administration</h3>
+        <p>You are not logged in.</p>
+    </NotAuthorized>
+</AuthorizeView>
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; }
+
+    string ADMINISTRATION_ROLE = "Admin";
+    ApplicationUser objUser = new ApplicationUser();
+    ApplicationUserPaged ColUsers = new (){ ApplicationUsers = new List<ApplicationUser>(), ApplicationUserCount = 0 };
+
+    List<string> Options = new () { "User", "Admin" };
+    List<string> OptionsTrueFalse = new () { "True", "False" };
+    System.Security.Claims.ClaimsPrincipal CurrentUser;
+    string EmailConfirmed { get; set; } = "False";
+    string CurrentUserRole { get; set; } = "Users";
+    string strError = "";
+    string strSearch = "";
+    bool ShowPopup = false;
+
+    int CurrentPage = 1;
+    bool ShowPreviousButton { get { return (CurrentPage > 1); } }
+    bool ShowNextButton { get { return ((ColUsers.ApplicationUserCount > (CurrentPage * 5))); } }
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Get the current logged in user
+        CurrentUser = (await authenticationStateTask).User;
+
+        CurrentUser.IsInRole("Admin");
+
+        // Get the users
+        await GetUsers();
+    }
+
+    public async Task GetUsers()
+    {
+        // clear any error messages
+        strError = "";
+
+        ColUsers = await _ApplicationUserService.GetPagedUsers(strSearch, CurrentPage);
+    }
+
+    void ClosePopup()
+    {
+        // Close the Popup
+        ShowPopup = false;
+    }
+
+    async Task SaveUser()
+    {
+        try
+        {
+            // Is this an existing user?
+            if (objUser.Id != "")
+            {
+                // Get the user
+                var user = await _UserManager.FindByIdAsync(objUser.Id);
+
+                // Update Email
+                user.Email = objUser.Email;
+
+                // Update DisplayName
+                user.Name = objUser.Name;
+                
+                // Update DisplayName
+                user.Surname = objUser.Surname;
+
+                // Set Email Confirmed
+                user.EmailConfirmed = Convert.ToBoolean(EmailConfirmed);
+
+                // Update the user
+                await _UserManager.UpdateAsync(user);
+
+                // Only update password if the current value
+                // is not the default value
+                if (objUser.PasswordHash != "*****")
+                {
+                    var resetToken = await _UserManager.GeneratePasswordResetTokenAsync(user);
+                    var passworduser = await _UserManager.ResetPasswordAsync(user, resetToken, objUser.PasswordHash);
+
+                    if (!passworduser.Succeeded)
+                    {
+                        if (passworduser.Errors.FirstOrDefault() != null)
+                        {
+                            strError = passworduser.Errors.FirstOrDefault().Description;
+                        }
+                        else
+                        {
+                            strError = "Pasword error";
+                        }
+
+                        // Keep the popup opened
+                        return;
+                    }
+                }
+
+                // Handle Roles
+
+                // Is user in administrator role?
+                var UserResult = await _UserManager.IsInRoleAsync(user, ADMINISTRATION_ROLE);
+
+                // Is Administrator role selected but user is not an Administrator?
+                if ((CurrentUserRole == ADMINISTRATION_ROLE) & (!UserResult))
+                {
+                    // Put admin in Administrator role
+                    await _UserManager.AddToRoleAsync(user, ADMINISTRATION_ROLE);
+                }
+                else
+                {
+                    // Is Administrator role not selected but user is an Administrator?
+                    if ((CurrentUserRole != ADMINISTRATION_ROLE) & (UserResult))
+                    {
+                        // Remove user from Administrator role
+                        await _UserManager.RemoveFromRoleAsync(user, ADMINISTRATION_ROLE);
+                    }
+                }
+            }
+
+            // Close the Popup
+            ShowPopup = false;
+
+            // Refresh Users
+            await GetUsers();
+        }
+        catch (Exception ex)
+        {
+            strError = ex.GetBaseException().Message;
+        }
+    }
+
+    async Task EditUser(ApplicationUser _IdentityUser)
+    {
+        // Set the selected user
+        // as the current user
+        objUser = _IdentityUser;
+
+        // Get the user
+        var user = await _UserManager.FindByIdAsync(objUser.Id);
+
+        if (user != null)
+        {
+            // Is user in administrator role?
+            var UserResult = await _UserManager.IsInRoleAsync(user, ADMINISTRATION_ROLE);
+
+            if (UserResult)
+            {
+                CurrentUserRole = ADMINISTRATION_ROLE;
+            }
+            else
+            {
+                CurrentUserRole = "User";
+            }
+
+            if (user.EmailConfirmed)
+            {
+                EmailConfirmed = "True";
+            }
+            else
+            {
+                EmailConfirmed = "False";
+            }
+        }
+
+        // Open the Popup
+        ShowPopup = true;
+    }
+
+    async Task DeleteUser()
+    {
+        // Close the Popup
+        ShowPopup = false;
+
+        // Get the user
+        var user = await _UserManager.FindByIdAsync(objUser.Id);
+        if (user != null)
+        {
+            // Delete the user
+            await _UserManager.DeleteAsync(user);
+        }
+
+        // Refresh Users
+        await GetUsers();
+    }
+
+    // Search
+
+    async Task Search(string value, string name)
+    {
+        // Update search value
+        strSearch = value;
+
+        // Switch to page 1
+        CurrentPage = 1;
+
+        // Refresh Users
+        await GetUsers();
+    }
+
+    // Paging
+
+    async Task Previous()
+    {
+        if (CurrentPage > 1)
+        {
+            CurrentPage = CurrentPage - 1;
+            // Refresh Users
+            await GetUsers();
+        }
+    }
+
+    async Task Next()
+    {
+        CurrentPage = CurrentPage + 1;
+        // Refresh Users
+        await GetUsers();
+    }
+}

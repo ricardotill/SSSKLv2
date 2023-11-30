@@ -3,11 +3,14 @@
 @using SSSKLv2.Data
 @inject NavigationManager NavigationManager
 
-<PageTitle>Aanmaken</PageTitle>
+<PageTitle>SSSKLv2 | Aanmaken</PageTitle>
 
 <h1>Aanmaken migratiegebruiker</h1>
 
 <hr />
+<div>
+    <a href="/oldusermigrations">Terug naar lijst</a>
+</div>
 <div class="row">
     <div class="col-md-4">
         <EditForm method="post" Model="OldUserMigration" OnValidSubmit="AddOldUserMigration" FormName="create" Enhance>
@@ -20,7 +23,10 @@
             </div>        
             <div class="mb-3">
                 <label for="saldo" class="form-label">Saldo:</label> 
-                <InputNumber id="saldo" @bind-Value="OldUserMigration.Saldo" class="form-control" /> 
+                <div class="input-group">
+                    <span class="input-group-text">€</span>
+                    <InputNumber id="saldo" @bind-Value="OldUserMigration.Saldo" class="form-control" /> 
+                </div>
                 <ValidationMessage For="() => OldUserMigration.Saldo" class="text-danger" /> 
             </div>        
             <button type="submit" class="btn btn-primary">Create</button>
@@ -28,9 +34,6 @@
     </div>
 </div>
 
-<div>
-    <a href="/oldusermigrations">Terug naar lijst</a>
-</div>
 
 @code {
 

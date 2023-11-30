@@ -12,10 +12,11 @@
 
 <PageTitle>Inloggen</PageTitle>
 
+<StatusMessage Message="@errorMessage" />
+
 <div class="row">
     <div class="col-md-4">
         <section>
-            <StatusMessage Message="@errorMessage" />
             <EditForm Model="Input" method="post" OnValidSubmit="LoginUser" FormName="login">
                 <DataAnnotationsValidator />
                 <h2>Inloggen</h2>

@@ -3,26 +3,26 @@
 @inject SSSKLv2.Data.ApplicationDbContext DB
 @using SSSKLv2.Data
 
-<PageTitle>Migratiegebruikers</PageTitle>
+<PageTitle>SSSKLv2 | Saldo Migratie</PageTitle>
 
-<h1>Migratiegebruikers</h1>
+<h1>Saldo Migratie</h1>
 
-<div class="alert alert-warning" role="alert">
-    <i class="bi bi-exclamation-circle"></i>
+<div class="alert alert-warning d-flex align-items-center" role="alert">
+    <i class="bi bi-exclamation-circle me-3"></i>
     <div>
-        Hier worden de te migreren gebruikers met zijn/haar saldo opgelagen. Wanneer een te migreren gebruiker in SSSKLv2 een account aanmaakt die overeenkomt met een van de aangemaakte migratiegebruikers wordt meteen de saldo overgezet.
+        Hier worden de te migreren gebruikers met zijn/haar saldo opgelagen. Wanneer een te migreren gebruiker in SSSKLv2 een account aanmaakt die overeenkomt met een van de onderstaande gebruikersnamen wordt meteen het saldo overgezet.
     </div>
 </div>
 
 <p>
-    <a href="oldusermigrations/create">Nieuwe aanmaken</a>
+    <a class="btn btn-success" href="oldusermigrations/create" role="button"><i class="bi bi-plus-circle"></i> Nieuwe aanmaken</a>
 </p>
 
 <QuickGrid Class="table" Items="DB.OldUserMigration">
-    <PropertyColumn Property="oldusermigration => oldusermigration.Username" />
-    <PropertyColumn Property="oldusermigration => oldusermigration.Saldo" />
+    <PropertyColumn Property="oldusermigration => oldusermigration.Username" Title="Gebruikersnaam" />
+    <PropertyColumn Property='oldusermigration => oldusermigration.Saldo.ToString("C")' />
 
     <TemplateColumn Context="oldusermigration">
-        <a class="btn btn-danger" href="@($"oldusermigrations/delete?id={oldusermigration.Id}")" role="button">Verwijderen</a>
+        <a class="btn btn-danger" href="@($"oldusermigrations/delete?id={oldusermigration.Id}")" role="button"><i class="bi bi-trash"></i></a>
     </TemplateColumn>
 </QuickGrid>

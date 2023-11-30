@@ -3,23 +3,23 @@
 @inject SSSKLv2.Data.ApplicationDbContext DB
 @using SSSKLv2.Data
 
-<PageTitle>Productenoverzicht</PageTitle>
+<PageTitle>SSSKLv2 | Productenoverzicht</PageTitle>
 
 <h1>Productenoverzicht</h1>
 
 <p>
-    <a class="btn btn-primary" href="products/create" role="button">Nieuwe aanmaken</a>
+    <a class="btn btn-success" href="products/create" role="button"><i class="bi bi-plus-circle"></i> Nieuwe aanmaken</a>
 </p>
 
 <QuickGrid Class="table" Items="DB.Product">
-    <PropertyColumn Property="product => product.Name" />
-    <PropertyColumn Property="product => product.Description" />
-    <PropertyColumn Property="product => product.Price" />
-    <PropertyColumn Property="product => product.Stock" />
+    <PropertyColumn Property="product => product.Name" Title="Naam" />
+    <PropertyColumn Property="product => product.Description" Title="Beschrijving" />
+    <PropertyColumn Property='product => product.Price.ToString("C")' Title="Prijs" />
+    <PropertyColumn Property="product => product.Stock" Title="Voorraad" />
 
     <TemplateColumn Context="product">
-        <a class="btn btn-secondary btn-sm" href="@($"products/edit?id={product.Id}")" role="button">Aanpassen</a> |
-        <a class="btn btn-primary btn-sm" href="@($"products/details?id={product.Id}")" role="button">Details</a> |
-        <a class="btn btn-danger btn-sm" href="@($"products/delete?id={product.Id}")" role="button">Verwijderen</a>
+        <a class="btn btn-secondary btn-sm" href="@($"products/details?id={product.Id}")" role="button"><i class="bi bi-info-circle"></i></a>
+        <a class="btn btn-info btn-sm" href="@($"products/edit?id={product.Id}")" role="button"><i class="bi bi-pen"></i></a>
+        <a class="btn btn-danger btn-sm" href="@($"products/delete?id={product.Id}")" role="button"><i class="bi bi-trash"></i></a>
     </TemplateColumn>
 </QuickGrid>

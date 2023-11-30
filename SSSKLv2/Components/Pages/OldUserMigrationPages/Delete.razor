@@ -4,7 +4,7 @@
 @inject NavigationManager NavigationManager
 @using Microsoft.EntityFrameworkCore
 
-<PageTitle>Verwijderen</PageTitle>
+<PageTitle>SSSKLv2 | Verwijderen</PageTitle>
 
 <h1>Verwijderen</h1>
 
@@ -16,6 +16,8 @@
         <p><em>Laden...</em></p>
     }
     else {
+        <a href="/oldusermigrations">Terug naar lijst</a>
+
         <dl class="row">
             <dt class="col-sm-2">Gebruikersnaam</dt>
             <dd class="col-sm-10">@oldusermigration.Username</dd>
@@ -26,7 +28,6 @@
         </dl>
         <EditForm method="post" Model="oldusermigration" OnValidSubmit="DeleteOldUserMigration" FormName="delete" Enhance>
             <button type="submit" class="btn btn-danger" disabled="@(oldusermigration is null)">Delete</button> |
-            <a href="/oldusermigrations">Terug naar lijst</a>
         </EditForm>
     }
 </div>

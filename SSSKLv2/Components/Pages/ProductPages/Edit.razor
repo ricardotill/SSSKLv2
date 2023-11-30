@@ -4,7 +4,7 @@
 @inject NavigationManager NavigationManager
 @using Microsoft.EntityFrameworkCore
 
-<PageTitle>Aanpassen</PageTitle>
+<PageTitle>SSSKLv2 | Aanpassen</PageTitle>
 
 <h1>Aanpassen</h1>
 
@@ -34,8 +34,10 @@ else
                 </div>
                 <div class="mb-3">
                     <label for="price" class="form-label">Prijs:</label>
-                    <span class="input-group-text">€</span>
-                    <InputNumber id="price" @bind-Value="Product.Price" class="form-control" />
+                    <div class="input-group">
+                        <span class="input-group-text">€</span>
+                        <InputNumber id="price" @bind-Value="Product.Price" class="form-control" />
+                    </div>
                     <ValidationMessage For="() => Product.Price" class="text-danger" />
                 </div>
                 <div class="mb-3">

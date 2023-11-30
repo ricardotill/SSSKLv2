@@ -1,10 +1,7 @@
 ﻿@using SSSKLv2.Components.Account
-@using SSSKLv2.Data
 @inherits LayoutComponentBase
-@inject IdentityUserAccessor UserAccessor
 @implements IDisposable
 @inject NavigationManager NavigationManager
-@inject AuthenticationStateProvider AuthStateProvider
 
 
 <div class="page">
@@ -15,9 +12,11 @@
         <div class="top-row px-4">
                 <AuthorizeView>
                     <Authorized>
-                        <div class="me-auto">
-                            @Saldo
-                        </div>
+                        <ul class="nav me-auto">
+                            <li class="nav-item">
+                                @Saldo
+                            </li>
+                        </ul>
                     </Authorized>
                 </AuthorizeView>
             <ul class="nav ml-auto">

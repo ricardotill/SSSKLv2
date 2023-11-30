@@ -1,0 +1,16 @@
+using SSSKLv2.Services.Interfaces;
+
+namespace SSSKLv2.Services;
+
+public static class ServicesExtensions
+{
+    public static IServiceCollection AddServicesDI(this IServiceCollection services)
+    {
+        return services
+            .AddTransient<IApplicationUserService, ApplicationUserService>()
+            .AddTransient<IOldUserMigrationService, OldUserMigrationService>()
+            .AddTransient<IOrderService, OrderService>()
+            .AddTransient<IProductService, ProductService>()
+            .AddTransient<ITopUpService, TopUpService>();
+    }
+}

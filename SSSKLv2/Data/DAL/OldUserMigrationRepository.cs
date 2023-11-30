@@ -4,7 +4,7 @@ namespace SSSKLv2.Data.DAL;
 
 public class OldUserMigrationRepository : IOldUserMigrationRepository
 {
-    public Task<OldUserMigration> GetById()
+    public Task<OldUserMigration> GetById(Guid id)
     {
         throw new NotImplementedException();
     }

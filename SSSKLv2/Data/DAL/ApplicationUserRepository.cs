@@ -5,7 +5,7 @@ namespace SSSKLv2.Data.DAL;
 
 public class ApplicationUserRepository(IDbContextFactory<ApplicationDbContext> _dbContextFactory) : IApplicationUserRepository
 {
-    public Task<ApplicationUser> GetById()
+    public Task<ApplicationUser> GetById(Guid id)
     {
         throw new NotImplementedException();
     }

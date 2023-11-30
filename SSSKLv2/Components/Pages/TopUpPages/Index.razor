@@ -1,0 +1,59 @@
+﻿@page "/topups/{Page:int}"
+@attribute [Authorize(Policy = Policies.Admin)]
+@inject ITopUpService TopUpService
+@using SSSKLv2.Data
+@using SSSKLv2.Services.Interfaces
+@using Microsoft.AspNetCore.Authorization
+@using SSSKLv2.Components.Account
+
+<PageTitle>SSSKLv2 | Saldo Transacties</PageTitle>
+
+<h1>Saldo Transacties</h1>
+
+<div class="table-responsive">
+  <table class="table table-striped">
+    <thead>
+    <tr>
+      <th scope="col">Datum</th>
+        <th scope="col">Gebruikersnaam</th>
+        <th scope="col">Saldo</th>
+        <th scope="col">#</th>
+    </tr>
+      </thead>
+    <tbody>
+    @foreach (var topup in TopUps.Value)
+    {
+        <tr>
+            <th>@topup.CreatedOn.ToString("dd/MM/yyyy")</th>
+            <td>@topup.User.Name</td>
+            <td>+ @topup.Saldo.ToString("C")</td>
+            <td>
+                <a class="btn btn-danger btn-sm" href="@($"topups/delete?id={topup.Id}")" role="button"><i class="bi bi-trash"></i></a>
+            </td>
+        </tr>
+    }
+    </tbody>
+  </table>
+</div>
+
+<Pagination Page="Page"
+    TotalItems="TopUps.TotalObjects"
+    NavUrl="/topups/" />
+
+@code {
+    private int _page = 1;
+    [Parameter]
+    public int Page { get => _page; set => _page = value < 1 ? 1 : value; }
+    
+    public PaginationObject<TopUp>? TopUps;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetDataAsync();
+    }
+
+    private async Task GetDataAsync()
+    {
+        TopUps = await TopUpService.GetAllPagination(Page);
+    }
+}

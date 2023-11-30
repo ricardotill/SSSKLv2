@@ -1,0 +1,60 @@
+﻿@page "/saldo/{Page:int}"
+@attribute [Authorize]
+
+@inject ITopUpService TopUpService
+@using SSSKLv2.Data
+@using SSSKLv2.Services.Interfaces
+@using Microsoft.AspNetCore.Authorization
+@using SSSKLv2.Components.Account
+
+<PageTitle>SSSKLv2 | Saldo</PageTitle>
+
+<h1>Saldo transacties</h1>
+
+<div class="table-responsive">
+  <table class="table table-striped">
+    <thead>
+    <tr>
+      <th scope="col">Datum</th>
+        <th scope="col">Gebruikersnaam</th>
+        <th scope="col">Saldo</th>
+    </tr>
+      </thead>
+    <tbody>
+    @foreach (var topup in TopUps.Value)
+    {
+        <tr>
+            <th>@topup.CreatedOn.ToString("dd/MM/yyyy")</th>
+            <td>@topup.User.Name</td>
+            <td>+ @topup.Saldo.ToString("C")</td>
+        </tr>
+    }
+    </tbody>
+  </table>
+</div>
+
+<Pagination Page="Page"
+    TotalItems="TopUps.TotalObjects"
+    NavUrl="/saldo/" />
+
+@code {
+    private int _page = 1;
+    [Parameter]
+    public int Page { get => _page; set => _page = value < 1 ? 1 : value; }
+    
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+    
+    public PaginationObject<TopUp>? TopUps;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetDataAsync();
+    }
+
+    private async Task GetDataAsync()
+    {
+        var id = HttpContext.User.FindFirst(IdentityClaim.Saldo.ToString())?.Value ?? "";
+        TopUps = await TopUpService.GetPersonalPagination(Page, id);
+    }
+}

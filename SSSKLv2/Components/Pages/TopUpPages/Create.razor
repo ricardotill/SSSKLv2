@@ -1,0 +1,64 @@
+﻿@page "/products/create"
+@attribute [Authorize(Policy = Policies.Admin)]
+
+@inject SSSKLv2.Data.ApplicationDbContext DB
+@using SSSKLv2.Data
+@using Microsoft.AspNetCore.Authorization
+@using SSSKLv2.Components.Account
+@inject NavigationManager NavigationManager
+
+<PageTitle>SSSKLv2 | Aanmaken</PageTitle>
+
+<h1>Aanmaken</h1>
+
+<h4>Product</h4>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <EditForm method="post" Model="Product" OnValidSubmit="AddProduct" FormName="create" Enhance>
+            <DataAnnotationsValidator />
+            <ValidationSummary class="text-danger" />
+            <div class="mb-3">
+                <label for="name" class="form-label">Naam:</label> 
+                <InputText id="name" @bind-Value="Product.Name" class="form-control" /> 
+                <ValidationMessage For="() => Product.Name" class="text-danger" /> 
+            </div>        
+            <div class="mb-3">
+                <label for="description" class="form-label">Beschrijving:</label> 
+                <InputText id="description" @bind-Value="Product.Description" class="form-control" /> 
+                <ValidationMessage For="() => Product.Description" class="text-danger" /> 
+            </div>        
+            <div class="mb-3">
+                <label for="price" class="form-label">Prijs:</label> 
+                <span class="input-group-text">€</span>
+                <InputNumber id="price" @bind-Value="Product.Price" class="form-control" /> 
+                <ValidationMessage For="() => Product.Price" class="text-danger" /> 
+            </div>        
+            <div class="mb-3">
+                <label for="stock" class="form-label">Voorraad:</label> 
+                <InputNumber id="stock" @bind-Value="Product.Stock" class="form-control" /> 
+                <ValidationMessage For="() => Product.Stock" class="text-danger" /> 
+            </div>        
+            <button type="submit" class="btn btn-primary">Aanmaken</button>
+        </EditForm>
+    </div>
+</div>
+
+<div>
+    <a href="/topups">Terug naar lijst</a>
+</div>
+
+@code {
+
+    [SupplyParameterFromForm]
+    public Product Product { get; set; } = new();
+
+    // To protect from overposting attacks, see https://aka.ms/RazorPagesCRUD
+    public async Task AddProduct()
+    {
+        Product.Id = Guid.NewGuid();
+        DB.Product.Add(Product);
+        await DB.SaveChangesAsync();
+        NavigationManager.NavigateTo("/products");
+    }
+}

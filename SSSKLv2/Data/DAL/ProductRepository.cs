@@ -7,7 +7,7 @@ namespace SSSKLv2.Data.DAL;
 
 public class ProductRepository(IDbContextFactory<ApplicationDbContext> _dbContextFactory) : IProductRepository
 {
-    public Task<Product> GetById()
+    public async Task<Product> GetById(Guid id)
     {
         throw new NotImplementedException();
     }
@@ -37,7 +37,7 @@ public class ProductRepository(IDbContextFactory<ApplicationDbContext> _dbContex
 
     public async Task Delete(Guid id)
     {
-        using (var context = _dbContextFactory.CreateDbContext())
+        using (var context = await _dbContextFactory.CreateDbContextAsync())
         {
             var entry = await context.Product.FindAsync(id);
             if (entry != null)

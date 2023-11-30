@@ -1,0 +1,61 @@
+﻿@page "/orders/{Page:int}"
+@inject IOrderService OrderService
+@using SSSKLv2.Data
+@using SSSKLv2.Services.Interfaces
+
+<PageTitle>SSSKLv2 | Orderoverzicht</PageTitle>
+
+<h1>Orderoverzicht</h1>
+
+<div class="table-responsive">
+  <table class="table table-striped">
+    <thead>
+    <tr>
+      <th scope="col">Datum</th>
+      <th scope="col">Gebruikersnaam</th>
+      <th scope="col">Product</th>
+      <th scope="col">Hoeveelheid</th>
+        <th scope="col">Kosten</th>
+        <th scope="col">#</th>
+    </tr>
+      </thead>
+    <tbody>
+    @foreach (var order in Orders.Value)
+    {
+        <tr>
+            <th>@order.CreatedOn.ToString("dd/MM/yyyy")</th>
+            <td>@order.User.Name</td>
+            <td>@order.ProductNaam</td>
+            <td>@order.Amount</td>
+            <td>@order.Paid.ToString("C")</td>
+            <td>
+                <a class="btn btn-danger btn-sm" href="@($"orders/delete?id={order.Id}")" role="button"><i class="bi bi-trash"></i></a>
+            </td>
+        </tr>
+    }
+    </tbody>
+  </table>
+</div>
+
+<Pagination Page="Page"
+    TotalItems="Orders.TotalObjects"
+    NavUrl="/orders/" />
+
+@code {
+    private int _page = 1;
+    [Parameter]
+    public int Page { get => _page; set => _page = value < 1 ? 1 : value; }
+    
+    public PaginationObject<Order>? Orders;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetDataAsync();
+    }
+
+    private async Task GetDataAsync()
+    {
+        Orders = await OrderService.GetAllPagination(Page);
+
+    }
+}

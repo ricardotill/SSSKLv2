@@ -7,6 +7,7 @@ namespace SSSKLv2.Components.Account;
 
 public enum IdentityClaim
 {
+    Id,
     Name,
     Saldo
 }
@@ -26,7 +27,8 @@ public class IdentityClaimsPrincipalFactory : UserClaimsPrincipalFactory<Applica
         var claims = new List<Claim>()
         {
             new Claim(IdentityClaim.Name.ToString(), user.Name),
-            new Claim(IdentityClaim.Saldo.ToString(), user.Saldo.ToString("C"))
+            new Claim(IdentityClaim.Saldo.ToString(), user.Saldo.ToString("C")),
+            new Claim(IdentityClaim.Id.ToString(), user.Id)
         };
 
         var roles = await UserManager.GetRolesAsync(user);

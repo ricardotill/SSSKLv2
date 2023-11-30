@@ -1,0 +1,80 @@
+﻿@page "/orders/delete"
+@attribute [Authorize(Policy = Policies.Admin)]
+
+@inject ITopUpService TopUpService
+@using SSSKLv2.Data
+@inject NavigationManager NavigationManager
+@using SSSKLv2.Data.DAL.Exceptions
+@using SSSKLv2.Services.Interfaces
+@using Microsoft.AspNetCore.Authorization
+@using SSSKLv2.Components.Account
+
+<PageTitle>SSSKLv2 | Saldo Transactie Verwijderen</PageTitle>
+
+<h1>Verwijderen</h1>
+
+<h3>Weet je het zeker?</h3>
+<div>
+    <h4>Saldo Transactie</h4>
+    <hr />
+    @if (topup is null)
+    {
+        <p><em>Loading...</em></p>
+    }
+    else {
+        <dl class="row">
+            <dt class="col-sm-2">Datum</dt>
+            <dd class="col-sm-10">@topup.CreatedOn.ToString("dd/MM/yyyy")</dd>
+        </dl>
+        <dl class="row">
+            <dt class="col-sm-2">Gebruiker</dt>
+            <dd class="col-sm-10">@topup.User.UserName</dd>
+        </dl>
+        <dl class="row">
+            <dt class="col-sm-2">Saldo</dt>
+            <dd class="col-sm-10">@topup.Saldo.ToString("C")</dd>
+        </dl>
+        <EditForm method="post" Model="topup" OnValidSubmit="DeleteTopUp" FormName="delete" Enhance>
+            <button type="submit" class="btn btn-danger" disabled="@(topup is null)">Delete</button> |
+            <a href="/topups">Back to List</a>
+        </EditForm>
+    }
+</div>
+
+@code {
+    TopUp? topup;
+
+    [SupplyParameterFromQuery]
+    public string Id { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetData();
+    }
+
+    public async Task GetData()
+    {
+        try
+        {
+            topup = await TopUpService.GetById(Id);
+
+        }
+        catch (NotFoundException)
+        {
+            NavigationManager.NavigateTo("notfound");
+        }
+    }
+
+    public async Task DeleteTopUp()
+    {
+        try
+        {
+            await TopUpService.DeleteTopUp(Guid.Parse(Id));
+            NavigationManager.NavigateTo("/topups");
+        }
+        catch (NotFoundException)
+        {
+            NavigationManager.NavigateTo("notfound");
+        }
+    }
+}

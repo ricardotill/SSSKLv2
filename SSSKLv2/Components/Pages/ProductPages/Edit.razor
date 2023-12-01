@@ -1,8 +1,12 @@
-﻿@page "/Products/edit"
+﻿@page "/admin/products/edit"
 @inject SSSKLv2.Data.ApplicationDbContext DB
 @using SSSKLv2.Data
 @inject NavigationManager NavigationManager
 @using Microsoft.EntityFrameworkCore
+@using SSSKLv2.Components.Account
+@using Microsoft.AspNetCore.Authorization
+
+@attribute [Authorize(Policy = Policies.Admin)]
 
 <PageTitle>SSSKLv2 | Aanpassen</PageTitle>
 
@@ -52,7 +56,7 @@ else
 }
 
 <div>
-    <a href="/products">Terug naar lijst</a>
+    <a href="/admin/products">Terug naar lijst</a>
 </div>
 
 @code {
@@ -94,7 +98,7 @@ else
             }
         }
 
-        NavigationManager.NavigateTo("/products");
+        NavigationManager.NavigateTo("/admin/products");
     }
 
     bool ProductExists(Guid id)

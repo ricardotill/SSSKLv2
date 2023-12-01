@@ -1,7 +1,12 @@
-﻿@page "/oldusermigrations/create"
-@inject SSSKLv2.Data.ApplicationDbContext DB
+﻿@page "/admin/oldusermigrations/create"
+@inject IOldUserMigrationService OldMigrationsService
 @using SSSKLv2.Data
+@using Microsoft.AspNetCore.Authorization
+@using SSSKLv2.Components.Account
+@using SSSKLv2.Services.Interfaces
 @inject NavigationManager NavigationManager
+
+@attribute [Authorize(Policy = Policies.Admin)]
 
 <PageTitle>SSSKLv2 | Aanmaken</PageTitle>
 
@@ -9,7 +14,7 @@
 
 <hr />
 <div>
-    <a href="/oldusermigrations">Terug naar lijst</a>
+    <a href="/admin/oldusermigrations">Terug naar lijst</a>
 </div>
 <div class="row">
     <div class="col-md-4">
@@ -43,9 +48,7 @@
     // To protect from overposting attacks, see https://aka.ms/RazorPagesCRUD
     public async Task AddOldUserMigration()
     {
-        OldUserMigration.Id = Guid.NewGuid();
-        DB.OldUserMigration.Add(OldUserMigration);
-        await DB.SaveChangesAsync();
-        NavigationManager.NavigateTo("/oldusermigrations");
+        await OldMigrationsService.CreateProduct(OldUserMigration);
+        NavigationManager.NavigateTo("/admin/oldusermigrations");
     }
 }

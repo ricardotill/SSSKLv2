@@ -1,7 +1,11 @@
-﻿@page "/orders/{Page:int}"
+﻿@page "/admin/orders/{Page:int?}"
+@attribute [Authorize(Policy = Policies.Admin)]
+
 @inject IOrderService OrderService
 @using SSSKLv2.Data
 @using SSSKLv2.Services.Interfaces
+@using Microsoft.AspNetCore.Authorization
+@using SSSKLv2.Components.Account
 
 <PageTitle>SSSKLv2 | Orderoverzicht</PageTitle>
 
@@ -29,7 +33,7 @@
             <td>@order.Amount</td>
             <td>@order.Paid.ToString("C")</td>
             <td>
-                <a class="btn btn-danger btn-sm" href="@($"orders/delete?id={order.Id}")" role="button"><i class="bi bi-trash"></i></a>
+                <a class="btn btn-danger btn-sm" href="@($"admin/orders/delete?id={order.Id}")" role="button"><i class="bi bi-trash"></i></a>
             </td>
         </tr>
     }
@@ -37,25 +41,25 @@
   </table>
 </div>
 
-<Pagination Page="Page"
+<Pagination
     TotalItems="Orders.TotalObjects"
-    NavUrl="/orders/" />
+    NavUrl="/admin/orders/" />
 
 @code {
-    private int _page = 1;
     [Parameter]
-    public int Page { get => _page; set => _page = value < 1 ? 1 : value; }
+    public int? Page { get; set; }
     
-    public PaginationObject<Order>? Orders;
+    public PaginationObject<Order> Orders = new PaginationObject<Order>();
 
     protected override async Task OnInitializedAsync()
     {
+        Page ??= 1;
         await GetDataAsync();
     }
 
     private async Task GetDataAsync()
     {
-        Orders = await OrderService.GetAllPagination(Page);
+        Orders = await OrderService.GetAllPagination(Page!.Value);
 
     }
 }

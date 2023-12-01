@@ -1,4 +1,4 @@
-﻿@page "/topups/{Page:int}"
+﻿@page "/admin/topups/{Page:int?}"
 @attribute [Authorize(Policy = Policies.Admin)]
 @inject ITopUpService TopUpService
 @using SSSKLv2.Data
@@ -6,54 +6,60 @@
 @using Microsoft.AspNetCore.Authorization
 @using SSSKLv2.Components.Account
 
-<PageTitle>SSSKLv2 | Saldo Transacties</PageTitle>
+<PageTitle>SSSKLv2 | Saldobeheer</PageTitle>
 
-<h1>Saldo Transacties</h1>
+<h1>Saldobeheer</h1>
+
+<p>
+    <a class="btn btn-success" href="/admin/topups/create" role="button"><i class="bi bi-plus-circle"></i> Saldo opwaarderen</a>
+</p>
 
 <div class="table-responsive">
-  <table class="table table-striped">
-    <thead>
-    <tr>
-      <th scope="col">Datum</th>
-        <th scope="col">Gebruikersnaam</th>
-        <th scope="col">Saldo</th>
-        <th scope="col">#</th>
-    </tr>
-      </thead>
-    <tbody>
-    @foreach (var topup in TopUps.Value)
-    {
+    <table class="table table-striped">
+        <thead>
         <tr>
-            <th>@topup.CreatedOn.ToString("dd/MM/yyyy")</th>
-            <td>@topup.User.Name</td>
-            <td>+ @topup.Saldo.ToString("C")</td>
-            <td>
-                <a class="btn btn-danger btn-sm" href="@($"topups/delete?id={topup.Id}")" role="button"><i class="bi bi-trash"></i></a>
-            </td>
+            <th scope="col">Datum</th>
+            <th scope="col">Gebruikersnaam</th>
+            <th scope="col">Saldo</th>
+            <th scope="col">#</th>
         </tr>
-    }
-    </tbody>
-  </table>
+        </thead>
+        <tbody>
+        @foreach (var topup in TopUps.Value)
+        {
+            <tr>
+                <th>@topup.CreatedOn.ToString("dd/MM/yyyy")</th>
+                <td>@topup.User.Name @topup.User.Surname</td>
+                <td>+ @topup.Saldo.ToString("C")</td>
+                <td>
+                    <a class="btn btn-danger btn-sm" href="@($"admin/topups/delete?id={topup.Id}")" role="button"><i class="bi bi-trash"></i></a>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
 </div>
 
-<Pagination Page="Page"
+
+
+<Pagination
     TotalItems="TopUps.TotalObjects"
-    NavUrl="/topups/" />
+    NavUrl="/admin/topups/" />
 
 @code {
-    private int _page = 1;
     [Parameter]
-    public int Page { get => _page; set => _page = value < 1 ? 1 : value; }
+    public int? Page { get; set; }
     
-    public PaginationObject<TopUp>? TopUps;
+    public PaginationObject<TopUp> TopUps = new PaginationObject<TopUp>();
 
     protected override async Task OnInitializedAsync()
     {
+        Page ??= 1;
         await GetDataAsync();
     }
 
     private async Task GetDataAsync()
     {
-        TopUps = await TopUpService.GetAllPagination(Page);
+        TopUps = await TopUpService.GetAllPagination(Page!.Value);
     }
 }

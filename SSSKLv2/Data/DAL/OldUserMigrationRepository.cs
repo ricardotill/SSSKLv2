@@ -1,22 +1,35 @@
+using Microsoft.EntityFrameworkCore;
+using SSSKLv2.Data.DAL.Exceptions;
 using SSSKLv2.Data.DAL.Interfaces;
 
 namespace SSSKLv2.Data.DAL;
 
-public class OldUserMigrationRepository : IOldUserMigrationRepository
+public class OldUserMigrationRepository(IDbContextFactory<ApplicationDbContext> _dbContextFactory) : IOldUserMigrationRepository
 {
-    public Task<OldUserMigration> GetById(Guid id)
+    public async Task<OldUserMigration> GetById(Guid id)
     {
-        throw new NotImplementedException();
+        await using var context = await _dbContextFactory.CreateDbContextAsync();
+        var entry = await context.OldUserMigration.FindAsync(id);
+        if (entry != null)
+        {
+            return entry;
+        }
+
+        throw new NotFoundException("OldUserMigration not found");
     }
 
-    public Task<IEnumerable<OldUserMigration>> GetAll()
+    public async Task<IEnumerable<OldUserMigration>> GetAll()
     {
-        throw new NotImplementedException();
+        await using var context = await _dbContextFactory.CreateDbContextAsync();
+        var list = await context.OldUserMigration.ToListAsync();
+        return list;
     }
 
-    public Task Create(OldUserMigration obj)
+    public async Task Create(OldUserMigration obj)
     {
-        throw new NotImplementedException();
+        await using var context = await _dbContextFactory.CreateDbContextAsync();
+        context.OldUserMigration.Add(obj);
+        await context.SaveChangesAsync();
     }
 
     public Task Update(OldUserMigration obj)
@@ -24,8 +37,15 @@ public class OldUserMigrationRepository : IOldUserMigrationRepository
         throw new NotImplementedException();
     }
 
-    public Task Delete(Guid id)
+    public async Task Delete(Guid id)
     {
-        throw new NotImplementedException();
+        await using var context = await _dbContextFactory.CreateDbContextAsync();
+        var entry = await context.OldUserMigration.FindAsync(id);
+        if (entry != null)
+        {
+            context.OldUserMigration.Remove(entry);
+            await context.SaveChangesAsync();
+        }
+        else throw new NotFoundException("OldUserMigration Not Found");
     }
 }

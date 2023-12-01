@@ -37,4 +37,18 @@ public class IdentityClaimsPrincipalFactory : UserClaimsPrincipalFactory<Applica
         identity.AddClaims(claims);
         return identity;
     }
+
+    public async static Task<IList<Claim>> GenerateClaims(ApplicationUser user, UserManager<ApplicationUser> userManager)
+    {
+        var claims = new List<Claim>()
+        {
+            new Claim(IdentityClaim.Name.ToString(), user.Name),
+            new Claim(IdentityClaim.Saldo.ToString(), user.Saldo.ToString("C")),
+            new Claim(IdentityClaim.Id.ToString(), user.Id)
+        };
+
+        var roles = await userManager.GetRolesAsync(user);
+        claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
+        return claims;
+    }
 }

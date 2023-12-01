@@ -11,7 +11,4 @@ public class BaseModel
     [Required]
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public DateTime CreatedOn { get; set; } = DateTime.UtcNow;
-    [Required]
-    [DatabaseGenerated(DatabaseGeneratedOption.Computed)]
-    public DateTime UpdatedOn { get; set; }
 }

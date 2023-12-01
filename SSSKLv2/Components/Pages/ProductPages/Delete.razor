@@ -1,8 +1,12 @@
-﻿@page "/products/delete"
+﻿@page "/admin/products/delete"
 @inject SSSKLv2.Data.ApplicationDbContext DB
 @using SSSKLv2.Data
 @inject NavigationManager NavigationManager
 @using Microsoft.EntityFrameworkCore
+@using SSSKLv2.Components.Account
+@using Microsoft.AspNetCore.Authorization
+
+@attribute [Authorize(Policy = Policies.Admin)]
 
 <PageTitle>SSSKLv2 | Verwijderen</PageTitle>
 
@@ -14,7 +18,7 @@
     <hr />
     @if (product is null)
     {
-        <p><em>Loading...</em></p>
+        <p><em>Laden...</em></p>
     }
     else {
         <dl class="row">
@@ -35,7 +39,7 @@
         </dl>
         <EditForm method="post" Model="product" OnValidSubmit="DeleteProduct" FormName="delete" Enhance>
             <button type="submit" class="btn btn-danger" disabled="@(product is null)">Delete</button> |
-            <a href="/products">Back to List</a>
+            <a href="/admin/products">Terug naar lijst</a>
         </EditForm>
     }
 </div>
@@ -60,6 +64,6 @@
     {
         DB.Product.Remove(product!);
         await DB.SaveChangesAsync();
-        NavigationManager.NavigateTo("/products");
+        NavigationManager.NavigateTo("/admin/products");
     }
 }

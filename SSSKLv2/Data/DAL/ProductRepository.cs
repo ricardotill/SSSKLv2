@@ -9,43 +9,47 @@ public class ProductRepository(IDbContextFactory<ApplicationDbContext> _dbContex
 {
     public async Task<Product> GetById(Guid id)
     {
-        throw new NotImplementedException();
+        await using var context = await _dbContextFactory.CreateDbContextAsync();
+        var entry = await context.Product.FindAsync(id);
+        if (entry != null)
+        {
+            return entry;
+        }
+
+        throw new NotFoundException("Product not found");
     }
 
-    public Task<IEnumerable<Product>> GetAll()
+    public async Task<IEnumerable<Product>> GetAll()
     {
-        throw new NotImplementedException();
+        IList<Product> list = new List<Product>();
+        await using var context = await _dbContextFactory.CreateDbContextAsync();
+        list = await context.Product.ToListAsync();
+        return list;
     }
 
     public async Task Create(Product obj)
     {
-        using (var context = _dbContextFactory.CreateDbContext())
-        {
-            context.Product.Add(obj);
-            await context.SaveChangesAsync();
-        }
+        await using var context = await _dbContextFactory.CreateDbContextAsync();
+        context.Product.Add(obj);
+        await context.SaveChangesAsync();
     }
 
     public async Task Update(Product obj)
     {
-        using (var context = _dbContextFactory.CreateDbContext())
-        {
-            context.Product.Add(obj);
-            await context.SaveChangesAsync();
-        }
+        await using var context = await _dbContextFactory.CreateDbContextAsync();
+        context.Product.Add(obj);
+        await context.SaveChangesAsync();
     }
 
     public async Task Delete(Guid id)
     {
-        using (var context = await _dbContextFactory.CreateDbContextAsync())
+        await using var context = await _dbContextFactory.CreateDbContextAsync();
+        var entry = await context.Product.FindAsync(id);
+        if (entry != null)
         {
-            var entry = await context.Product.FindAsync(id);
-            if (entry != null)
-            {
-                context.Product.Remove(entry);
-                await context.SaveChangesAsync();
-            }
-            else throw new NotFoundException("Product Not Found");
+            context.Product.Remove(entry);
+            await context.SaveChangesAsync();
         }
+        else throw new NotFoundException("Product Not Found");
     }
 }

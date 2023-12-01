@@ -4,7 +4,8 @@ using SSSKLv2.Services.Interfaces;
 
 namespace SSSKLv2.Services;
 
-public class TopUpService(ITopUpRepository _topUpRepository) : ITopUpService
+public class TopUpService(
+    ITopUpRepository _topUpRepository) : ITopUpService
 {
     public async Task<PaginationObject<TopUp>> GetAllPagination(int page)
     {
@@ -20,10 +21,11 @@ public class TopUpService(ITopUpRepository _topUpRepository) : ITopUpService
     }
     public async Task CreateTopUp(TopUp topup)
     {
-        await _topUpRepository.Update(topup);
+        await _topUpRepository.Create(topup);
     }
     public async Task DeleteTopUp(Guid id)
     {
+        var topup = await _topUpRepository.GetById(id);
         await _topUpRepository.Delete(id);
     }
 }

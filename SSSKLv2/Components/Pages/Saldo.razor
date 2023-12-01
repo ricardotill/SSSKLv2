@@ -1,4 +1,4 @@
-﻿@page "/saldo/{Page:int}"
+﻿@page "/saldo/{Page:int?}"
 @attribute [Authorize]
 
 @inject ITopUpService TopUpService
@@ -33,28 +33,29 @@
   </table>
 </div>
 
-<Pagination Page="Page"
+<Pagination
     TotalItems="TopUps.TotalObjects"
     NavUrl="/saldo/" />
 
 @code {
-    private int _page = 1;
+    
     [Parameter]
-    public int Page { get => _page; set => _page = value < 1 ? 1 : value; }
+    public int? Page { get; set; }
     
     [CascadingParameter]
     private HttpContext HttpContext { get; set; } = default!;
     
-    public PaginationObject<TopUp>? TopUps;
+    public PaginationObject<TopUp> TopUps = new();
 
     protected override async Task OnInitializedAsync()
     {
+        Page ??= 1;
         await GetDataAsync();
     }
 
     private async Task GetDataAsync()
     {
         var id = HttpContext.User.FindFirst(IdentityClaim.Saldo.ToString())?.Value ?? "";
-        TopUps = await TopUpService.GetPersonalPagination(Page, id);
+        TopUps = await TopUpService.GetPersonalPagination(Page!.Value, id);
     }
 }

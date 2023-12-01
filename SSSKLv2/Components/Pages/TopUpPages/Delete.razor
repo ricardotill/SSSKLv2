@@ -1,4 +1,4 @@
-﻿@page "/orders/delete"
+﻿@page "/admin/topups/delete"
 @attribute [Authorize(Policy = Policies.Admin)]
 
 @inject ITopUpService TopUpService
@@ -19,7 +19,7 @@
     <hr />
     @if (topup is null)
     {
-        <p><em>Loading...</em></p>
+        <p><em>Laden...</em></p>
     }
     else {
         <dl class="row">
@@ -35,8 +35,8 @@
             <dd class="col-sm-10">@topup.Saldo.ToString("C")</dd>
         </dl>
         <EditForm method="post" Model="topup" OnValidSubmit="DeleteTopUp" FormName="delete" Enhance>
-            <button type="submit" class="btn btn-danger" disabled="@(topup is null)">Delete</button> |
-            <a href="/topups">Back to List</a>
+            <button type="submit" class="btn btn-danger" disabled="@(topup is null)">Verwijderen</button> |
+            <a href="/admin/topups">Terug naar lijst</a>
         </EditForm>
     }
 </div>
@@ -70,7 +70,7 @@
         try
         {
             await TopUpService.DeleteTopUp(Guid.Parse(Id));
-            NavigationManager.NavigateTo("/topups");
+            NavigationManager.NavigateTo("/admin/topups");
         }
         catch (NotFoundException)
         {

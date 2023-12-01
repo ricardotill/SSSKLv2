@@ -1,7 +1,10 @@
-﻿@page "/oldusermigrations"
-@using Microsoft.AspNetCore.Components.QuickGrid
-@inject SSSKLv2.Data.ApplicationDbContext DB
+﻿@page "/admin/oldusermigrations"
+@using SSSKLv2.Components.Account
+@inject IOldUserMigrationService OldUserMigrationService
 @using SSSKLv2.Data
+@using Microsoft.AspNetCore.Authorization
+@using SSSKLv2.Services.Interfaces
+@attribute [Authorize(Policy = Policies.Admin)]
 
 <PageTitle>SSSKLv2 | Saldo Migratie</PageTitle>
 
@@ -15,14 +18,45 @@
 </div>
 
 <p>
-    <a class="btn btn-success" href="oldusermigrations/create" role="button"><i class="bi bi-plus-circle"></i> Nieuwe aanmaken</a>
+    <a class="btn btn-success" href="admin/oldusermigrations/create" role="button"><i class="bi bi-plus-circle"></i> Nieuwe aanmaken</a>
 </p>
 
-<QuickGrid Class="table" Items="DB.OldUserMigration">
-    <PropertyColumn Property="oldusermigration => oldusermigration.Username" Title="Gebruikersnaam" />
-    <PropertyColumn Property='oldusermigration => oldusermigration.Saldo.ToString("C")' />
+<div class="table-responsive">
+  <table class="table table-striped">
+    <thead>
+    <tr>
+      <th scope="col">Datum</th>
+        <th scope="col">Gebruikersnaam</th>
+        <th scope="col">Saldo</th>
+        <th scope="col">#</th>
+    </tr>
+      </thead>
+    <tbody>
+    @foreach (var entry in OldUserMigrations)
+    {
+        <tr>
+            <th>@entry.CreatedOn.ToString("dd/MM/yyyy")</th>
+            <td>@entry.Username</td>
+            <td>@entry.Saldo.ToString("C")</td>
+            <td>
+                <a class="btn btn-danger btn-sm" href="@($"admin/oldusermigrations/delete?id={entry.Id}")" role="button"><i class="bi bi-trash"></i></a>
+            </td>
+        </tr>
+    }
+    </tbody>
+  </table>
+</div>
 
-    <TemplateColumn Context="oldusermigration">
-        <a class="btn btn-danger" href="@($"oldusermigrations/delete?id={oldusermigration.Id}")" role="button"><i class="bi bi-trash"></i></a>
-    </TemplateColumn>
-</QuickGrid>
+@code {
+    public IEnumerable<OldUserMigration> OldUserMigrations = new List<OldUserMigration>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetDataAsync();
+    }
+
+    private async Task GetDataAsync()
+    {
+        OldUserMigrations = await OldUserMigrationService.GetAll();
+    }
+}

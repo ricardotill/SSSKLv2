@@ -1,25 +1,58 @@
-﻿@page "/products"
-@using Microsoft.AspNetCore.Components.QuickGrid
-@inject SSSKLv2.Data.ApplicationDbContext DB
+﻿@page "/admin/products"
+@using SSSKLv2.Components.Account
+@inject IProductService ProductService
 @using SSSKLv2.Data
+@using Microsoft.AspNetCore.Authorization
+@using SSSKLv2.Services.Interfaces
+
+@attribute [Authorize(Policy = Policies.Admin)]
 
 <PageTitle>SSSKLv2 | Productenoverzicht</PageTitle>
 
 <h1>Productenoverzicht</h1>
 
 <p>
-    <a class="btn btn-success" href="products/create" role="button"><i class="bi bi-plus-circle"></i> Nieuwe aanmaken</a>
+    <a class="btn btn-success" href="/admin/products/create" role="button"><i class="bi bi-plus-circle"></i> Nieuwe aanmaken</a>
 </p>
 
-<QuickGrid Class="table" Items="DB.Product">
-    <PropertyColumn Property="product => product.Name" Title="Naam" />
-    <PropertyColumn Property="product => product.Description" Title="Beschrijving" />
-    <PropertyColumn Property='product => product.Price.ToString("C")' Title="Prijs" />
-    <PropertyColumn Property="product => product.Stock" Title="Voorraad" />
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead>
+        <tr>
+            <th scope="col">Naam</th>
+            <th scope="col">Beschrijving</th>
+            <th scope="col">Prijs</th>
+            <th scope="col">Voorraad</th>
+            <th scope="col">#</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var entry in Products)
+        {
+            <tr>
+                <th>@entry.Name</th>
+                <td>@entry.Description</td>
+                <td>@entry.Price.ToString("C")</td>
+                <td>@entry.Stock</td>
+                <td>
+                    <a class="btn btn-danger btn-sm" href="@($"admin/products/delete?id={entry.Id}")" role="button"><i class="bi bi-trash"></i></a>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>
 
-    <TemplateColumn Context="product">
-        <a class="btn btn-secondary btn-sm" href="@($"products/details?id={product.Id}")" role="button"><i class="bi bi-info-circle"></i></a>
-        <a class="btn btn-info btn-sm" href="@($"products/edit?id={product.Id}")" role="button"><i class="bi bi-pen"></i></a>
-        <a class="btn btn-danger btn-sm" href="@($"products/delete?id={product.Id}")" role="button"><i class="bi bi-trash"></i></a>
-    </TemplateColumn>
-</QuickGrid>
+@code {
+    public IEnumerable<Product> Products = new List<Product>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetDataAsync();
+    }
+
+    private async Task GetDataAsync()
+    {
+        Products = await ProductService.GetAll();
+    }
+}

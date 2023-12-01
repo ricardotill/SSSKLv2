@@ -1,7 +1,11 @@
-﻿@page "/products/create"
+﻿@page "/admin/products/create"
 @inject SSSKLv2.Data.ApplicationDbContext DB
 @using SSSKLv2.Data
+@using Microsoft.AspNetCore.Authorization
+@using SSSKLv2.Components.Account
 @inject NavigationManager NavigationManager
+
+@attribute [Authorize(Policy = Policies.Admin)]
 
 <PageTitle>SSSKLv2 | Aanmaken</PageTitle>
 
@@ -41,7 +45,7 @@
 </div>
 
 <div>
-    <a href="/products">Terug naar lijst</a>
+    <a href="/admin/products">Terug naar lijst</a>
 </div>
 
 @code {
@@ -55,6 +59,6 @@
         Product.Id = Guid.NewGuid();
         DB.Product.Add(Product);
         await DB.SaveChangesAsync();
-        NavigationManager.NavigateTo("/products");
+        NavigationManager.NavigateTo("/admin/products");
     }
 }

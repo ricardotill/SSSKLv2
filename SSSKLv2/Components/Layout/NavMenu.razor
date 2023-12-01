@@ -19,35 +19,44 @@
     <nav class="flex-column">
         <AuthorizeView>
             <Authorized>
-                <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                        <span class="bi bi-bag" aria-hidden="true"></span> Bestellen
-                    </NavLink>
-                    <NavLink class="nav-link" href="orders">
-                        <span class="bi bi-receipt-cutoff" aria-hidden="true"></span> Orders
-                    </NavLink>
-                    <NavLink class="nav-link" href="saldo">
-                        <span class="bi bi-piggy-bank" aria-hidden="true"></span> Saldo
-                    </NavLink>
-                </div>
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                    <span class="bi bi-cup-straw" aria-hidden="true"></span> Bestellen
+                </NavLink>
+            </div>
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="orders">
+                    <span class="bi bi-receipt-cutoff" aria-hidden="true"></span> Bestellingen
+                </NavLink>
+            </div>
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="saldo">
+                    <span class="bi bi-piggy-bank" aria-hidden="true"></span> Saldo
+                </NavLink>
+            </div>
             </Authorized>
         </AuthorizeView>
 
         <AuthorizeView Policy="@Policies.Admin">
             <Authorized>
                 <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="products">
-                        <span class="bi bi-cup-straw" aria-hidden="true"></span> Producten
+                    <NavLink class="nav-link" href="admin/orders">
+                        <span class="bi bi-journal-arrow-down" aria-hidden="true"></span> Bestellingenbeheer
                     </NavLink>
                 </div>
                 <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="topup">
-                        <span class="bi bi-cash-coin" aria-hidden="true"></span> Saldo opwaarderen
+                    <NavLink class="nav-link" href="admin/products">
+                        <span class="bi bi-bag" aria-hidden="true"></span> Productenbeheer
                     </NavLink>
                 </div>
                 <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="oldusermigrations">
-                        <span class="bi bi-person-down" aria-hidden="true"></span> Saldo Migratie
+                    <NavLink class="nav-link" href="admin/topups">
+                        <span class="bi bi-cash-coin" aria-hidden="true"></span> Saldobeheer
+                    </NavLink>
+                </div>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="admin/oldusermigrations">
+                        <span class="bi bi-person-down" aria-hidden="true"></span> Migratiebeheer
                     </NavLink>
                 </div>
                 <div class="nav-item px-3">
@@ -57,6 +66,11 @@
                 </div>
             </Authorized>
         </AuthorizeView>
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="about">
+                <span class="bi bi-patch-question" aria-hidden="true"></span> Over
+            </NavLink>
+        </div>
     </nav>
 </div>
 

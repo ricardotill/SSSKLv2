@@ -7,6 +7,14 @@ namespace SSSKLv2.Services;
 
 public class ApplicationUserService(IApplicationUserRepository _applicationUserRepository) : IApplicationUserService
 {
+    public async Task<ApplicationUser> GetUserById(string id)
+    {
+        return await _applicationUserRepository.GetById(id);
+    }
+    public async Task<IEnumerable<ApplicationUser>> GetAllUsers()
+    {
+        return await _applicationUserRepository.GetAll();
+    }
     public async Task<ApplicationUserPaged> GetPagedUsers(string searchParam, int page)
     {
         page -= 1;
@@ -35,5 +43,17 @@ public class ApplicationUserService(IApplicationUserRepository _applicationUserR
         }
 
         return objApplicationUserPaged;
+    }
+
+    public async Task SaldoIncrease(ApplicationUser user, decimal saldo)
+    {
+        user.Saldo += saldo;
+        await _applicationUserRepository.Update(user);
+    }
+    
+    public async Task SaldoDecrease(ApplicationUser user, decimal saldo)
+    {
+        user.Saldo -= saldo;
+        await _applicationUserRepository.Update(user);
     }
 }

@@ -1,8 +1,13 @@
-﻿@page "/oldusermigrations/delete"
-@inject SSSKLv2.Data.ApplicationDbContext DB
+﻿@page "/admin/oldusermigrations/delete"
+@inject IOldUserMigrationService OldMigrationService
 @using SSSKLv2.Data
 @inject NavigationManager NavigationManager
 @using Microsoft.EntityFrameworkCore
+@using SSSKLv2.Components.Account
+@using Microsoft.AspNetCore.Authorization
+@using SSSKLv2.Services.Interfaces
+
+@attribute [Authorize(Policy = Policies.Admin)]
 
 <PageTitle>SSSKLv2 | Verwijderen</PageTitle>
 
@@ -16,7 +21,7 @@
         <p><em>Laden...</em></p>
     }
     else {
-        <a href="/oldusermigrations">Terug naar lijst</a>
+        <a href="/admin/oldusermigrations">Terug naar lijst</a>
 
         <dl class="row">
             <dt class="col-sm-2">Gebruikersnaam</dt>
@@ -40,7 +45,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        oldusermigration = await DB.OldUserMigration.FirstOrDefaultAsync(m => m.Id == Id);
+        oldusermigration = await OldMigrationService.GetProductById(Id);
 
         if (oldusermigration is null)
         {
@@ -50,8 +55,7 @@
 
     public async Task DeleteOldUserMigration()
     {
-        DB.OldUserMigration.Remove(oldusermigration!);
-        await DB.SaveChangesAsync();
-        NavigationManager.NavigateTo("/oldusermigrations");
+        if (oldusermigration != null) await OldMigrationService.DeleteProduct(oldusermigration.Id);
+        NavigationManager.NavigateTo("/admin/oldusermigrations");
     }
 }

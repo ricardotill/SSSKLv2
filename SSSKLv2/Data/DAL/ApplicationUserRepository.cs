@@ -18,6 +18,20 @@ public class ApplicationUserRepository(IDbContextFactory<ApplicationDbContext> _
         throw new NotFoundException("ApplicationUser not found");
     }
     
+    public async Task<ApplicationUser> GetByUsername(string username)
+    {
+        await using var context = await _dbContextFactory.CreateDbContextAsync();
+        var entry = await context.Users
+            .Where(x => x.UserName == username)
+            .FirstOrDefaultAsync();
+        if (entry != null)
+        {
+            return entry;
+        }
+
+        throw new NotFoundException("ApplicationUser not found");
+    }
+    
     public async Task<IList<ApplicationUser>> GetAllBySearchparam(string searchparam, int page)
     {
         IList<ApplicationUser> list = new List<ApplicationUser>() { };

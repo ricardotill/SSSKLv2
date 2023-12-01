@@ -11,6 +11,10 @@ public class ApplicationUserService(IApplicationUserRepository _applicationUserR
     {
         return await _applicationUserRepository.GetById(id);
     }
+    public async Task<ApplicationUser> GetUserByUsername(string username)
+    {
+        return await _applicationUserRepository.GetByUsername(username);
+    }
     public async Task<IEnumerable<ApplicationUser>> GetAllUsers()
     {
         return await _applicationUserRepository.GetAll();

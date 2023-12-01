@@ -1,8 +1,8 @@
-﻿@using SSSKLv2.Components.Account
+﻿@using SSSKLv2.Services.Interfaces
 @inherits LayoutComponentBase
 @implements IDisposable
 @inject NavigationManager NavigationManager
-
+@inject IApplicationUserService ApplicationUserService
 
 <div class="page">
     <div class="sidebar">
@@ -77,9 +77,12 @@
 
     public async Task UpdateData() 
     {
-        var user = HttpContext.User;
-        Name = user.FindFirst(IdentityClaim.Name.ToString())?.Value ?? "";
-        Saldo = user.FindFirst(IdentityClaim.Saldo.ToString())?.Value ?? "";
+        if (HttpContext.User.Identity?.Name != null)
+        {
+            var user = await ApplicationUserService.GetUserByUsername(HttpContext.User.Identity.Name);
+            Name = user.Name;
+            Saldo = user.Saldo.ToString("C");
+        }
     }
 
     private void OnLocationChanged(object? sender, LocationChangedEventArgs e)

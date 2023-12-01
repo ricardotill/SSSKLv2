@@ -55,7 +55,7 @@
 
     private async Task GetDataAsync()
     {
-        var id = HttpContext.User.FindFirst(IdentityClaim.Saldo.ToString())?.Value ?? "";
-        TopUps = await TopUpService.GetPersonalPagination(Page!.Value, id);
+        var username = HttpContext.User.Identity.Name;
+        TopUps = await TopUpService.GetPersonalPagination(Page!.Value, username);
     }
 }

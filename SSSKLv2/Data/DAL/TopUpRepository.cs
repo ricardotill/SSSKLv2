@@ -29,7 +29,7 @@ public class TopUpRepository(
         return pagination;
     }
     
-    public async Task<PaginationObject<TopUp>> GetPersonalPagination(int page, string id)
+    public async Task<PaginationObject<TopUp>> GetPersonalPagination(int page, string username)
     {
         page -= 1;
         
@@ -39,7 +39,7 @@ public class TopUpRepository(
         pagination.Value = await context.TopUp
             // Use AsNoTracking to disable EF change tracking
             .AsNoTracking()
-            .Where(x => x.User.Id == id)
+            .Where(x => x.User.UserName == username)
             .Include(e => e.User)
             .OrderByDescending(x => x.CreatedOn)
             .Skip(page * 5)
@@ -51,7 +51,9 @@ public class TopUpRepository(
     public async Task<TopUp> GetById(Guid id)
     {
         await using var context = await _dbContextFactory.CreateDbContextAsync();
-        var topup = await context.TopUp.FindAsync(id);
+        var topup = await context.TopUp
+            .Include(x => x.User)
+            .FirstOrDefaultAsync(x => x.Id == id)!;
         if (topup != null)
         {
             return topup;
@@ -72,7 +74,6 @@ public class TopUpRepository(
         context.Users.Update(obj.User);
         context.TopUp.Add(obj);
         await context.SaveChangesAsync();
-        // await UpdateSaldoClaim(obj.User);
     }
 
     public Task Update(TopUp obj)
@@ -84,26 +85,15 @@ public class TopUpRepository(
     {
         await using var context = await _dbContextFactory.CreateDbContextAsync();
         var entry = await context.TopUp
-            .FindAsync(id);
+            .Include(x => x.User)
+            .FirstOrDefaultAsync(x => x.Id == id)!;
         if (entry != null)
         {
             entry.User.Saldo -= entry.Saldo;
             context.Users.Update(entry.User);
             context.TopUp.Remove(entry);
             await context.SaveChangesAsync();
-            await UpdateSaldoClaim(entry.User);
         }
         else throw new NotFoundException("TopUp Not Found");
-    }
-
-    private async Task UpdateSaldoClaim(ApplicationUser user)
-    {
-        var oldClaims = await _userManager.GetClaimsAsync(user);
-        var oldClaim = oldClaims.FirstOrDefault(e => e.Type == IdentityClaim.Saldo.ToString());
-        if (oldClaim != null)
-        {
-            await _userManager.RemoveClaimAsync(user, oldClaim);
-        }
-        await _userManager.AddClaimAsync(user, new Claim(IdentityClaim.Saldo.ToString(), user.Saldo.ToString("C")));
     }
 }

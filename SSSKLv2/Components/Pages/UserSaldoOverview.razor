@@ -1,0 +1,50 @@
+﻿@page "/usersaldos"
+@attribute [Authorize]
+
+@inject IApplicationUserService ApplicationUserService
+@using SSSKLv2.Data
+@using SSSKLv2.Services.Interfaces
+@using Microsoft.AspNetCore.Authorization
+@using System.Linq
+
+<PageTitle>SSSKLv2 | Saldo overzicht</PageTitle>
+
+<h1>Saldo overzicht</h1>
+
+<div class="table-responsive">
+  <table class="table table-striped">
+    <thead>
+    <tr>
+        <th scope="col">Naam</th>
+        <th scope="col">Saldo</th>
+    </tr>
+      </thead>
+    <tbody>
+    @foreach (var user in Users)
+    {
+        <tr>
+            <td>@user.Name @user.Surname</td>
+            <td>@user.Saldo.ToString("C")</td>
+        </tr>
+    }
+    </tbody>
+  </table>
+</div>
+
+@code {
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+    
+    public IEnumerable<ApplicationUser> Users = new List<ApplicationUser>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetDataAsync();
+    }
+
+    private async Task GetDataAsync()
+    {
+        Users = (await ApplicationUserService.GetAllUsers())
+            .OrderByDescending(x => x.Saldo);
+    }
+}

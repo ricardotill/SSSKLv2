@@ -8,7 +8,6 @@
 
 @inject IApplicationUserService ApplicationUserService
 @inject IProductService ProductService
-@inject IJSRuntime JS
 
 <PageTitle>SSSKLv2 | Bestellen</PageTitle>
 
@@ -18,9 +17,8 @@
 }
 else
 {
-    <EditForm method="post" Model="@Model" OnValidSubmit="@Submit" FormName="Bestellen">
-        <DataAnnotationsValidator />
-        <ValidationSummary class="text-danger" />
+        @* <DataAnnotationsValidator /> *@
+        @* <ValidationSummary class="text-danger" /> *@
         <div class="row">
             <div class="col-md-4 mb-3">
                 <h4>Wat</h4>
@@ -28,7 +26,7 @@ else
                     @foreach (var user in Model!.Users)
                     {
                         <div class="col-6">
-                            <button type="button" class="btn btn-primary bg-body-tertiary btn-select w-100 m-1 text-start" @onclick="@(e => OnSelectButtonClick(e, user))" @onclick:preventDefault>
+                            <button type="button" class="btn btn-primary bg-body-tertiary btn-select w-100 m-1 text-start" @onclick="@(e => OnUserClick(e, user.Value.Id))" @onclick:preventDefault>
                                 <InputCheckbox class="form-check-input btn-select-checkbox me-1" @bind-Value="user.Selected" />
                                 @user.Value.Name @user.Value.Surname.First()
                             </button>
@@ -42,7 +40,7 @@ else
                     @foreach (var product in Model!.Products)
                     {
                         <div class="col-6">
-                            <button type="button" class="btn btn-primary bg-body-tertiary btn-select w-100 m-1 text-start" @onclick="@(e => OnSelectButtonClick(e, product))">
+                            <button type="button" class="btn btn-primary bg-body-tertiary btn-select w-100 m-1 text-start" @onclick="@(e => OnProductClick(e, product))">
                                 <InputCheckbox class="form-check-input btn-select-checkbox me-1" @bind-Value="product.Selected" />
                                 @product.Value.Name <small>@product.Value.Price.ToString("C")</small>
                             </button>
@@ -75,26 +73,12 @@ else
                 </div>
             </div>
         </div>
-    </EditForm>
 }
 
 @code {
 
     [SupplyParameterFromForm]
     public BestellingDTO Model { get; set; } = new();
-
-    private IJSObjectReference? jsModule;
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            jsModule = await JS.InvokeAsync<IJSObjectReference>(
-                "import", "./Components/Pages/Home.razor.js");
-
-            await jsModule.InvokeVoidAsync("Home.init");
-        }
-    }
     
     protected override async Task OnInitializedAsync()
     {
@@ -111,23 +95,25 @@ else
             .ToList();
     }
 
-    private void OnSelectButtonClick(MouseEventArgs e, Select s)
-    {
-        s.Selected = !s.Selected;
-    }
-
     public async Task Submit()
     {
         var set = false;
     }
 
-    public class Select
+    public void OnUserClick(MouseEventArgs args, string selectUserId)
     {
-        public bool Selected { get; set; }
+        var selectUser = Model.Users.FirstOrDefault(e => e.Value.Id == selectUserId);
+        selectUser.Selected = !selectUser.Selected;
+    }
+    
+    public void OnProductClick(MouseEventArgs args, Select<Product> selectProduct)
+    {
+        selectProduct.Selected = !selectProduct.Selected;
     }
 
-    public class Select<T> : Select
+    public class Select<T>
     {
+        public bool Selected { get; set; }
         public T Value { get; set; }
     }
 

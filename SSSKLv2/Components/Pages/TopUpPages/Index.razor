@@ -8,11 +8,14 @@
 
 <PageTitle>SSSKLv2 | Saldobeheer</PageTitle>
 
-<h1>Saldobeheer</h1>
-
-<p>
-    <a class="btn btn-success" href="/admin/topups/create" role="button"><i class="bi bi-plus-circle"></i> Saldo opwaarderen</a>
-</p>
+<div class="row crud-form-header">
+    <div class="col-10 title-container">
+        <h1>Saldobeheer</h1>
+    </div>
+    <div class="col-2 text-end back-container">
+        <a class="btn btn-success bg-lg" href="/admin/topups/create" role="button"><i class="bi bi-plus-circle"></i></a>
+    </div>
+</div>
 
 <div class="table-responsive">
     <table class="table table-striped">
@@ -39,8 +42,6 @@
         </tbody>
     </table>
 </div>
-
-
 
 <Pagination
     TotalItems="TopUps.TotalObjects"

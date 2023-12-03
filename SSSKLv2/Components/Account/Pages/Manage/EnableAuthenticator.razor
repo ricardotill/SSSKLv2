@@ -5,6 +5,7 @@
 @using System.Text
 @using System.Text.Encodings.Web
 @using Microsoft.AspNetCore.Identity
+@using QRCoder
 @using SSSKLv2.Data
 
 @inject UserManager<ApplicationUser> UserManager
@@ -22,30 +23,28 @@
 else
 {
     <StatusMessage Message="@message" />
-    <h3>Configure authenticator app</h3>
+    <h3>Authenticator-app configureren</h3>
     <div>
-        <p>To use an authenticator app go through the following steps:</p>
+        <p>Om een authenticator-app te gebruiken, doorloopt u de volgende stappen:</p>
         <ol class="list">
             <li>
                 <p>
-                    Download a two-factor authenticator app like Microsoft Authenticator for
-                    <a href="https://go.microsoft.com/fwlink/?Linkid=825072">Android</a> and
-                    <a href="https://go.microsoft.com/fwlink/?Linkid=825073">iOS</a> or
-                    Google Authenticator for
-                    <a href="https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2&amp;hl=en">Android</a> and
+                    Download een tweefactorauthenticator-app zoals Microsoft Authenticator voor
+                    <a href="https://go.microsoft.com/fwlink/?Linkid=825072">Android</a> en
+                    <a href="https://go.microsoft.com/fwlink/?Linkid=825073">iOS</a> of
+                    Google Authenticator voor
+                    <a href="https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2&amp;hl=en">Android</a> en
                     <a href="https://itunes.apple.com/us/app/google-authenticator/id388497605?mt=8">iOS</a>.
                 </p>
             </li>
             <li>
-                <p>Scan the QR Code or enter this key <kbd>@sharedKey</kbd> into your two factor authenticator app. Spaces and casing do not matter.</p>
-                <div class="alert alert-info">Learn how to <a href="https://go.microsoft.com/fwlink/?Linkid=852423">enable QR code generation</a>.</div>
-                <div></div>
-                <div data-url="@authenticatorUri"></div>
+                <p>Scan deze QR-code met de geïnstalleerde Authenticator-app.</p>
+                <img alt="" src="@QRByte" width="300" class="mb-5"/>
             </li>
             <li>
                 <p>
-                    Once you have scanned the QR code or input the key above, your two factor authentication app will provide you
-                    with a unique code. Enter the code in the confirmation box below.
+                    Nadat u de QR-code heeft gescand of de bovenstaande sleutel heeft ingevoerd, zal uw twee-factor-authenticatie-app u voorzien
+                    met een unieke code. Voer de code in het onderstaande bevestigingsveld in.
                 </p>
                 <div class="row">
                     <div class="col-md-6">
@@ -56,7 +55,7 @@ else
                                 <label for="code" class="control-label form-label">Verification Code</label>
                                 <ValidationMessage For="() => Input.Code" class="text-danger" />
                             </div>
-                            <button type="submit" class="w-100 btn btn-lg btn-primary">Verify</button>
+                            <button type="submit" class="w-100 btn btn-lg btn-primary">Verifiëren</button>
                             <ValidationSummary class="text-danger" role="alert" />
                         </EditForm>
                     </div>
@@ -75,6 +74,8 @@ else
     private string? authenticatorUri;
     private IEnumerable<string>? recoveryCodes;
 
+    public string QRByte = "";
+    
     [CascadingParameter]
     private HttpContext HttpContext { get; set; } = default!;
 
@@ -98,15 +99,15 @@ else
 
         if (!is2faTokenValid)
         {
-            message = "Error: Verification code is invalid.";
+            message = "Fout: Verificatiecode is ongeldig.";
             return;
         }
 
         await UserManager.SetTwoFactorEnabledAsync(user, true);
         var userId = await UserManager.GetUserIdAsync(user);
-        Logger.LogInformation("User with ID '{UserId}' has enabled 2FA with an authenticator app.", userId);
+        Logger.LogInformation("Gebruiker met ID '{UserId}' heeft 2FA ingeschakeld met een authenticator-app.", userId);
 
-        message = "Your authenticator app has been verified.";
+        message = "Uw authenticator-app is geverifieerd.";
 
         if (await UserManager.CountRecoveryCodesAsync(user) == 0)
         {
@@ -131,7 +132,7 @@ else
         sharedKey = FormatKey(unformattedKey!);
 
         var email = await UserManager.GetEmailAsync(user);
-        authenticatorUri = GenerateQrCodeUri(email!, unformattedKey!);
+        GenerateQrCodeUri(email!, unformattedKey!);
     }
 
     private string FormatKey(string unformattedKey)
@@ -151,22 +152,30 @@ else
         return result.ToString().ToLowerInvariant();
     }
 
-    private string GenerateQrCodeUri(string email, string unformattedKey)
+    private void GenerateQrCodeUri(string email, string unformattedKey)
     {
-        return string.Format(
+        var uri = string.Format(
             CultureInfo.InvariantCulture,
             AuthenticatorUriFormat,
-            UrlEncoder.Encode("Microsoft.AspNetCore.Identity.UI"),
+            UrlEncoder.Encode("SSSKLv2"),
             UrlEncoder.Encode(email),
             unformattedKey);
+
+        var qrGenerator = new QRCodeGenerator();
+        var qrCodeData = qrGenerator.CreateQrCode(uri, QRCodeGenerator.ECCLevel.Q);
+        var qrCode = new PngByteQRCode(qrCodeData);
+        var qrCodeAsPngByteArr = qrCode.GetGraphic(20);
+        string base64 = Convert.ToBase64String(qrCodeAsPngByteArr);
+        
+        QRByte = string.Format("data:image/png;base64,{0}", base64);
     }
 
     private sealed class InputModel
     {
         [Required]
-        [StringLength(7, ErrorMessage = "The {0} must be at least {2} and at max {1} characters long.", MinimumLength = 6)]
+        [StringLength(7, ErrorMessage = "De {0} moet ten minste {2} en maximaal {1} tekens lang zijn.", MinimumLength = 6)]
         [DataType(DataType.Text)]
-        [Display(Name = "Verification Code")]
+        [Display(Name = "Verificatie Code")]
         public string Code { get; set; } = "";
     }
 }

@@ -11,42 +11,50 @@
 
 <PageTitle>SSSKLv2 | Order Verwijderen</PageTitle>
 
-<h1>Verwijderen</h1>
+<div class="row crud-form-header">
+    <div class="col-md-9 title-container">
+        <h1>Verwijderen</h1>
+    </div>
+    <div class="col-md-3 text-end back-container">
+        <a class="btn btn-lg btn-secondary" href="/admin/orders"><i class="bi bi-arrow-left"></i> Terug</a>
+    </div>
+</div>
 
-<h3>Weet je het zeker?</h3>
-<div>
-    <h4>Order</h4>
-    <hr />
-    @if (order is null)
-    {
-        <p><em>Loading...</em></p>
-    }
-    else {
-        <dl class="row">
-            <dt class="col-sm-2">Datum</dt>
-            <dd class="col-sm-10">@order.CreatedOn.ToString("dd/MM/yyyy")</dd>
-        </dl>
-        <dl class="row">
-            <dt class="col-sm-2">Gebruiker</dt>
-            <dd class="col-sm-10">@order.User.UserName</dd>
-        </dl>
-        <dl class="row">
-            <dt class="col-sm-2">Product</dt>
-            <dd class="col-sm-10">@order.ProductNaam</dd>
-        </dl>
-        <dl class="row">
-            <dt class="col-sm-2">Hoeveelheid</dt>
-            <dd class="col-sm-10">@order.Amount</dd>
-        </dl>
-        <dl class="row">
-            <dt class="col-sm-2">Kosten</dt>
-            <dd class="col-sm-10">@order.Paid.ToString("C")</dd>
-        </dl>
-        <EditForm method="post" Model="order" OnValidSubmit="DeleteOrder" FormName="delete" Enhance>
-            <button type="submit" class="btn btn-danger" disabled="@(order is null)">Delete</button> |
-            <a href="/admin/orders">Back to List</a>
-        </EditForm>
-    }
+<div class="card">
+    <div class="card-body">
+        <h4 class="card-title">Bestelling</h4>
+            <hr/>
+            @if (order is null)
+            {
+                <p><em>Loading...</em></p>
+            }
+            else
+            {
+                <dl class="row">
+                    <dt class="col-sm-2">Datum</dt>
+                    <dd class="col-sm-10">@order.CreatedOn.ToString("dd/MM/yyyy")</dd>
+                </dl>
+                <dl class="row">
+                    <dt class="col-sm-2">Gebruiker</dt>
+                    <dd class="col-sm-10">@order.User.Name @order.User.Surname</dd>
+                </dl>
+                <dl class="row">
+                    <dt class="col-sm-2">Product</dt>
+                    <dd class="col-sm-10">@order.ProductNaam</dd>
+                </dl>
+                <dl class="row">
+                    <dt class="col-sm-2">Hoeveelheid</dt>
+                    <dd class="col-sm-10">@order.Amount</dd>
+                </dl>
+                <dl class="row">
+                    <dt class="col-sm-2">Kosten</dt>
+                    <dd class="col-sm-10">@order.Paid.ToString("C")</dd>
+                </dl>
+                <EditForm method="post" Model="order" OnValidSubmit="DeleteOrder" FormName="delete" Enhance>
+                    <button type="submit" class="btn btn-danger" disabled="@(order is null)">Verwijderen</button>
+                </EditForm>
+            }
+    </div>
 </div>
 
 @code {

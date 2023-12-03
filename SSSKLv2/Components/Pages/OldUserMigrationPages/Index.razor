@@ -8,7 +8,14 @@
 
 <PageTitle>SSSKLv2 | Saldo Migratie</PageTitle>
 
-<h1>Saldo Migratie</h1>
+<div class="row crud-form-header">
+    <div class="col-10 title-container">
+        <h1>Saldo Migratie</h1>
+    </div>
+    <div class="col-2 text-end back-container">
+        <a class="btn btn-success bg-lg" href="/admin/oldusermigrations/create" role="button"><i class="bi bi-plus-circle"></i></a>
+    </div>
+</div>
 
 <div class="alert alert-warning d-flex align-items-center" role="alert">
     <i class="bi bi-exclamation-circle me-3"></i>
@@ -16,10 +23,6 @@
         Hier worden de te migreren gebruikers met zijn/haar saldo opgelagen. Wanneer een te migreren gebruiker in SSSKLv2 een account aanmaakt die overeenkomt met een van de onderstaande gebruikersnamen wordt meteen het saldo overgezet.
     </div>
 </div>
-
-<p>
-    <a class="btn btn-success" href="admin/oldusermigrations/create" role="button"><i class="bi bi-plus-circle"></i> Nieuwe aanmaken</a>
-</p>
 
 <div class="table-responsive">
   <table class="table table-striped">

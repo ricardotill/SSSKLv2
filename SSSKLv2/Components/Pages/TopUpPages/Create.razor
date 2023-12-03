@@ -15,36 +15,46 @@
 
 <PageTitle>SSSKLv2 | Saldo opwaarderen</PageTitle>
 
-<h1>Saldo opwaarderen</h1>
-<div>
-    <a href="/admin/topups">Terug naar lijst</a>
+<div class="row crud-form-header">
+    <div class="col-md-9 title-container">
+        <h1>Saldo opwaarderen</h1>
+    </div>
+    <div class="col-md-3 text-end back-container">
+        <a class="btn btn-lg btn-secondary" href="/admin/topups"><i class="bi bi-arrow-left"></i> Terug</a>
+    </div>
 </div>
 <hr />
-<div class="row">
-    <div class="col-md-4">
-        <EditForm method="post" Model="TopUp" OnValidSubmit="AddTopUp" FormName="create" Enhance>
-            <DataAnnotationsValidator />
-            <ValidationSummary class="text-danger" />
-            <div class="mb-3">
-                <label class="form-label" for="usersSelect">Wie wil je opwaarderen?</label>
-                <InputSelect @bind-Value="TopUp.UserId" class="form-select" id="usersSelect">
-                    <option selected>Selecteer een gebruiker</option>
-                    @foreach (var user in Users)
-                    {
-                        <option value="@user.Id">@user.Name @user.Surname</option>
-                    }
-                </InputSelect>
-            </div>     
-            <div class="mb-3">
-                <label for="price" class="form-label">Hoeveel Saldo?</label> 
-                <div class="input-group">
-                    <span class="input-group-text">€</span>
-                    <InputNumber id="price" @bind-Value="TopUp.Saldo" class="form-control" /> 
-                </div>
-                <ValidationMessage For="() => TopUp.Saldo" class="text-danger" /> 
-            </div>        
-            <button type="submit" class="btn btn-primary">Opwaarderen</button>
-        </EditForm>
+<div class="card">
+    <div class="card-body">
+        <h5 class="card-title">Saldo Transactie</h5>
+        <hr/>
+        <div class="row">
+            <div class="col-md-4">
+                <EditForm method="post" Model="TopUp" OnValidSubmit="AddTopUp" FormName="create" Enhance>
+                    <DataAnnotationsValidator />
+                    <ValidationSummary class="text-danger" />
+                    <div class="mb-3">
+                        <label class="form-label" for="usersSelect">Wie wil je opwaarderen?</label>
+                        <InputSelect @bind-Value="TopUp.UserId" class="form-select" id="usersSelect">
+                            <option selected>Selecteer een gebruiker</option>
+                            @foreach (var user in Users)
+                            {
+                                <option value="@user.Id">@user.Name @user.Surname</option>
+                            }
+                        </InputSelect>
+                    </div>     
+                    <div class="mb-3">
+                        <label for="price" class="form-label">Hoeveel Saldo?</label> 
+                        <div class="input-group">
+                            <span class="input-group-text">€</span>
+                            <InputNumber id="price" @bind-Value="TopUp.Saldo" class="form-control" /> 
+                        </div>
+                        <ValidationMessage For="() => TopUp.Saldo" class="text-danger" /> 
+                    </div>        
+                    <button type="submit" class="btn btn-primary">Opwaarderen</button>
+                </EditForm>
+            </div>
+        </div>
     </div>
 </div>
 

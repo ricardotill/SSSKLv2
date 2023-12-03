@@ -8,40 +8,48 @@
 
 @attribute [Authorize(Policy = Policies.Admin)]
 
-<PageTitle>SSSKLv2 | Verwijderen</PageTitle>
+<PageTitle>SSSKLv2 | Product Verwijderen</PageTitle>
 
-<h1>Verwijderen</h1>
-
-<h3>Weet je het zeker?</h3>
-<div>
-    <h4>Product</h4>
-    <hr />
-    @if (product is null)
-    {
-        <p><em>Laden...</em></p>
-    }
-    else {
-        <dl class="row">
-            <dt class="col-sm-2">Naam</dt>
-            <dd class="col-sm-10">@product.Name</dd>
-        </dl>
-        <dl class="row">
-            <dt class="col-sm-2">Beschrijving</dt>
-            <dd class="col-sm-10">@product.Description</dd>
-        </dl>
-        <dl class="row">
-            <dt class="col-sm-2">Prijs</dt>
-            <dd class="col-sm-10">@product.Price.ToString("C")</dd>
-        </dl>
-        <dl class="row">
-            <dt class="col-sm-2">Voorraad</dt>
-            <dd class="col-sm-10">@product.Stock</dd>
-        </dl>
-        <EditForm method="post" Model="product" OnValidSubmit="DeleteProduct" FormName="delete" Enhance>
-            <button type="submit" class="btn btn-danger" disabled="@(product is null)">Delete</button> |
-            <a href="/admin/products">Terug naar lijst</a>
-        </EditForm>
-    }
+<div class="row crud-form-header">
+    <div class="col-md-9 title-container">
+        <h1>Verwijderen</h1>
+    </div>
+    <div class="col-md-3 text-end back-container">
+        <a class="btn btn-lg btn-secondary" href="/admin/products"><i class="bi bi-arrow-left"></i> Terug</a>
+    </div>
+</div>
+<hr />
+<div class="card">
+    <div class="card-body">
+        <h5 class="card-title">Product</h5>
+            <hr/>
+            @if (product is null)
+            {
+                <p><em>Laden...</em></p>
+            }
+            else
+            {
+                <dl class="row">
+                    <dt class="col-sm-2">Naam</dt>
+                    <dd class="col-sm-10">@product.Name</dd>
+                </dl>
+                <dl class="row">
+                    <dt class="col-sm-2">Beschrijving</dt>
+                    <dd class="col-sm-10">@product.Description</dd>
+                </dl>
+                <dl class="row">
+                    <dt class="col-sm-2">Prijs</dt>
+                    <dd class="col-sm-10">@product.Price.ToString("C")</dd>
+                </dl>
+                <dl class="row">
+                    <dt class="col-sm-2">Voorraad</dt>
+                    <dd class="col-sm-10">@product.Stock</dd>
+                </dl>
+                <EditForm method="post" Model="product" OnValidSubmit="DeleteProduct" FormName="delete" Enhance>
+                    <button type="submit" class="btn btn-danger" disabled="@(product is null)">Delete</button>
+                </EditForm>
+            }
+    </div>
 </div>
 
 @code {

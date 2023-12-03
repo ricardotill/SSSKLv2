@@ -11,34 +11,42 @@
 
 <PageTitle>SSSKLv2 | Saldo Transactie Verwijderen</PageTitle>
 
-<h1>Verwijderen</h1>
-
-<h3>Weet je het zeker?</h3>
-<div>
-    <h4>Saldo Transactie</h4>
-    <hr />
-    @if (topup is null)
-    {
-        <p><em>Laden...</em></p>
-    }
-    else {
-        <dl class="row">
-            <dt class="col-sm-2">Datum</dt>
-            <dd class="col-sm-10">@topup.CreatedOn.ToString("dd/MM/yyyy")</dd>
-        </dl>
-        <dl class="row">
-            <dt class="col-sm-2">Gebruiker</dt>
-            <dd class="col-sm-10">@topup.User.UserName</dd>
-        </dl>
-        <dl class="row">
-            <dt class="col-sm-2">Saldo</dt>
-            <dd class="col-sm-10">@topup.Saldo.ToString("C")</dd>
-        </dl>
-        <EditForm method="post" Model="topup" OnValidSubmit="DeleteTopUp" FormName="delete" Enhance>
-            <button type="submit" class="btn btn-danger" disabled="@(topup is null)">Verwijderen</button> |
-            <a href="/admin/topups">Terug naar lijst</a>
-        </EditForm>
-    }
+<div class="row crud-form-header">
+    <div class="col-md-9 title-container">
+        <h1>Verwijderen</h1>
+    </div>
+    <div class="col-md-3 text-end back-container">
+        <a class="btn btn-lg btn-secondary" href="/admin/topups"><i class="bi bi-arrow-left"></i> Terug</a>
+    </div>
+</div>
+<hr />
+<div class="card">
+    <div class="card-body">
+        <h5 class="card-title">Saldo Transactie</h5>
+        <hr/>
+        @if (topup is null)
+        {
+            <p><em>Laden...</em></p>
+        }
+        else
+        {
+            <dl class="row">
+                <dt class="col-sm-2">Datum</dt>
+                <dd class="col-sm-10">@topup.CreatedOn.ToString("dd/MM/yyyy")</dd>
+            </dl>
+            <dl class="row">
+                <dt class="col-sm-2">Gebruiker</dt>
+                <dd class="col-sm-10">@topup.User.Name @topup.User.Surname</dd>
+            </dl>
+            <dl class="row">
+                <dt class="col-sm-2">Saldo</dt>
+                <dd class="col-sm-10">@topup.Saldo.ToString("C")</dd>
+            </dl>
+            <EditForm method="post" Model="topup" OnValidSubmit="DeleteTopUp" FormName="delete" Enhance>
+                <button type="submit" class="btn btn-danger crud-form-submit" disabled="@(topup is null)">Verwijderen</button>
+            </EditForm>
+        }
+    </div>
 </div>
 
 @code {

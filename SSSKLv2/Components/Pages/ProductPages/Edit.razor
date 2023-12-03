@@ -8,55 +8,63 @@
 
 @attribute [Authorize(Policy = Policies.Admin)]
 
-<PageTitle>SSSKLv2 | Aanpassen</PageTitle>
+<PageTitle>SSSKLv2 | Product Aanpassen</PageTitle>
 
-<h1>Aanpassen</h1>
-
-<h4>Product</h4>
-<hr />
-@if (Product is null)
-{
-    <p><em>Laden...</em></p>
-}
-else
-{
-    <div class="row">
-        <div class="col-md-4">
-            <EditForm method="post" Model="Product" OnValidSubmit="UpdateProduct" FormName="edit" Enhance>
-                <DataAnnotationsValidator />
-                <ValidationSummary />
-                <input type="hidden" name="Product.Id" value="@Product.Id" />
-                <div class="mb-3">
-                    <label for="name" class="form-label">Naam:</label>
-                    <InputText id="name" @bind-Value="Product.Name" class="form-control" />
-                    <ValidationMessage For="() => Product.Name" class="text-danger" />
-                </div>
-                <div class="mb-3">
-                    <label for="description" class="form-label">Description:</label>
-                    <InputText id="description" @bind-Value="Product.Description" class="form-control" />
-                    <ValidationMessage For="() => Product.Description" class="text-danger" />
-                </div>
-                <div class="mb-3">
-                    <label for="price" class="form-label">Prijs:</label>
-                    <div class="input-group">
-                        <span class="input-group-text">€</span>
-                        <InputNumber id="price" @bind-Value="Product.Price" class="form-control" />
-                    </div>
-                    <ValidationMessage For="() => Product.Price" class="text-danger" />
-                </div>
-                <div class="mb-3">
-                    <label for="stock" class="form-label">Voorraad:</label>
-                    <InputNumber id="stock" @bind-Value="Product.Stock" class="form-control" />
-                    <ValidationMessage For="() => Product.Stock" class="text-danger" />
-                </div>
-                <button type="submit" class="btn btn-primary">Opslaan</button>
-            </EditForm>
-        </div>
+<div class="row crud-form-header">
+    <div class="col-md-9 title-container">
+        <h1>Product Aanpassen</h1>
     </div>
-}
+    <div class="col-md-3 text-end back-container">
+        <a class="btn btn-lg btn-secondary" href="/admin/products"><i class="bi bi-arrow-left"></i> Terug</a>
+    </div>
+</div>
+<hr />
 
-<div>
-    <a href="/admin/products">Terug naar lijst</a>
+<div class="card">
+    <div class="card-body">
+        <h5 class="card-title">Product</h5>
+        <hr/>
+        @if (Product is null)
+        {
+            <p><em>Laden...</em></p>
+        }
+        else
+        {
+            <div class="row">
+                <div class="col-md-4">
+                    <EditForm method="post" Model="Product" OnValidSubmit="UpdateProduct" FormName="edit" Enhance>
+                        <DataAnnotationsValidator />
+                        <ValidationSummary />
+                        <input type="hidden" name="Product.Id" value="@Product.Id" />
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Naam:</label>
+                            <InputText id="name" @bind-Value="Product.Name" class="form-control" />
+                            <ValidationMessage For="() => Product.Name" class="text-danger" />
+                        </div>
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description:</label>
+                            <InputText id="description" @bind-Value="Product.Description" class="form-control" />
+                            <ValidationMessage For="() => Product.Description" class="text-danger" />
+                        </div>
+                        <div class="mb-3">
+                            <label for="price" class="form-label">Prijs:</label>
+                            <div class="input-group">
+                                <span class="input-group-text">€</span>
+                                <InputNumber id="price" @bind-Value="Product.Price" class="form-control" />
+                            </div>
+                            <ValidationMessage For="() => Product.Price" class="text-danger" />
+                        </div>
+                        <div class="mb-3">
+                            <label for="stock" class="form-label">Voorraad:</label>
+                            <InputNumber id="stock" @bind-Value="Product.Stock" class="form-control" />
+                            <ValidationMessage For="() => Product.Stock" class="text-danger" />
+                        </div>
+                        <button type="submit" class="btn btn-primary">Opslaan</button>
+                    </EditForm>
+                </div>
+            </div>
+        }
+    </div>
 </div>
 
 @code {

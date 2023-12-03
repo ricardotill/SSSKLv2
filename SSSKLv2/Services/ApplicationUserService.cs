@@ -15,7 +15,7 @@ public class ApplicationUserService(IApplicationUserRepository _applicationUserR
     {
         return await _applicationUserRepository.GetByUsername(username);
     }
-    public async Task<IEnumerable<ApplicationUser>> GetAllUsers()
+    public async Task<IList<ApplicationUser>> GetAllUsers()
     {
         return await _applicationUserRepository.GetAll();
     }

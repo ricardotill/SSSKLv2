@@ -1,11 +1,144 @@
 ﻿@page "/"
 @using Microsoft.AspNetCore.Authorization
+@using SSSKLv2.Data
+@using SSSKLv2.Services.Interfaces
+@using System.ComponentModel.DataAnnotations
+@using System.Linq
 @attribute [Authorize]
+
+@inject IApplicationUserService ApplicationUserService
+@inject IProductService ProductService
+@inject IJSRuntime JS
 
 <PageTitle>SSSKLv2 | Bestellen</PageTitle>
 
-<h1>
-    Welkom! Klaar voor een goede avond?
-</h1>
+@if (Model!.Products == null || Model!.Users == null)
+{
+    <p>Laden...</p>
+}
+else
+{
+    <EditForm method="post" Model="@Model" OnValidSubmit="@Submit" FormName="Bestellen">
+        <DataAnnotationsValidator />
+        <ValidationSummary class="text-danger" />
+        <div class="row">
+            <div class="col-md-4 mb-3">
+                <h4>Wat</h4>
+                <div class="row">
+                    @foreach (var user in Model!.Users)
+                    {
+                        <div class="col-6">
+                            <button type="button" class="btn btn-primary bg-body-tertiary btn-select w-100 m-1 text-start" @onclick="@(e => OnSelectButtonClick(e, user))" @onclick:preventDefault>
+                                <InputCheckbox class="form-check-input btn-select-checkbox me-1" @bind-Value="user.Selected" />
+                                @user.Value.Name @user.Value.Surname.First()
+                            </button>
+                        </div>
+                    }
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <h4>Wie</h4>
+                <div class="row">
+                    @foreach (var product in Model!.Products)
+                    {
+                        <div class="col-6">
+                            <button type="button" class="btn btn-primary bg-body-tertiary btn-select w-100 m-1 text-start" @onclick="@(e => OnSelectButtonClick(e, product))">
+                                <InputCheckbox class="form-check-input btn-select-checkbox me-1" @bind-Value="product.Selected" />
+                                @product.Value.Name <small>@product.Value.Price.ToString("C")</small>
+                            </button>
+                        </div>
+                    }
+                </div>
+            </div>    
+            <div class="col-md-4">
+                <h4>Betalen</h4>
+                <div class="row mb-2">
+                    <div class="col-12">
+                        <div class="form-check">
+                            <InputCheckbox @bind-Value="@Model.Split" class="form-check-input" id="splitCheckbox"/>
+                            <label class="form-check-label" for="splitCheckbox">
+                                Rekening splitten?
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-8">
+                        <div class="input-group mb-3">
+                            <span class="input-group-text" id="basic-addon1">Aantal</span>
+                            <InputNumber @bind-Value="@Model.Amount" class="form-control"/>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <button type="submit" class="btn btn-primary w-100">Betalen</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </EditForm>
+}
 
-Welcome to your new app.
+@code {
+
+    [SupplyParameterFromForm]
+    public BestellingDTO Model { get; set; } = new();
+
+    private IJSObjectReference? jsModule;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            jsModule = await JS.InvokeAsync<IJSObjectReference>(
+                "import", "./Components/Pages/Home.razor.js");
+
+            await jsModule.InvokeVoidAsync("Home.init");
+        }
+    }
+    
+    protected override async Task OnInitializedAsync()
+    {
+        await GetData();
+    }
+
+    public async Task GetData()
+    {
+        Model.Products = (await ProductService.GetAll())
+            .Select(x => new Select<Product> {Value = x})
+            .ToList();
+        Model.Users = (await ApplicationUserService.GetAllUsers())
+            .Select(x => new Select<ApplicationUser> {Value = x})
+            .ToList();
+    }
+
+    private void OnSelectButtonClick(MouseEventArgs e, Select s)
+    {
+        s.Selected = !s.Selected;
+    }
+
+    public async Task Submit()
+    {
+        var set = false;
+    }
+
+    public class Select
+    {
+        public bool Selected { get; set; }
+    }
+
+    public class Select<T> : Select
+    {
+        public T Value { get; set; }
+    }
+
+    public class BestellingDTO
+    {
+        [MinLength(1, ErrorMessage = "Er moeten minimaal 1 of meer producten worden geselecteerd")]
+        public IList<Select<Product>> Products { get; set; } = new List<Select<Product>>();
+        [MinLength(1, ErrorMessage = "Er moeten minimaal 1 of meer gebruikers worden geselecteerd")]
+        public IList<Select<ApplicationUser>> Users { get; set; } = new List<Select<ApplicationUser>>();
+        [Required]
+        public int Amount { get; set; }
+        public bool Split { get; set; }
+    }
+}

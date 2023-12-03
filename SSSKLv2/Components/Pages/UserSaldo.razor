@@ -24,7 +24,7 @@
     @foreach (var topup in TopUps.Value)
     {
         <tr>
-            <th>@topup.CreatedOn.ToString("dd/MM/yyyy")</th>
+            <td>@topup.CreatedOn.ToString("dd/MM/yyyy")</td>
             <td>@topup.User.Name</td>
             <td>+ @topup.Saldo.ToString("C")</td>
         </tr>

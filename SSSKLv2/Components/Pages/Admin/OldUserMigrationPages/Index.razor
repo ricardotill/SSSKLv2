@@ -38,7 +38,7 @@
     @foreach (var entry in OldUserMigrations)
     {
         <tr>
-            <th>@entry.CreatedOn.ToString("dd/MM/yyyy")</th>
+            <td>@entry.CreatedOn.ToString("dd/MM/yyyy")</td>
             <td>@entry.Username</td>
             <td>@entry.Saldo.ToString("C")</td>
             <td>

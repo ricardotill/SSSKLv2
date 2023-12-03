@@ -5,6 +5,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>aspnet-SSSKLv2-3b416739-57c6-4151-a2e5-8cfca6f4185b</UserSecretsId>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>
@@ -13,10 +14,23 @@
 
   <ItemGroup>
     <_ContentIncludedByDefault Remove="compilerconfig.json" />
+    <_ContentIncludedByDefault Remove="Components\Pages\ProductPages\Create.razor" />
+    <_ContentIncludedByDefault Remove="Components\Pages\ProductPages\Delete.razor" />
+    <_ContentIncludedByDefault Remove="Components\Pages\ProductPages\Details.razor" />
+    <_ContentIncludedByDefault Remove="Components\Pages\ProductPages\Edit.razor" />
+    <_ContentIncludedByDefault Remove="Components\Pages\ProductPages\Index.razor" />
+    <_ContentIncludedByDefault Remove="Components\Pages\TopUpPages\Create.razor" />
+    <_ContentIncludedByDefault Remove="Components\Pages\TopUpPages\Delete.razor" />
+    <_ContentIncludedByDefault Remove="Components\Pages\TopUpPages\Index.razor" />
+    <_ContentIncludedByDefault Remove="Components\Pages\OrderPages\Delete.razor" />
+    <_ContentIncludedByDefault Remove="Components\Pages\OrderPages\Index.razor" />
   </ItemGroup>
 
   <ItemGroup>
     <None Include="compilerconfig.json" />
+    <None Update="Components\Pages\Home.razor.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
   <ItemGroup>
@@ -35,6 +49,26 @@
     <Content Update="wwwroot\app.css">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Components\Pages\Admin\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AdditionalFiles Include="Components\Pages\Admin\OldUserMigrationPages\Create.razor" />
+    <AdditionalFiles Include="Components\Pages\Admin\OldUserMigrationPages\Delete.razor" />
+    <AdditionalFiles Include="Components\Pages\Admin\OldUserMigrationPages\Index.razor" />
+    <AdditionalFiles Include="Components\Pages\Admin\OrderPages\Delete.razor" />
+    <AdditionalFiles Include="Components\Pages\Admin\OrderPages\Index.razor" />
+    <AdditionalFiles Include="Components\Pages\Admin\ProductPages\Create.razor" />
+    <AdditionalFiles Include="Components\Pages\Admin\ProductPages\Delete.razor" />
+    <AdditionalFiles Include="Components\Pages\Admin\ProductPages\Details.razor" />
+    <AdditionalFiles Include="Components\Pages\Admin\ProductPages\Edit.razor" />
+    <AdditionalFiles Include="Components\Pages\Admin\ProductPages\Index.razor" />
+    <AdditionalFiles Include="Components\Pages\Admin\TopUpPages\Create.razor" />
+    <AdditionalFiles Include="Components\Pages\Admin\TopUpPages\Delete.razor" />
+    <AdditionalFiles Include="Components\Pages\Admin\TopUpPages\Index.razor" />
   </ItemGroup>
 
 </Project>

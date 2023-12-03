@@ -19,7 +19,12 @@ public class ProductRepository(IDbContextFactory<ApplicationDbContext> _dbContex
         throw new NotFoundException("Product not found");
     }
 
-    public async Task<IEnumerable<Product>> GetAll()
+    Task<IEnumerable<Product>> IRepository<Product>.GetAll()
+    {
+        throw new NotImplementedException();
+    }
+
+    public async Task<IList<Product>> GetAll()
     {
         IList<Product> list = new List<Product>();
         await using var context = await _dbContextFactory.CreateDbContextAsync();

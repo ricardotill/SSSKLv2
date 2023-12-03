@@ -78,7 +78,6 @@
         Users = await ApplicationUserService.GetAllUsers();
     }
 
-    // To protect from overposting attacks, see https://aka.ms/RazorPagesCRUD
     public async Task AddTopUp()
     {
         var user = await ApplicationUserService.GetUserById(TopUp.UserId);
@@ -87,15 +86,7 @@
             User = user,
             Saldo = TopUp.Saldo
         });
-        if (HttpContext.User.Identity.Name == user.UserName) UpdateOwnSaldo();
         NavigationManager.NavigateTo("/admin/topups");
-    }
-
-    private async Task UpdateOwnSaldo()
-    {
-        ClaimsIdentity id = new ClaimsIdentity();
-        id.AddClaim(new Claim(IdentityClaim.Saldo.ToString(), TopUp.Saldo.ToString("C")));
-        HttpContext.User.AddIdentity(id);
     }
 
     public class TopUpDto

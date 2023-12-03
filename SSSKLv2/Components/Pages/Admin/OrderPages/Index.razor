@@ -27,7 +27,7 @@
     @foreach (var order in Orders.Value)
     {
         <tr>
-            <th>@order.CreatedOn.ToString("dd/MM/yyyy")</th>
+            <td>@order.CreatedOn.ToString("dd/MM/yyyy")</td>
             <td>@order.User.Name</td>
             <td>@order.ProductNaam</td>
             <td>@order.Amount</td>

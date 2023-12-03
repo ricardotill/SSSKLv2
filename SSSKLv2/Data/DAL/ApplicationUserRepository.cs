@@ -55,7 +55,12 @@ public class ApplicationUserRepository(IDbContextFactory<ApplicationDbContext> _
         throw new NotImplementedException();
     }
 
-    public async Task<IEnumerable<ApplicationUser>> GetAll()
+    Task<IEnumerable<ApplicationUser>> IRepository<ApplicationUser>.GetAll()
+    {
+        throw new NotImplementedException();
+    }
+
+    public async Task<IList<ApplicationUser>> GetAll()
     {
         IList<ApplicationUser> list = new List<ApplicationUser>();
         await using var context = await _dbContextFactory.CreateDbContextAsync();

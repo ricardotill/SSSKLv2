@@ -1,7 +1,9 @@
 ﻿@using SSSKLv2.Services.Interfaces
+@using Blazored.Toast.Configuration
 @inherits LayoutComponentBase
 @implements IDisposable
 @inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
 @inject IApplicationUserService ApplicationUserService
 
 <div class="page">
@@ -10,15 +12,15 @@
     </div>
     <main>
         <div class="top-row px-4">
-                <AuthorizeView>
-                    <Authorized>
-                        <ul class="nav me-auto">
-                            <li class="nav-item">
-                                <NavLink class="nav-link ms-0" href="saldo">@Saldo</NavLink>
-                            </li>
-                        </ul>
-                    </Authorized>
-                </AuthorizeView>
+            <AuthorizeView>
+                <Authorized>
+                    <ul class="nav me-auto">
+                        <li class="nav-item">
+                            <NavLink class="nav-link ms-0" href="saldo">@Saldo</NavLink>
+                        </li>
+                    </ul>
+                </Authorized>
+            </AuthorizeView>
             <ul class="nav ml-auto">
                 <AuthorizeView>
                     <NotAuthorized>
@@ -49,6 +51,12 @@
     </main>
 </div>
 
+<BlazoredToasts Position="ToastPosition.BottomRight"
+                Timeout="5"
+                SuccessIcon="bi bi-check-circle"
+                WarningIcon="bi bi-exclamation-triangle"
+                ErrorIcon="bi bi-x-octagon" />
+
 <div id="blazor-error-ui">
     Er is een fout opgetreden.
     <a href="" class="reload">Herladen</a>
@@ -68,21 +76,20 @@
     {
         currentUrl = NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
         NavigationManager.LocationChanged += OnLocationChanged;
+
+        var state = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         
-        if (HttpContext.User.Identity.IsAuthenticated)
+        if (state.User.Identity != null && state.User.Identity.IsAuthenticated)
         {
-            await UpdateData();
+            await UpdateData(state.User.Identity.Name!);
         }
     }
 
-    public async Task UpdateData() 
+    public async Task UpdateData(string username) 
     {
-        if (HttpContext.User.Identity?.Name != null)
-        {
-            var user = await ApplicationUserService.GetUserByUsername(HttpContext.User.Identity.Name);
-            Name = user.Name;
-            Saldo = user.Saldo.ToString("C");
-        }
+        var user = await ApplicationUserService.GetUserByUsername(username);
+        Name = user.Name;
+        Saldo = user.Saldo.ToString("C");
     }
 
     private void OnLocationChanged(object? sender, LocationChangedEventArgs e)

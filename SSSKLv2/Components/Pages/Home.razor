@@ -1,13 +1,17 @@
 ﻿@page "/"
+@rendermode InteractiveServer
+
 @using Microsoft.AspNetCore.Authorization
 @using SSSKLv2.Data
 @using SSSKLv2.Services.Interfaces
 @using System.ComponentModel.DataAnnotations
 @using System.Linq
+@using BlazorComponentUtilities
 @attribute [Authorize]
 
 @inject IApplicationUserService ApplicationUserService
 @inject IProductService ProductService
+@inject IToastService ToastService
 
 <PageTitle>SSSKLv2 | Bestellen</PageTitle>
 
@@ -23,12 +27,23 @@ else
             <div class="col-md-4 mb-3">
                 <h4>Wat</h4>
                 <div class="row">
-                    @foreach (var user in Model!.Users)
+                    @foreach (var product in Model.Products)
                     {
-                        <div class="col-6">
-                            <button type="button" class="btn btn-primary bg-body-tertiary btn-select w-100 m-1 text-start" @onclick="@(e => OnUserClick(e, user.Value.Id))" @onclick:preventDefault>
-                                <InputCheckbox class="form-check-input btn-select-checkbox me-1" @bind-Value="user.Selected" />
-                                @user.Value.Name @user.Value.Surname.First()
+                        string css = new CssBuilder()
+                            .AddClass("btn")
+                            .AddClass("btn-primary")
+                            .AddClass("bg-body-tertiary")
+                            .AddClass("btn-select")
+                            .AddClass("w-100")
+                            .AddClass("m-1")
+                            .AddClass("text-start")
+                            .AddClass("selected", when: product.Selected)
+                            .ToString() ?? string.Empty;
+                        
+                        <div class="col-6 p-0 pe-1">
+                            <button type="button" class="@css" @onclick="@(e => OnProductClick(e, product))">
+                                <InputCheckbox class="form-check-input btn-select-checkbox me-1" @bind-Value="product.Selected" />
+                                @product.Value.Name <small>@product.Value.Price.ToString("C")</small>
                             </button>
                         </div>
                     }
@@ -37,12 +52,23 @@ else
             <div class="col-md-4 mb-3">
                 <h4>Wie</h4>
                 <div class="row">
-                    @foreach (var product in Model!.Products)
+                    @foreach (var user in Model.Users)
                     {
-                        <div class="col-6">
-                            <button type="button" class="btn btn-primary bg-body-tertiary btn-select w-100 m-1 text-start" @onclick="@(e => OnProductClick(e, product))">
-                                <InputCheckbox class="form-check-input btn-select-checkbox me-1" @bind-Value="product.Selected" />
-                                @product.Value.Name <small>@product.Value.Price.ToString("C")</small>
+                        string css = new CssBuilder()
+                            .AddClass("btn")
+                            .AddClass("btn-primary")
+                            .AddClass("bg-body-tertiary")
+                            .AddClass("btn-select")
+                            .AddClass("w-100")
+                            .AddClass("m-1")
+                            .AddClass("text-start")
+                            .AddClass("selected", when: user.Selected)
+                            .ToString() ?? string.Empty;
+                        
+                        <div class="col-6 p-0 pe-1">
+                            <button type="button" class="@css" @onclick="@(e => OnUserClick(e, user))">
+                                <InputCheckbox class="form-check-input btn-select-checkbox me-1" @bind-Value="user.Selected"/>
+                                @user.Value.Name @user.Value.Surname.First()
                             </button>
                         </div>
                     }
@@ -95,18 +121,25 @@ else
             .ToList();
     }
 
+    public async Task Clear()
+    {
+        Model = new();
+        await GetData();
+    }
+
     public async Task Submit()
     {
         var set = false;
+        ToastService.ShowSuccess("Betaling gelukt");
+        await Clear();
     }
 
-    public void OnUserClick(MouseEventArgs args, string selectUserId)
+    private void OnUserClick(MouseEventArgs args, Select<ApplicationUser> select)
     {
-        var selectUser = Model.Users.FirstOrDefault(e => e.Value.Id == selectUserId);
-        selectUser.Selected = !selectUser.Selected;
+        select.Selected = !select.Selected;
     }
     
-    public void OnProductClick(MouseEventArgs args, Select<Product> selectProduct)
+    private void OnProductClick(MouseEventArgs args, Select<Product> selectProduct)
     {
         selectProduct.Selected = !selectProduct.Selected;
     }

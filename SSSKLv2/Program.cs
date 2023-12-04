@@ -5,6 +5,7 @@ using SSSKLv2.Components;
 using SSSKLv2.Components.Account;
 using SSSKLv2.Data;
 using System.Globalization;
+using Blazored.Toast;
 using Microsoft.AspNetCore.SignalR;
 using SSSKLv2.Data.DAL;
 using SSSKLv2.Services;
@@ -61,6 +62,8 @@ builder.Services.Configure<HubOptions>(hubOptions =>
     // Support larger message size so large profile images can be rendered.
     hubOptions.MaximumReceiveMessageSize = 1024 * 1024; // 1 MB
 });
+
+builder.Services.AddBlazoredToast();
 
 builder.Services.AddServicesDI();
 builder.Services.AddDataDI(); 

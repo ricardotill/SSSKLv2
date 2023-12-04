@@ -46,7 +46,9 @@
             </ul>
         </div>
         <article class="content px-4">
-            @Body
+            <CascadingValue Value="@OnSaldoChange">
+                @Body
+            </CascadingValue>
         </article>
     </main>
 </div>
@@ -65,25 +67,32 @@
     [CascadingParameter]
     private HttpContext HttpContext { get; set; } = default!;
 
+    private EventCallback _onSaldoChange = EventCallback.Empty;
+    public EventCallback OnSaldoChange  {
+        get {
+            if (_onSaldoChange.Equals(EventCallback.Empty))
+                _onSaldoChange = EventCallback.Factory.Create(this, UpdateData);
+            return _onSaldoChange;
+        }
+    }
 
     protected async override Task OnInitializedAsync()
     {
         currentUrl = NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
         NavigationManager.LocationChanged += OnLocationChanged;
-
-        var state = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         
-        if (state.User.Identity != null && state.User.Identity.IsAuthenticated)
-        {
-            await UpdateData(state.User.Identity.Name!);
-        }
+        await UpdateData();
     }
 
-    public async Task UpdateData(string username) 
+    public async Task UpdateData() 
     {
-        var user = await ApplicationUserService.GetUserByUsername(username);
-        Name = user.Name;
-        Saldo = user.Saldo.ToString("C");
+        var state = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        if (state.User.Identity != null && state.User.Identity.IsAuthenticated)
+        {
+            var user = await ApplicationUserService.GetUserByUsername(state.User.Identity.Name!);
+            Name = user.Name;
+            Saldo = user.Saldo.ToString("C");
+        }
     }
 
     private void OnLocationChanged(object? sender, LocationChangedEventArgs e)

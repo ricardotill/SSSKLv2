@@ -1,3 +1,4 @@
+using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using SSSKLv2.Data.DAL.Exceptions;
 using SSSKLv2.Data.DAL.Interfaces;
@@ -6,27 +7,32 @@ namespace SSSKLv2.Data.DAL;
 
 public class OrderRepository(IDbContextFactory<ApplicationDbContext> _dbContextFactory) : IOrderRepository
 {
-    public async Task<PaginationObject<Order>> GetAllPagination(int page)
+    public async Task<IQueryable<Order>> GetAllQueryable()
     {
-        page -= 1;
-        
-        var pagination = new PaginationObject<Order>();
         await using var context = await _dbContextFactory.CreateDbContextAsync();
-        pagination.TotalObjects = await context.Order.CountAsync();
-        pagination.Value = await context.Order
-            // Use AsNoTracking to disable EF change tracking
-            .AsNoTracking()
+        return (await context.Order
+            .Include(x => x.User)
+            .ToListAsync())
+            .AsQueryable();
+    }
+    
+    public async Task<IQueryable<Order>> GetPersonalQueryable(string username)
+    {
+        await using var context = await _dbContextFactory.CreateDbContextAsync();
+        return (await context.Order
+            .Include(x => x.User)
+            .Where(x => x.User.UserName == username)
             .OrderByDescending(x => x.CreatedOn)
-            .Skip(page * 5)
-            .Take(5).ToListAsync();
-
-        return pagination;
+            .ToListAsync())
+            .AsQueryable();
     }
     
     public async Task<Order> GetById(Guid id)
     {
         await using var context = await _dbContextFactory.CreateDbContextAsync();
-        var order = await context.Order.FindAsync(id);
+        var order = await context.Order
+            .Include(x => x.User)
+            .SingleOrDefaultAsync(x => x.Id == id);
         if (order != null)
         {
             return order;
@@ -40,10 +46,24 @@ public class OrderRepository(IDbContextFactory<ApplicationDbContext> _dbContextF
         throw new NotImplementedException();
     }
 
+    public async Task CreateRange(IEnumerable<Order> orders)
+    {
+        await using var context = await _dbContextFactory.CreateDbContextAsync();
+        foreach (var obj in orders)
+        {
+            obj.User.Saldo -= obj.Paid;    
+            obj.User.LastOrdered = DateTime.UtcNow;
+            context.Users.Update(obj.User);
+            context.Order.Add(obj);
+        }
+        await context.SaveChangesAsync();
+    }
+
     public async Task Create(Order obj)
     {
         await using var context = await _dbContextFactory.CreateDbContextAsync();
         obj.User.Saldo -= obj.Paid;
+        obj.User.LastOrdered = DateTime.UtcNow;
         context.Users.Update(obj.User);
         context.Order.Add(obj);
         await context.SaveChangesAsync();
@@ -57,7 +77,9 @@ public class OrderRepository(IDbContextFactory<ApplicationDbContext> _dbContextF
     public async Task Delete(Guid id)
     {
         await using var context = await _dbContextFactory.CreateDbContextAsync();
-        var entry = await context.Order.FindAsync(id);
+        var entry = await context.Order
+            .Include(x => x.User)
+            .SingleOrDefaultAsync(x => x.Id == id);
         if (entry != null)
         {
             entry.User.Saldo += entry.Paid;

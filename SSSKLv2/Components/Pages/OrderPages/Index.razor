@@ -1,5 +1,4 @@
-﻿@page "/admin/orders"
-@page "/admin/orders/{Page:int?}"
+﻿@page "/orders/{Page:int?}"
 @attribute [Authorize]
 
 @inject IOrderService OrderService
@@ -8,21 +7,18 @@
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.QuickGrid
 
-<PageTitle>SSSKLv2 | Orderbeheer</PageTitle>
+<PageTitle>SSSKLv2 | Geschiedenis</PageTitle>
 
-<h1>Orderbeheer</h1>
+<h1>Bestel geschiedenis</h1>
 
 <div class="grid">
     <QuickGrid Items="@Orders" Pagination="@pagination">
         <PropertyColumn Title="Datum" Property="@(o => o.CreatedOn)" Format="dd/MM/yyyy" Sortable="true" Align="Align.Left" />
-        <TemplateColumn Context="order">
-            @order.User.Name @order.User.Surname
-        </TemplateColumn>        
         <PropertyColumn Title="Product" Property="@(o => o.ProductNaam)" Sortable="true" Align="Align.Left" />
         <PropertyColumn Title="Hoeveel" Property="@(o => o.Amount)" Sortable="true" Align="Align.Right" />
         <PropertyColumn Title="Betaald" Property="@(o => o.Paid)" Format="C" Sortable="true" Align="Align.Right" />
         <TemplateColumn Context="order">
-            <a class="btn btn-danger btn-sm" href="@($"admin/orders/delete?id={order.Id}")" role="button"><i class="bi bi-trash"></i></a>
+            <a class="btn btn-danger btn-sm" href="@($"orders/delete?id={order.Id}")" role="button"><i class="bi bi-trash"></i></a>
         </TemplateColumn>
     </QuickGrid>
 </div>
@@ -32,7 +28,7 @@
 @code {
     [Parameter]
     public int? Page { get; set; }
-    
+
     public PaginationState pagination = new PaginationState() { ItemsPerPage = 15 };
     
     [CascadingParameter]
@@ -42,12 +38,14 @@
 
     protected override async Task OnInitializedAsync()
     {
+        Page ??= 1;
         await GetDataAsync();
     }
 
     private async Task GetDataAsync()
     {
-        Orders = await OrderService.GetAllQueryable();
+        var username = HttpContext.User.Identity.Name;
+        Orders = await OrderService.GetPersonalQueryable(username);
         
     }
 }

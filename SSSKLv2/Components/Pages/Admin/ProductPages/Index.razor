@@ -38,6 +38,7 @@
                 <td>@entry.Price.ToString("C")</td>
                 <td>@entry.Stock</td>
                 <td>
+                    <a class="btn btn-info btn-sm" href="@($"admin/products/edit?id={entry.Id}")" role="button"><i class="bi bi-pen"></i></a>
                     <a class="btn btn-danger btn-sm" href="@($"admin/products/delete?id={entry.Id}")" role="button"><i class="bi bi-trash"></i></a>
                 </td>
             </tr>

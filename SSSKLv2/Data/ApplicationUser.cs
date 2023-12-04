@@ -1,9 +1,9 @@
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Build.Framework;
 
 namespace SSSKLv2.Data
 {
-    // Add profile data for application users by adding properties to the ApplicationUser class
     public class ApplicationUser : IdentityUser
     {
         [PersonalData]
@@ -13,6 +13,13 @@ namespace SSSKLv2.Data
         [PersonalData]
         [Column(TypeName = "decimal(18,2)")]
         public decimal Saldo { get; set; }
+        [PersonalData]
+        public IEnumerable<Order> Orders { get; set; } = new List<Order>();
+        [PersonalData]
+        public IEnumerable<TopUp> TopUps { get; set; } = new List<TopUp>();
+        [Required]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public DateTime LastOrdered { get; set; } = DateTime.UtcNow;
         public byte[]? ProfilePicture { get; set; }
     }
 

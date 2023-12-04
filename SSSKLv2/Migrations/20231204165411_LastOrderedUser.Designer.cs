@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SSSKLv2.Data;
 
@@ -11,9 +12,11 @@ using SSSKLv2.Data;
 namespace SSSKLv2.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20231204165411_LastOrderedUser")]
+    partial class LastOrderedUser
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -281,7 +284,6 @@ namespace SSSKLv2.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("UserId")
-                        .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
                     b.HasKey("Id");
@@ -398,10 +400,8 @@ namespace SSSKLv2.Migrations
             modelBuilder.Entity("SSSKLv2.Data.Order", b =>
                 {
                     b.HasOne("SSSKLv2.Data.ApplicationUser", "User")
-                        .WithMany("Orders")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .WithMany()
+                        .HasForeignKey("UserId");
 
                     b.Navigation("User");
                 });
@@ -409,19 +409,12 @@ namespace SSSKLv2.Migrations
             modelBuilder.Entity("SSSKLv2.Data.TopUp", b =>
                 {
                     b.HasOne("SSSKLv2.Data.ApplicationUser", "User")
-                        .WithMany("TopUps")
+                        .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("User");
-                });
-
-            modelBuilder.Entity("SSSKLv2.Data.ApplicationUser", b =>
-                {
-                    b.Navigation("Orders");
-
-                    b.Navigation("TopUps");
                 });
 #pragma warning restore 612, 618
         }

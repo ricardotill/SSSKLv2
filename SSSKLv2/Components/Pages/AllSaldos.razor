@@ -7,7 +7,7 @@
 @using Microsoft.AspNetCore.Authorization
 @using System.Linq
 
-<PageTitle>SSSKLv2 | Saldo overzicht</PageTitle>
+<PageTitle>SSSKLv2 | Gebruikers</PageTitle>
 
 <h1>Saldo overzicht</h1>
 
@@ -45,6 +45,6 @@
     private async Task GetDataAsync()
     {
         Users = (await ApplicationUserService.GetAllUsers())
-            .OrderByDescending(x => x.Saldo);
+            .OrderBy(x => x.Saldo);
     }
 }

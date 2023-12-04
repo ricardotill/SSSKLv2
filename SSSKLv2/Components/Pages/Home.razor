@@ -12,6 +12,7 @@
 
 @inject IApplicationUserService ApplicationUserService
 @inject IProductService ProductService
+@inject IOrderService OrderService
 @inject IToastService ToastService
 
 <PageTitle>SSSKLv2 | Bestellen</PageTitle>
@@ -43,7 +44,7 @@ else
                             .ToString() ?? string.Empty;
                         
                         <div class="col-6 p-0 pe-sm-1 pe-md-3">
-                            <button type="button" class="@css" @onclick="@(e => OnProductClick(e, product))">
+                            <button type="button" class="@css" @onclick="@(e => OnClick(e, product))">
                                 <InputCheckbox class="form-check-input btn-select-checkbox me-1" @bind-Value="product.Selected" />
                                 @product.Value.Name <small>@product.Value.Price.ToString("C")</small>
                             </button>
@@ -68,7 +69,7 @@ else
                             .ToString() ?? string.Empty;
                         
                         <div class="col-6 p-0 pe-sm-1 pe-md-3">
-                            <button type="button" class="@css" @onclick="@(e => OnUserClick(e, user))">
+                            <button type="button" class="@css" @onclick="@(e => OnClick(e, user))">
                                 <InputCheckbox class="form-check-input btn-select-checkbox me-1" @bind-Value="user.Selected"/>
                                 @user.Value.Name @user.Value.Surname.First()
                             </button>
@@ -110,6 +111,9 @@ else
     [SupplyParameterFromForm]
     public BestellingDTO Model { get; set; } = new();
     
+    [CascadingParameter]
+    public EventCallback OnSaldoChange { get; set; }
+    
     protected override async Task OnInitializedAsync()
     {
         await GetData();
@@ -133,24 +137,24 @@ else
 
     public async Task Submit()
     {
-        var set = false;
+        await OrderService.CreateOrder(Model);
         ToastService.ShowSuccess("Betaling gelukt");
         await Clear();
+        await OnSaldoChange.InvokeAsync();
     }
 
-    private void OnUserClick(MouseEventArgs args, Select<ApplicationUser> select)
+    private void OnClick(MouseEventArgs args, Select select)
     {
         select.Selected = !select.Selected;
     }
-    
-    private void OnProductClick(MouseEventArgs args, Select<Product> selectProduct)
-    {
-        selectProduct.Selected = !selectProduct.Selected;
-    }
 
-    public class Select<T>
+    public class Select
     {
         public bool Selected { get; set; }
+    }
+
+    public class Select<T> : Select
+    {
         public T Value { get; set; }
     }
 
@@ -161,7 +165,7 @@ else
         [MinLength(1, ErrorMessage = "Er moeten minimaal 1 of meer gebruikers worden geselecteerd")]
         public IList<Select<ApplicationUser>> Users { get; set; } = new List<Select<ApplicationUser>>();
         [Required]
-        public int Amount { get; set; }
+        public int Amount { get; set; } = 1;
         public bool Split { get; set; }
     }
 }

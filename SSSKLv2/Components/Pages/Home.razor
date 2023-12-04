@@ -7,6 +7,7 @@
 @using System.ComponentModel.DataAnnotations
 @using System.Linq
 @using BlazorComponentUtilities
+@using Blazored.Toast.Configuration
 @attribute [Authorize]
 
 @inject IApplicationUserService ApplicationUserService
@@ -21,10 +22,11 @@
 }
 else
 {
-        @* <DataAnnotationsValidator /> *@
-        @* <ValidationSummary class="text-danger" /> *@
+    <EditForm method="post" Model="@Model" OnValidSubmit="@Submit" FormName="Bestellen" Enhance>
+        <DataAnnotationsValidator />
+        <ValidationSummary class="text-danger" />
         <div class="row">
-            <div class="col-md-4 mb-3 mx-md-2">
+            <div class="col-md-4 mb-3">
                 <h4>Wat</h4>
                 <div class="row">
                     @foreach (var product in Model.Products)
@@ -40,7 +42,7 @@ else
                             .AddClass("selected", when: product.Selected)
                             .ToString() ?? string.Empty;
                         
-                        <div class="col-6 p-0 pe-1">
+                        <div class="col-6 p-0 pe-sm-1 pe-md-3">
                             <button type="button" class="@css" @onclick="@(e => OnProductClick(e, product))">
                                 <InputCheckbox class="form-check-input btn-select-checkbox me-1" @bind-Value="product.Selected" />
                                 @product.Value.Name <small>@product.Value.Price.ToString("C")</small>
@@ -49,7 +51,7 @@ else
                     }
                 </div>
             </div>
-            <div class="col-md-4 mb-3 mx-md-2">
+            <div class="col-md-4 mb-3">
                 <h4>Wie</h4>
                 <div class="row">
                     @foreach (var user in Model.Users)
@@ -65,7 +67,7 @@ else
                             .AddClass("selected", when: user.Selected)
                             .ToString() ?? string.Empty;
                         
-                        <div class="col-6 p-0 pe-1">
+                        <div class="col-6 p-0 pe-sm-1 pe-md-3">
                             <button type="button" class="@css" @onclick="@(e => OnUserClick(e, user))">
                                 <InputCheckbox class="form-check-input btn-select-checkbox me-1" @bind-Value="user.Selected"/>
                                 @user.Value.Name @user.Value.Surname.First()
@@ -87,19 +89,21 @@ else
                     </div>
                 </div>
                 <div class="row">
-                    <div class="col-8">
-                        <div class="input-group mb-3">
-                            <span class="input-group-text" id="basic-addon1">Aantal</span>
-                            <InputNumber @bind-Value="@Model.Amount" class="form-control"/>
-                        </div>
-                    </div>
-                    <div class="col-4">
-                        <button type="submit" class="btn btn-primary w-100">Betalen</button>
+                    <div class="input-group mb-3 w-100">
+                        <span class="input-group-text" id="basic-addon1">Aantal</span>
+                        <InputNumber @bind-Value="@Model.Amount" class="form-control"/>
+                        <button type="submit" class="btn btn-primary">Betalen</button>
                     </div>
                 </div>
             </div>
         </div>
-}
+    </EditForm>
+    <BlazoredToasts Position="ToastPosition.BottomRight"
+                    Timeout=5
+                    SuccessIcon="bi bi-check-circle"
+                    WarningIcon="bi bi-exclamation-triangle"
+                    ErrorIcon="bi bi-x-octagon"/>
+} 
 
 @code {
 

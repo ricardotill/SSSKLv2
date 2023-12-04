@@ -11871,6 +11871,11 @@ html, body {
   border-color: #9a0a28;
 }
 
+.blazored-toast {
+  background-color: #222222 !important;
+  color: #dee2e6 !important;
+}
+
 .content {
   padding-top: 1.1rem;
 }

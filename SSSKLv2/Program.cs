@@ -12,6 +12,9 @@ using SSSKLv2.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+string azConfig = builder.Configuration.GetConnectionString("AppConfig");
+builder.Configuration.AddAzureAppConfiguration(azConfig);
+
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
@@ -44,6 +47,7 @@ else
 {
     connection = Environment.GetEnvironmentVariable("AZURE_SQL_CONNECTIONSTRING");
 }
+Console.WriteLine(connection);
 
 if (builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"] != null)
 {

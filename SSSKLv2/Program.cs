@@ -45,6 +45,15 @@ else
     connection = Environment.GetEnvironmentVariable("AZURE_SQL_CONNECTIONSTRING");
 }
 
+if (builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"] != null)
+{
+    builder.Services.AddApplicationInsightsTelemetry(builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"]);
+}
+else
+{
+    builder.Services.AddApplicationInsightsTelemetry();
+}
+
 builder.Services.AddDbContextFactory<ApplicationDbContext>(
     options =>
         options.UseSqlServer(connection));
@@ -88,7 +97,7 @@ else
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
-    app.UseHsts();
+    // app.UseHsts();
 }
 
 app.UseHttpsRedirection();

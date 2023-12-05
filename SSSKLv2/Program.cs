@@ -87,6 +87,7 @@ builder.Services.AddServicesDI();
 builder.Services.AddDataDI(); 
 
 var app = builder.Build();
+app.UsePathBase("/");
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

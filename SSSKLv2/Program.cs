@@ -12,9 +12,6 @@ using SSSKLv2.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-string azConfig = builder.Configuration.GetConnectionString("AppConfig");
-builder.Configuration.AddAzureAppConfiguration(azConfig);
-
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();

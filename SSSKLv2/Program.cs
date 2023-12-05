@@ -87,6 +87,13 @@ builder.Services.AddServicesDI();
 builder.Services.AddDataDI(); 
 
 var app = builder.Build();
+
+await using (var scope = app.Services.CreateAsyncScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    await db.Database.EnsureCreatedAsync();
+}
+
 app.UsePathBase("/");
 
 // Configure the HTTP request pipeline.

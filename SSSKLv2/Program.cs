@@ -58,6 +58,12 @@ builder.Services.AddDbContextFactory<ApplicationDbContext>(
     options =>
         options.UseSqlServer(connection));
 
+builder.Services.AddSignalR().AddAzureSignalR(options =>
+{
+    options.ServerStickyMode =
+        Microsoft.Azure.SignalR.ServerStickyMode.Required;
+});
+
 builder.Services.AddQuickGridEntityFrameworkAdapter();;
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 

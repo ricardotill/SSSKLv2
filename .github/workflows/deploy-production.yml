@@ -20,11 +20,11 @@
 name: Deploy to Production
 
 env:
-  AZURE_WEBAPP_NAME: sssklv2-app    # set this to the name of your Azure Web App
+  AZURE_WEBAPP_NAME: SSSKLv2    # set this to the name of your Azure Web App
   AZURE_WEBAPP_PACKAGE_PATH: sssklv2-app/published     # set this to the path to your web app project, defaults to the repository root
   CONFIGURATION: Release
   DOTNET_VERSION: '8.0.x'                 # set this to the .NET Core version to use
-  WORKING_DIRECTORY: sssklv2-app
+  WORKING_DIRECTORY: SSSKLv2
 
 on:
   push:

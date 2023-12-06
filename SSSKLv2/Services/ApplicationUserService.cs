@@ -48,16 +48,4 @@ public class ApplicationUserService(IApplicationUserRepository _applicationUserR
 
         return objApplicationUserPaged;
     }
-
-    public async Task SaldoIncrease(ApplicationUser user, decimal saldo)
-    {
-        user.Saldo += saldo;
-        await _applicationUserRepository.Update(user);
-    }
-    
-    public async Task SaldoDecrease(ApplicationUser user, decimal saldo)
-    {
-        user.Saldo -= saldo;
-        await _applicationUserRepository.Update(user);
-    }
 }

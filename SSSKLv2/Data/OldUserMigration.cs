@@ -1,9 +1,11 @@
 ﻿using System.ComponentModel;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.Build.Framework;
+using Microsoft.EntityFrameworkCore;
 
 namespace SSSKLv2.Data
 {
+    [Index(nameof(Username), IsUnique = true)]
     public class OldUserMigration : BaseModel
     {
         [Required]

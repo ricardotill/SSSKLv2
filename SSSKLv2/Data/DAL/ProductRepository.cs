@@ -19,11 +19,6 @@ public class ProductRepository(IDbContextFactory<ApplicationDbContext> _dbContex
         throw new NotFoundException("Product not found");
     }
 
-    Task<IEnumerable<Product>> IRepository<Product>.GetAll()
-    {
-        throw new NotImplementedException();
-    }
-
     public async Task<IList<Product>> GetAll()
     {
         IList<Product> list = new List<Product>();

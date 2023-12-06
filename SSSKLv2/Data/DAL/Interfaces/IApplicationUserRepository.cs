@@ -1,6 +1,6 @@
 namespace SSSKLv2.Data.DAL.Interfaces;
 
-public interface IApplicationUserRepository : IRepository<ApplicationUser>
+public interface IApplicationUserRepository
 {
     public Task<IList<ApplicationUser>> GetAll();
     public Task<ApplicationUser> GetById(string id);

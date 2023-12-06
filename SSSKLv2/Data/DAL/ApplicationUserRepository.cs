@@ -50,16 +50,6 @@ public class ApplicationUserRepository(IDbContextFactory<ApplicationDbContext> _
         return list;
     }
 
-    public Task<ApplicationUser> GetById(Guid id)
-    {
-        throw new NotImplementedException();
-    }
-
-    Task<IEnumerable<ApplicationUser>> IRepository<ApplicationUser>.GetAll()
-    {
-        throw new NotImplementedException();
-    }
-
     public async Task<IList<ApplicationUser>> GetAll()
     {
         IList<ApplicationUser> list = new List<ApplicationUser>();
@@ -67,20 +57,5 @@ public class ApplicationUserRepository(IDbContextFactory<ApplicationDbContext> _
         list = await context.Users.ToListAsync();
 
         return list;
-    }
-
-    public Task Create(ApplicationUser obj)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task Update(ApplicationUser obj)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task Delete(Guid id)
-    {
-        throw new NotImplementedException();
     }
 }

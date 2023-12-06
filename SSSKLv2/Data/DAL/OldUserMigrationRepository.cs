@@ -17,6 +17,19 @@ public class OldUserMigrationRepository(IDbContextFactory<ApplicationDbContext> 
 
         throw new NotFoundException("OldUserMigration not found");
     }
+    
+    public async Task<OldUserMigration> GetByUsername(string username)
+    {
+        await using var context = await _dbContextFactory.CreateDbContextAsync();
+        var entry = await context.OldUserMigration
+            .SingleOrDefaultAsync(x => x.Username == username);
+        if (entry != null)
+        {
+            return entry;
+        }
+
+        throw new NotFoundException("OldUserMigration not found");
+    }
 
     public async Task<IEnumerable<OldUserMigration>> GetAll()
     {

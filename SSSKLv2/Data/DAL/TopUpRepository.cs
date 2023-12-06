@@ -8,8 +8,7 @@ using SSSKLv2.Data.DAL.Interfaces;
 namespace SSSKLv2.Data.DAL;
 
 public class TopUpRepository(
-    IDbContextFactory<ApplicationDbContext> _dbContextFactory,
-    UserManager<ApplicationUser> _userManager ) : ITopUpRepository
+    IDbContextFactory<ApplicationDbContext> _dbContextFactory) : ITopUpRepository
 {
     public async Task<PaginationObject<TopUp>> GetAllPagination(int page)
     {
@@ -62,11 +61,6 @@ public class TopUpRepository(
         throw new NotFoundException("TopUp not found");
     }
 
-    public Task<IEnumerable<TopUp>> GetAll()
-    {
-        throw new NotImplementedException();
-    }
-
     public async Task Create(TopUp obj)
     {
         await using var context = await _dbContextFactory.CreateDbContextAsync();
@@ -74,11 +68,6 @@ public class TopUpRepository(
         context.Users.Update(obj.User);
         context.TopUp.Add(obj);
         await context.SaveChangesAsync();
-    }
-
-    public Task Update(TopUp obj)
-    {
-        throw new NotImplementedException();
     }
 
     public async Task Delete(Guid id)

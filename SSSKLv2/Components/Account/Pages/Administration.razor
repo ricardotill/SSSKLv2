@@ -28,6 +28,7 @@
                         <tr>
                             <th>Volledige naam</th>
                             <th>Gebruikersnaam</th>
+                            <th>Saldo</th>
                             <th>E-mail</th>
                             <th>E-mail bevestigd</th>
                             <th>#</th>
@@ -39,6 +40,7 @@
                             <tr>
                                 <td>@user.Name @user.Surname</td>
                                 <td>@user.UserName</td>
+                                <td>@user.Saldo.ToString("C")</td>
                                 <td>@user.Email</td>
                                 <td>@user.EmailConfirmed</td>
                                 <td>
@@ -104,6 +106,10 @@
                                 <b>Achternaam</b>
                                 <input class="form-control" type="text"
                                        @bind="objUser.Surname"/>
+                                <br/>
+                                <b>Saldo</b>
+                                <input class="form-control" type="number"
+                                       @bind="objUser.Saldo"/>
                                 <br/>
                                 <b>E-mail</b>
                                 <input class="form-control" type="text"
@@ -222,6 +228,9 @@
                 
                 // Update DisplayName
                 user.Surname = objUser.Surname;
+                
+                // Update Saldo
+                user.Saldo = objUser.Saldo;
 
                 // Set Email Confirmed
                 user.EmailConfirmed = Convert.ToBoolean(EmailConfirmed);
@@ -244,7 +253,7 @@
                         }
                         else
                         {
-                            strError = "Pasword error";
+                            strError = "Password error";
                         }
 
                         // Keep the popup opened

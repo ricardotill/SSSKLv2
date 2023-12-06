@@ -6,6 +6,7 @@
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.AspNetCore.WebUtilities
 @using SSSKLv2.Data
+@using SSSKLv2.Services.Interfaces
 
 @inject UserManager<ApplicationUser> UserManager
 @inject IUserStore<ApplicationUser> UserStore
@@ -14,6 +15,7 @@
 @inject ILogger<Register> Logger
 @inject NavigationManager NavigationManager
 @inject IdentityRedirectManager RedirectManager
+@inject IOldUserMigrationService MigrationService
 
 <PageTitle>Registreren</PageTitle>
 
@@ -80,6 +82,12 @@
     public async Task RegisterUser(EditContext editContext)
     {
         var user = CreateUser();
+        
+        var migration = await MigrationService.GetMigrationByUsername(user.UserName);
+        if (migration != null)
+        {
+            user.Saldo = migration.Saldo;
+        }
 
         user.Name = Input.Name;
         user.Surname = Input.Surname;
@@ -114,6 +122,11 @@
             RedirectManager.RedirectTo(
                 "Account/RegisterConfirmation",
                 new() { ["email"] = Input.Email, ["returnUrl"] = ReturnUrl });
+        }
+        
+        if (migration != null)
+        {
+            await MigrationService.DeleteProduct(migration.Id);
         }
 
         await SignInManager.SignInAsync(user, isPersistent: false);

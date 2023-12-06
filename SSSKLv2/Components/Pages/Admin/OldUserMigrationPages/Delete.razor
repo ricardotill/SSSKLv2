@@ -45,7 +45,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        oldusermigration = await OldMigrationService.GetProductById(Id);
+        oldusermigration = await OldMigrationService.GetMigrationById(Id);
 
         if (oldusermigration is null)
         {

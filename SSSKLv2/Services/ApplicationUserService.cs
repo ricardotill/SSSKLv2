@@ -36,6 +36,7 @@ public class ApplicationUserService(IApplicationUserRepository _applicationUserR
 
             objApplicationUser.Id = item.Id;
             objApplicationUser.UserName = item.UserName;
+            objApplicationUser.Saldo = item.Saldo;
             objApplicationUser.Email = item.Email;
             objApplicationUser.Name = item.Name;
             objApplicationUser.Surname = item.Surname;

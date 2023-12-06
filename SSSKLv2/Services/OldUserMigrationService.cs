@@ -6,9 +6,14 @@ namespace SSSKLv2.Services;
 
 public class OldUserMigrationService(IOldUserMigrationRepository _oldUserMigrationRepository) : IOldUserMigrationService
 {
-    public async Task<OldUserMigration> GetProductById(Guid id)
+    public async Task<OldUserMigration> GetMigrationById(Guid id)
     {
         return await _oldUserMigrationRepository.GetById(id);
+    }
+    
+    public async Task<OldUserMigration> GetMigrationByUsername(string username)
+    {
+        return await _oldUserMigrationRepository.GetByUsername(username);
     }
 
     public async Task<IEnumerable<OldUserMigration>> GetAll()

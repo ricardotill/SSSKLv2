@@ -7,6 +7,7 @@
 @using Microsoft.AspNetCore.WebUtilities
 @using SSSKLv2.Data
 @using SSSKLv2.Services.Interfaces
+@using NotFoundException = SSSKLv2.Data.DAL.Exceptions.NotFoundException
 
 @inject UserManager<ApplicationUser> UserManager
 @inject IUserStore<ApplicationUser> UserStore
@@ -82,12 +83,14 @@
     public async Task RegisterUser(EditContext editContext)
     {
         var user = CreateUser();
-        
-        var migration = await MigrationService.GetMigrationByUsername(user.UserName);
-        if (migration != null)
+
+        OldUserMigration migration = null;
+        try
         {
+            migration = await MigrationService.GetMigrationByUsername(user.UserName!);
             user.Saldo = migration.Saldo;
         }
+        catch (NotFoundException){}
 
         user.Name = Input.Name;
         user.Surname = Input.Surname;

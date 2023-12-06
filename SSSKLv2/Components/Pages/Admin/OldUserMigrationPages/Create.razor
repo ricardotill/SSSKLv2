@@ -10,12 +10,15 @@
 
 <PageTitle>SSSKLv2 | Aanmaken</PageTitle>
 
-<h1>Aanmaken migratiegebruiker</h1>
-
-<hr />
-<div>
-    <a href="/admin/oldusermigrations">Terug naar lijst</a>
+<div class="row crud-form-header">
+    <div class="col-md-9 title-container">
+        <h1>Aanmaken migratiegebruiker</h1>
+    </div>
+    <div class="col-md-3 text-end back-container">
+        <a class="btn btn-lg btn-secondary" href="/admin/oldusermigrations"><i class="bi bi-arrow-left"></i> Terug</a>
+    </div>
 </div>
+
 <div class="row">
     <div class="col-md-4">
         <EditForm method="post" Model="OldUserMigration" OnValidSubmit="AddOldUserMigration" FormName="create" Enhance>
@@ -34,7 +37,7 @@
                 </div>
                 <ValidationMessage For="() => OldUserMigration.Saldo" class="text-danger" /> 
             </div>        
-            <button type="submit" class="btn btn-primary">Create</button>
+            <button type="submit" class="btn btn-primary">Aanmaken</button>
         </EditForm>
     </div>
 </div>

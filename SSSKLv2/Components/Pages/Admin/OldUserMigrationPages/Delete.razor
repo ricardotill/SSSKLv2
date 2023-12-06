@@ -11,30 +11,37 @@
 
 <PageTitle>SSSKLv2 | Verwijderen</PageTitle>
 
-<h1>Verwijderen</h1>
-
-<div>
-    <h4>Migratiegebruiker</h4>
-    <hr />
-    @if (oldusermigration is null)
-    {
-        <p><em>Laden...</em></p>
-    }
-    else {
-        <a href="/admin/oldusermigrations">Terug naar lijst</a>
-
-        <dl class="row">
-            <dt class="col-sm-2">Gebruikersnaam</dt>
-            <dd class="col-sm-10">@oldusermigration.Username</dd>
-        </dl>
-        <dl class="row">
-            <dt class="col-sm-2">Saldo</dt>
-            <dd class="col-sm-10">@oldusermigration.Saldo</dd>
-        </dl>
-        <EditForm method="post" Model="oldusermigration" OnValidSubmit="DeleteOldUserMigration" FormName="delete" Enhance>
-            <button type="submit" class="btn btn-danger" disabled="@(oldusermigration is null)">Delete</button> |
-        </EditForm>
-    }
+<div class="row crud-form-header">
+    <div class="col-md-9 title-container">
+        <h1>Verwijderen</h1>
+    </div>
+    <div class="col-md-3 text-end back-container">
+        <a class="btn btn-lg btn-secondary" href="/admin/oldusermigrations"><i class="bi bi-arrow-left"></i> Terug</a>
+    </div>
+</div>
+<hr />
+<div class="card">
+    <div class="card-body">
+        <h5 class="card-title">Migratiegebruiker</h5>
+        <hr/>
+        @if (oldusermigration is null)
+        {
+            <p><em>Laden...</em></p>
+        }
+        else {
+            <dl class="row">
+                <dt class="col-sm-2">Gebruikersnaam</dt>
+                <dd class="col-sm-10">@oldusermigration.Username</dd>
+            </dl>
+            <dl class="row">
+                <dt class="col-sm-2">Saldo</dt>
+                <dd class="col-sm-10">@oldusermigration.Saldo</dd>
+            </dl>
+            <EditForm method="post" Model="oldusermigration" OnValidSubmit="DeleteOldUserMigration" FormName="delete" Enhance>
+                <button type="submit" class="btn btn-danger" disabled="@(oldusermigration is null)">Verwijderen</button>
+            </EditForm>
+        }
+    </div>
 </div>
 
 @code {

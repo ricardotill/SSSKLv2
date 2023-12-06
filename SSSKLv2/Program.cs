@@ -6,7 +6,6 @@ using SSSKLv2.Components.Account;
 using SSSKLv2.Data;
 using System.Globalization;
 using Blazored.Toast;
-using Microsoft.AspNetCore.SignalR;
 using SSSKLv2.Data.DAL;
 using SSSKLv2.Services;
 
@@ -59,11 +58,14 @@ builder.Services.AddDbContextFactory<ApplicationDbContext>(
     options =>
         options.UseSqlServer(connection));
 
-builder.Services.AddSignalR().AddAzureSignalR(options =>
+if (builder.Environment.IsProduction())
 {
-    options.ServerStickyMode =
-        Microsoft.Azure.SignalR.ServerStickyMode.Required;
-});
+    builder.Services.AddSignalR().AddAzureSignalR(options =>
+    {
+        options.ServerStickyMode =
+            Microsoft.Azure.SignalR.ServerStickyMode.Required;
+    });
+}
 
 builder.Services.AddQuickGridEntityFrameworkAdapter();;
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
@@ -82,12 +84,6 @@ builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSe
 
 CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.GetCultureInfo("nl-NL");
 
-builder.Services.Configure<HubOptions>(hubOptions =>
-{
-    // Support larger message size so large profile images can be rendered.
-    hubOptions.MaximumReceiveMessageSize = 1024 * 1024; // 1 MB
-});
-
 builder.Services.AddBlazoredToast();
 
 builder.Services.AddServicesDI();
@@ -100,8 +96,6 @@ await using (var scope = app.Services.CreateAsyncScope())
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     await db.Database.EnsureCreatedAsync();
 }
-
-app.UsePathBase("/");
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

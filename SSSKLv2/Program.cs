@@ -13,7 +13,12 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
-    .AddInteractiveServerComponents();
+    .AddInteractiveServerComponents()
+    .AddHubOptions(options =>
+    {
+        options.ClientTimeoutInterval = TimeSpan.FromSeconds(60);
+        options.HandshakeTimeout = TimeSpan.FromSeconds(30);
+    });
 
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddScoped<IdentityUserAccessor>();
@@ -60,6 +65,7 @@ builder.Services.AddDbContextFactory<ApplicationDbContext>(
 
 if (builder.Environment.IsProduction())
 {
+    var signalRConnStr = builder.Configuration["AZURE_SIGNALR_CONNECTION_STRING"];
     builder.Services.AddSignalR().AddAzureSignalR(options =>
     {
         options.ServerStickyMode =

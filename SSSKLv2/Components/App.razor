@@ -24,7 +24,16 @@
 
 <body>
 <Routes />
-    <script src="_framework/blazor.web.js"></script>
+<script src="_framework/blazor.web.js"></script>
+<script>
+  Blazor.start({
+    circuit: {
+      configureSignalR: function (builder) {
+        builder.withServerTimeout(60000);
+      }
+    }
+  });
+</script>
 </body>
 
 </html>

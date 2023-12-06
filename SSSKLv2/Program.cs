@@ -48,7 +48,6 @@ else
 {
     connection = Environment.GetEnvironmentVariable("AZURE_SQL_CONNECTIONSTRING");
 }
-Console.WriteLine(connection);
 
 if (builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"] != null)
 {
@@ -85,7 +84,8 @@ builder.Services.AddIdentityCore<ApplicationUser>(options =>
     .AddDefaultTokenProviders()
     .AddClaimsPrincipalFactory<IdentityClaimsPrincipalFactory>();
 
-builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
+if (builder.Environment.IsDevelopment()) builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
+else builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityEmailSender>();
 
 builder.Services.AddBlazoredToast();
 

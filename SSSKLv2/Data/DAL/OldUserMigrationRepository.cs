@@ -45,11 +45,6 @@ public class OldUserMigrationRepository(IDbContextFactory<ApplicationDbContext> 
         await context.SaveChangesAsync();
     }
 
-    public Task Update(OldUserMigration obj)
-    {
-        throw new NotImplementedException();
-    }
-
     public async Task Delete(Guid id)
     {
         await using var context = await _dbContextFactory.CreateDbContextAsync();

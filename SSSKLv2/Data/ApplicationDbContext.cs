@@ -40,6 +40,9 @@ namespace SSSKLv2.Data
             builder.Entity<OldUserMigration>()
                 .Property(s => s.CreatedOn )
                 .HasDefaultValueSql("GETDATE()");
+            builder.Entity<ApplicationUser>()
+                .Property(s => s.LastOrdered )
+                .HasDefaultValueSql("GETDATE()");
         }
     }
 }

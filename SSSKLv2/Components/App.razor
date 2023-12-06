@@ -13,7 +13,7 @@
     <link rel="apple-touch-icon" href="icon.png">
     <meta name="apple-mobile-web-app-title" content="SSSKLv2">
     <meta name="application-name" content="SSSKLv2" />
-    <meta name="description" content="Progressive Web App used for administration of sold drinks, snacks and shots." />
+    <meta name="description" content="App used for administration of sold drinks, snacks and shots." />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
@@ -25,15 +25,6 @@
 <body>
 <Routes />
 <script src="_framework/blazor.web.js"></script>
-<script>
-  Blazor.start({
-    circuit: {
-      configureSignalR: function (builder) {
-        builder.withServerTimeout(60000);
-      }
-    }
-  });
-</script>
 </body>
 
 </html>

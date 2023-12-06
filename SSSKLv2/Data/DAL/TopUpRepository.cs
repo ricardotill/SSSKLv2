@@ -10,41 +10,23 @@ namespace SSSKLv2.Data.DAL;
 public class TopUpRepository(
     IDbContextFactory<ApplicationDbContext> _dbContextFactory) : ITopUpRepository
 {
-    public async Task<PaginationObject<TopUp>> GetAllPagination(int page)
+    public async Task<IQueryable<TopUp>> GetAllQueryable()
     {
-        page -= 1;
-        
-        var pagination = new PaginationObject<TopUp>();
         await using var context = await _dbContextFactory.CreateDbContextAsync();
-        pagination.TotalObjects = await context.TopUp.CountAsync();
-        pagination.Value = await context.TopUp
-            // Use AsNoTracking to disable EF change tracking
-            .AsNoTracking()
-            .Include(e => e.User)
-            .OrderByDescending(x => x.CreatedOn)
-            .Skip(page * 5)
-            .Take(5).ToListAsync();
-
-        return pagination;
+        return (await context.TopUp
+                .Include(x => x.User)
+                .ToListAsync())
+                .AsQueryable();
     }
     
-    public async Task<PaginationObject<TopUp>> GetPersonalPagination(int page, string username)
+    public async Task<IQueryable<TopUp>> GetPersonalQueryable(string username)
     {
-        page -= 1;
-        
-        var pagination = new PaginationObject<TopUp>();
         await using var context = await _dbContextFactory.CreateDbContextAsync();
-        pagination.TotalObjects = await context.TopUp.CountAsync();
-        pagination.Value = await context.TopUp
-            // Use AsNoTracking to disable EF change tracking
-            .AsNoTracking()
-            .Where(x => x.User.UserName == username)
-            .Include(e => e.User)
-            .OrderByDescending(x => x.CreatedOn)
-            .Skip(page * 5)
-            .Take(5).ToListAsync();
-
-        return pagination;
+        return (await context.TopUp
+                .Where(x => x.User.UserName == username)
+                .Include(x => x.User)
+                .ToListAsync())
+                .AsQueryable();
     }
     
     public async Task<TopUp> GetById(Guid id)

@@ -1,61 +1,46 @@
-﻿@page "/saldo/{Page:int?}"
+﻿@page "/saldo"
 @attribute [Authorize]
 
 @inject ITopUpService TopUpService
 @using SSSKLv2.Data
 @using SSSKLv2.Services.Interfaces
 @using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.QuickGrid
 @using SSSKLv2.Components.Account
 
-<PageTitle>SSSKLv2 | Saldo</PageTitle>
+<PageTitle>SSSKLv2 | Saldo opwaarderingen</PageTitle>
 
-<h1>Saldo transacties</h1>
+<h1>Saldo opwaarderingen</h1>
 
-<div class="table-responsive">
-  <table class="table table-striped">
-    <thead>
-    <tr>
-      <th scope="col">Datum</th>
-        <th scope="col">Gebruikersnaam</th>
-        <th scope="col">Saldo</th>
-    </tr>
-      </thead>
-    <tbody>
-    @foreach (var topup in TopUps.Value)
-    {
-        <tr>
-            <td>@topup.CreatedOn.ToString("dd/MM/yyyy")</td>
-            <td>@topup.User.Name</td>
-            <td>+ @topup.Saldo.ToString("C")</td>
-        </tr>
-    }
-    </tbody>
-  </table>
+<div class="grid">
+    <QuickGrid Items="@TopUps" Pagination="@pagination">
+        <PropertyColumn Title="Datum" Property="@(t => t.CreatedOn)" Format="dd/MM/yyyy" Sortable="true" Align="Align.Left" />
+        <TemplateColumn Title="Naam" Context="topup">
+            @topup.User.Name @topup.User.Surname
+        </TemplateColumn>
+        <PropertyColumn Title="Saldo" Property="@(t => t.Saldo)" Format="C" Sortable="true" Align="Align.Left" />
+    </QuickGrid>
 </div>
 
-<Pagination
-    TotalItems="TopUps.TotalObjects"
-    NavUrl="/saldo/" />
+<Paginator State="@pagination" />
 
 @code {
-    
-    [Parameter]
-    public int? Page { get; set; }
     
     [CascadingParameter]
     private HttpContext HttpContext { get; set; } = default!;
     
-    public PaginationObject<TopUp> TopUps = new();
+    public IQueryable<TopUp> TopUps = default!;
+    
+    public PaginationState pagination = new PaginationState() { ItemsPerPage = 15 };
 
     protected override async Task OnInitializedAsync()
     {
-        Page ??= 1;
         await GetDataAsync();
     }
 
     private async Task GetDataAsync()
     {
         var username = HttpContext.User.Identity.Name;
-        TopUps = await TopUpService.GetPersonalPagination(Page!.Value, username);
+        TopUps = await TopUpService.GetPersonalQueryable(username);
     }
 }

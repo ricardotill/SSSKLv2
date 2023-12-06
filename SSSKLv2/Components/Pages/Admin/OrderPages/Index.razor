@@ -1,5 +1,4 @@
 ﻿@page "/admin/orders"
-@page "/admin/orders/{Page:int?}"
 @attribute [Authorize]
 
 @inject IOrderService OrderService
@@ -30,8 +29,6 @@
 <Paginator State="@pagination" />
 
 @code {
-    [Parameter]
-    public int? Page { get; set; }
     
     public PaginationState pagination = new PaginationState() { ItemsPerPage = 15 };
     

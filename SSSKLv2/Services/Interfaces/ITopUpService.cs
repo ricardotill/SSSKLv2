@@ -4,8 +4,8 @@ namespace SSSKLv2.Services.Interfaces;
 
 public interface ITopUpService
 {
-    public Task<PaginationObject<TopUp>> GetAllPagination(int page);
-    public Task<PaginationObject<TopUp>> GetPersonalPagination(int page, string username);
+    public Task<IQueryable<TopUp>> GetAllQueryable();
+    public Task<IQueryable<TopUp>> GetPersonalQueryable(string username);
     public Task<TopUp> GetById(string id);
     public Task CreateTopUp(TopUp topup);
     public Task DeleteTopUp(Guid id);

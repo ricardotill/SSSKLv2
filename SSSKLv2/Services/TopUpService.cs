@@ -7,13 +7,13 @@ namespace SSSKLv2.Services;
 public class TopUpService(
     ITopUpRepository _topUpRepository) : ITopUpService
 {
-    public async Task<PaginationObject<TopUp>> GetAllPagination(int page)
+    public async Task<IQueryable<TopUp>> GetAllQueryable()
     {
-        return await _topUpRepository.GetAllPagination(page);
+        return await _topUpRepository.GetAllQueryable();
     }
-    public async Task<PaginationObject<TopUp>> GetPersonalPagination(int page, string id)
+    public async Task<IQueryable<TopUp>> GetPersonalQueryable(string username)
     {
-        return await _topUpRepository.GetPersonalPagination(page, id);
+        return await _topUpRepository.GetPersonalQueryable(username);
     }
     public async Task<TopUp> GetById(string id)
     {

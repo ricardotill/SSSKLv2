@@ -21,8 +21,10 @@ name: Deploy to Production
 
 env:
   AZURE_WEBAPP_NAME: sssklv2-app    # set this to the name of your Azure Web App
-  AZURE_WEBAPP_PACKAGE_PATH: '.'      # set this to the path to your web app project, defaults to the repository root
+  AZURE_WEBAPP_PACKAGE_PATH: SSSKLv2/published     # set this to the path to your web app project, defaults to the repository root
+  CONFIGURATION: Release
   DOTNET_VERSION: '8.0.x'                 # set this to the .NET Core version to use
+  WORKING_DIRECTORY: SSSKLv2
 
 on:
   push:
@@ -44,25 +46,23 @@ jobs:
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
-      - name: Set up dependency caching for faster builds
-        uses: actions/cache@v3
-        with:
-          path: ~/.nuget/packages
-          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-nuget-
+      - name: Restore
+        run: dotnet restore "${{ env.WORKING_DIRECTORY }}"
 
-      - name: Build with dotnet
-        run: dotnet build --configuration Release
+      - name: Build
+        run: dotnet build ${{ env.WORKING_DIRECTORY }} --configuration ${{ env.CONFIGURATION }} --no-restore
 
-      - name: dotnet publish
-        run: dotnet publish -c Release -o ${{env.DOTNET_ROOT}}/myapp
+      - name: Test
+        run: dotnet test "${{ env.WORKING_DIRECTORY }}" --no-build
 
-      - name: Upload artifact for deployment job
+      - name: Publish
+        run: dotnet publish "${{ env.WORKING_DIRECTORY }}" --configuration ${{ env.CONFIGURATION }} --no-build --output "${{ env.AZURE_WEBAPP_PACKAGE_PATH }}"
+
+      - name: Publish Artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: .net-app
-          path: ${{env.DOTNET_ROOT}}/myapp
+          name: webapp
+          path: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
 
   deploy:
     permissions:
@@ -77,7 +77,8 @@ jobs:
       - name: Download artifact from build job
         uses: actions/download-artifact@v3
         with:
-          name: .net-app
+          name: webapp
+          path: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
 
       - name: Azure Login
         uses: Azure/login@v1.5.1

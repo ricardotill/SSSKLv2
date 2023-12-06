@@ -108,8 +108,11 @@
                                        @bind="objUser.Surname"/>
                                 <br/>
                                 <b>Saldo</b>
-                                <input class="form-control" type="number"
-                                       @bind="objUser.Saldo"/>
+                                <div class="input-group">
+                                    <span class="input-group-text">€</span>
+                                    <input class="form-control" type="number"
+                                           @bind="objUser.Saldo"/> 
+                                </div>
                                 <br/>
                                 <b>E-mail</b>
                                 <input class="form-control" type="text"

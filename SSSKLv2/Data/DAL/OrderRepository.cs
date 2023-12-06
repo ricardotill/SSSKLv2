@@ -11,6 +11,7 @@ public class OrderRepository(IDbContextFactory<ApplicationDbContext> _dbContextF
         await using var context = await _dbContextFactory.CreateDbContextAsync();
         return (await context.Order
             .Include(x => x.User)
+            .OrderByDescending(x => x.CreatedOn)
             .ToListAsync())
             .AsQueryable();
     }

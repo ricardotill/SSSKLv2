@@ -24,6 +24,22 @@ namespace SSSKLv2.Data
                 .HasMany<TopUp>(e => e.TopUps)
                 .WithOne(e => e.User)
                 .OnDelete(DeleteBehavior.Cascade);
+            
+            builder.Entity<Product>()
+                .Property(s => s.CreatedOn )
+                .HasDefaultValueSql("GETDATE()");
+            
+            builder.Entity<Order>()
+                .Property(s => s.CreatedOn )
+                .HasDefaultValueSql("GETDATE()");
+            
+            builder.Entity<TopUp>()
+                .Property(s => s.CreatedOn )
+                .HasDefaultValueSql("GETDATE()");
+            
+            builder.Entity<OldUserMigration>()
+                .Property(s => s.CreatedOn )
+                .HasDefaultValueSql("GETDATE()");
         }
     }
 }

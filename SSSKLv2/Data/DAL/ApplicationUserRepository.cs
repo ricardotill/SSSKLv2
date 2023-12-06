@@ -43,7 +43,7 @@ public class ApplicationUserRepository(IDbContextFactory<ApplicationDbContext> _
                         || x.Email.ToLower().Contains(searchparam)
                         || x.Name.ToLower().Contains(searchparam)
                         || x.Surname.ToLower().Contains(searchparam))
-            .OrderByDescending(x => x.Id)
+            .OrderByDescending(x => x.Surname)
             .Skip(page * 5)
             .Take(5).ToListAsync();
 
@@ -54,7 +54,9 @@ public class ApplicationUserRepository(IDbContextFactory<ApplicationDbContext> _
     {
         IList<ApplicationUser> list = new List<ApplicationUser>();
         await using var context = await _dbContextFactory.CreateDbContextAsync();
-        list = await context.Users.ToListAsync();
+        list = await context.Users
+            .OrderByDescending(e => e.LastOrdered)
+            .ToListAsync();
 
         return list;
     }

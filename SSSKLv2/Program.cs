@@ -41,6 +41,8 @@ builder.Services.AddAuthorization(options =>
 var connection = "";
 if (builder.Environment.IsDevelopment())
 {
+    builder.Services.AddDatabaseDeveloperPageExceptionFilter();
+
     builder.Configuration.AddEnvironmentVariables().AddJsonFile("appsettings.Development.json");
     connection = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 }
@@ -72,7 +74,6 @@ if (builder.Environment.IsProduction())
 }
 
 builder.Services.AddQuickGridEntityFrameworkAdapter();;
-builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
 builder.Services.AddIdentityCore<ApplicationUser>(options =>
     {
@@ -140,5 +141,10 @@ using (var scope = app.Services.CreateScope())
 
 CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.GetCultureInfo("nl-NL");
 CultureInfo.DefaultThreadCurrentCulture = CultureInfo.GetCultureInfo("nl-NL");
+
+using (var scope = app.Services.GetService<IServiceScopeFactory>().CreateScope())
+{
+    scope.ServiceProvider.GetRequiredService<ApplicationDbContext>().Database.Migrate();
+}
 
 app.Run();

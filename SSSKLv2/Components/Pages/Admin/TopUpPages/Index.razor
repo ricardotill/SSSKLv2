@@ -24,7 +24,9 @@
         <TemplateColumn Title="Naam" Context="topup">
             @topup.User.Name @topup.User.Surname
         </TemplateColumn>
-        <PropertyColumn Title="Saldo" Property="@(t => t.Saldo)" Format="C" Sortable="true" Align="Align.Left" />
+        <TemplateColumn Title="Saldo" Context="topup">
+            + @topup.Saldo.ToString("C")
+        </TemplateColumn>
         <TemplateColumn Title="#" Context="topup">
             <a class="btn btn-danger btn-sm" href="@($"admin/topups/delete?id={topup.Id}")" role="button"><i class="bi bi-trash"></i></a>
         </TemplateColumn>
@@ -49,5 +51,4 @@
     {
         TopUps = await TopUpService.GetAllQueryable();
     }
-}
 }

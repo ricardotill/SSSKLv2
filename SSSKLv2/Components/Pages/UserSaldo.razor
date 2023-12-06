@@ -18,7 +18,9 @@
         <TemplateColumn Title="Naam" Context="topup">
             @topup.User.Name @topup.User.Surname
         </TemplateColumn>
-        <PropertyColumn Title="Saldo" Property="@(t => t.Saldo)" Format="C" Sortable="true" Align="Align.Left" />
+        <TemplateColumn Title="Saldo" Context="topup">
+            + @topup.Saldo.ToString("C")
+        </TemplateColumn>
     </QuickGrid>
 </div>
 

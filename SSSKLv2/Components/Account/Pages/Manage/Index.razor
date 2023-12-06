@@ -30,11 +30,11 @@
             </div>
             <div class="form-floating mb-3">
                 <input type="text" value="@surname" class="form-control" placeholder="Vul jouw achternaam in" />
-                <label for="surname" class="form-label">Username</label>
+                <label for="surname" class="form-label">Achternaam</label>
             </div>
             <div class="form-floating mb-3">
                 <InputText @bind-Value="Input.PhoneNumber" class="form-control" placeholder="Vul jouw telefoonnummer in" />
-                <label for="phone-number" class="form-label">Phone number</label>
+                <label for="phone-number" class="form-label">Telefoonnummer</label>
                 <ValidationMessage For="() => Input.PhoneNumber" class="text-danger" />
             </div>
             <button type="submit" class="w-100 btn btn-lg btn-primary">Save</button>
@@ -86,7 +86,7 @@
     private sealed class InputModel
     {
         [Phone]
-        [Display(Name = "Phone number")]
+        [Display(Name = "Telefoonnummer")]
         public string? PhoneNumber { get; set; }
 
         [Required]

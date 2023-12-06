@@ -43,10 +43,10 @@
                 </div>
                 <div class="mt-2">
                     <p>
-                        <a href="Account/ForgotPassword">Forgot your password?</a>
+                        <a href="Account/ForgotPassword">Wachtwoord vergeten??</a>
                     </p>
                     <p>
-                        <a href="Account/ResendEmailConfirmation">Resend email confirmation</a>
+                        <a href="Account/ResendEmailConfirmation">Opnieuw e-mailbevestiging versturen</a>
                     </p>
                 </div>
             </EditForm>
@@ -56,7 +56,7 @@
         <section>
             <h2>Geen account?</h2>
             <hr />
-            <a class="btn btn-primary btn-lg" href="@(NavigationManager.GetUriWithQueryParameters("Account/Register", new Dictionary<string, object?> { ["ReturnUrl"] = ReturnUrl }))" role="button">Maak hier een nieuw account aan</a>
+            <a class="btn btn-primary btn-lg w-100" href="@(NavigationManager.GetUriWithQueryParameters("Account/Register", new Dictionary<string, object?> { ["ReturnUrl"] = ReturnUrl }))" role="button">Maak hier een nieuw account aan <i class="bi bi-arrow-right"></i></a>
         </section>
     </div>
 </div>

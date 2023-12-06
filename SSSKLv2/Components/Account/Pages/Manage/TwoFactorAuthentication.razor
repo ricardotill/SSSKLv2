@@ -21,22 +21,22 @@
         if (recoveryCodesLeft == 0)
         {
             <div class="alert alert-danger">
-                <strong>You have no recovery codes left.</strong>
-                <p>You must <a href="Account/Manage/GenerateRecoveryCodes">generate a new set of recovery codes</a> before you can log in with a recovery code.</p>
+                <strong>Je hebt geen herstelcodes meer over</strong>
+                <p>Je moet <a href="Account/Manage/GenerateRecoveryCodes">een nieuwe set herstelcodes genereren</a> before you can log in with a recovery code.</p>
             </div>
         }
         else if (recoveryCodesLeft == 1)
         {
             <div class="alert alert-danger">
-                <strong>You have 1 recovery code left.</strong>
-                <p>You can <a href="Account/Manage/GenerateRecoveryCodes">generate a new set of recovery codes</a>.</p>
+                <strong>Er is nog een herstelcode over</strong>
+                <p>Het is aangeraden <a href="Account/Manage/GenerateRecoveryCodes">een nieuwe set herstelcodes genereren</a>.</p>
             </div>
         }
         else if (recoveryCodesLeft <= 3)
         {
             <div class="alert alert-warning">
-                <strong>You have @recoveryCodesLeft recovery codes left.</strong>
-                <p>You should <a href="Account/Manage/GenerateRecoveryCodes">generate a new set of recovery codes</a>.</p>
+                <strong>Er zijn nog @recoveryCodesLeft herstelcodes over.</strong>
+                <p>Het is aangeraden <a href="Account/Manage/GenerateRecoveryCodes">een nieuwe set herstelcodes genereren</a>.</p>
             </div>
         }
 
@@ -44,23 +44,23 @@
         {
             <form style="display: inline-block" @formname="forget-browser" @onsubmit="OnSubmitForgetBrowserAsync" method="post">
                 <AntiforgeryToken />
-                <button type="submit" class="btn btn-primary">Forget this browser</button>
+                <button type="submit" class="btn btn-primary">Vergeet deze browser</button>
             </form>
         }
 
-        <a href="Account/Manage/Disable2fa" class="btn btn-primary">Disable 2FA</a>
-        <a href="Account/Manage/GenerateRecoveryCodes" class="btn btn-primary">Reset recovery codes</a>
+        <a href="Account/Manage/Disable2fa" class="btn btn-primary">Deactiveer 2FA</a>
+        <a href="Account/Manage/GenerateRecoveryCodes" class="btn btn-primary">Reset herstelcodes</a>
     }
 
     <h4>Authenticator app</h4>
     @if (!hasAuthenticator)
     {
-        <a href="Account/Manage/EnableAuthenticator" class="btn btn-primary">Add authenticator app</a>
+        <a href="Account/Manage/EnableAuthenticator" class="btn btn-primary">Authenticator app toevoegen</a>
     }
     else
     {
-        <a href="Account/Manage/EnableAuthenticator" class="btn btn-primary">Set up authenticator app</a>
-        <a href="Account/Manage/ResetAuthenticator" class="btn btn-primary">Reset authenticator app</a>
+        <a href="Account/Manage/EnableAuthenticator" class="btn btn-primary">Authenticator app instellen</a>
+        <a href="Account/Manage/ResetAuthenticator" class="btn btn-primary">Authenticator app resetten</a>
     }
 }
 else
@@ -96,7 +96,7 @@ else
         await SignInManager.ForgetTwoFactorClientAsync();
 
         RedirectManager.RedirectToCurrentPageWithStatus(
-            "The current browser has been forgotten. When you login again from this browser you will be prompted for your 2fa code.",
+            "De huidige browser is vergeten. Wanneer u vanuit deze browser opnieuw inlogt, wordt u om uw 2fa-code gevraagd.",
             HttpContext);
     }
 }

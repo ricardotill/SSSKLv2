@@ -1,7 +1,3 @@
-using GridCore.Server;
-using GridShared;
-using GridShared.Utility;
-using Microsoft.Extensions.Primitives;
 using SSSKLv2.Components.Pages;
 using SSSKLv2.Data;
 using SSSKLv2.Data.DAL.Interfaces;
@@ -12,13 +8,6 @@ namespace SSSKLv2.Services;
 public class OrderService(
     IOrderRepository _orderRepository) : IOrderService
 {
-    public async Task<ItemsDTO<Order>> GetAllGridRows(Action<IGridColumnCollection<Order>> columns,
-        QueryDictionary<StringValues> query)
-    {
-        var items = await _orderRepository.GetAll();
-        var server = new GridCoreServer<Order>(items, query, true, "ordersGrid", columns, 10);
-        return server.ItemsToDisplay;
-    }
     public async Task<IQueryable<Order>> GetAllQueryable()
     {
         return await _orderRepository.GetAllQueryable();

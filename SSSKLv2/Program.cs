@@ -65,7 +65,6 @@ builder.Services.AddDbContextFactory<ApplicationDbContext>(
 
 if (builder.Environment.IsProduction())
 {
-    var signalRConnStr = builder.Configuration["AZURE_SIGNALR_CONNECTION_STRING"];
     builder.Services.AddSignalR().AddAzureSignalR(options =>
     {
         options.ServerStickyMode =
@@ -87,8 +86,6 @@ builder.Services.AddIdentityCore<ApplicationUser>(options =>
     .AddClaimsPrincipalFactory<IdentityClaimsPrincipalFactory>();
 
 builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
-
-CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.GetCultureInfo("nl-NL");
 
 builder.Services.AddBlazoredToast();
 
@@ -140,5 +137,8 @@ using (var scope = app.Services.CreateScope())
         }
     }
 }
+
+CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.GetCultureInfo("nl-NL");
+CultureInfo.DefaultThreadCurrentCulture = CultureInfo.GetCultureInfo("nl-NL");
 
 app.Run();

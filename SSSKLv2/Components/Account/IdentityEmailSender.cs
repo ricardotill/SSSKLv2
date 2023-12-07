@@ -9,7 +9,7 @@ public class IdentityEmailSender(ILogger<IdentityEmailSender> logger) : IEmailSe
 {
     private readonly ILogger _logger = logger;
 
-    public string? SendGridKey { get; } = Environment.GetEnvironmentVariable("SENDGRID_KEY");
+    public string? SendGridKey { get; } = Environment.GetEnvironmentVariable("CUSTOMCONNSTR_SENDGRID_KEY");
 
     public async Task SendEmailAsync(string toEmail, string subject, string message)
     {

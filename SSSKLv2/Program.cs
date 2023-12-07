@@ -25,6 +25,8 @@ builder.Services.AddScoped<IdentityUserAccessor>();
 builder.Services.AddScoped<IdentityRedirectManager>();
 builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();
 
+builder.Services.AddHealthChecks();
+
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultScheme = IdentityConstants.ApplicationScheme;
@@ -138,6 +140,8 @@ using (var scope = app.Services.CreateScope())
         }
     }
 }
+
+app.MapHealthChecks("/healthz");
 
 CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.GetCultureInfo("nl-NL");
 CultureInfo.DefaultThreadCurrentCulture = CultureInfo.GetCultureInfo("nl-NL");

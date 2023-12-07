@@ -29,9 +29,7 @@
                             @u.Name @u.Surname
                         </TemplateColumn>
                         <PropertyColumn Title="Gebruikersnaam" Property="@(u => u.UserName)" Sortable="true" Align="Align.Left" />
-                        <TemplateColumn Title="Saldo" Context="u">
-                            + @u.Saldo.ToString("C")
-                        </TemplateColumn>
+                        <PropertyColumn Title="Saldo" Property="@(u => u.Saldo)" Format="C" Sortable="true" Align="Align.Left" />
                         <PropertyColumn Title="E-mailadres" Property="@(u => u.Email)" Sortable="true" Align="Align.Left" />
                         <PropertyColumn Title="E-mail bevestigd" Property="@(u => u.EmailConfirmed)" Sortable="true" Align="Align.Left" />
                         <TemplateColumn Title="#" Context="u">

@@ -144,15 +144,23 @@
                                        @bind="objUser.PasswordHash"/>
                                 <br/><br/>
                                 <!-- Button to save the user -->
-                                <button class="btn btn-success"
-                                        @onclick="SaveUser">
-                                    Opslaan
-                                </button>
-                                <!-- Button to delete the user -->
-                                <button class="btn btn-danger"
-                                        @onclick="DeleteUser">
-                                    Verwijderen
-                                </button>
+                                <div class="row">
+                                    <div class="col-2 me-auto">
+                                        <button class="btn btn-success"
+                                                @onclick="SaveUser">
+                                            Opslaan
+                                        </button>
+                                    </div>
+                                    <div class="col-2 ms-auto">
+                                        <!-- Button to delete the user -->
+                                        <button class="btn btn-danger ms-auto"
+                                                @onclick="DeleteUser">
+                                            Verwijderen
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                
                                 <br/>
                                 <span style="color:red">@strError</span>
                             </div>

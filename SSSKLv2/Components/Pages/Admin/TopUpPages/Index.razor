@@ -1,4 +1,6 @@
 ﻿@page "/admin/topups"
+@rendermode InteractiveServer
+
 @attribute [Authorize(Policy = Policies.Admin)]
 @inject ITopUpService TopUpService
 @using SSSKLv2.Data

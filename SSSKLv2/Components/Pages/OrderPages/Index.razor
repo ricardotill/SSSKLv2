@@ -1,11 +1,14 @@
 ﻿@page "/orders"
+@rendermode InteractiveServer
 @attribute [Authorize]
 
 @inject IOrderService OrderService
+@inject AuthenticationStateProvider AuthenticationStateProvider
 @using SSSKLv2.Data
 @using SSSKLv2.Services.Interfaces
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.QuickGrid
+@using SSSKLv2.Services
 
 <PageTitle>SSSKLv2 | Geschiedenis</PageTitle>
 
@@ -26,8 +29,7 @@
 <Paginator State="@pagination" />
 
 @code {
-
-
+    
     public PaginationState pagination = new PaginationState() { ItemsPerPage = 15 };
     
     [CascadingParameter]
@@ -42,7 +44,10 @@
 
     private async Task GetDataAsync()
     {
-        var username = HttpContext.User.Identity.Name;
-        Orders = await OrderService.GetPersonalQueryable(username);
+        var state = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        if (state.User.Identity != null && state.User.Identity.IsAuthenticated)
+        {
+            if (state.User.Identity.Name != null) Orders = await OrderService.GetPersonalQueryable(state.User.Identity.Name);
+        }
     }
 }

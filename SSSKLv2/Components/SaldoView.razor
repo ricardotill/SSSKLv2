@@ -1,0 +1,43 @@
+@using SSSKLv2.Services.Interfaces
+@rendermode InteractiveServer
+@implements IDisposable
+
+@inject IHeaderService HeaderService;
+@inject IApplicationUserService ApplicationUserService;
+@inject AuthenticationStateProvider StateProvider;
+
+<ul class="nav me-auto">
+    <li class="nav-item">
+        <NavLink class="nav-link ms-0" href="saldo">@HeaderService.Saldo</NavLink>
+    </li>
+</ul>
+
+@code {
+    protected async override Task OnInitializedAsync()
+    {
+        await UpdateData();
+
+        HeaderService.HeaderChanged += OnChange;
+        StateHasChanged();
+    }
+    
+    private void OnChange(object? sender, EventArgs e)
+        => this.InvokeAsync(UpdateData);
+
+    public async Task UpdateData() 
+    {
+        var state = await StateProvider.GetAuthenticationStateAsync();
+        if (state.User.Identity != null && state.User.Identity.IsAuthenticated)
+        {
+            var user = await ApplicationUserService.GetUserByUsername(state.User.Identity.Name!);
+            HeaderService.Name = user.Name;
+            HeaderService.Saldo = user.Saldo.ToString("C");
+        }
+        StateHasChanged();
+    }
+    
+    public void Dispose()
+    {
+        HeaderService.HeaderChanged -= OnChange;
+    }
+}

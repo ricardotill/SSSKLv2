@@ -33,6 +33,7 @@
   <ItemGroup>
     <PackageReference Include="BlazorComponentUtilities" Version="1.8.0" />
     <PackageReference Include="Blazored.Toast" Version="4.1.0" />
+    <PackageReference Include="FluentValidation" Version="11.8.1" />
     <PackageReference Include="Microsoft.ApplicationInsights" Version="2.22.0" />
     <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.22.0" />
     <PackageReference Include="Microsoft.ApplicationInsights.DependencyCollector" Version="2.22.0" />

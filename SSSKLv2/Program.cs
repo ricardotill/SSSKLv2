@@ -75,7 +75,8 @@ if (builder.Environment.IsProduction())
     });
 }
 
-builder.Services.AddQuickGridEntityFrameworkAdapter();;
+builder.Services.AddQuickGridEntityFrameworkAdapter();
+
 
 builder.Services.AddIdentityCore<ApplicationUser>(options =>
     {

@@ -1,6 +1,6 @@
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.Build.Framework;
 
 namespace SSSKLv2.Data
 {
@@ -17,7 +17,7 @@ namespace SSSKLv2.Data
         public IEnumerable<Order> Orders { get; set; } = new List<Order>();
         [PersonalData]
         public IEnumerable<TopUp> TopUps { get; set; } = new List<TopUp>();
-        [Required]
+        [Microsoft.Build.Framework.Required]
         public DateTime LastOrdered { get; set; } = DateTime.UtcNow;
         public byte[]? ProfilePicture { get; set; }
     }

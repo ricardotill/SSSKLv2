@@ -1,10 +1,10 @@
 ﻿@using SSSKLv2.Services.Interfaces
-@using Blazored.Toast.Configuration
 @inherits LayoutComponentBase
 @implements IDisposable
 @inject NavigationManager NavigationManager
-@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject AuthenticationStateProvider StateProvider
 @inject IApplicationUserService ApplicationUserService
+@inject IHeaderService HeaderService
 
 <div class="page">
     <div class="sidebar">
@@ -14,11 +14,7 @@
         <div class="top-row px-4">
             <AuthorizeView>
                 <Authorized>
-                    <ul class="nav me-auto">
-                        <li class="nav-item">
-                            <NavLink class="nav-link ms-0" href="saldo">@Saldo</NavLink>
-                        </li>
-                    </ul>
+                    <SaldoView />
                 </Authorized>
             </AuthorizeView>
             <ul class="nav ml-auto">
@@ -30,7 +26,7 @@
                     </NotAuthorized>
                     <Authorized>
                         <li class="nav-item">
-                            <NavLink class="btn btn-link" href="Account/Manage">Welkom @Name!</NavLink>
+                            <NavLink class="btn btn-link" href="Account/Manage">Welkom @HeaderService.Name!</NavLink>
                         </li>
                         <li class="nav-item">
                             <form action="Account/Logout" method="post">
@@ -46,9 +42,7 @@
             </ul>
         </div>
         <article class="content px-4">
-            <CascadingValue Value="@OnSaldoChange">
-                @Body
-            </CascadingValue>
+            @Body
         </article>
     </main>
 </div>
@@ -59,22 +53,13 @@
     <a class="dismiss">🗙</a>
 </div>
 @code{
-    public string? Name { get; set; }
-    public string? Saldo { get; set; }
+    public static string? Name { get; set; }
+    public static string? Saldo { get; set; }
 
     private string? currentUrl;
 
     [CascadingParameter]
     private HttpContext HttpContext { get; set; } = default!;
-
-    private EventCallback _onSaldoChange = EventCallback.Empty;
-    public EventCallback OnSaldoChange  {
-        get {
-            if (_onSaldoChange.Equals(EventCallback.Empty))
-                _onSaldoChange = EventCallback.Factory.Create(this, UpdateData);
-            return _onSaldoChange;
-        }
-    }
 
     protected async override Task OnInitializedAsync()
     {
@@ -82,17 +67,20 @@
         NavigationManager.LocationChanged += OnLocationChanged;
         
         await UpdateData();
+
+        StateHasChanged();
     }
+    
 
     public async Task UpdateData() 
     {
-        var state = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var state = await StateProvider.GetAuthenticationStateAsync();
         if (state.User.Identity != null && state.User.Identity.IsAuthenticated)
         {
             var user = await ApplicationUserService.GetUserByUsername(state.User.Identity.Name!);
-            Name = user.Name;
-            Saldo = user.Saldo.ToString("C");
+            HeaderService.Name = user.Name;
         }
+        StateHasChanged();
     }
 
     private void OnLocationChanged(object? sender, LocationChangedEventArgs e)

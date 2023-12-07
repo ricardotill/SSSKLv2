@@ -8,8 +8,10 @@
 @using System.Linq
 @using BlazorComponentUtilities
 @using Blazored.Toast.Configuration
+@using SSSKLv2.Validators
 @attribute [Authorize]
 
+@inject IHeaderService HeaderService
 @inject IApplicationUserService ApplicationUserService
 @inject IProductService ProductService
 @inject IOrderService OrderService
@@ -111,9 +113,6 @@ else
     [SupplyParameterFromForm]
     public BestellingDTO Model { get; set; } = new();
     
-    [CascadingParameter]
-    public EventCallback OnSaldoChange { get; set; }
-    
     protected override async Task OnInitializedAsync()
     {
         await GetData();
@@ -137,10 +136,22 @@ else
 
     public async Task Submit()
     {
+        BestellingDTOValidator validator = new BestellingDTOValidator();
+        var validationResults = validator.Validate(Model);
+
+        if (!validationResults.IsValid)
+        {
+            foreach (var err in validationResults.Errors)
+            {
+                ToastService.ShowError(err.ErrorMessage);
+            }
+            return;
+        }
+        
         await OrderService.CreateOrder(Model);
         ToastService.ShowSuccess("Betaling gelukt");
         await Clear();
-        await OnSaldoChange.InvokeAsync();
+        HeaderService.NotifyHeaderChanged();
     }
 
     private void OnClick(MouseEventArgs args, Select select)

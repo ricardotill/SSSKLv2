@@ -36,7 +36,7 @@
                     <div class="mb-3">
                         <label class="form-label" for="usersSelect">Wie wil je opwaarderen?</label>
                         <InputSelect @bind-Value="TopUp.UserId" class="form-select" id="usersSelect">
-                            <option selected>Selecteer een gebruiker</option>
+                            @* <option selected>Selecteer een gebruiker</option> *@
                             @foreach (var user in Users)
                             {
                                 <option value="@user.Id">@user.Name @user.Surname</option>

@@ -5,9 +5,10 @@
 
 @using Microsoft.AspNetCore.Identity;
 @using SSSKLv2.Data
-@using SSSKLv2.DTO
 @using SSSKLv2.Services.Interfaces
 @using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.QuickGrid
+
 @inject UserManager<ApplicationUser> _UserManager
 @inject IApplicationUserService _ApplicationUserService
 
@@ -22,55 +23,25 @@
             }
             else
             {
-                <div class="table-responsive">
-                    <table class="table table-striped">
-                        <thead>
-                        <tr>
-                            <th>Volledige naam</th>
-                            <th>Gebruikersnaam</th>
-                            <th>Saldo</th>
-                            <th>E-mail</th>
-                            <th>E-mail bevestigd</th>
-                            <th>#</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        @foreach (var user in ColUsers.ApplicationUsers)
-                        {
-                            <tr>
-                                <td>@user.Name @user.Surname</td>
-                                <td>@user.UserName</td>
-                                <td>@user.Saldo.ToString("C")</td>
-                                <td>@user.Email</td>
-                                <td>@user.EmailConfirmed</td>
-                                <td>
-                                    <button class="btn btn-sm btn-info"
-                                            @onclick="(() => EditUser(user))">
-                                        <i class="bi bi-pen"></i>
-                                    </button>
-                                </td>
-                            </tr>
-                        }
-                        </tbody>
-                    </table>
+                <div class="grid">
+                    <QuickGrid Items="@ColUsers">
+                        <TemplateColumn Title="Volledige naam" Context="u">
+                            @u.Name @u.Surname
+                        </TemplateColumn>
+                        <PropertyColumn Title="Gebruikersnaam" Property="@(u => u.UserName)" Sortable="true" Align="Align.Left" />
+                        <TemplateColumn Title="Saldo" Context="u">
+                            + @u.Saldo.ToString("C")
+                        </TemplateColumn>
+                        <PropertyColumn Title="E-mailadres" Property="@(u => u.Email)" Sortable="true" Align="Align.Left" />
+                        <PropertyColumn Title="E-mail bevestigd" Property="@(u => u.EmailConfirmed)" Sortable="true" Align="Align.Left" />
+                        <TemplateColumn Title="#" Context="u">
+                            <button class="btn btn-sm btn-info"
+                                    @onclick="(() => EditUser(u))">
+                                <i class="bi bi-pen"></i>
+                            </button>
+                        </TemplateColumn>
+                    </QuickGrid>
                 </div>
-                
-                <p>
-                    @if (ShowPreviousButton)
-                    {
-                        <button class="btn btn-warning"
-                                @onclick="Previous">
-                            <b>&#x3C;</b>
-                        </button>
-                    }
-                    @if (ShowNextButton)
-                    {
-                        <button class="btn btn-warning"
-                                @onclick="Next">
-                            <b>&#x3E;</b>
-                        </button>
-                    }
-                </p>
             }
             @if (ShowPopup)
             {
@@ -151,7 +122,7 @@
                                             Opslaan
                                         </button>
                                     </div>
-                                    <div class="col-2 ms-auto">
+                                    <div class="col-2 ms-auto text-end">
                                         <!-- Button to delete the user -->
                                         <button class="btn btn-danger ms-auto"
                                                 @onclick="DeleteUser">
@@ -181,7 +152,7 @@
 
     string ADMINISTRATION_ROLE = "Admin";
     ApplicationUser objUser = new ApplicationUser();
-    ApplicationUserPaged ColUsers = new (){ ApplicationUsers = new List<ApplicationUser>(), ApplicationUserCount = 0 };
+    IQueryable<ApplicationUser> ColUsers = default!;
 
     List<string> Options = new () { "User", "Admin" };
     List<string> OptionsTrueFalse = new () { "True", "False" };
@@ -191,10 +162,6 @@
     string strError = "";
     string strSearch = "";
     bool ShowPopup = false;
-
-    int CurrentPage = 1;
-    bool ShowPreviousButton { get { return (CurrentPage > 1); } }
-    bool ShowNextButton { get { return ((ColUsers.ApplicationUserCount > (CurrentPage * 5))); } }
 
     protected override async Task OnInitializedAsync()
     {
@@ -212,7 +179,7 @@
         // clear any error messages
         strError = "";
 
-        ColUsers = await _ApplicationUserService.GetPagedUsers(strSearch, CurrentPage);
+        ColUsers = await _ApplicationUserService.GetAllUsersObscured();
     }
 
     void ClosePopup()
@@ -356,39 +323,6 @@
             await _UserManager.DeleteAsync(user);
         }
 
-        // Refresh Users
-        await GetUsers();
-    }
-
-    // Search
-
-    async Task Search(string value, string name)
-    {
-        // Update search value
-        strSearch = value;
-
-        // Switch to page 1
-        CurrentPage = 1;
-
-        // Refresh Users
-        await GetUsers();
-    }
-
-    // Paging
-
-    async Task Previous()
-    {
-        if (CurrentPage > 1)
-        {
-            CurrentPage = CurrentPage - 1;
-            // Refresh Users
-            await GetUsers();
-        }
-    }
-
-    async Task Next()
-    {
-        CurrentPage = CurrentPage + 1;
         // Refresh Users
         await GetUsers();
     }

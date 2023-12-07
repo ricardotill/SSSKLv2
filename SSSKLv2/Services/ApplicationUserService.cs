@@ -1,6 +1,5 @@
 using SSSKLv2.Data;
 using SSSKLv2.Data.DAL.Interfaces;
-using SSSKLv2.DTO;
 using SSSKLv2.Services.Interfaces;
 
 namespace SSSKLv2.Services;
@@ -19,16 +18,11 @@ public class ApplicationUserService(IApplicationUserRepository _applicationUserR
     {
         return await _applicationUserRepository.GetAll();
     }
-    public async Task<ApplicationUserPaged> GetPagedUsers(string searchParam, int page)
+    public async Task<IQueryable<ApplicationUser>> GetAllUsersObscured()
     {
-        page -= 1;
-        ApplicationUserPaged objApplicationUserPaged = new ApplicationUserPaged();
+        var result = new List<ApplicationUser>();
 
-        objApplicationUserPaged.ApplicationUsers = new List<ApplicationUser>();
-
-        var list = await _applicationUserRepository.GetAllBySearchparam(
-            searchParam, page);
-        objApplicationUserPaged.ApplicationUserCount = list.Count;
+        var list = await _applicationUserRepository.GetAll();
 
         foreach (var item in list)
         {
@@ -44,9 +38,9 @@ public class ApplicationUserService(IApplicationUserRepository _applicationUserR
             objApplicationUser.PhoneNumber = item.PhoneNumber;
             objApplicationUser.PasswordHash = "*****";
 
-            objApplicationUserPaged.ApplicationUsers.Add(objApplicationUser);
+            result.Add(objApplicationUser);
         }
 
-        return objApplicationUserPaged;
+        return result.AsQueryable();
     }
 }

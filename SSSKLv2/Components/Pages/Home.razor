@@ -27,7 +27,7 @@ else
 {
     <EditForm method="post" Model="@Model" OnValidSubmit="@Submit" FormName="Bestellen" Enhance>
         <DataAnnotationsValidator />
-        <ValidationSummary class="text-danger" />
+        <ValidationSummary class="text1-danger" />
         <div class="row">
             <div class="col-md-4 mb-3">
                 <h4>Wat</h4>
@@ -36,19 +36,21 @@ else
                     {
                         string css = new CssBuilder()
                             .AddClass("btn")
-                            .AddClass("btn-primary")
+                            .AddClass("select-button")
+                            .AddClass("btn-secondary", when: !product.Selected)
+                            .AddClass("btn-primary", when: product.Selected)
                             .AddClass("bg-body-tertiary")
                             .AddClass("btn-select")
                             .AddClass("w-100")
                             .AddClass("m-1")
                             .AddClass("text-start")
-                            .AddClass("selected", when: product.Selected)
+                            .AddClass("my-1")
                             .ToString() ?? string.Empty;
                         
                         <div class="col-6 p-0 pe-sm-1 pe-md-3">
                             <button type="button" class="@css" @onclick="@(e => OnClick(e, product))">
                                 <InputCheckbox class="form-check-input btn-select-checkbox me-1" @bind-Value="product.Selected" />
-                                @product.Value.Name <small>@product.Value.Price.ToString("C")</small>
+                                @product.Value.Name <small class="text-nowrap">@product.Value.Price.ToString("C")</small>
                             </button>
                         </div>
                     }
@@ -61,13 +63,15 @@ else
                     {
                         string css = new CssBuilder()
                             .AddClass("btn")
-                            .AddClass("btn-primary")
+                            .AddClass("select-button")
+                            .AddClass("btn-secondary", when: !user.Selected)
+                            .AddClass("btn-primary", when: user.Selected)
                             .AddClass("bg-body-tertiary")
                             .AddClass("btn-select")
                             .AddClass("w-100")
                             .AddClass("m-1")
                             .AddClass("text-start")
-                            .AddClass("selected", when: user.Selected)
+                            .AddClass("my-1")
                             .ToString() ?? string.Empty;
                         
                         <div class="col-6 p-0 pe-sm-1 pe-md-3">

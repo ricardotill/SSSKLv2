@@ -15,7 +15,7 @@
 <StatusMessage Message="@errorMessage" />
 
 <div class="row">
-    <div class="col-md-4">
+    <div class="col-md-4 mb-2">
         <section>
             <EditForm Model="Input" method="post" OnValidSubmit="LoginUser" FormName="login">
                 <DataAnnotationsValidator />
@@ -43,16 +43,16 @@
                 </div>
                 <div class="mt-2">
                     <p>
-                        <a class="btn btn-link" href="Account/ForgotPassword">Wachtwoord vergeten</a>
+                        <a href="Account/ForgotPassword">Wachtwoord vergeten</a>
                     </p>
                     <p>
-                        <a class="btn btn-link" href="Account/ResendEmailConfirmation">Opnieuw e-mailbevestiging versturen</a>
+                        <a href="Account/ResendEmailConfirmation">Opnieuw e-mailbevestiging versturen</a>
                     </p>
                 </div>
             </EditForm>
         </section>
     </div>
-    <div class="col-md-6 col-md-offset-2">
+    <div class="col-md-6 col-md-offset-2 mb-2">
         <section>
             <h2>Geen account?</h2>
             <hr />
@@ -105,7 +105,7 @@
         }
         else
         {
-            errorMessage = "Error: Invalid login attempt.";
+            errorMessage = "Fout: Ongeldige inlogpoging.";
         }
     }
 

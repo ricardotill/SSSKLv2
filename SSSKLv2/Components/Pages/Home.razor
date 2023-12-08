@@ -12,6 +12,7 @@
 @attribute [Authorize]
 
 @inject IHeaderService HeaderService
+@inject AuthenticationStateProvider AuthStateProvider
 @inject IApplicationUserService ApplicationUserService
 @inject IProductService ProductService
 @inject IOrderService OrderService
@@ -40,14 +41,14 @@ else
                             .AddClass("btn-secondary", when: !product.Selected)
                             .AddClass("btn-primary", when: product.Selected)
                             .AddClass("bg-body-tertiary")
-                            .AddClass("btn-select")
+                            .AddClass("border-3")
                             .AddClass("w-100")
                             .AddClass("m-1")
                             .AddClass("text-start")
                             .AddClass("my-1")
                             .ToString() ?? string.Empty;
                         
-                        <div class="col-6 p-0 pe-sm-1 pe-md-3">
+                        <div class="col-6 p-0 pe-3">
                             <button type="button" class="@css" @onclick="@(e => OnClick(e, product))">
                                 <InputCheckbox class="form-check-input btn-select-checkbox me-1" @bind-Value="product.Selected" />
                                 @product.Value.Name <small class="text-nowrap">@product.Value.Price.ToString("C")</small>
@@ -67,14 +68,14 @@ else
                             .AddClass("btn-secondary", when: !user.Selected)
                             .AddClass("btn-primary", when: user.Selected)
                             .AddClass("bg-body-tertiary")
-                            .AddClass("btn-select")
+                            .AddClass("border-3")
                             .AddClass("w-100")
                             .AddClass("m-1")
                             .AddClass("text-start")
                             .AddClass("my-1")
                             .ToString() ?? string.Empty;
                         
-                        <div class="col-6 p-0 pe-sm-1 pe-md-3">
+                        <div class="col-6 p-0 pe-3">
                             <button type="button" class="@css" @onclick="@(e => OnClick(e, user))">
                                 <InputCheckbox class="form-check-input btn-select-checkbox me-1" @bind-Value="user.Selected"/>
                                 @user.Value.Name @user.Value.Surname.First()
@@ -130,6 +131,15 @@ else
         Model.Users = (await ApplicationUserService.GetAllUsers())
             .Select(x => new Select<ApplicationUser> {Value = x})
             .ToList();
+        await SelectCurrentUser();
+    }
+
+    private async Task SelectCurrentUser()
+    {
+        var user = await AuthStateProvider.GetAuthenticationStateAsync();
+        var userModel = Model.Users
+            .SingleOrDefault(x => x.Value.UserName == user.User.Identity?.Name);
+        if (userModel != null) userModel.Selected = true;
     }
 
     public async Task Clear()

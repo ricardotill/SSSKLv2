@@ -58,9 +58,17 @@ public class ApplicationUserService(
         var leaderboard = new List<LeaderboardEntry>();
         foreach (var u in ulist)
         {
-            var count = u.Orders
-                .Where(o => o.ProductNaam == product.Name)
-                .Sum(o => o.Amount);
+            int count;
+            try
+            {
+                count = u.Orders
+                    .Where(o => o.ProductNaam == product.Name)
+                    .Sum(o => o.Amount);
+            }
+            catch (OverflowException)
+            {
+                count = Int32.MaxValue;
+            }
             leaderboard.Add(new LeaderboardEntry() { Amount = count, FullName = $"{u.Name} {u.Surname.First()}"});
         }
         return leaderboard.OrderByDescending(x => x.Amount);
@@ -77,10 +85,19 @@ public class ApplicationUserService(
         var leaderboard = new List<LeaderboardEntry>();
         foreach (var u in ulist)
         {
-            var count = u.Orders
-                .Where(o => o.CreatedOn >= startDate && o.CreatedOn < endDate)
-                .Where(o => o.ProductNaam == product.Name)
-                .Sum(o => o.Amount);
+            int count;
+            try
+            {
+                count = u.Orders
+                    .Where(o => o.CreatedOn >= startDate && o.CreatedOn < endDate)
+                    .Where(o => o.ProductNaam == product.Name)
+                    .Sum(o => o.Amount);
+            }
+            catch (OverflowException)
+            {
+                count = Int32.MaxValue;
+            }
+            
             leaderboard.Add(new LeaderboardEntry() { Amount = count, FullName = $"{u.Name} {u.Surname.First()}"});
         }
         return leaderboard.OrderByDescending(x => x.Amount);

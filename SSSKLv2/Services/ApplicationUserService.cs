@@ -63,7 +63,7 @@ public class ApplicationUserService(
                 .Sum(o => o.Amount);
             leaderboard.Add(new LeaderboardEntry() { Amount = count, FullName = $"{u.Name} {u.Surname.First()}"});
         }
-        return leaderboard;
+        return leaderboard.OrderByDescending(x => x.Amount);
     }
     
     public async Task<IEnumerable<LeaderboardEntry>> GetMonthlyLeaderboard(Product product)
@@ -83,6 +83,6 @@ public class ApplicationUserService(
                 .Sum(o => o.Amount);
             leaderboard.Add(new LeaderboardEntry() { Amount = count, FullName = $"{u.Name} {u.Surname.First()}"});
         }
-        return leaderboard;
+        return leaderboard.OrderByDescending(x => x.Amount);
     }
 }

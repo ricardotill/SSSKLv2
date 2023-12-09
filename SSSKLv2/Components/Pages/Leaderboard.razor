@@ -10,7 +10,6 @@
 
 <h1>Leaderboard</h1>
 
-
 <div class="mb-3">
   <label for="productSelect" class="form-label">Selecteer een product</label>
   <select @bind="SelectedProductId" @bind:after="@UpdateLeaderboards" class="form-control form-select" id="productSelect" aria-label="Select Product">
@@ -26,16 +25,19 @@
     <table class="table table-striped">
         <thead>
         <tr>
+            <th scope="col">Plek</th>
             <th scope="col">Naam</th>
             <th scope="col">Hoeveelheid</th>
         </tr>
         </thead>
         <tbody>
-        @foreach (var l in Monthly)
+        @foreach (var l in Monthly.Select((value,i) => new {i, value}))
         {
+            var place = l.i + 1;
             <tr>
-                <td>@l.FullName</td>
-                <td>@l.Amount</td>
+                <td>#@place</td>
+                <td>@l.value.FullName</td>
+                <td>@l.value.Amount</td>
             </tr>
         }
         </tbody>
@@ -47,24 +49,26 @@
   <table class="table table-striped">
     <thead>
     <tr>
+        <th scope="col">Plek</th>
         <th scope="col">Naam</th>
         <th scope="col">Hoeveelheid</th>
     </tr>
       </thead>
-    <tbody>
-    @foreach (var l in All)
-    {
-        <tr>
-            <td>@l.FullName</td>
-            <td>@l.Amount</td>
-        </tr>
-    }
-    </tbody>
+      <tbody>
+      @foreach (var l in All.Select((value,i) => new {i, value}))
+      {
+          var place = l.i + 1;
+          <tr>
+              <td>#@place</td>
+              <td>@l.value.FullName</td>
+              <td>@l.value.Amount</td>
+          </tr>
+      }
+      </tbody>
   </table>
 </div>
 
 @code {
-
     public IEnumerable<Product> Products { get; set; } = new List<Product>();
     public string? SelectedProductId { get; set; }
     

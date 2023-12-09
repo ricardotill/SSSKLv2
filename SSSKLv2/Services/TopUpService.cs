@@ -5,27 +5,32 @@ using SSSKLv2.Services.Interfaces;
 namespace SSSKLv2.Services;
 
 public class TopUpService(
-    ITopUpRepository _topUpRepository) : ITopUpService
+    ITopUpRepository _topUpRepository,
+    ILogger<TopUpService> _logger) : ITopUpService
 {
     public async Task<IQueryable<TopUp>> GetAllQueryable()
     {
+        _logger.LogInformation($"{GetType()}: Get All TopUps as Queryable");
         return await _topUpRepository.GetAllQueryable();
     }
     public async Task<IQueryable<TopUp>> GetPersonalQueryable(string username)
     {
+        _logger.LogInformation($"{GetType()}: Get Personal TopUps as Queryable for user with username {username}");
         return await _topUpRepository.GetPersonalQueryable(username);
     }
     public async Task<TopUp> GetById(string id)
     {
+        _logger.LogInformation($"{GetType()}: Get TopUp with ID {id}");
         return await _topUpRepository.GetById(Guid.Parse(id));
     }
     public async Task CreateTopUp(TopUp topup)
     {
+        _logger.LogInformation($"{GetType()}: Create TopUp for user {topup.User.UserName} with amount {topup.Saldo}");
         await _topUpRepository.Create(topup);
     }
     public async Task DeleteTopUp(Guid id)
     {
-        var topup = await _topUpRepository.GetById(id);
+        _logger.LogInformation($"{GetType()}: Delete TopUp with ID {id}");
         await _topUpRepository.Delete(id);
     }
 }

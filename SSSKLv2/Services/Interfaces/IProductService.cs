@@ -8,5 +8,5 @@ public interface IProductService
     public Task<IList<Product>> GetAll();
     public Task CreateProduct(Product obj);
     public Task UpdateProduct(Product obj);
-    public Task CreateProduct(Guid id);
+    public Task DeleteProduct(Guid id);
 }

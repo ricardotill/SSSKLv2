@@ -27,7 +27,7 @@
             @topup.User.Name @topup.User.Surname
         </TemplateColumn>
         <TemplateColumn Title="Saldo" Context="topup">
-            + @topup.Saldo.ToString("C")
+            <span class="text-nowrap">+ @topup.Saldo.ToString("C")</span>
         </TemplateColumn>
         <TemplateColumn Title="#" Context="topup">
             <a class="btn btn-danger btn-sm" href="@($"admin/topups/delete?id={topup.Id}")" role="button"><i class="bi bi-trash"></i></a>

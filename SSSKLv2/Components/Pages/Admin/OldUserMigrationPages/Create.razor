@@ -51,7 +51,7 @@
     // To protect from overposting attacks, see https://aka.ms/RazorPagesCRUD
     public async Task AddOldUserMigration()
     {
-        await OldMigrationsService.CreateProduct(OldUserMigration);
+        await OldMigrationsService.CreateMigration(OldUserMigration);
         NavigationManager.NavigateTo("/admin/oldusermigrations");
     }
 }

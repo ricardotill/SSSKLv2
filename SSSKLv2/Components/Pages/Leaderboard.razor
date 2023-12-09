@@ -1,0 +1,95 @@
+@page "/leaderboard"
+@rendermode InteractiveServer
+
+@using SSSKLv2.Services.Interfaces
+@using SSSKLv2.Data
+@inject IApplicationUserService ApplicationUserService
+@inject IProductService ProductService
+
+<PageTitle>SSSKLv2 | Leaderboard</PageTitle>
+
+<h1>Leaderboard</h1>
+
+
+<div class="mb-3">
+  <label for="productSelect" class="form-label">Selecteer een product</label>
+  <select @bind="SelectedProductId" @bind:after="@UpdateLeaderboards" class="form-control form-select" id="productSelect" aria-label="Select Product">
+      @foreach (var p in Products)
+      {
+          <option value="@p.Id">@p.Name</option>
+      }
+  </select>
+</div>
+
+<h3>Maandelijks</h3>
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead>
+        <tr>
+            <th scope="col">Naam</th>
+            <th scope="col">Hoeveelheid</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var l in Monthly)
+        {
+            <tr>
+                <td>@l.FullName</td>
+                <td>@l.Amount</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>
+
+<h3>Totaal</h3>
+<div class="table-responsive">
+  <table class="table table-striped">
+    <thead>
+    <tr>
+        <th scope="col">Naam</th>
+        <th scope="col">Hoeveelheid</th>
+    </tr>
+      </thead>
+    <tbody>
+    @foreach (var l in All)
+    {
+        <tr>
+            <td>@l.FullName</td>
+            <td>@l.Amount</td>
+        </tr>
+    }
+    </tbody>
+  </table>
+</div>
+
+@code {
+
+    public IEnumerable<Product> Products { get; set; } = new List<Product>();
+    public string? SelectedProductId { get; set; }
+    
+    public IEnumerable<LeaderboardEntry> Monthly { get; set; } = new List<LeaderboardEntry>();
+    public IEnumerable<LeaderboardEntry> All { get; set; } = new List<LeaderboardEntry>();
+    
+    protected override async Task OnInitializedAsync()
+    {
+        await GetData();
+    }
+
+    private async Task GetData()
+    {
+        Products = await ProductService.GetAll();
+        SelectedProductId = Products.FirstOrDefault()?.Id.ToString();
+        await UpdateLeaderboards();
+    }
+
+    public async Task UpdateLeaderboards()
+    {
+        if (SelectedProductId != null)
+        {
+            var product = Products.FirstOrDefault(x => x.Id == new Guid(SelectedProductId));
+            Monthly = await ApplicationUserService.GetMonthlyLeaderboard(product);
+            All = await ApplicationUserService.GetAllLeaderboard(product);
+        }
+    }
+}

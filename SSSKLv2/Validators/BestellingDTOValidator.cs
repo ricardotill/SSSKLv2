@@ -11,7 +11,7 @@ public class BestellingDTOValidator : AbstractValidator<Home.BestellingDTO>
         RuleFor(x => x.Products.Count(x => x.Selected))
             .GreaterThan(0)
             .WithMessage("Er moet minimaal 1 product geselecteerd zijn.");
-        RuleFor(x => x.Products.Count(x => x.Selected))
+        RuleFor(x => x.Users.Count(x => x.Selected))
             .GreaterThan(0)
             .WithMessage("Er moet minimaal 1 gebruiker geselecteerd zijn.");
         RuleFor(x => x.Amount)

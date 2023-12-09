@@ -62,7 +62,7 @@
 
     public async Task DeleteOldUserMigration()
     {
-        if (oldusermigration != null) await OldMigrationService.DeleteProduct(oldusermigration.Id);
+        if (oldusermigration != null) await OldMigrationService.DeleteMigration(oldusermigration.Id);
         NavigationManager.NavigateTo("/admin/oldusermigrations");
     }
 }

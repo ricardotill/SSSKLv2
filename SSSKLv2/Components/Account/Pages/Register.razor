@@ -129,7 +129,7 @@
         
         if (migration != null)
         {
-            await MigrationService.DeleteProduct(migration.Id);
+            await MigrationService.DeleteMigration(migration.Id);
         }
 
         await SignInManager.SignInAsync(user, isPersistent: false);

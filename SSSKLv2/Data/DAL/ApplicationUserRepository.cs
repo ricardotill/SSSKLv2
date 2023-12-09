@@ -60,4 +60,16 @@ public class ApplicationUserRepository(IDbContextFactory<ApplicationDbContext> _
 
         return list;
     }
+    
+    public async Task<IList<ApplicationUser>> GetAllWithOrders()
+    {
+        IList<ApplicationUser> list = new List<ApplicationUser>();
+        await using var context = await _dbContextFactory.CreateDbContextAsync();
+        list = await context.Users
+            .Include(x => x.Orders)
+            .OrderByDescending(e => e.LastOrdered)
+            .ToListAsync();
+
+        return list;
+    }
 }

@@ -102,6 +102,7 @@ await using (var scope = app.Services.CreateAsyncScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     await db.Database.MigrateAsync();
+    await db.Database.EnsureCreatedAsync();
 }
 
 // Configure the HTTP request pipeline.

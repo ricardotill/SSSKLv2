@@ -14,7 +14,7 @@
 
 <h1>Bestelgeschiedenis</h1>
 
-<div class="grid">
+<div class="table-responsive">
     <QuickGrid Items="@Orders" Pagination="@pagination">
         <PropertyColumn Title="Datum" Property="@(o => o.CreatedOn)" Format="dd/MM/yyyy" Sortable="true" Align="Align.Left" />
         <PropertyColumn Title="Product" Property="@(o => o.ProductNaam)" Sortable="true" Align="Align.Left" />

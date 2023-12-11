@@ -6,6 +6,7 @@ using SSSKLv2.Components.Account;
 using SSSKLv2.Data;
 using System.Globalization;
 using Blazored.Toast;
+using Microsoft.Extensions.Logging.ApplicationInsights;
 using SSSKLv2.Data.DAL;
 using SSSKLv2.Services;
 
@@ -61,6 +62,8 @@ else
 {
     builder.Services.AddApplicationInsightsTelemetry();
 }
+builder.Logging.AddFilter<ApplicationInsightsLoggerProvider>("SSSKLv2", LogLevel.Trace);
+
 
 builder.Services.AddDbContextFactory<ApplicationDbContext>(
     options =>

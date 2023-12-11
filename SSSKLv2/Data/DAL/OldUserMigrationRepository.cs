@@ -23,7 +23,7 @@ public class OldUserMigrationRepository(IDbContextFactory<ApplicationDbContext> 
         await using var context = await _dbContextFactory.CreateDbContextAsync();
         var entry = await context.OldUserMigration
             .SingleOrDefaultAsync(x =>
-                string.Equals(x.Username.ToLower(), username.ToLower(), StringComparison.Ordinal));
+                x.Username.Equals(username));
         if (entry != null)
         {
             return entry;

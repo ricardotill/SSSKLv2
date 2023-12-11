@@ -40,6 +40,7 @@
     <PackageReference Include="Microsoft.AspNetCore.Components.QuickGrid.EntityFrameworkAdapter" Version="8.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="8.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="8.0.0" />
     <PackageReference Include="Microsoft.Azure.AppConfiguration.AspNetCore" Version="7.0.0" />
     <PackageReference Include="Microsoft.Azure.SignalR" Version="1.22.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.0" />
@@ -59,6 +60,8 @@
 
   <ItemGroup>
     <Folder Include="Components\Pages\Admin\" />
+    <Folder Include="Hubs\" />
+    <Folder Include="Migrations\" />
   </ItemGroup>
 
   <ItemGroup>
@@ -75,6 +78,10 @@
     <AdditionalFiles Include="Components\Pages\Admin\TopUpPages\Create.razor" />
     <AdditionalFiles Include="Components\Pages\Admin\TopUpPages\Delete.razor" />
     <AdditionalFiles Include="Components\Pages\Admin\TopUpPages\Index.razor" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="Services\Interfaces\IOrderEventBus.cs" />
   </ItemGroup>
 
 </Project>

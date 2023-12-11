@@ -68,7 +68,8 @@ public class OrderService(
                 User = u,
                 Amount = amount,
                 Paid = paid * amount,
-                ProductNaam = p.Name
+                ProductNaam = p.Name,
+                Product = p
             };
             list.Add(order);
         }

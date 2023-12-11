@@ -55,6 +55,7 @@ public class ApplicationUserRepository(IDbContextFactory<ApplicationDbContext> _
         IList<ApplicationUser> list = new List<ApplicationUser>();
         await using var context = await _dbContextFactory.CreateDbContextAsync();
         list = await context.Users
+            .AsNoTracking()
             .OrderByDescending(e => e.LastOrdered)
             .ToListAsync();
 
@@ -67,6 +68,7 @@ public class ApplicationUserRepository(IDbContextFactory<ApplicationDbContext> _
         await using var context = await _dbContextFactory.CreateDbContextAsync();
         list = await context.Users
             .Include(x => x.Orders)
+            .ThenInclude(x => x.Product)
             .OrderByDescending(e => e.LastOrdered)
             .ToListAsync();
 

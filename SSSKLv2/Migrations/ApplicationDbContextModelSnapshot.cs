@@ -282,6 +282,9 @@ namespace SSSKLv2.Migrations
                     b.Property<decimal>("Paid")
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<Guid?>("ProductId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("ProductNaam")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -291,6 +294,8 @@ namespace SSSKLv2.Migrations
                         .HasColumnType("nvarchar(450)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ProductId");
 
                     b.HasIndex("UserId");
 
@@ -314,7 +319,7 @@ namespace SSSKLv2.Migrations
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<decimal>("Price")
                         .HasColumnType("decimal(18,2)");
@@ -323,6 +328,9 @@ namespace SSSKLv2.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
 
                     b.ToTable("Product");
                 });
@@ -405,11 +413,18 @@ namespace SSSKLv2.Migrations
 
             modelBuilder.Entity("SSSKLv2.Data.Order", b =>
                 {
+                    b.HasOne("SSSKLv2.Data.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("SSSKLv2.Data.ApplicationUser", "User")
                         .WithMany("Orders")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Product");
 
                     b.Navigation("User");
                 });

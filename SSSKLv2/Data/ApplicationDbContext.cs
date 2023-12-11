@@ -25,6 +25,11 @@ namespace SSSKLv2.Data
                 .WithOne(e => e.User)
                 .OnDelete(DeleteBehavior.Cascade);
             
+            builder.Entity<Order>()
+                .HasOne(e => e.Product)
+                .WithMany()
+                .OnDelete(DeleteBehavior.SetNull);
+            
             builder.Entity<OldUserMigration>()
                 .HasIndex(p => p.Username)
                 .IsUnique();

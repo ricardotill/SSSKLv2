@@ -40,11 +40,7 @@ public class OrderRepository(IDbContextFactory<ApplicationDbContext> _dbContextF
 
         throw new NotFoundException("Order not found");
     }
-
-    public Task<IEnumerable<Order>> GetAll()
-    {
-        throw new NotImplementedException();
-    }
+    
 
     public async Task CreateRange(IEnumerable<Order> orders)
     {
@@ -52,9 +48,7 @@ public class OrderRepository(IDbContextFactory<ApplicationDbContext> _dbContextF
         foreach (var obj in orders)
         {
             UpdateUserSaldo(obj, context);
-            var product = await context.Product
-                .SingleOrDefaultAsync(x => x.Name == obj.ProductNaam);
-            if (product != null) UpdateProductInventory(obj, product, context);
+            UpdateProductInventory(obj, obj.Product, context);
             context.Order.Add(obj);
         }
         await context.SaveChangesAsync();

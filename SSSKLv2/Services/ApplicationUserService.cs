@@ -64,7 +64,7 @@ public class ApplicationUserService(
             try
             {
                 count = u.Orders
-                    .Where(o => o.ProductNaam == product.Name)
+                    .Where(o => o.Product != null && o.Product.Id == product.Id)
                     .Sum(o => o.Amount);
             }
             catch (OverflowException)
@@ -93,7 +93,7 @@ public class ApplicationUserService(
             {
                 count = u.Orders
                     .Where(o => o.CreatedOn >= startDate && o.CreatedOn < endDate)
-                    .Where(o => o.ProductNaam == product.Name)
+                    .Where(o => o.Product != null && o.Product.Id == product.Id)
                     .Sum(o => o.Amount);
             }
             catch (OverflowException)
@@ -121,7 +121,7 @@ public class ApplicationUserService(
             {
                 count = u.Orders
                     .Where(o => o.CreatedOn >= time)
-                    .Where(o => o.ProductNaam == product.Name)
+                    .Where(o => o.Product != null && o.Product.Id == product.Id)
                     .Sum(o => o.Amount);
             }
             catch (OverflowException)
@@ -133,5 +133,4 @@ public class ApplicationUserService(
         }
         return leaderboard.OrderByDescending(x => x.Amount);
     }
-
 }

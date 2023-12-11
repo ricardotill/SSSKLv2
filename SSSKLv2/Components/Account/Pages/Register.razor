@@ -87,7 +87,7 @@
         OldUserMigration migration = null;
         try
         {
-            migration = await MigrationService.GetMigrationByUsername(user.UserName!);
+            migration = await MigrationService.GetMigrationByUsername(Input.Username);
             user.Saldo = migration.Saldo;
         }
         catch (NotFoundException){}

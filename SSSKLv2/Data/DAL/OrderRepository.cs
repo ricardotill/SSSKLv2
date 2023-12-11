@@ -51,27 +51,13 @@ public class OrderRepository(IDbContextFactory<ApplicationDbContext> _dbContextF
         await using var context = await _dbContextFactory.CreateDbContextAsync();
         foreach (var obj in orders)
         {
-            obj.User.Saldo -= obj.Paid;    
-            obj.User.LastOrdered = DateTime.UtcNow;
-            context.Users.Update(obj.User);
+            UpdateUserSaldo(obj, context);
+            var product = await context.Product
+                .SingleOrDefaultAsync(x => x.Name == obj.ProductNaam);
+            if (product != null) UpdateProductInventory(obj, product, context);
             context.Order.Add(obj);
         }
         await context.SaveChangesAsync();
-    }
-
-    public async Task Create(Order obj)
-    {
-        await using var context = await _dbContextFactory.CreateDbContextAsync();
-        obj.User.Saldo -= obj.Paid;
-        obj.User.LastOrdered = DateTime.UtcNow;
-        context.Users.Update(obj.User);
-        context.Order.Add(obj);
-        await context.SaveChangesAsync();
-    }
-
-    public Task Update(Order obj)
-    {
-        throw new NotImplementedException();
     }
 
     public async Task Delete(Guid id)
@@ -80,13 +66,40 @@ public class OrderRepository(IDbContextFactory<ApplicationDbContext> _dbContextF
         var entry = await context.Order
             .Include(x => x.User)
             .SingleOrDefaultAsync(x => x.Id == id);
+        
         if (entry != null)
         {
-            entry.User.Saldo += entry.Paid;
-            context.Users.Update(entry.User);
+            UpdateUserSaldo(entry, context, false);
+            var product = await context.Product
+                .SingleOrDefaultAsync(x => x.Name == entry.ProductNaam);
+            if (product != null) UpdateProductInventory(entry, product, context, false);
             context.Order.Remove(entry);
             await context.SaveChangesAsync();
         }
         else throw new NotFoundException("Order Not Found");
+    }
+
+    private void UpdateUserSaldo(
+        Order order, 
+        ApplicationDbContext context, 
+        bool isNegative = true)
+    {
+        var money = order.Paid;
+        if (isNegative) money = Decimal.Negate(money);
+        order.User.Saldo += money;
+        order.User.LastOrdered = DateTime.UtcNow;
+        context.Users.Update(order.User);
+    }
+    
+    private void UpdateProductInventory(
+        Order order, 
+        Product product, 
+        ApplicationDbContext context, 
+        bool isNegative = true)
+    {
+        var inventory = order.Amount;
+        if (isNegative) inventory *= -1;
+        product.Stock += inventory;
+        context.Product.Update(product);
     }
 }

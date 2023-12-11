@@ -17,5 +17,10 @@ public class BestellingDTOValidator : AbstractValidator<Home.BestellingDTO>
         RuleFor(x => x.Amount)
             .GreaterThan(0)
             .WithMessage("Hoeveelheid moet groter dan 1 zijn");
+        RuleFor(x => x.Amount)
+            .LessThanOrEqualTo(x => x.Products
+                .Where(x => x.Selected)
+                .Max(x => x.Value.Stock))
+            .WithMessage(x => $"Voor een van de geselecteerde producten is de voorraad te laag voor jouw bestelling.");
     }
 }

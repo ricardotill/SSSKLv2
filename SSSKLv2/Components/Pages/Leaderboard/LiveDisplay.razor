@@ -1,0 +1,91 @@
+@page "/leaderboard/livedisplay/{productId}"
+@rendermode InteractiveServer
+
+@implements IDisposable
+@implements IAsyncDisposable
+@inject IApplicationUserService UserService;
+@using SSSKLv2.Components.Layout
+@using SSSKLv2.Services.Interfaces
+@layout EmptyLayout;
+
+@if (List.Count() > 0)
+{
+    <div class="row vh-100 align-items-center">
+        <div class="col-6">
+        <h3>@List.First().ProductName Leaderboard</h3>
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                <tr>
+                    <th scope="col">Plek</th>
+                    <th scope="col">Naam</th>
+                    <th scope="col">Hoeveelheid</th>
+                </tr>
+                </thead>
+                <tbody>
+                @foreach (var l in List.Select((value,i) => new {i, value}))
+                {
+                    var place = l.i + 1;
+                    <tr>
+                        <td>#@place</td>
+                        <td>@l.value.FullName</td>
+                        <td>@l.value.Amount</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+        </div>
+        <div class="col-6 text-center h-100 row align-items-center">
+            <div class="row">
+                <div class="col-12">
+                    <h1 class="display-4">#1 @List.First().FullName</h1>
+                </div>
+                <div class="col-12">
+                    <h1 class="display-1">@List.First().Amount</h1>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="text-center">
+        <h1 class="display-1">Laden...</h1>
+    </div>
+}
+
+
+@code {
+    [Parameter]
+    public string? ProductId { get; set; }
+    
+    System.Threading.Timer timer;
+    
+    public IEnumerable<LeaderboardEntry> List { get; set; } = new List<LeaderboardEntry>();
+    
+    protected override async Task OnInitializedAsync()
+    {
+        await GetData();
+        timer = new System.Threading.Timer(async _ =>
+        {
+            await GetData();
+            await InvokeAsync(StateHasChanged);
+        }, null, 0, 15000);
+    }
+
+    private async Task GetData()
+    {
+        if (ProductId != null) List = await UserService.Get12HourlyLeaderboard(Guid.Parse(ProductId));
+    }
+
+    public void Dispose()
+    {
+        timer.Dispose();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await timer.DisposeAsync();
+    }
+}

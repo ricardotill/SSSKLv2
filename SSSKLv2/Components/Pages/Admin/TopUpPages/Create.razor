@@ -1,16 +1,17 @@
 ﻿@page "/admin/topups/create"
+@rendermode InteractiveServer
+
 @attribute [Authorize(Policy = Policies.Admin)]
 
 @inject IApplicationUserService ApplicationUserService;
 @inject ITopUpService TopUpService;
-@inject UserManager<ApplicationUser> UserManager;
+@inject IHeaderService HeaderService;
 @using SSSKLv2.Data
 @using Microsoft.AspNetCore.Authorization
 @using SSSKLv2.Components.Account
 @using SSSKLv2.Services.Interfaces
 @using System.ComponentModel.DataAnnotations
-@using System.Security.Claims
-@using Microsoft.AspNetCore.Identity
+@using System.ComponentModel
 @inject NavigationManager NavigationManager
 
 <PageTitle>SSSKLv2 | Saldo opwaarderen</PageTitle>
@@ -36,7 +37,7 @@
                     <div class="mb-3">
                         <label class="form-label" for="usersSelect">Wie wil je opwaarderen?</label>
                         <InputSelect @bind-Value="TopUp.UserId" class="form-select" id="usersSelect">
-                            @* <option selected>Selecteer een gebruiker</option> *@
+                            <option value="" selected>Selecteer een gebruiker</option>
                             @foreach (var user in Users)
                             {
                                 <option value="@user.Id">@user.Name @user.Surname</option>
@@ -86,14 +87,16 @@
             User = user,
             Saldo = TopUp.Saldo
         });
+        HeaderService.NotifyHeaderChanged();
         NavigationManager.NavigateTo("/admin/topups");
     }
 
     public class TopUpDto
     {
-        [Required]
+        [Required(ErrorMessage = "Selecteer een geldige Gebruiker")]
+        [DisplayName("Gebruiker")]
         public string UserId { get; set; }
-        [Required]
+        [Required(ErrorMessage = "Vul een geldig saldo in")]
         public decimal Saldo { get; set; }
     }
 }

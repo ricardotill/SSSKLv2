@@ -1,7 +1,10 @@
 ﻿@page "/admin/topups/delete"
+@rendermode InteractiveServer
+
 @attribute [Authorize(Policy = Policies.Admin)]
 
 @inject ITopUpService TopUpService
+@inject IHeaderService HeaderService
 @using SSSKLv2.Data
 @inject NavigationManager NavigationManager
 @using SSSKLv2.Data.DAL.Exceptions
@@ -78,6 +81,8 @@
         try
         {
             await TopUpService.DeleteTopUp(Guid.Parse(Id));
+            HeaderService.NotifyHeaderChanged();
+
             NavigationManager.NavigateTo("/admin/topups");
         }
         catch (NotFoundException)

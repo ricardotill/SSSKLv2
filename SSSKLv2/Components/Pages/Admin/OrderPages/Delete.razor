@@ -1,5 +1,8 @@
 ﻿@page "/admin/orders/delete"
+@rendermode InteractiveServer
+
 @inject IOrderService OrderService
+@inject IHeaderService HeaderService
 @using SSSKLv2.Data
 @inject NavigationManager NavigationManager
 @using SSSKLv2.Data.DAL.Exceptions
@@ -86,6 +89,7 @@
         try
         {
             await OrderService.DeleteOrder(Id);
+            HeaderService.NotifyHeaderChanged();
             NavigationManager.NavigateTo("/admin/orders");
         }
         catch (NotFoundException)

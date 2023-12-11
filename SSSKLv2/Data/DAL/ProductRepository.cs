@@ -26,6 +26,16 @@ public class ProductRepository(IDbContextFactory<ApplicationDbContext> _dbContex
         list = await context.Product.ToListAsync();
         return list;
     }
+    
+    public async Task<IList<Product>> GetAllAvailable()
+    {
+        IList<Product> list = new List<Product>();
+        await using var context = await _dbContextFactory.CreateDbContextAsync();
+        list = await context.Product
+            .Where(x => x.Stock > 0)
+            .ToListAsync();
+        return list;
+    }
 
     public async Task Create(Product obj)
     {

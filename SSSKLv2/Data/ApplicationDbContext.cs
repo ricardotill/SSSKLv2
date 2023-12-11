@@ -25,6 +25,14 @@ namespace SSSKLv2.Data
                 .WithOne(e => e.User)
                 .OnDelete(DeleteBehavior.Cascade);
             
+            builder.Entity<OldUserMigration>()
+                .HasIndex(p => p.Username)
+                .IsUnique();
+
+            builder.Entity<Product>()
+                .HasIndex(p => p.Name)
+                .IsUnique();
+            
             builder.Entity<Product>()
                 .Property(s => s.CreatedOn )
                 .HasDefaultValueSql("GETDATE()");

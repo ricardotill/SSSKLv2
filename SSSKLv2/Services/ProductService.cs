@@ -19,6 +19,12 @@ public class ProductService(
         _logger.LogInformation($"{GetType()}: Get All Products");
         return await _productRepository.GetAll();
     }
+    
+    public async Task<IList<Product>> GetAllAvailable()
+    {
+        _logger.LogInformation($"{GetType()}: Get All Available Products");
+        return await _productRepository.GetAllAvailable();
+    }
 
     public async Task CreateProduct(Product obj)
     {

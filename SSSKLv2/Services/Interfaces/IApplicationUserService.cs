@@ -9,6 +9,8 @@ public interface IApplicationUserService
     public Task<ApplicationUser> GetUserByUsername(string username);
     public Task<IList<ApplicationUser>> GetAllUsers();
     public Task<IQueryable<ApplicationUser>> GetAllUsersObscured();
-    public Task<IEnumerable<LeaderboardEntry>> GetAllLeaderboard(Product product);
-    public Task<IEnumerable<LeaderboardEntry>> GetMonthlyLeaderboard(Product product);
+    public Task<IEnumerable<LeaderboardEntry>> GetAllLeaderboard(Guid productId);
+    public Task<IEnumerable<LeaderboardEntry>> GetMonthlyLeaderboard(Guid productId);
+    public Task<IEnumerable<LeaderboardEntry>> Get12HourlyLeaderboard(Guid productId);
+
 }

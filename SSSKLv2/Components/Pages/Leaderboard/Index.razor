@@ -8,16 +8,48 @@
 
 <PageTitle>SSSKLv2 | Leaderboard</PageTitle>
 
-<h1>Leaderboard</h1>
+<div class="row">
+    <div class="col-8">
+        <h1>Leaderboard</h1>
+    </div>
+    <div class="col-4 text-end">
+        <button class="btn btn-secondary me-1" @onclick="@UpdateLeaderboards"><i class="bi bi-arrow-clockwise"></i></button>
+        <a class="btn btn-primary" href="/leaderboard/livedisplay/@SelectedProductId"><i class="bi bi-tv"></i></a>
+    </div>
+</div>
 
 <div class="mb-3">
-  <label for="productSelect" class="form-label">Selecteer een product</label>
-  <select @bind="SelectedProductId" @bind:after="@UpdateLeaderboards" class="form-control form-select" id="productSelect" aria-label="Select Product">
-      @foreach (var p in Products)
-      {
-          <option value="@p.Id">@p.Name</option>
-      }
-  </select>
+    <label for="productSelect" class="form-label">Selecteer een product</label>
+    <select @bind="SelectedProductId" @bind:after="@UpdateLeaderboards" class="form-control form-select" id="productSelect" aria-label="Select Product">
+        @foreach (var p in Products)
+        {
+            <option value="@p.Id">@p.Name</option>
+        }
+    </select>
+</div>
+
+<h3>Afgelopen 12 uur</h3>
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead>
+        <tr>
+            <th scope="col">Plek</th>
+            <th scope="col">Naam</th>
+            <th scope="col">Hoeveelheid</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var l in Recently.Select((value,i) => new {i, value}))
+        {
+            var place = l.i + 1;
+            <tr>
+                <td>#@place</td>
+                <td>@l.value.FullName</td>
+                <td>@l.value.Amount</td>
+            </tr>
+        }
+        </tbody>
+    </table>
 </div>
 
 <h3>Maandelijks</h3>
@@ -72,6 +104,7 @@
     public IEnumerable<Product> Products { get; set; } = new List<Product>();
     public string? SelectedProductId { get; set; }
     
+    public IEnumerable<LeaderboardEntry> Recently { get; set; } = new List<LeaderboardEntry>();
     public IEnumerable<LeaderboardEntry> Monthly { get; set; } = new List<LeaderboardEntry>();
     public IEnumerable<LeaderboardEntry> All { get; set; } = new List<LeaderboardEntry>();
     
@@ -92,8 +125,12 @@
         if (SelectedProductId != null)
         {
             var product = Products.FirstOrDefault(x => x.Id == new Guid(SelectedProductId));
-            Monthly = await ApplicationUserService.GetMonthlyLeaderboard(product);
-            All = await ApplicationUserService.GetAllLeaderboard(product);
+            if (product != null)
+            {
+                Recently = await ApplicationUserService.Get12HourlyLeaderboard(product.Id);
+                Monthly = await ApplicationUserService.GetMonthlyLeaderboard(product.Id);
+                All = await ApplicationUserService.GetAllLeaderboard(product.Id);
+            }
         }
     }
 }

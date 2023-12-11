@@ -7,6 +7,7 @@ namespace SSSKLv2.Services;
 
 public class ApplicationUserService(
     IApplicationUserRepository _applicationUserRepository,
+    IProductRepository _productRepository,
     ILogger<ApplicationUserService> _logger) : IApplicationUserService
 {
     public async Task<ApplicationUser> GetUserById(string id)
@@ -51,9 +52,10 @@ public class ApplicationUserService(
         return result.AsQueryable();
     }
 
-    public async Task<IEnumerable<LeaderboardEntry>> GetAllLeaderboard(Product product)
+    public async Task<IEnumerable<LeaderboardEntry>> GetAllLeaderboard(Guid productId)
     {
         var ulist = await _applicationUserRepository.GetAllWithOrders();
+        var product = await _productRepository.GetById(productId);
 
         var leaderboard = new List<LeaderboardEntry>();
         foreach (var u in ulist)
@@ -69,17 +71,18 @@ public class ApplicationUserService(
             {
                 count = Int32.MaxValue;
             }
-            leaderboard.Add(new LeaderboardEntry() { Amount = count, FullName = $"{u.Name} {u.Surname.First()}"});
+            leaderboard.Add(new LeaderboardEntry() { Amount = count, FullName = $"{u.Name} {u.Surname.First()}", ProductName = product.Name});
         }
         return leaderboard.OrderByDescending(x => x.Amount);
     }
     
-    public async Task<IEnumerable<LeaderboardEntry>> GetMonthlyLeaderboard(Product product)
+    public async Task<IEnumerable<LeaderboardEntry>> GetMonthlyLeaderboard(Guid productId)
     {
         var startDate = DateTime.Now.Date;
         startDate = new DateTime(startDate.Year, startDate.Month, 1);
         var endDate = startDate.AddMonths(1);
         
+        var product = await _productRepository.GetById(productId);
         var ulist = await _applicationUserRepository.GetAllWithOrders();
         
         var leaderboard = new List<LeaderboardEntry>();
@@ -98,8 +101,37 @@ public class ApplicationUserService(
                 count = Int32.MaxValue;
             }
             
-            leaderboard.Add(new LeaderboardEntry() { Amount = count, FullName = $"{u.Name} {u.Surname.First()}"});
+            leaderboard.Add(new LeaderboardEntry() { Amount = count, FullName = $"{u.Name} {u.Surname.First()}", ProductName = product.Name});
         }
         return leaderboard.OrderByDescending(x => x.Amount);
     }
+
+    public async Task<IEnumerable<LeaderboardEntry>> Get12HourlyLeaderboard(Guid productId)
+    {
+        var time = DateTime.Now.AddHours(-12);
+        
+        var product = await _productRepository.GetById(productId);
+        var ulist = await _applicationUserRepository.GetAllWithOrders();
+        
+        var leaderboard = new List<LeaderboardEntry>();
+        foreach (var u in ulist)
+        {
+            int count;
+            try
+            {
+                count = u.Orders
+                    .Where(o => o.CreatedOn >= time)
+                    .Where(o => o.ProductNaam == product.Name)
+                    .Sum(o => o.Amount);
+            }
+            catch (OverflowException)
+            {
+                count = Int32.MaxValue;
+            }
+            
+            leaderboard.Add(new LeaderboardEntry() { Amount = count, FullName = $"{u.Name} {u.Surname.First()}", ProductName = product.Name});
+        }
+        return leaderboard.OrderByDescending(x => x.Amount);
+    }
+
 }

@@ -1,11 +1,13 @@
 ﻿@page "/orders/delete"
+@rendermode InteractiveServer
+
 @inject IOrderService OrderService
-@using SSSKLv2.Data
 @inject NavigationManager NavigationManager
+@inject IHeaderService HeaderService
+@using SSSKLv2.Data
 @using SSSKLv2.Data.DAL.Exceptions
 @using SSSKLv2.Services.Interfaces
 @using Microsoft.AspNetCore.Authorization
-@using SSSKLv2.Components.Account
 
 @attribute [Authorize]
 
@@ -86,6 +88,7 @@
         try
         {
             await OrderService.DeleteOrder(Id);
+            HeaderService.NotifyHeaderChanged();
             NavigationManager.NavigateTo("/orders");
         }
         catch (NotFoundException)

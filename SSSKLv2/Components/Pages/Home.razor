@@ -125,7 +125,7 @@ else
 
     public async Task GetData()
     {
-        Model.Products = (await ProductService.GetAll())
+        Model.Products = (await ProductService.GetAllAvailable())
             .Select(x => new Select<Product> {Value = x})
             .ToList();
         Model.Users = (await ApplicationUserService.GetAllUsers())

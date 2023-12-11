@@ -12,7 +12,6 @@ namespace SSSKLv2.Data
         [DisplayName("Gebruikersnaam")]
         public string Username { get; set; }
         [Microsoft.Build.Framework.Required]
-        [RegularExpression(@"^\d+.\d{0,2}$",ErrorMessage = "Saldo moet 2 cijfers achter de komma hebben")]
         [Column(TypeName = "decimal(18,2)")]
         public decimal Saldo { get; set; }
     }

@@ -88,4 +88,3 @@ jobs:
           dotnet build –no-incremental
           dotnet dotcover test --dcReportType=HTML
           .\.sonar\scanner\dotnet-sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
-      

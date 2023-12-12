@@ -192,5 +192,18 @@ else
         [Required]
         public int Amount { get; set; } = 1;
         public bool Split { get; set; }
+
+        public bool CheckStock()
+        {
+            var selected = Products
+                .Where(x => x.Selected);
+            var enumerable = selected as Select<Product>[] ?? selected.ToArray();
+            if (enumerable.Any())
+            {
+                return enumerable.Max(x => x.Value.Stock) >= Amount;
+            }
+
+            return true;
+        }
     }
 }

@@ -89,4 +89,5 @@ jobs:
           dotnet build SSSKLv2.sln
           dotnet test --no-build --verbosity normal
           dotnet dotcover test --dcReportType=HTML
-          .\.sonar\scanner\dotnet-sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}""
+          .\.sonar\scanner\dotnet-sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
+      - run: dotnet --version

@@ -7,15 +7,16 @@ on:
   push:
     branches: [ "master" ]
   pull_request:
-    branches: [ "master" ]
+    types: [opened, synchronize, reopened]
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
     
     - name: Setup .NET
       uses: actions/setup-dotnet@v3
@@ -33,7 +34,7 @@ jobs:
       
     - name: Run automated unit and integration tests
       run: dotnet test /p:CollectCoverage=true /p:CoverletOutput=TestResults/ /p:CoverletOutputFormat=lcov --no-build
-
+    
     - name: SonarCloud Scan
       uses: sonarsource/sonarcloud-github-action@master
       with:

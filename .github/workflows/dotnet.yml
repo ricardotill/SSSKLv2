@@ -5,12 +5,14 @@ name: Build & Test
 
 on:
   push:
-    branches: [ "master" ]
+    branches: [ "master", "development" ]
   pull_request:
     types: [opened, synchronize, reopened]
+  workflow_dispatch:
 
 jobs:
   build:
+    name: Build & Test
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
@@ -32,7 +34,7 @@ jobs:
       run: dotnet test --no-build --verbosity normal
 
   scan:
-    name: Analyze
+    name: SonarCloud Analyze, Codecoverage
     runs-on: windows-latest
     steps:
       - name: Setup JDK 17

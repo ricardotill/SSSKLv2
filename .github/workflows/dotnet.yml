@@ -84,8 +84,8 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         shell: powershell
         run: |
-          .\.sonar\scanner\dotnet-sonarscanner begin /k:"ricardotill_SSSKLv2" /o:"ricardotill" /d:sonar.token="${{ secrets.SONAR_TOKEN }}" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.cs.dotcover.reportsPaths=dotCover.Output.html
-          dotnet build SSSKLv2.sln –no-incremental
+          .\.sonar\scanner\dotnet-sonarscanner begin /k:"ricardotill_SSSKLv2" /o:"ricardotill" /d:sonar.token="${{ secrets.SONAR_TOKEN }}" /d:sonar.host.url="https://sonarcloud.io"
+          dotnet build –no-incremental
           dotnet dotcover test --dcReportType=HTML
           .\.sonar\scanner\dotnet-sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
       

@@ -27,13 +27,13 @@ public class OrderService(
         return await _orderRepository.GetById(id);
     }
     
-    public async Task CreateOrder(Home.BestellingDTO dto)
+    public async Task CreateOrder(Home.BestellingDto order)
     {
-        var products = dto.Products
+        var products = order.Products
             .Where(x => x.Selected)
             .Select(x => x.Value)
             .ToList();
-        var users = dto.Users
+        var users = order.Users
             .Where(x => x.Selected)
             .Select(x => x.Value)
             .ToList();
@@ -43,7 +43,7 @@ public class OrderService(
 
         foreach (var p in products)
         {
-            var generatedOrders = GenerateUserOrders(users, p, dto.Amount, dto.Split);
+            var generatedOrders = GenerateUserOrders(users, p, order.Amount, order.Split);
             orders.AddRange(generatedOrders);
         }
         

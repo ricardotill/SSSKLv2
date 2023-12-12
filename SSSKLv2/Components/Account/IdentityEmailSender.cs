@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Identity;
 using SendGrid;
 using SendGrid.Helpers.Mail;
 using SSSKLv2.Data;
+using SSSKLv2.Data.DAL.Exceptions;
 
 namespace SSSKLv2.Components.Account;
 
@@ -15,7 +16,7 @@ public class IdentityEmailSender(ILogger<IdentityEmailSender> logger) : IEmailSe
     {
         if (string.IsNullOrEmpty(SendGridKey))
         {
-            throw new Exception("Null SendGridKey");
+            throw new NotFoundException("Null SendGridKey");
         }
         await Execute(SendGridKey, subject, message, toEmail);
     }

@@ -43,12 +43,12 @@ public class TopUpRepository(
         throw new NotFoundException("TopUp not found");
     }
 
-    public async Task Create(TopUp obj)
+    public async Task Create(TopUp topup)
     {
         await using var context = await _dbContextFactory.CreateDbContextAsync();
-        obj.User.Saldo += obj.Saldo;
-        context.Users.Update(obj.User);
-        context.TopUp.Add(obj);
+        topup.User.Saldo += topup.Saldo;
+        context.Users.Update(topup.User);
+        context.TopUp.Add(topup);
         await context.SaveChangesAsync();
     }
 

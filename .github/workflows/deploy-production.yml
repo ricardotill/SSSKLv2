@@ -29,13 +29,13 @@ env:
 on:
   push:
     branches: [ "master" ]
-  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
   build:
+    name: Build & Test
     runs-on: ubuntu-latest
 
     steps:
@@ -65,6 +65,7 @@ jobs:
           path: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
 
   deploy:
+    name: Deploy to Azure
     permissions:
       contents: none
     runs-on: ubuntu-latest

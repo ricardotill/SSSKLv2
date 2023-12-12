@@ -34,9 +34,8 @@ public class ApplicationUserRepository(IDbContextFactory<ApplicationDbContext> _
     
     public async Task<IList<ApplicationUser>> GetAllBySearchparam(string searchparam, int page)
     {
-        IList<ApplicationUser> list = new List<ApplicationUser>() { };
         await using var context = await _dbContextFactory.CreateDbContextAsync();
-        list = await context.Users
+        var list = await context.Users
             // Use AsNoTracking to disable EF change tracking
             .AsNoTracking()
             .Where(x => x.UserName.ToLower().Contains(searchparam)
@@ -52,9 +51,8 @@ public class ApplicationUserRepository(IDbContextFactory<ApplicationDbContext> _
 
     public async Task<IList<ApplicationUser>> GetAll()
     {
-        IList<ApplicationUser> list = new List<ApplicationUser>();
         await using var context = await _dbContextFactory.CreateDbContextAsync();
-        list = await context.Users
+        var list = await context.Users
             .AsNoTracking()
             .OrderByDescending(e => e.LastOrdered)
             .ToListAsync();
@@ -64,9 +62,8 @@ public class ApplicationUserRepository(IDbContextFactory<ApplicationDbContext> _
     
     public async Task<IList<ApplicationUser>> GetAllWithOrders()
     {
-        IList<ApplicationUser> list = new List<ApplicationUser>();
         await using var context = await _dbContextFactory.CreateDbContextAsync();
-        list = await context.Users
+        var list = await context.Users
             .Include(x => x.Orders)
             .ThenInclude(x => x.Product)
             .OrderByDescending(e => e.LastOrdered)

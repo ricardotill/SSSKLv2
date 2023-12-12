@@ -116,7 +116,7 @@ else
 @code {
 
     [SupplyParameterFromForm]
-    public BestellingDTO Model { get; set; } = new();
+    public BestellingDto Model { get; set; } = new();
     
     protected override async Task OnInitializedAsync()
     {
@@ -150,7 +150,7 @@ else
 
     public async Task Submit()
     {
-        BestellingDTOValidator validator = new BestellingDTOValidator();
+        BestellingDtoValidator validator = new BestellingDtoValidator();
         var validationResults = validator.Validate(Model);
 
         if (!validationResults.IsValid)
@@ -183,7 +183,7 @@ else
         public T Value { get; set; }
     }
 
-    public class BestellingDTO
+    public class BestellingDto
     {
         [MinLength(1, ErrorMessage = "Er moeten minimaal 1 of meer producten worden geselecteerd")]
         public IList<Select<Product>> Products { get; set; } = new List<Select<Product>>();

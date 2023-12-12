@@ -21,17 +21,15 @@ public class ProductRepository(IDbContextFactory<ApplicationDbContext> _dbContex
 
     public async Task<IList<Product>> GetAll()
     {
-        IList<Product> list = new List<Product>();
         await using var context = await _dbContextFactory.CreateDbContextAsync();
-        list = await context.Product.ToListAsync();
+        var list = await context.Product.ToListAsync();
         return list;
     }
     
     public async Task<IList<Product>> GetAllAvailable()
     {
-        IList<Product> list = new List<Product>();
         await using var context = await _dbContextFactory.CreateDbContextAsync();
-        list = await context.Product
+        var list = await context.Product
             .Where(x => x.Stock > 0)
             .ToListAsync();
         return list;
@@ -47,7 +45,7 @@ public class ProductRepository(IDbContextFactory<ApplicationDbContext> _dbContex
     public async Task Update(Product obj)
     {
         await using var context = await _dbContextFactory.CreateDbContextAsync();
-        context.Product.Add(obj);
+        context.Product.Update(obj);
         await context.SaveChangesAsync();
     }
 

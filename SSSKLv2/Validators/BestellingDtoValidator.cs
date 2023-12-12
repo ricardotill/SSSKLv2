@@ -1,12 +1,11 @@
 using FluentValidation;
-using FluentValidation.Results;
 using SSSKLv2.Components.Pages;
 
 namespace SSSKLv2.Validators;
 
-public class BestellingDTOValidator : AbstractValidator<Home.BestellingDTO>
+public class BestellingDtoValidator : AbstractValidator<Home.BestellingDto>
 {
-    public BestellingDTOValidator()
+    public BestellingDtoValidator()
     {
         RuleFor(x => x.Products.Count(x => x.Selected))
             .GreaterThan(0)

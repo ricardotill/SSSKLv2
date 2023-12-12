@@ -8,6 +8,6 @@ public interface IOrderService
     public Task<Order> GetOrderById(Guid id);
     public Task<IQueryable<Order>> GetAllQueryable();
     public Task<IQueryable<Order>> GetPersonalQueryable(string username);
-    public Task CreateOrder(Home.BestellingDTO order);
+    public Task CreateOrder(Home.BestellingDto order);
     public Task DeleteOrder(Guid id);
 }

@@ -18,7 +18,7 @@ namespace SSSKLv2.Data
         [PersonalData]
         public IEnumerable<TopUp> TopUps { get; set; } = new List<TopUp>();
         [Microsoft.Build.Framework.Required]
-        public DateTime LastOrdered { get; set; } = DateTime.UtcNow;
+        public DateTime LastOrdered { get; set; } = DateTime.Now;
         public byte[]? ProfilePicture { get; set; }
     }
 

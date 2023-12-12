@@ -10,5 +10,5 @@ public class BaseModel
     public Guid Id { get; set; }
     [Required]
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-    public DateTime CreatedOn { get; set; } = DateTime.UtcNow;
+    public DateTime CreatedOn { get; set; } = DateTime.Now;
 }

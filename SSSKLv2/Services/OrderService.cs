@@ -21,6 +21,12 @@ public class OrderService(
         return await _orderRepository.GetPersonalQueryable(username);
     }
     
+    public async Task<IEnumerable<Order>> GetLatestOrders()
+    {
+        _logger.LogInformation($"{GetType()}: Get Latest Orders");
+        return await _orderRepository.GetLatest();
+    }
+    
     public async Task<Order> GetOrderById(Guid id)
     {
         _logger.LogInformation($"{GetType()}: Get Order with ID {id}");

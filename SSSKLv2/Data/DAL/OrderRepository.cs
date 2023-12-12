@@ -27,6 +27,16 @@ public class OrderRepository(IDbContextFactory<ApplicationDbContext> _dbContextF
             .AsQueryable();
     }
     
+    public async Task<IEnumerable<Order>> GetLatest()
+    {
+        await using var context = await _dbContextFactory.CreateDbContextAsync();
+        return (await context.Order
+                .Include(x => x.User)
+                .OrderByDescending(x => x.CreatedOn)
+                .Take(8)
+                .ToListAsync());
+    }
+    
     public async Task<Order> GetById(Guid id)
     {
         await using var context = await _dbContextFactory.CreateDbContextAsync();
@@ -81,7 +91,7 @@ public class OrderRepository(IDbContextFactory<ApplicationDbContext> _dbContextF
         var money = order.Paid;
         if (isNegative) money = Decimal.Negate(money);
         order.User.Saldo += money;
-        order.User.LastOrdered = DateTime.UtcNow;
+        order.User.LastOrdered = DateTime.Now;
         context.Users.Update(order.User);
     }
     

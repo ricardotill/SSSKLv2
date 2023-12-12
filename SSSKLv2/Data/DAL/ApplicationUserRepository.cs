@@ -64,6 +64,7 @@ public class ApplicationUserRepository(IDbContextFactory<ApplicationDbContext> _
     {
         await using var context = await _dbContextFactory.CreateDbContextAsync();
         var list = await context.Users
+            .Where(s => s.Orders.Any())
             .Include(x => x.Orders)
             .ThenInclude(x => x.Product)
             .OrderByDescending(e => e.LastOrdered)

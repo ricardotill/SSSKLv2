@@ -29,76 +29,95 @@
 </div>
 
 <h3>Afgelopen 12 uur</h3>
-<div class="table-responsive">
-    <table class="table table-striped">
-        <thead>
-        <tr>
-            <th scope="col">Plek</th>
-            <th scope="col">Naam</th>
-            <th scope="col">Hoeveelheid</th>
-        </tr>
-        </thead>
-        <tbody>
-        @foreach (var l in Recently.Select((value,i) => new {i, value}))
-        {
-            var place = l.i + 1;
+@if (All.Count() > 0)
+{
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
             <tr>
-                <td>#@place</td>
-                <td>@l.value.FullName</td>
-                <td>@l.value.Amount</td>
+                <th scope="col">Plek</th>
+                <th scope="col">Naam</th>
+                <th scope="col">Hoeveelheid</th>
             </tr>
-        }
-        </tbody>
-    </table>
-</div>
+            </thead>
+            <tbody>
+            @foreach (var l in Recently)
+            {
+                <tr>
+                    <td>#@l.Position</td>
+                    <td>@l.FullName</td>
+                    <td>@l.Amount</td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+}
+else
+{
+    <p>Er zijn deze periode geen aankopen gedaan. Dus ik zou zeggen, bestellen maar! ;)</p>
+}
 
 <h3>Maandelijks</h3>
-<div class="table-responsive">
-    <table class="table table-striped">
-        <thead>
-        <tr>
-            <th scope="col">Plek</th>
-            <th scope="col">Naam</th>
-            <th scope="col">Hoeveelheid</th>
-        </tr>
-        </thead>
-        <tbody>
-        @foreach (var l in Monthly.Select((value,i) => new {i, value}))
-        {
-            var place = l.i + 1;
+@if (All.Count() > 0)
+{
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
             <tr>
-                <td>#@place</td>
-                <td>@l.value.FullName</td>
-                <td>@l.value.Amount</td>
+                <th scope="col">Plek</th>
+                <th scope="col">Naam</th>
+                <th scope="col">Hoeveelheid</th>
             </tr>
-        }
-        </tbody>
-    </table>
-</div>
+            </thead>
+            <tbody>
+            @foreach (var l in Monthly)
+            {
+                <tr>
+                    <td>#@l.Position</td>
+                    <td>@l.FullName</td>
+                    <td>@l.Amount</td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+}
+else
+{
+    <p>Er zijn deze periode geen aankopen gedaan. Dus ik zou zeggen, bestellen maar! ;)</p>
+}
 
 <h3>Totaal</h3>
-<div class="table-responsive">
-  <table class="table table-striped">
-    <thead>
-    <tr>
-        <th scope="col">Plek</th>
-        <th scope="col">Naam</th>
-        <th scope="col">Hoeveelheid</th>
-    </tr>
-      </thead>
-      <tbody>
-      @foreach (var l in All.Select((value,i) => new {i, value}))
-      {
-          var place = l.i + 1;
-          <tr>
-              <td>#@place</td>
-              <td>@l.value.FullName</td>
-              <td>@l.value.Amount</td>
-          </tr>
-      }
-      </tbody>
-  </table>
-</div>
+@if (All.Count() > 0)
+{
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+            <tr>
+                <th scope="col">Plek</th>
+                <th scope="col">Naam</th>
+                <th scope="col">Hoeveelheid</th>
+            </tr>
+            </thead>
+            <tbody>
+            @foreach (var l in All)
+            {
+                <tr>
+                    <td>#@l.Position</td>
+                    <td>@l.FullName</td>
+                    <td>@l.Amount</td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+}
+else
+{
+    <p>Er zijn deze periode geen aankopen gedaan. Dus ik zou zeggen, bestellen maar! ;)</p>
+}
+
 
 @code {
     public IEnumerable<Product> Products { get; set; } = new List<Product>();

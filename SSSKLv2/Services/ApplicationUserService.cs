@@ -71,9 +71,9 @@ public class ApplicationUserService(
             {
                 count = Int32.MaxValue;
             }
-            leaderboard.Add(new LeaderboardEntry() { Amount = count, FullName = $"{u.Name} {u.Surname.First()}", ProductName = product.Name});
+            if (count > 0) leaderboard.Add(new LeaderboardEntry() { Amount = count, FullName = $"{u.Name} {u.Surname.First()}", ProductName = product.Name});
         }
-        return leaderboard.OrderByDescending(x => x.Amount);
+        return DeterminePositions(leaderboard);
     }
     
     public async Task<IEnumerable<LeaderboardEntry>> GetMonthlyLeaderboard(Guid productId)
@@ -101,9 +101,9 @@ public class ApplicationUserService(
                 count = Int32.MaxValue;
             }
             
-            leaderboard.Add(new LeaderboardEntry() { Amount = count, FullName = $"{u.Name} {u.Surname.First()}", ProductName = product.Name});
+            if (count > 0) leaderboard.Add(new LeaderboardEntry() { Amount = count, FullName = $"{u.Name} {u.Surname.First()}", ProductName = product.Name});
         }
-        return leaderboard.OrderByDescending(x => x.Amount);
+        return DeterminePositions(leaderboard);
     }
 
     public async Task<IEnumerable<LeaderboardEntry>> Get12HourlyLeaderboard(Guid productId)
@@ -128,9 +128,28 @@ public class ApplicationUserService(
             {
                 count = Int32.MaxValue;
             }
-            
-            leaderboard.Add(new LeaderboardEntry() { Amount = count, FullName = $"{u.Name} {u.Surname.First()}", ProductName = product.Name});
+            if (count > 0) leaderboard.Add(new LeaderboardEntry() { Amount = count, FullName = $"{u.Name} {u.Surname.First()}", ProductName = product.Name});
         }
-        return leaderboard.OrderByDescending(x => x.Amount);
+        
+        return DeterminePositions(leaderboard);
+    }
+
+    private IEnumerable<LeaderboardEntry> DeterminePositions(IEnumerable<LeaderboardEntry> leaderboard)
+    {
+        var list = leaderboard.OrderByDescending(x => x.Amount);
+        int place = 0;
+        int lastAmount = 0;
+        foreach (var entry in list)
+        {
+            if (entry.Amount != 0)
+            {
+                if (entry.Amount != lastAmount) place++;
+                entry.Position = place;
+                lastAmount = entry.Amount;
+            }
+            else entry.Position = 0;
+        }
+
+        return list;
     }
 }

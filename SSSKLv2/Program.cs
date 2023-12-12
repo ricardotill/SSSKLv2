@@ -12,6 +12,8 @@ using SSSKLv2.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddApplicationInsightsTelemetry();
+
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents()
@@ -54,16 +56,7 @@ else
     connection = Environment.GetEnvironmentVariable("AZURE_SQL_CONNECTIONSTRING");
 }
 
-if (builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"] != null)
-{
-    builder.Services.AddApplicationInsightsTelemetry(builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"]);
-}
-else
-{
-    builder.Services.AddApplicationInsightsTelemetry();
-}
 builder.Logging.AddFilter<ApplicationInsightsLoggerProvider>("SSSKLv2", LogLevel.Trace);
-
 
 builder.Services.AddDbContextFactory<ApplicationDbContext>(
     options =>

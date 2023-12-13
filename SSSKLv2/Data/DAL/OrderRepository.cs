@@ -29,11 +29,14 @@ public class OrderRepository(IDbContextFactory<ApplicationDbContext> _dbContextF
     
     public async Task<IEnumerable<Order>> GetLatest()
     {
+        var time = DateTime.Now.AddHours(-12);
+
         await using var context = await _dbContextFactory.CreateDbContextAsync();
         return (await context.Order
+                .Where(x => x.CreatedOn > time)
                 .Include(x => x.User)
                 .OrderByDescending(x => x.CreatedOn)
-                .Take(8)
+                .Take(10)
                 .ToListAsync());
     }
     

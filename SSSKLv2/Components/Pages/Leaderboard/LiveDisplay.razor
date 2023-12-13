@@ -11,6 +11,8 @@
 @using SSSKLv2.Services.Interfaces
 @layout EmptyLayout;
 
+<PageTitle>SSSKLv2 | Live Leaderboard</PageTitle>
+
 @if (Leaderboard.Count() > 0)
 {
     <div class="row vh-100 align-items-center">
@@ -39,16 +41,15 @@
             </div>
         </div>
         <div class="col-6 text-center h-100 row align-items-center">
-            <div class="row h-50">
-                <h3>Leider in klassement "@Leaderboard.First().ProductName"</h3>
+            <div class="row h-25">
+                <div></div>
                 <div class="col-12">
                     <h1 class="display-4">#1 @Leaderboard.First().FullName</h1>
-                </div>
-                <div class="col-12">
                     <h1 class="display-1">@Leaderboard.First().Amount</h1>
                 </div>
             </div>
-            <div class="row h-50">
+            <div class="row h-75">
+                <div></div>
                 <div class="col-12">
                     <h3>Laatste Bestellingen</h3>
                     <div class="table-responsive">

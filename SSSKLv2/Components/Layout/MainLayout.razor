@@ -1,4 +1,5 @@
 ﻿@using SSSKLv2.Services.Interfaces
+@using SSSKLv2.Components.Account
 @inherits LayoutComponentBase
 @implements IDisposable
 @inject NavigationManager NavigationManager
@@ -12,7 +13,12 @@
     </div>
     <main>
         <div class="top-row px-4">
-            <AuthorizeView>
+            <AuthorizeView Policy="@Policies.User">
+                <Authorized>
+                    <SaldoView />
+                </Authorized>
+            </AuthorizeView>
+            <AuthorizeView Policy="@Policies.Admin">
                 <Authorized>
                     <SaldoView />
                 </Authorized>
@@ -24,14 +30,45 @@
                             <NavLink class="nav-link" href="Account/Login">Inloggen</NavLink>
                         </li>
                     </NotAuthorized>
+                </AuthorizeView>
+                <AuthorizeView Policy="@Policies.User">
                     <Authorized>
                         <li class="nav-item">
                             <NavLink class="btn btn-link" href="Account/Manage">Welkom @HeaderService.Name!</NavLink>
                         </li>
                         <li class="nav-item">
                             <form action="Account/Logout" method="post">
-                                <AntiforgeryToken />
-                                <input type="hidden" name="ReturnUrl" value="@currentUrl" />
+                                <AntiforgeryToken/>
+                                <input type="hidden" name="ReturnUrl" value="@currentUrl"/>
+                                <button type="submit" class="nav-link">
+                                    <span class="bi bi-arrow-bar-left-nav-menu" aria-hidden="true"></span> Uitloggen
+                                </button>
+                            </form>
+                        </li>
+                    </Authorized>
+                </AuthorizeView>
+                <AuthorizeView Policy="@Policies.Admin">
+                    <Authorized>
+                        <li class="nav-item">
+                            <NavLink class="btn btn-link" href="Account/Manage">Welkom @HeaderService.Name!</NavLink>
+                        </li>
+                        <li class="nav-item">
+                            <form action="Account/Logout" method="post">
+                                <AntiforgeryToken/>
+                                <input type="hidden" name="ReturnUrl" value="@currentUrl"/>
+                                <button type="submit" class="nav-link">
+                                    <span class="bi bi-arrow-bar-left-nav-menu" aria-hidden="true"></span> Uitloggen
+                                </button>
+                            </form>
+                        </li>
+                    </Authorized>
+                </AuthorizeView>
+                <AuthorizeView Policy="@Policies.Kiosk">
+                    <Authorized>
+                        <li class="nav-item">
+                            <form action="Account/Logout" method="post">
+                                <AntiforgeryToken/>
+                                <input type="hidden" name="ReturnUrl" value="@currentUrl"/>
                                 <button type="submit" class="nav-link">
                                     <span class="bi bi-arrow-bar-left-nav-menu" aria-hidden="true"></span> Uitloggen
                                 </button>

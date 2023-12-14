@@ -32,19 +32,13 @@ public class ApplicationUserRepository(IDbContextFactory<ApplicationDbContext> _
         throw new NotFoundException("ApplicationUser not found");
     }
     
-    public async Task<IList<ApplicationUser>> GetAllBySearchparam(string searchparam, int page)
+    public async Task<IList<ApplicationUser>> GetAllForAdmin()
     {
         await using var context = await _dbContextFactory.CreateDbContextAsync();
         var list = await context.Users
-            // Use AsNoTracking to disable EF change tracking
             .AsNoTracking()
-            .Where(x => x.UserName.ToLower().Contains(searchparam)
-                        || x.Email.ToLower().Contains(searchparam)
-                        || x.Name.ToLower().Contains(searchparam)
-                        || x.Surname.ToLower().Contains(searchparam))
             .OrderByDescending(x => x.Surname)
-            .Skip(page * 5)
-            .Take(5).ToListAsync();
+            .ToListAsync();
 
         return list;
     }
@@ -52,8 +46,8 @@ public class ApplicationUserRepository(IDbContextFactory<ApplicationDbContext> _
     public async Task<IList<ApplicationUser>> GetAll()
     {
         await using var context = await _dbContextFactory.CreateDbContextAsync();
-        var list = await context.Users
-            .AsNoTracking()
+        var list = await GetConsumerUsersQuery(context)
+            .Where(s => s.Orders.Any())
             .OrderByDescending(e => e.LastOrdered)
             .ToListAsync();
 
@@ -63,7 +57,8 @@ public class ApplicationUserRepository(IDbContextFactory<ApplicationDbContext> _
     public async Task<IList<ApplicationUser>> GetAllWithOrders()
     {
         await using var context = await _dbContextFactory.CreateDbContextAsync();
-        var list = await context.Users
+        
+        var list = await GetConsumerUsersQuery(context)
             .Where(s => s.Orders.Any())
             .Include(x => x.Orders)
             .ThenInclude(x => x.Product)
@@ -71,5 +66,14 @@ public class ApplicationUserRepository(IDbContextFactory<ApplicationDbContext> _
             .ToListAsync();
 
         return list;
+    }
+
+    private IQueryable<ApplicationUser> GetConsumerUsersQuery(ApplicationDbContext context)
+    {
+        return from u in context.Users
+            join ur in context.UserRoles on u.Id equals ur.UserId
+            join r in context.Roles on ur.RoleId equals r.Id
+            where r.Name != "Kiosk"
+            select u;
     }
 }

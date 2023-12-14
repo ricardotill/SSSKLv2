@@ -30,7 +30,7 @@ public class ApplicationUserService(
         _logger.LogInformation($"{GetType()}: Get All Users Obscured");
         var result = new List<ApplicationUser>();
 
-        var list = await _applicationUserRepository.GetAll();
+        var list = await _applicationUserRepository.GetAllForAdmin();
 
         foreach (var item in list)
         {

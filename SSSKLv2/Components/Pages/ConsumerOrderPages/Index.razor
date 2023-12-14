@@ -8,7 +8,6 @@
 @using SSSKLv2.Services.Interfaces
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.QuickGrid
-@using SSSKLv2.Services
 
 <PageTitle>SSSKLv2 | Geschiedenis</PageTitle>
 
@@ -16,7 +15,7 @@
 
 <div class="table-responsive">
     <QuickGrid Items="@Orders" Pagination="@pagination">
-        <PropertyColumn Title="Datum" Property="@(o => o.CreatedOn)" Format="dd/MM/yyyy" Sortable="true" Align="Align.Left" />
+        <PropertyColumn Title="Datum" Property="@(o => o.CreatedOn)" Format="dd/MM/yyyy HH:mm" Sortable="true" Align="Align.Left" />
         <PropertyColumn Title="Product" Property="@(o => o.ProductNaam)" Sortable="true" Align="Align.Left" />
         <PropertyColumn Title="Hoeveel" Property="@(o => o.Amount)" Sortable="true" Align="Align.Right" />
         <PropertyColumn Title="Betaald" Property="@(o => o.Paid)" Format="C" Sortable="true" Align="Align.Right" />

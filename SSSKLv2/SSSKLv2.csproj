@@ -72,7 +72,6 @@
     <AdditionalFiles Include="Components\Pages\Admin\OrderPages\Index.razor" />
     <AdditionalFiles Include="Components\Pages\Admin\ProductPages\Create.razor" />
     <AdditionalFiles Include="Components\Pages\Admin\ProductPages\Delete.razor" />
-    <AdditionalFiles Include="Components\Pages\Admin\ProductPages\Details.razor" />
     <AdditionalFiles Include="Components\Pages\Admin\ProductPages\Edit.razor" />
     <AdditionalFiles Include="Components\Pages\Admin\ProductPages\Index.razor" />
     <AdditionalFiles Include="Components\Pages\Admin\TopUpPages\Create.razor" />

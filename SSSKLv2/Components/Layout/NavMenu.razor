@@ -17,7 +17,7 @@
 
 <div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
     <nav class="flex-column">
-        <AuthorizeView>
+        <AuthorizeView Policy="@Policies.User">
             <Authorized>
                 <div class="nav-item px-3">
                     <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
@@ -41,6 +41,22 @@
         <AuthorizeView Policy="@Policies.Admin">
             <Authorized>
                 <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                        <span class="bi bi-cup-straw" aria-hidden="true"></span> Bestellen
+                    </NavLink>
+                </div>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="orders">
+                        <span class="bi bi-receipt-cutoff" aria-hidden="true"></span> Geschiedenis
+                    </NavLink>
+                </div>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="usersaldos">
+                        <span class="bi bi-piggy-bank" aria-hidden="true"></span> Gebruikers
+                    </NavLink>
+                </div>
+                <hr/>
+                <div class="nav-item px-3">
                     <NavLink class="nav-link" href="admin/orders">
                         <span class="bi bi-journal-arrow-down" aria-hidden="true"></span> Bestellingenbeheer
                     </NavLink>
@@ -63,6 +79,27 @@
                 <div class="nav-item px-3">
                     <NavLink class="nav-link" href="Account/Administration">
                         <span class="bi bi-person-gear" aria-hidden="true"></span> Gebruikersbeheer
+                    </NavLink>
+                </div>
+                <hr/>
+            </Authorized>
+        </AuthorizeView>
+        <AuthorizeView Policy="@Policies.Kiosk">
+            <Authorized>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                        <span class="bi bi-cup-straw" aria-hidden="true"></span> Bestellen
+                    </NavLink>
+                </div>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="usersaldos">
+                        <span class="bi bi-piggy-bank" aria-hidden="true"></span> Gebruikers
+                    </NavLink>
+                </div>
+                <hr/>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="kiosk/orders">
+                        <span class="bi bi-journal-arrow-down" aria-hidden="true"></span> Bestellingenbeheer
                     </NavLink>
                 </div>
                 <hr/>

@@ -1,7 +1,7 @@
-﻿@page "/admin/orders"
+﻿@page "/kiosk/orders"
 @rendermode InteractiveServer
 
-@attribute [Authorize(Policy = Policies.Admin)]
+@attribute [Authorize(Policy = Policies.Kiosk)]
 
 @inject IOrderService OrderService
 @using SSSKLv2.Data
@@ -18,13 +18,13 @@
     <QuickGrid Items="@Orders" Pagination="@pagination">
         <PropertyColumn Title="Datum" Property="@(o => o.CreatedOn)" Format="dd/MM/yyyy HH:mm" Sortable="true" Align="Align.Left" />
         <TemplateColumn Title="Gebruiker" Context="order">
-            @order.User.Name @order.User.Surname
+            @order.User.Name @order.User.Surname.First()
         </TemplateColumn>        
         <PropertyColumn Title="Product" Property="@(o => o.ProductNaam)" Sortable="true" Align="Align.Left" />
         <PropertyColumn Title="Hoeveel" Property="@(o => o.Amount)" Sortable="true" Align="Align.Right" />
         <PropertyColumn Title="Betaald" Property="@(o => o.Paid)" Format="C" Sortable="true" Align="Align.Right" />
         <TemplateColumn Context="order">
-            <a class="btn btn-danger btn-sm" href="@($"admin/orders/delete?id={order.Id}")" role="button"><i class="bi bi-trash"></i></a>
+            <a class="btn btn-danger btn-sm" href="@($"kiosk/orders/delete?id={order.Id}")" role="button"><i class="bi bi-trash"></i></a>
         </TemplateColumn>
     </QuickGrid>
 </div>

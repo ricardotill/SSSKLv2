@@ -152,7 +152,7 @@
     ApplicationUser objUser = new ApplicationUser();
     IQueryable<ApplicationUser> ColUsers = default!;
 
-    List<string> Options = new () { "User", "Admin" };
+    List<string> Options = new () { "User", "Admin", "Kiosk" };
     List<string> OptionsTrueFalse = new () { "True", "False" };
     System.Security.Claims.ClaimsPrincipal CurrentUser;
     string EmailConfirmed { get; set; } = "False";
@@ -240,23 +240,9 @@
                 // Handle Roles
 
                 // Is user in administrator role?
-                var UserResult = await _UserManager.IsInRoleAsync(user, ADMINISTRATION_ROLE);
-
-                // Is Administrator role selected but user is not an Administrator?
-                if ((CurrentUserRole == ADMINISTRATION_ROLE) & (!UserResult))
-                {
-                    // Put admin in Administrator role
-                    await _UserManager.AddToRoleAsync(user, ADMINISTRATION_ROLE);
-                }
-                else
-                {
-                    // Is Administrator role not selected but user is an Administrator?
-                    if ((CurrentUserRole != ADMINISTRATION_ROLE) & (UserResult))
-                    {
-                        // Remove user from Administrator role
-                        await _UserManager.RemoveFromRoleAsync(user, ADMINISTRATION_ROLE);
-                    }
-                }
+                var currentRole = await _UserManager.GetRolesAsync(user);
+                await _UserManager.RemoveFromRolesAsync(user, currentRole);
+                await _UserManager.AddToRoleAsync(user, CurrentUserRole);
             }
 
             // Close the Popup
@@ -284,15 +270,8 @@
         {
             // Is user in administrator role?
             var UserResult = await _UserManager.IsInRoleAsync(user, ADMINISTRATION_ROLE);
-
-            if (UserResult)
-            {
-                CurrentUserRole = ADMINISTRATION_ROLE;
-            }
-            else
-            {
-                CurrentUserRole = "User";
-            }
+            var role = await _UserManager.GetRolesAsync(user);
+            CurrentUserRole = role.First();
 
             if (user.EmailConfirmed)
             {

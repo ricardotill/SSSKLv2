@@ -50,36 +50,34 @@ public class ApplicationUserRepository(
     public async Task<IList<ApplicationUser>> GetAll()
     {
         await using var context = await _dbContextFactory.CreateDbContextAsync();
-        var consumers = await GetConsumerUsersQuery();
         
-        var dblist = await context.Users
-            .Where(s => s.Orders.Any())
+        var list = await GetConsumerUsersQuery(context)
             .OrderByDescending(e => e.LastOrdered)
             .ToListAsync();
 
-        return dblist.Where(x => consumers.Any(c => c.Id == x.Id)).ToList();
+        return list;
     }
     
     public async Task<IList<ApplicationUser>> GetAllWithOrders()
     {
         await using var context = await _dbContextFactory.CreateDbContextAsync();
-        var consumers = await GetConsumerUsersQuery();
         
-        var dblist = await context.Users
+        var list = await GetConsumerUsersQuery(context)
             .Where(s => s.Orders.Any())
             .Include(x => x.Orders)
             .ThenInclude(x => x.Product)
             .OrderByDescending(e => e.LastOrdered)
             .ToListAsync();
 
-        return dblist.Where(x => consumers.Any(c => c.Id == x.Id)).ToList();
+        return list;
     }
 
-    private async Task<IList<ApplicationUser>> GetConsumerUsersQuery()
+    private IQueryable<ApplicationUser> GetConsumerUsersQuery(ApplicationDbContext context)
     {
-        var list = new List<ApplicationUser>();
-        list.AddRange(await _userManager.GetUsersInRoleAsync(@Policies.User));
-        list.AddRange(await _userManager.GetUsersInRoleAsync(@Policies.Admin));
-        return list;
+        return from u in context.Users
+            join ur in context.UserRoles on u.Id equals ur.UserId
+            join r in context.Roles on ur.RoleId equals r.Id
+            where r.Name != "Kiosk"
+            select u;
     }
 }

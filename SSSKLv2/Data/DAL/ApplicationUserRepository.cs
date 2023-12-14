@@ -1,10 +1,14 @@
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using SSSKLv2.Components.Account;
 using SSSKLv2.Data.DAL.Exceptions;
 using SSSKLv2.Data.DAL.Interfaces;
 
 namespace SSSKLv2.Data.DAL;
 
-public class ApplicationUserRepository(IDbContextFactory<ApplicationDbContext> _dbContextFactory) : IApplicationUserRepository
+public class ApplicationUserRepository(
+    IDbContextFactory<ApplicationDbContext> _dbContextFactory,
+    UserManager<ApplicationUser> _userManager) : IApplicationUserRepository
 {
     public async Task<ApplicationUser> GetById(string id)
     {
@@ -46,34 +50,36 @@ public class ApplicationUserRepository(IDbContextFactory<ApplicationDbContext> _
     public async Task<IList<ApplicationUser>> GetAll()
     {
         await using var context = await _dbContextFactory.CreateDbContextAsync();
-        var list = await GetConsumerUsersQuery(context)
+        var consumers = await GetConsumerUsersQuery();
+        
+        var dblist = await context.Users
             .Where(s => s.Orders.Any())
             .OrderByDescending(e => e.LastOrdered)
             .ToListAsync();
 
-        return list;
+        return dblist.Where(x => consumers.Any(c => c.Id == x.Id)).ToList();
     }
     
     public async Task<IList<ApplicationUser>> GetAllWithOrders()
     {
         await using var context = await _dbContextFactory.CreateDbContextAsync();
+        var consumers = await GetConsumerUsersQuery();
         
-        var list = await GetConsumerUsersQuery(context)
+        var dblist = await context.Users
             .Where(s => s.Orders.Any())
             .Include(x => x.Orders)
             .ThenInclude(x => x.Product)
             .OrderByDescending(e => e.LastOrdered)
             .ToListAsync();
 
-        return list;
+        return dblist.Where(x => consumers.Any(c => c.Id == x.Id)).ToList();
     }
 
-    private IQueryable<ApplicationUser> GetConsumerUsersQuery(ApplicationDbContext context)
+    private async Task<IList<ApplicationUser>> GetConsumerUsersQuery()
     {
-        return from u in context.Users
-            join ur in context.UserRoles on u.Id equals ur.UserId
-            join r in context.Roles on ur.RoleId equals r.Id
-            where r.Name != "Kiosk"
-            select u;
+        var list = new List<ApplicationUser>();
+        list.AddRange(await _userManager.GetUsersInRoleAsync(@Policies.User));
+        list.AddRange(await _userManager.GetUsersInRoleAsync(@Policies.Admin));
+        return list;
     }
 }

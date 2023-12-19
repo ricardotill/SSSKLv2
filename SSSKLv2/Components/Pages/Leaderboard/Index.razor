@@ -29,7 +29,7 @@
 </div>
 
 <h3>Afgelopen 12 uur</h3>
-@if (All.Count() > 0)
+@if (Recently.Any())
 {
     <div class="table-responsive">
         <table class="table table-striped">
@@ -59,7 +59,7 @@ else
 }
 
 <h3>Maandelijks</h3>
-@if (All.Count() > 0)
+@if (Monthly.Any())
 {
     <div class="table-responsive">
         <table class="table table-striped">
@@ -89,7 +89,7 @@ else
 }
 
 <h3>Totaal</h3>
-@if (All.Count() > 0)
+@if (All.Any())
 {
     <div class="table-responsive">
         <table class="table table-striped">

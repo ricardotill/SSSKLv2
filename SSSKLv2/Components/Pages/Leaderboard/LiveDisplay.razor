@@ -16,7 +16,7 @@
 @if (Leaderboard.Count() > 0)
 {
     <div class="row vh-100 align-items-center">
-        <div class="col-6">
+        <div class="col-md-6">
             <h3>@Leaderboard.First().ProductName Leaderboard</h3>
             <div class="table-responsive">
                 <table class="table table-striped">
@@ -40,7 +40,7 @@
                 </table>
             </div>
         </div>
-        <div class="col-6 text-center h-100 row align-items-center">
+        <div class="col-md-6 text-center h-100 row align-items-center">
             <div class="row h-25">
                 <div></div>
                 <div class="col-12">
@@ -92,7 +92,7 @@ else
     [Parameter]
     public string? ProductId { get; set; }
     
-    System.Threading.Timer timer;
+    Timer timer;
     
     public IEnumerable<LeaderboardEntry> Leaderboard { get; set; } = new List<LeaderboardEntry>();
     public IEnumerable<Order> LatestOrders { get; set; } = new List<Order>();
@@ -100,7 +100,7 @@ else
     protected override async Task OnInitializedAsync()
     {
         await GetData();
-        timer = new System.Threading.Timer(async _ =>
+        timer = new Timer(async _ =>
         {
             await GetData();
             await InvokeAsync(StateHasChanged);
@@ -118,8 +118,8 @@ else
         timer.Dispose();
     }
 
-    public async ValueTask DisposeAsync()
+    public ValueTask DisposeAsync()
     {
-        await timer.DisposeAsync();
+        return timer.DisposeAsync();
     }
 }

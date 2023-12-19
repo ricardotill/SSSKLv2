@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using SSSKLv2.Components.Account;
 using SSSKLv2.Data.DAL.Exceptions;
 using SSSKLv2.Data.DAL.Interfaces;
 
@@ -41,7 +40,7 @@ public class ApplicationUserRepository(
         await using var context = await _dbContextFactory.CreateDbContextAsync();
         var list = await context.Users
             .AsNoTracking()
-            .OrderByDescending(x => x.Surname)
+            .OrderBy(x => x.Surname)
             .ToListAsync();
 
         return list;

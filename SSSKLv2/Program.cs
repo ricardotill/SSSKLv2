@@ -55,11 +55,13 @@ if (builder.Environment.IsDevelopment())
     builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
     builder.Configuration.AddEnvironmentVariables().AddJsonFile("appsettings.Development.json");
-    connection = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+    connection = builder.Configuration.GetConnectionString("DefaultConnection") 
+                 ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 }
 else
 {
-    connection = Environment.GetEnvironmentVariable("AZURE_SQL_CONNECTIONSTRING");
+    connection = builder.Configuration.GetConnectionString("SQLCONNSTR_AZURE_SQL_CONNECTIONSTRING") 
+                 ?? throw new InvalidOperationException("Azure SQL Server Connection string not found.");
 }
 
 builder.Logging.AddFilter<ApplicationInsightsLoggerProvider>("SSSKLv2", LogLevel.Trace);

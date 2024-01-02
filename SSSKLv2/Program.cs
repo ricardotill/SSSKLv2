@@ -17,6 +17,10 @@ using SSSKLv2.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+var myconn = builder.Configuration.GetConnectionString("AppConfig") 
+             ?? throw new InvalidOperationException("Azure AppConfig Connection string not found.");
+builder.Configuration.AddAzureAppConfiguration(myconn);
+
 builder.Services.AddApplicationInsightsTelemetry();
 
 // Add services to the container.
@@ -60,7 +64,7 @@ if (builder.Environment.IsDevelopment())
 }
 else
 {
-    connection = Environment.GetEnvironmentVariable("SQLCONNSTR_AZURE_SQL_CONNECTIONSTRING") 
+    connection = builder.Configuration.GetConnectionString("AZURE_SQL_CONNECTIONSTRING")
                  ?? throw new InvalidOperationException("Azure SQL Server Connection string not found.");
 }
 

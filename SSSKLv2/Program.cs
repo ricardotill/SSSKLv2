@@ -6,7 +6,12 @@ using SSSKLv2.Components.Account;
 using SSSKLv2.Data;
 using System.Globalization;
 using Blazored.Toast;
+using Microsoft.Azure.SignalR.Common;
+using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging.ApplicationInsights;
+using Polly;
+using Polly.Contrib.WaitAndRetry;
+using Polly.Retry;
 using SSSKLv2.Data.DAL;
 using SSSKLv2.Services;
 
@@ -59,17 +64,29 @@ else
 
 builder.Logging.AddFilter<ApplicationInsightsLoggerProvider>("SSSKLv2", LogLevel.Trace);
 
-builder.Services.AddDbContextFactory<ApplicationDbContext>(
-    options =>
-        options.UseSqlServer(connection));
+Policy.Handle<SqlException>()
+    .WaitAndRetry(Backoff.LinearBackoff(TimeSpan.FromMilliseconds(100), retryCount: 5),
+        (ex, t, retryCount, c) => { Console.WriteLine($"Failed Attempt {retryCount}: {ex.GetType().Name}"); })
+    .Execute(() =>
+    {
+        builder.Services.AddDbContextFactory<ApplicationDbContext>(
+            options =>
+                options.UseSqlServer(connection));
+    });
 
 if (builder.Environment.IsProduction())
 {
-    builder.Services.AddSignalR().AddAzureSignalR(options =>
-    {
-        options.ServerStickyMode =
-            Microsoft.Azure.SignalR.ServerStickyMode.Required;
-    });
+    Policy.Handle<AzureSignalRException>()
+        .WaitAndRetry(Backoff.LinearBackoff(TimeSpan.FromMilliseconds(100), retryCount: 5),
+            (ex, t, retryCount, c) => { Console.WriteLine($"Failed Attempt {retryCount}: {ex.GetType().Name}"); })
+        .Execute(() =>
+        {
+            builder.Services.AddSignalR().AddAzureSignalR(options =>
+            {
+                options.ServerStickyMode =
+                    Microsoft.Azure.SignalR.ServerStickyMode.Required;
+            });
+        });
 }
 
 builder.Services.AddQuickGridEntityFrameworkAdapter();

@@ -60,7 +60,7 @@ if (builder.Environment.IsDevelopment())
 }
 else
 {
-    connection = builder.Configuration.GetConnectionString("SQLCONNSTR_AZURE_SQL_CONNECTIONSTRING") 
+    connection = Environment.GetEnvironmentVariable("SQLCONNSTR_AZURE_SQL_CONNECTIONSTRING") 
                  ?? throw new InvalidOperationException("Azure SQL Server Connection string not found.");
 }
 

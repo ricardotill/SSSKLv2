@@ -12,5 +12,6 @@ public interface IApplicationUserService
     public Task<IEnumerable<LeaderboardEntry>> GetAllLeaderboard(Guid productId);
     public Task<IEnumerable<LeaderboardEntry>> GetMonthlyLeaderboard(Guid productId);
     public Task<IEnumerable<LeaderboardEntry>> Get12HourlyLeaderboard(Guid productId);
+    public Task<IEnumerable<LeaderboardEntry>> Get12HourlyLiveLeaderboard(Guid productId);
 
 }

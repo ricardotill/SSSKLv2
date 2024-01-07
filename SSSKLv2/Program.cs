@@ -134,7 +134,7 @@ else
 app.UseHttpsRedirection();
 
 app.UseStaticFiles();
-app.UseAntiforgery();
+app.AddAntiforgery(o => o.SuppressXFrameOptionsHeader = true);
 
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();

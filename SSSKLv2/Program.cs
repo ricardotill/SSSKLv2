@@ -112,6 +112,8 @@ builder.Services.AddBlazoredToast();
 builder.Services.AddServicesDI();
 builder.Services.AddDataDI(); 
 
+builder.Services.AddAntiforgery(o => o.SuppressXFrameOptionsHeader = true);
+
 var app = builder.Build();
 
 await using (var scope = app.Services.CreateAsyncScope())
@@ -134,7 +136,7 @@ else
 app.UseHttpsRedirection();
 
 app.UseStaticFiles();
-app.AddAntiforgery(o => o.SuppressXFrameOptionsHeader = true);
+app.UseAntiforgery();
 
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();

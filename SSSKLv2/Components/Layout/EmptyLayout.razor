@@ -1,3 +1,4 @@
+@using Blazored.Toast.Configuration
 @inherits LayoutComponentBase
 
 <div class="main">    
@@ -5,3 +6,8 @@
         @Body
     </div>
 </div>
+<BlazoredToasts Position="ToastPosition.BottomRight"
+                Timeout=5
+                SuccessIcon="bi bi-check-circle"
+                WarningIcon="bi bi-exclamation-triangle"
+                ErrorIcon="bi bi-x-octagon"/>

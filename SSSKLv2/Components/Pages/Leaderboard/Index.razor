@@ -3,8 +3,10 @@
 
 @using SSSKLv2.Services.Interfaces
 @using SSSKLv2.Data
+@using Blazored.Toast.Configuration
 @inject IApplicationUserService ApplicationUserService
 @inject IProductService ProductService
+@inject IToastService ToastService
 
 <PageTitle>SSSKLv2 | Leaderboard</PageTitle>
 
@@ -13,7 +15,7 @@
         <h1>Leaderboard</h1>
     </div>
     <div class="col-4 text-end">
-        <button class="btn btn-secondary me-1" @onclick="@UpdateLeaderboards"><i class="bi bi-arrow-clockwise"></i></button>
+        <button class="btn btn-secondary me-1" @onclick="@ClickUpdate"><i class="bi bi-arrow-clockwise"></i></button>
         <a class="btn btn-primary" href="/leaderboard/livedisplay/@SelectedProductId"><i class="bi bi-tv"></i></a>
     </div>
 </div>
@@ -118,6 +120,11 @@ else
     <p>Er zijn deze periode geen aankopen gedaan. Dus ik zou zeggen, bestellen maar! ;)</p>
 }
 
+<BlazoredToasts Position="ToastPosition.BottomRight"
+                    Timeout=5
+                    SuccessIcon="bi bi-check-circle"
+                    WarningIcon="bi bi-exclamation-triangle"
+                    ErrorIcon="bi bi-x-octagon"/>
 
 @code {
     public IEnumerable<Product> Products { get; set; } = new List<Product>();
@@ -130,6 +137,12 @@ else
     protected override async Task OnInitializedAsync()
     {
         await GetData();
+    }
+
+    private async Task ClickUpdate()
+    {
+        await UpdateLeaderboards();
+        ToastService.ShowSuccess("Leaderboard geupdated.");
     }
 
     private async Task GetData()

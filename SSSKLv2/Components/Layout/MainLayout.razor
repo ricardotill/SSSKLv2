@@ -12,7 +12,7 @@
         <NavMenu />
     </div>
     <main>
-        <div class="top-row px-4">
+        <div class="top-row px-3">
             <AuthorizeView Policy="@Policies.User">
                 <Authorized>
                     <SaldoView />
@@ -50,7 +50,7 @@
                 <AuthorizeView Policy="@Policies.Admin">
                     <Authorized>
                         <li class="nav-item">
-                            <NavLink class="btn btn-link" href="Account/Manage">Welkom @HeaderService.Name!</NavLink>
+                            <NavLink class="btn btn-link" href="Account/Manage">@HeaderService.Name</NavLink>
                         </li>
                         <li class="nav-item">
                             <form action="Account/Logout" method="post">
@@ -78,7 +78,7 @@
                 </AuthorizeView>
             </ul>
         </div>
-        <article class="content px-4 pb-4">
+        <article class="content px-3 pb-4">
             @Body
         </article>
     </main>

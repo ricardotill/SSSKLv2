@@ -546,6 +546,14 @@ legend + * {
   outline-offset: -2px;
 }
 
+/* rtl:raw:
+[type="tel"],
+[type="url"],
+[type="email"],
+[type="number"] {
+  direction: ltr;
+}
+*/
 ::-webkit-search-decoration {
   -webkit-appearance: none;
 }
@@ -1840,7 +1848,7 @@ progress {
     --bs-gutter-y: 3rem;
   }
 }
-.table {
+.table, .table-responsive > .quickgrid {
   --bs-table-color-type: initial;
   --bs-table-bg-type: initial;
   --bs-table-color-state: initial;
@@ -1860,17 +1868,17 @@ progress {
   vertical-align: top;
   border-color: var(--bs-table-border-color);
 }
-.table > :not(caption) > * > * {
+.table > :not(caption) > * > *, .table-responsive > .quickgrid > :not(caption) > * > * {
   padding: 0.5rem 0.5rem;
   color: var(--bs-table-color-state, var(--bs-table-color-type, var(--bs-table-color)));
   background-color: var(--bs-table-bg);
   border-bottom-width: var(--bs-border-width);
   box-shadow: inset 0 0 0 9999px var(--bs-table-bg-state, var(--bs-table-bg-type, var(--bs-table-accent-bg)));
 }
-.table > tbody {
+.table > tbody, .table-responsive > .quickgrid > tbody {
   vertical-align: inherit;
 }
-.table > thead {
+.table > thead, .table-responsive > .quickgrid > thead {
   vertical-align: bottom;
 }
 
@@ -1900,7 +1908,7 @@ progress {
   border-top-width: 0;
 }
 
-.table-striped > tbody > tr:nth-of-type(odd) > * {
+.table-striped > tbody > tr:nth-of-type(odd) > *, .table-responsive > .quickgrid > tbody > tr:nth-of-type(odd) > * {
   --bs-table-color-type: var(--bs-table-striped-color);
   --bs-table-bg-type: var(--bs-table-striped-bg);
 }
@@ -8358,7 +8366,7 @@ textarea.form-control-lg {
   white-space: normal !important;
 }
 
-.text-nowrap {
+.text-nowrap, .table-responsive > .quickgrid {
   white-space: nowrap !important;
 }
 
@@ -11854,7 +11862,12 @@ textarea.form-control-lg {
   }
 }
 html, body {
-  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-family: "Noto Sans", sans-serif;
+}
+
+h1, .h1, h2, .h2, h3, .h3, h4, .h4, h5, .h5, h6, .h6, .navbar-brand {
+  font-family: "Noto Sans Display", sans-serif;
+  font-weight: bold;
 }
 
 .selected {

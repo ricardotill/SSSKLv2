@@ -24,7 +24,7 @@ public class RssController(IProductService productService) : ControllerBase
         {
             Items = products.Select((e) => new SyndicationItem(
                 e.Name,
-                $"{e.Price.ToString("C")} | Voorraad: {e.Stock}",
+                $"{e.Price.ToString("C")} ({e.Stock} stuks)",
                 new Uri(url)
             ))
         };

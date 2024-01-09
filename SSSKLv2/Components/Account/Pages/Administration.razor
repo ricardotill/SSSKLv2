@@ -26,7 +26,7 @@
             else
             {
                 <div class="table-responsive">
-                    <QuickGrid Items="@ColUsers">
+                    <QuickGrid Items="@ColUsers" Pagination="@pagination">
                         <TemplateColumn Title="Volledige naam" Context="u">
                             @u.Name @u.Surname
                         </TemplateColumn>
@@ -42,6 +42,7 @@
                         </TemplateColumn>
                     </QuickGrid>
                 </div>
+                <Paginator State="@pagination" />
             }
             @if (ShowPopup)
             {
@@ -157,6 +158,8 @@
 @code {
     [CascadingParameter]
     private Task<AuthenticationState> authenticationStateTask { get; set; }
+    
+    public PaginationState pagination = new() { ItemsPerPage = 20 };
 
     string ADMINISTRATION_ROLE = "Admin";
     ApplicationUser objUser = new ApplicationUser();

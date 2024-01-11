@@ -1,0 +1,53 @@
+﻿@page "/admin/announcements"
+@rendermode InteractiveServer
+
+@attribute [Authorize(Policy = Policies.Admin)]
+@inject IAnnouncementService AnnouncementService
+@using SSSKLv2.Data
+@using SSSKLv2.Services.Interfaces
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.QuickGrid
+@using SSSKLv2.Components.Account
+
+<PageTitle>SSSKLv2 | Mededelingbeheer</PageTitle>
+
+<div class="row crud-form-header">
+    <div class="col-10 title-container">
+        <h1>Mededelingbeheer</h1>
+    </div>
+    <div class="col-2 text-end back-container">
+        <a class="btn btn-success bg-lg" href="/admin/announcements/create" role="button"><i class="bi bi-plus-circle"></i></a>
+    </div>
+</div>
+
+<div class="table-responsive">
+    <QuickGrid Items="@Announcements" Pagination="@pagination">
+        <PropertyColumn Title="Mededeling" Property="@(a => a.Message)" Align="Align.Left" />
+        <PropertyColumn Title="Beschrijving" Property="@(a => a.Description)" Align="Align.Left" />
+        <PropertyColumn Title="Volgorde" Property="@(a => a.Order)" Align="Align.Left" />
+        <TemplateColumn Title="#" Context="announcement">
+            <a class="btn btn-info btn-sm" href="@($"admin/announcements/edit?id={announcement.Id}")" role="button"><i class="bi bi-pen"></i></a>
+            <a class="btn btn-danger btn-sm" href="@($"admin/announcements/delete?id={announcement.Id}")" role="button"><i class="bi bi-trash"></i></a>
+        </TemplateColumn>
+    </QuickGrid>
+</div>
+
+<Paginator State="@pagination" />
+
+
+@code {
+    
+    public IQueryable<Announcement> Announcements = default!;
+    
+    public PaginationState pagination = new PaginationState() { ItemsPerPage = 20 };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetDataAsync();
+    }
+
+    private async Task GetDataAsync()
+    {
+        Announcements = await AnnouncementService.GetAllAnnouncements();
+    }
+}

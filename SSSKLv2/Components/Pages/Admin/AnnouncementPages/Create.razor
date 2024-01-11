@@ -1,0 +1,85 @@
+﻿@page "/admin/announcements/create"
+@rendermode InteractiveServer
+
+@attribute [Authorize(Policy = Policies.Admin)]
+
+@inject IAnnouncementService AnnouncementService;
+@using SSSKLv2.Data
+@using Microsoft.AspNetCore.Authorization
+@using SSSKLv2.Components.Account
+@using SSSKLv2.Services.Interfaces
+@using System.ComponentModel.DataAnnotations
+@using System.ComponentModel
+@inject NavigationManager NavigationManager
+
+<PageTitle>SSSKLv2 | Mededeling aanmaken</PageTitle>
+
+<div class="row crud-form-header">
+    <div class="col-9 title-container">
+        <h1>Mededeling aanmaken</h1>
+    </div>
+    <div class="col-3 text-end back-container">
+        <a class="btn btn-secondary" href="/admin/announcements"><i class="bi bi-arrow-left"></i></a>
+    </div>
+</div>
+<hr />
+<div class="card">
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-4">
+                <EditForm method="post" Model="Announcement" OnValidSubmit="AddAnnouncement" FormName="create" Enhance>
+                    <DataAnnotationsValidator />
+                    <ValidationSummary />
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Mededeling:</label>
+                        <InputText id="name" @bind-Value="Announcement.Message" class="form-control" />
+                        <ValidationMessage For="() => Announcement.Message" class="text-danger" />
+                    </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Beschrijving:</label>
+                        <InputText id="description" @bind-Value="Announcement.Description" class="form-control" />
+                        <ValidationMessage For="() => Announcement.Description" class="text-danger" />
+                    </div>
+                    <div class="mb-3">
+                        <label for="order" class="form-label">Volgorde:</label>
+                        <InputNumber id="order" @bind-Value="Announcement.Order" class="form-control" />
+                        <ValidationMessage For="() => Announcement.Order" class="text-danger" />
+                    </div>
+                    <button type="submit" class="btn btn-primary">Opslaan</button>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+
+    [SupplyParameterFromForm]
+    public AnnouncementDto Announcement { get; set; } = new();
+
+    public async Task AddAnnouncement()
+    {
+        await AnnouncementService.CreateAnnouncement(new Announcement()
+        {
+            Message = Announcement.Message,
+            Description = Announcement.Description,
+            Order = Announcement.Order
+        });
+        
+        NavigationManager.NavigateTo("/admin/announcements");
+    }
+
+    public class AnnouncementDto
+    {
+        [Required]
+        [DisplayName("Bericht")]
+        public string Message { get; set; }
+    
+        [DisplayName("Beschrijving")]
+        public string? Description { get; set; }
+    
+        [Required]
+        [DisplayName("Volgorde")]
+        public int Order { get; set; }
+    }
+}

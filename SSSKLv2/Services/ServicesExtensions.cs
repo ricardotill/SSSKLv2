@@ -12,6 +12,7 @@ public static class ServicesExtensions
             .AddTransient<IOldUserMigrationService, OldUserMigrationService>()
             .AddTransient<IOrderService, OrderService>()
             .AddTransient<IProductService, ProductService>()
-            .AddTransient<ITopUpService, TopUpService>();
+            .AddTransient<ITopUpService, TopUpService>()
+            .AddTransient<IAnnouncementService, AnnouncementService>();
     }
 }

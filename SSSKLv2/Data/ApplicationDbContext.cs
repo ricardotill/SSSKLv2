@@ -10,10 +10,16 @@ namespace SSSKLv2.Data
         public DbSet<SSSKLv2.Data.OldUserMigration> OldUserMigration { get; set; } = default!;
         public DbSet<SSSKLv2.Data.Order> Order { get; set; } = default!;
         public DbSet<SSSKLv2.Data.TopUp> TopUp { get; set; } = default!;
+        
+        public DbSet<SSSKLv2.Data.Announcement> Announcement { get; set; } = default!;
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
+            
+            builder.Entity<Announcement>()
+                .Property(s => s.CreatedOn )
+                .HasDefaultValueSql("GETDATE()");
 
             builder.Entity<ApplicationUser>()
                 .HasMany<Order>(e => e.Orders)
@@ -53,6 +59,7 @@ namespace SSSKLv2.Data
             builder.Entity<OldUserMigration>()
                 .Property(s => s.CreatedOn )
                 .HasDefaultValueSql("GETDATE()");
+            
             builder.Entity<ApplicationUser>()
                 .Property(s => s.LastOrdered )
                 .HasDefaultValueSql("GETDATE()");

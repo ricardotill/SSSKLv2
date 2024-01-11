@@ -1,0 +1,108 @@
+﻿@page "/admin/announcements/edit"
+@inject SSSKLv2.Data.ApplicationDbContext DB
+@using SSSKLv2.Data
+@inject NavigationManager NavigationManager
+@using Microsoft.EntityFrameworkCore
+@using SSSKLv2.Components.Account
+@using Microsoft.AspNetCore.Authorization
+
+@attribute [Authorize(Policy = Policies.Admin)]
+
+<PageTitle>SSSKLv2 | Mededeling Aanpassen</PageTitle>
+
+<div class="row crud-form-header">
+    <div class="col-9 title-container">
+        <h1>Mededeling Aanpassen</h1>
+    </div>
+    <div class="col-3 text-end back-container">
+        <a class="btn btn-secondary" href="/admin/announcements"><i class="bi bi-arrow-left"></i></a>
+    </div>
+</div>
+<hr />
+
+<div class="card">
+    <div class="card-body">
+        <h5 class="card-title">Mededeling</h5>
+        <hr/>
+        @if (Announcement is null)
+        {
+            <p><em>Laden...</em></p>
+        }
+        else
+        {
+            <div class="row">
+                <div class="col-md-4">
+                    <EditForm method="post" Model="Announcement" OnValidSubmit="UpdateAnnouncement" FormName="edit" Enhance>
+                        <DataAnnotationsValidator />
+                        <ValidationSummary />
+                        <input type="hidden" name="Announcement.Id" value="@Announcement.Id" />
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Mededeling:</label>
+                            <InputText id="name" @bind-Value="Announcement.Message" class="form-control" />
+                            <ValidationMessage For="() => Announcement.Message" class="text-danger" />
+                        </div>
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Beschrijving:</label>
+                            <InputText id="description" @bind-Value="Announcement.Description" class="form-control" />
+                            <ValidationMessage For="() => Announcement.Description" class="text-danger" />
+                        </div>
+                        <div class="mb-3">
+                            <label for="order" class="form-label">Volgorde:</label>
+                            <InputNumber id="order" @bind-Value="Announcement.Order" class="form-control" />
+                            <ValidationMessage For="() => Announcement.Order" class="text-danger" />
+                        </div>
+                        <button type="submit" class="btn btn-primary">Opslaan</button>
+                    </EditForm>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [SupplyParameterFromQuery]
+    public Guid Id { get; set; }
+
+    [SupplyParameterFromForm]
+    public Announcement? Announcement { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        Announcement ??= await DB.Announcement.FirstOrDefaultAsync(m => m.Id == Id);
+
+        if (Announcement is null)
+        {
+            NavigationManager.NavigateTo("notfound");
+        }
+    }
+
+    // To protect from overposting attacks, enable the specific properties you want to bind to.
+    // For more details, see https://aka.ms/RazorPagesCRUD.
+    public async Task UpdateAnnouncement()
+    {
+        DB.Attach(Announcement!).State = EntityState.Modified;
+
+        try
+        {
+            await DB.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            if (!AnnouncementExists(Announcement!.Id))
+            {
+                NavigationManager.NavigateTo("notfound");
+            }
+            else
+            {
+                throw;
+            }
+        }
+
+        NavigationManager.NavigateTo("/admin/announcements");
+    }
+
+    bool AnnouncementExists(Guid id)
+    {
+        return DB.Announcement.Any(e => e.Id == id);
+    }
+}

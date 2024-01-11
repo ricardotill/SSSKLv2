@@ -43,12 +43,13 @@ else
                             .AddClass("bg-body-tertiary")
                             .AddClass("border-3")
                             .AddClass("w-100")
+                            .AddClass("h-100")
                             .AddClass("m-1")
                             .AddClass("text-start")
                             .AddClass("my-1")
                             .ToString() ?? string.Empty;
                         
-                        <div class="col-6 p-0 pe-3">
+                        <div class="col-6 p-0 pe-3 pb-2">
                             <button type="button" class="@css" @onclick="@(e => OnClick(e, product))">
                                 <InputCheckbox class="form-check-input btn-select-checkbox me-1" @bind-Value="product.Selected" />
                                 @product.Value.Name <small class="text-nowrap">@product.Value.Price.ToString("C")</small>
@@ -70,12 +71,13 @@ else
                             .AddClass("bg-body-tertiary")
                             .AddClass("border-3")
                             .AddClass("w-100")
+                            .AddClass("h-100")
                             .AddClass("m-1")
                             .AddClass("text-start")
                             .AddClass("my-1")
                             .ToString() ?? string.Empty;
                         
-                        <div class="col-6 p-0 pe-3">
+                        <div class="col-6 p-0 pe-3 pb-2">
                             <button type="button" class="@css" @onclick="@(e => OnClick(e, user))">
                                 <InputCheckbox class="form-check-input btn-select-checkbox me-1" @bind-Value="user.Selected"/>
                                 @user.Value.Name @user.Value.Surname.First()

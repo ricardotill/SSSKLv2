@@ -9,9 +9,13 @@ $btn-active-border-shade-amount: 30%;
 
 // Styles
 html, body {
-    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-family: 'Noto Sans', sans-serif;
 }
 
+h1, h2, h3, h4, h5, h6, .navbar-brand {
+    font-family: 'Noto Sans Display', sans-serif;
+    font-weight: bold;
+}
 
 .selected {
     @extend .active;
@@ -50,6 +54,12 @@ html, body {
 
 .blazor-error-boundary::after {
     content: "Een onverwachte fout is opgetreden. Stuur ICT (Ricardo) ff berichtje pls"
+}
+
+.table-responsive > .quickgrid {
+    @extend .text-nowrap;
+    @extend .table;
+    @extend .table-striped;
 }
 
 .desktop-hidden {

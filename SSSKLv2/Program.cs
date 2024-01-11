@@ -11,13 +11,14 @@ using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging.ApplicationInsights;
 using Polly;
 using Polly.Contrib.WaitAndRetry;
-using Polly.Retry;
 using SSSKLv2.Data.DAL;
 using SSSKLv2.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddApplicationInsightsTelemetry();
+
+builder.Services.AddControllers();
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
@@ -112,6 +113,8 @@ builder.Services.AddBlazoredToast();
 builder.Services.AddServicesDI();
 builder.Services.AddDataDI(); 
 
+builder.Services.AddAntiforgery(o => o.SuppressXFrameOptionsHeader = true);
+
 var app = builder.Build();
 
 await using (var scope = app.Services.CreateAsyncScope())
@@ -138,6 +141,8 @@ app.UseAntiforgery();
 
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
+
+app.MapControllers();
 
 // Add additional endpoints required by the Identity /Account Razor components.
 app.MapAdditionalIdentityEndpoints();

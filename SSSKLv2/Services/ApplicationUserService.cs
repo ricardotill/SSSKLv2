@@ -133,6 +133,34 @@ public class ApplicationUserService(
         
         return DeterminePositions(leaderboard);
     }
+    
+    public async Task<IEnumerable<LeaderboardEntry>> Get12HourlyLiveLeaderboard(Guid productId)
+    {
+        var time = DateTime.Now.AddHours(-12);
+        
+        var product = await _productRepository.GetById(productId);
+        var ulist = await _applicationUserRepository.GetFirst12WithOrders();
+        
+        var leaderboard = new List<LeaderboardEntry>();
+        foreach (var u in ulist)
+        {
+            int count;
+            try
+            {
+                count = u.Orders
+                    .Where(o => o.CreatedOn >= time)
+                    .Where(o => o.Product != null && o.Product.Id == product.Id)
+                    .Sum(o => o.Amount);
+            }
+            catch (OverflowException)
+            {
+                count = Int32.MaxValue;
+            }
+            if (count > 0) leaderboard.Add(new LeaderboardEntry() { Amount = count, FullName = $"{u.Name} {u.Surname.First()}", ProductName = product.Name});
+        }
+        
+        return DeterminePositions(leaderboard);
+    }
 
     private IEnumerable<LeaderboardEntry> DeterminePositions(IEnumerable<LeaderboardEntry> leaderboard)
     {

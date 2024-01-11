@@ -1,10 +1,9 @@
-﻿@page "/admin/topups/delete"
+﻿@page "/admin/announcements/delete"
 @rendermode InteractiveServer
 
 @attribute [Authorize(Policy = Policies.Admin)]
 
-@inject ITopUpService TopUpService
-@inject IHeaderService HeaderService
+@inject IAnnouncementService AnnouncementService
 @using SSSKLv2.Data
 @inject NavigationManager NavigationManager
 @using SSSKLv2.Data.DAL.Exceptions
@@ -12,48 +11,48 @@
 @using Microsoft.AspNetCore.Authorization
 @using SSSKLv2.Components.Account
 
-<PageTitle>SSSKLv2 | Saldo Transactie Verwijderen</PageTitle>
+<PageTitle>SSSKLv2 | Mededeling Verwijderen</PageTitle>
 
 <div class="row crud-form-header">
     <div class="col-9 title-container">
         <h1>Verwijderen</h1>
     </div>
     <div class="col-3 text-end back-container">
-        <a class="btn btn-secondary" href="/admin/topups"><i class="bi bi-arrow-left"></i></a>
+        <a class="btn btn-secondary" href="/admin/announcements"><i class="bi bi-arrow-left"></i></a>
     </div>
 </div>
 <hr />
 <div class="card">
     <div class="card-body">
-        <h5 class="card-title">Saldo Transactie</h5>
+        <h5 class="card-title">Mededeling</h5>
         <hr/>
-        @if (topup is null)
+        @if (announcement is null)
         {
             <p><em>Laden...</em></p>
         }
         else
         {
             <dl class="row">
-                <dt class="col-sm-2">Datum</dt>
-                <dd class="col-sm-10">@topup.CreatedOn.ToString("dd/MM/yyyy")</dd>
+                <dt class="col-sm-2">Mededeling</dt>
+                <dd class="col-sm-10">@announcement.Message</dd>
             </dl>
             <dl class="row">
-                <dt class="col-sm-2">Gebruiker</dt>
-                <dd class="col-sm-10">@topup.User.Name @topup.User.Surname</dd>
+                <dt class="col-sm-2">Beschrijving</dt>
+                <dd class="col-sm-10">@announcement.Description</dd>
             </dl>
             <dl class="row">
-                <dt class="col-sm-2">Saldo</dt>
-                <dd class="col-sm-10">@topup.Saldo.ToString("C")</dd>
+                <dt class="col-sm-2">Volgorde</dt>
+                <dd class="col-sm-10">@announcement.Order</dd>
             </dl>
-            <EditForm method="post" Model="topup" OnValidSubmit="DeleteTopUp" FormName="delete" Enhance>
-                <button type="submit" class="btn btn-danger crud-form-submit" disabled="@(topup is null)">Verwijderen</button>
+            <EditForm method="post" Model="announcement" OnValidSubmit="DeleteAnnouncement" FormName="delete" Enhance>
+                <button type="submit" class="btn btn-danger crud-form-submit" disabled="@(announcement is null)">Verwijderen</button>
             </EditForm>
         }
     </div>
 </div>
 
 @code {
-    TopUp? topup;
+    Announcement? announcement;
 
     [SupplyParameterFromQuery]
     public string Id { get; set; }
@@ -67,7 +66,7 @@
     {
         try
         {
-            topup = await TopUpService.GetById(Id);
+            announcement = await AnnouncementService.GetAnnouncementById(Guid.Parse(Id));
 
         }
         catch (NotFoundException)
@@ -76,14 +75,13 @@
         }
     }
 
-    public async Task DeleteTopUp()
+    public async Task DeleteAnnouncement()
     {
         try
         {
-            await TopUpService.DeleteTopUp(Guid.Parse(Id));
-            HeaderService.NotifyHeaderChanged();
+            await AnnouncementService.DeleteAnnouncement(Guid.Parse(Id));
 
-            NavigationManager.NavigateTo("/admin/topups");
+            NavigationManager.NavigateTo("/admin/announcements");
         }
         catch (NotFoundException)
         {

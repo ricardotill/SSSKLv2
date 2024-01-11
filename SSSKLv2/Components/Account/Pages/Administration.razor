@@ -26,7 +26,7 @@
             else
             {
                 <div class="table-responsive">
-                    <QuickGrid Items="@ColUsers">
+                    <QuickGrid Items="@ColUsers" Pagination="@pagination">
                         <TemplateColumn Title="Volledige naam" Context="u">
                             @u.Name @u.Surname
                         </TemplateColumn>
@@ -42,20 +42,18 @@
                         </TemplateColumn>
                     </QuickGrid>
                 </div>
+                <Paginator State="@pagination" />
             }
             @if (ShowPopup)
             {
                 <!-- This is the popup to create or edit a user -->
-                <div class="modal" tabindex="-1" style="display:block" role="dialog">
+                <div id="edit-modal" class="modal" tabindex="-1" style="display:block;z-index: 10001;" role="dialog">
                     <div class="modal-dialog-scrollable modal-dialog-centered">
                         <div class="modal-content">
                             <div class="modal-header">
                                 <h3 class="modal-title">Gebruiker aanpassen</h3>
                                 <!-- Button to close the popup -->
-                                <button type="button" class="close"
-                                        @onclick="ClosePopup">
-                                    <span aria-hidden="true">X</span>
-                                </button>
+                                <button type="button" class="btn-close" aria-label="Close" @onclick="ClosePopup"></button>
                             </div>
                             <!-- Edit form for the current forecast -->
                             <div class="modal-body">
@@ -113,31 +111,42 @@
                                 <input class="form-control" type="password"
                                        placeholder="Password"
                                        @bind="objUser.PasswordHash"/>
-                                <br/><br/>
-                                <!-- Button to save the user -->
-                                <div class="row">
-                                    <div class="col-2 me-auto">
-                                        <button class="btn btn-success"
-                                                @onclick="SaveUser">
-                                            Opslaan
-                                        </button>
-                                    </div>
-                                    <div class="col-2 ms-auto text-end">
-                                        <!-- Button to delete the user -->
-                                        <button class="btn btn-danger ms-auto"
-                                                @onclick="DeleteUser">
-                                            Verwijderen
-                                        </button>
-                                    </div>
-                                </div>
-                                
-                                
                                 <br/>
                                 <span style="color:red">@strError</span>
+                            </div>
+                            <div class="modal-footer">
+                                <button class="btn btn-success"
+                                        @onclick="SaveUser">
+                                    Opslaan
+                                </button>
+                                <button class="btn btn-danger ms-auto"
+                                        @onclick="ToggleDelete">
+                                    Verwijderen
+                                </button>
                             </div>
                         </div>
                     </div>
                 </div>
+                @if (ShowDelete)
+                {
+                    <div id="delete-modal" class="modal show" tabindex="-1" style="display:block;z-index:10002;">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Weet je het zeker?</h5>
+                                    <button type="button" class="btn-close" @onclick="ToggleDelete" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <p>Je staat op het punt '@objUser.Name @objUser.Surname' te verwijderen.</p>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" @onclick="ToggleDelete">Terug</button>
+                                    <button type="button" class="btn btn-danger" @onclick="DeleteUser">Verwijderen</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
             }
         }
         else
@@ -149,6 +158,8 @@
 @code {
     [CascadingParameter]
     private Task<AuthenticationState> authenticationStateTask { get; set; }
+    
+    public PaginationState pagination = new() { ItemsPerPage = 20 };
 
     string ADMINISTRATION_ROLE = "Admin";
     ApplicationUser objUser = new ApplicationUser();
@@ -162,6 +173,7 @@
     string strError = "";
     string strSearch = "";
     bool ShowPopup = false;
+    bool ShowDelete = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -173,6 +185,8 @@
         // Get the users
         await GetUsers();
     }
+
+    public void ToggleDelete() => ShowDelete = !ShowDelete;
 
     public async Task GetUsers()
     {
@@ -293,6 +307,7 @@
     {
         // Close the Popup
         ShowPopup = false;
+        ShowDelete = false;
 
         // Get the user
         var user = await _UserManager.FindByIdAsync(objUser.Id);

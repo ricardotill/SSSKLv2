@@ -70,6 +70,21 @@ public class ApplicationUserRepository(
 
         return list;
     }
+    
+    public async Task<IList<ApplicationUser>> GetFirst12WithOrders()
+    {
+        await using var context = await _dbContextFactory.CreateDbContextAsync();
+        
+        var list = await GetConsumerUsersQuery(context)
+            .Where(s => s.Orders.Any())
+            .Include(x => x.Orders)
+            .ThenInclude(x => x.Product)
+            .OrderByDescending(e => e.LastOrdered)
+            .Take(10)
+            .ToListAsync();
+
+        return list;
+    }
 
     private IQueryable<ApplicationUser> GetConsumerUsersQuery(ApplicationDbContext context)
     {

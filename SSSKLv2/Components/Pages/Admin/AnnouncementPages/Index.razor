@@ -23,7 +23,6 @@
 <div class="table-responsive">
     <QuickGrid Items="@Announcements" Pagination="@pagination">
         <PropertyColumn Title="Mededeling" Property="@(a => a.Message)" Align="Align.Left" />
-        <PropertyColumn Title="Beschrijving" Property="@(a => a.Description)" Align="Align.Left" />
         <PropertyColumn Title="Volgorde" Property="@(a => a.Order)" Align="Align.Left" />
         <TemplateColumn Title="#" Context="announcement">
             <a class="btn btn-info btn-sm" href="@($"admin/announcements/edit?id={announcement.Id}")" role="button"><i class="bi bi-pen"></i></a>

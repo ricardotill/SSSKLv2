@@ -62,6 +62,6 @@ public class AnnouncementRepository(IDbContextFactory<ApplicationDbContext> _dbC
             context.Remove(announcement);
             await context.SaveChangesAsync();
         }
-        throw new NotFoundException("Announcement not found");
+        else throw new NotFoundException("Announcement not found");
     }
 }

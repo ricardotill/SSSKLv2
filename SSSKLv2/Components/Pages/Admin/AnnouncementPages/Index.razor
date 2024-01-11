@@ -20,6 +20,15 @@
     </div>
 </div>
 
+<div class="alert alert-primary d-flex align-items-center" role="alert">
+    <i class="bi bi-exclamation-circle me-3"></i>
+    <div>
+        Mededelingen worden in deze format weergegeven op het Stam TV Dashboard;
+        <br/>
+        <samp>Mededelingen  //  {Mededeling}: {Beschrijving}  //  {Mededeling}: {Beschrijving}</samp>
+    </div>
+</div>
+
 <div class="table-responsive">
     <QuickGrid Items="@Announcements" Pagination="@pagination">
         <PropertyColumn Title="Mededeling" Property="@(a => a.Message)" Align="Align.Left" />

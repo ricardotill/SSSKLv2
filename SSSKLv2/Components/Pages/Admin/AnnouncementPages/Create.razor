@@ -37,7 +37,7 @@
                     </div>
                     <div class="mb-3">
                         <label for="description" class="form-label">Beschrijving:</label>
-                        <InputText id="description" @bind-Value="Announcement.Description" class="form-control" />
+                        <InputTextArea id="description" @bind-Value="Announcement.Description" class="form-control" />
                         <ValidationMessage For="() => Announcement.Description" class="text-danger" />
                     </div>
                     <div class="mb-3">

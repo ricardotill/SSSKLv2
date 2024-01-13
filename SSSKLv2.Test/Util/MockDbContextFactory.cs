@@ -5,7 +5,7 @@ namespace SSSKLv2.Test.Util;
 
 public class MockDbContextFactory : IDbContextFactory<ApplicationDbContext>
 {
-    private DbContextOptions<ApplicationDbContext> _options;
+    private readonly DbContextOptions<ApplicationDbContext> _options;
 
     public MockDbContextFactory(DbContextOptions<ApplicationDbContext> options)
     {

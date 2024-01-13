@@ -1,8 +1,11 @@
+using System.Data;
+using System.Data.Common;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SSSKLv2.Data;
 using SSSKLv2.Data.DAL;
+using SSSKLv2.Data.DAL.Exceptions;
 using SSSKLv2.Test.Util;
 
 namespace SSSKLv2.Test.Data.DAL;
@@ -10,7 +13,7 @@ namespace SSSKLv2.Test.Data.DAL;
 [TestClass]
 public class AnnouncementRepositoryTests : RepositoryTest
 {
-    private IDbContextFactory<ApplicationDbContext> _dbContextFactory;
+    private IDbContextFactory<ApplicationDbContext> _dbContextFactory = null!;
     private AnnouncementRepository _sut;
 
     [TestInitialize]
@@ -28,7 +31,7 @@ public class AnnouncementRepositoryTests : RepositoryTest
     }
 
     [TestMethod]
-    public async Task GetAll_Should_ReturnNoAnnouncements()
+    public async Task GetAll_WhenDbEmpty_ReturnNoAnnouncements()
     {
         // Act
         var list = await _sut.GetAll();
@@ -38,7 +41,7 @@ public class AnnouncementRepositoryTests : RepositoryTest
     }
     
     [TestMethod]
-    public async Task GetAll_Should_ReturnAll()
+    public async Task GetAll_WhenAnnouncementsInDb_ReturnAll()
     {
         // Arrange
         var a1 = new Announcement
@@ -78,17 +81,21 @@ public class AnnouncementRepositoryTests : RepositoryTest
         list.Should().ContainEquivalentOf(a2);
     }
     
-    private async Task SaveAnnouncements(params Announcement[] announcements)
+    [TestMethod]
+    public async Task GetById_WhenNotInDb_ReturnNotFoundException()
     {
-        await using var context = _dbContextFactory.CreateDbContext();
-        await context.Announcement.AddRangeAsync(announcements);
-        await context.SaveChangesAsync();
-    }
+        // Act
+        Func<Task<Announcement>> function = () => _sut.GetById(Guid.NewGuid());
 
-    private void CreateTestData()
+        // Assert
+        await function.Should().ThrowAsync<NotFoundException>();
+    }
+    
+    [TestMethod]
+    public async Task GetById_WhenInDb_ThenReturnAnnouncement()
     {
-        using var context = _dbContextFactory.CreateDbContext();
-        var r1 = new Announcement
+        // Arrange
+        var a1 = new Announcement
         {
             Id = Guid.NewGuid(),
             CreatedOn = DateTime.Now,
@@ -101,7 +108,158 @@ public class AnnouncementRepositoryTests : RepositoryTest
             PlannedTill = null,
             Url = "https://url1/"
         };
-        var r2 = new Announcement
+        await SaveAnnouncements(a1);
+
+        // Act
+        var result = await _sut.GetById(a1.Id);
+
+        // Assert
+        result.Should().BeEquivalentTo(a1);
+    }
+    
+    [TestMethod]
+    public async Task Create_WhenNewAnnouncement_ThenAddNewAnnouncement()
+    {
+        // Arrange
+        var a1 = new Announcement
+        {
+            Id = Guid.NewGuid(),
+            CreatedOn = DateTime.Now,
+            Message = "message1",
+            Description = "desctest1",
+            Order = 0,
+            FotoUrl = "https://foto1/",
+            IsScheduled = false,
+            PlannedFrom = null,
+            PlannedTill = null,
+            Url = "https://url1/"
+        };
+
+        // Act
+        await _sut.Create(a1);
+
+        // Assert
+        var dblist = await GetAnnouncements();
+        dblist.Should().HaveCount(1);
+        dblist.Should().ContainEquivalentOf(a1);
+    }
+    
+    [TestMethod]
+    public async Task Create_WhenExistingAnnouncement_ThenThrowDbException()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        var a1 = new Announcement
+        {
+            Id = id,
+            CreatedOn = DateTime.Now,
+            Message = "message1",
+            Description = "desctest1",
+            Order = 0,
+            FotoUrl = "https://foto1/",
+            IsScheduled = false,
+            PlannedFrom = null,
+            PlannedTill = null,
+            Url = "https://url1/"
+        };
+        var a2 = new Announcement
+        {
+            Id = id,
+            CreatedOn = DateTime.Now,
+            Message = "message1",
+            Description = "desctest1",
+            Order = 0,
+            FotoUrl = "https://foto1/",
+            IsScheduled = false,
+            PlannedFrom = null,
+            PlannedTill = null,
+            Url = "https://url1/"
+        };
+        await SaveAnnouncements(a1);
+
+        // Act
+        Func<Task> function = () => _sut.Create(a2);
+
+        // Assert
+        await function.Should().ThrowAsync<DbUpdateException>();
+        var dblist = await GetAnnouncements();
+        dblist.Should().ContainEquivalentOf(a1);
+    }
+    
+    [TestMethod]
+    public async Task Update_WhenExistingAnnouncement_ThenUpdate()
+    {
+        // Arrange
+        var a1 = new Announcement
+        {
+            Id = Guid.NewGuid(),
+            CreatedOn = DateTime.Now,
+            Message = "message1",
+            Description = "desctest1",
+            Order = 0,
+            FotoUrl = "https://foto1/",
+            IsScheduled = false,
+            PlannedFrom = null,
+            PlannedTill = null,
+            Url = "https://url1/"
+        };
+        await SaveAnnouncements(a1);
+        var a1_update = (await GetAnnouncements()).FirstOrDefault(e => e.Id == a1.Id);
+        a1_update.Description = "desctest2";
+
+        // Act
+        await _sut.Update(a1_update);
+
+        // Assert
+        var dblist = await GetAnnouncements();
+        dblist.Should().ContainEquivalentOf(a1_update);
+    }
+    
+    [TestMethod]
+    public async Task Update_WhenNotExistingAnnouncement_ThenThrowDbException()
+    {
+        // Arrange
+        var a1 = new Announcement
+        {
+            Id = Guid.NewGuid(),
+            CreatedOn = DateTime.Now,
+            Message = "message1",
+            Description = "desctest1",
+            Order = 0,
+            FotoUrl = "https://foto1/",
+            IsScheduled = false,
+            PlannedFrom = null,
+            PlannedTill = null,
+            Url = "https://url1/"
+        };
+
+        // Act
+        Func<Task> function = () => _sut.Update(a1);
+
+        // Assert
+        await function.Should().ThrowAsync<DbUpdateConcurrencyException>();
+        var dblist = await GetAnnouncements();
+        dblist.Should().BeEmpty();
+    }
+    
+    [TestMethod]
+    public async Task Delete_WhenExistingAnnouncement_ThenDeleteAnnouncement()
+    {
+        // Arrange
+        var a1 = new Announcement
+        {
+            Id = Guid.NewGuid(),
+            CreatedOn = DateTime.Now,
+            Message = "message1",
+            Description = "desctest1",
+            Order = 0,
+            FotoUrl = "https://foto1/",
+            IsScheduled = false,
+            PlannedFrom = null,
+            PlannedTill = null,
+            Url = "https://url1/"
+        };
+        var a2 = new Announcement
         {
             Id = Guid.NewGuid(),
             CreatedOn = DateTime.Now,
@@ -114,21 +272,67 @@ public class AnnouncementRepositoryTests : RepositoryTest
             PlannedTill = null,
             Url = "https://url2/"
         };
-        var date = DateTime.Now;
-        var r3 = new Announcement
+        await SaveAnnouncements(a1, a2);
+
+        // Act
+        await _sut.Delete(a1.Id);
+
+        // Assert
+        var dblist = await GetAnnouncements();
+        dblist.Should().HaveCount(1);
+    }
+    
+    [TestMethod]
+    public async Task Delete_WhenNotExistingAnnouncement_ThenThrowDbException()
+    {
+        // Arrange
+        var a1 = new Announcement
         {
             Id = Guid.NewGuid(),
-            CreatedOn = date,
-            Message = "message3",
-            Description = "desctest3",
-            Order = 2,
-            FotoUrl = "https://foto3/",
-            IsScheduled = true,
-            PlannedFrom = date.AddDays(-10),
-            PlannedTill = date.AddDays(1),
-            Url = "https://url3/"
+            CreatedOn = DateTime.Now,
+            Message = "message1",
+            Description = "desctest1",
+            Order = 0,
+            FotoUrl = "https://foto1/",
+            IsScheduled = false,
+            PlannedFrom = null,
+            PlannedTill = null,
+            Url = "https://url1/"
         };
-        context.Announcement.AddRange(r1, r2, r3);
-        context.SaveChanges();
+        var a2 = new Announcement
+        {
+            Id = Guid.NewGuid(),
+            CreatedOn = DateTime.Now,
+            Message = "message2",
+            Description = "desctest2",
+            Order = 5,
+            FotoUrl = "https://foto2/",
+            IsScheduled = false,
+            PlannedFrom = null,
+            PlannedTill = null,
+            Url = "https://url2/"
+        };
+        await SaveAnnouncements(a1);
+
+        // Act
+        Func<Task> function = () => _sut.Delete(a2.Id);
+
+        // Assert
+        await function.Should().ThrowAsync<NotFoundException>();
+        var dblist = await GetAnnouncements();
+        dblist.Should().HaveCount(1);
+    }
+    
+    private async Task<IList<Announcement>> GetAnnouncements()
+    {
+        await using var context = await _dbContextFactory.CreateDbContextAsync();
+        return await context.Announcement.AsNoTracking().ToListAsync();
+    }
+    
+    private async Task SaveAnnouncements(params Announcement[] announcements)
+    {
+        await using var context = await _dbContextFactory.CreateDbContextAsync();
+        await context.Announcement.AddRangeAsync(announcements);
+        await context.SaveChangesAsync();
     }
 }

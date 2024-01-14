@@ -18,7 +18,7 @@
     <QuickGrid Items="@Orders" Pagination="@pagination">
         <PropertyColumn Title="Datum" Property="@(o => o.CreatedOn)" Format="dd/MM/yyyy HH:mm" Sortable="true" Align="Align.Left" />
         <TemplateColumn Title="Gebruiker" Context="order">
-            @order.User.Name @order.User.Surname.First()
+            <span class="text-nowrap">@order.User.Name @order.User.Surname.First()</span>
         </TemplateColumn>        
         <PropertyColumn Title="Product" Property="@(o => o.ProductNaam)" Sortable="true" Align="Align.Left" />
         <PropertyColumn Title="Hoeveel" Property="@(o => o.Amount)" Sortable="true" Align="Align.Right" />

@@ -72,15 +72,9 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         shell: powershell
         run: |
-          .\.sonar\scanner\dotnet-sonarscanner begin 
-            /k:"ricardotill_SSSKLv2" 
-            /o:"ricardotill" 
-            /d:sonar.token="${{ secrets.SONAR_TOKEN }}" 
-            /d:sonar.host.url="https://sonarcloud.io"
-            /d:sonar.cs.opencover.reportsPaths=coverage.xml
+          .\.sonar\scanner\dotnet-sonarscanner begin /k:"ricardotill_SSSKLv2" /o:"ricardotill" /d:sonar.token="${{ secrets.SONAR_TOKEN }}" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.cs.opencover.reportsPaths=coverage.xml
           dotnet build SSSKLv2.sln
           dotnet test --no-build --verbosity normal
-          dotnet test SSSKLv2.sln /p:CollectCoverage=true /p:CoverletOutput=coverage 
-            /p:MergeWith=coverage.xml /p:CoverletOutputFormat=\"opencover\"
+          dotnet test SSSKLv2.sln /p:CollectCoverage=true /p:CoverletOutput=coverage /p:MergeWith=coverage.xml /p:CoverletOutputFormat=\"opencover\"
           .\.sonar\scanner\dotnet-sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
       - run: dotnet --version

@@ -16,19 +16,19 @@ public class AnnouncementRepository(IDbContextFactory<ApplicationDbContext> _dbC
             .AsQueryable();
     }
     
-    public async Task<IEnumerable<Announcement>> GetAllForEnduser()
-    {
-        await using var context = await _dbContextFactory.CreateDbContextAsync();
-        
-        return await context.Announcement
-            .Where(x => !x.IsScheduled 
-            || (x.IsScheduled && 
-                x.PlannedFrom!.Value.CompareTo(DateTime.Today) <= 0 && 
-                x.PlannedTill!.Value.CompareTo(DateTime.Today) >= 0))
-            .OrderBy(x => x.Order)
-            .ThenBy(x => x.CreatedOn)
-            .ToListAsync();
-    }
+    // public async Task<IEnumerable<Announcement>> GetAllForEnduser()
+    // {
+    //     await using var context = await _dbContextFactory.CreateDbContextAsync();
+    //     
+    //     return await context.Announcement
+    //         .Where(x => !x.IsScheduled 
+    //         || (x.IsScheduled && 
+    //             x.PlannedFrom!.Value.CompareTo(DateTime.Today) <= 0 && 
+    //             x.PlannedTill!.Value.CompareTo(DateTime.Today) >= 0))
+    //         .OrderBy(x => x.Order)
+    //         .ThenBy(x => x.CreatedOn)
+    //         .ToListAsync();
+    // }
 
     public async Task<Announcement> GetById(Guid id)
     {

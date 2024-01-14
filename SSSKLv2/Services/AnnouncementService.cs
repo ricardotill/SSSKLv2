@@ -11,10 +11,10 @@ public class AnnouncementService(IAnnouncementRepository announcementRepository)
         return announcementRepository.GetAll();
     }
 
-    public Task<IEnumerable<Announcement>> GetAllAnnouncementsForEnduser()
-    {
-        return announcementRepository.GetAllForEnduser();
-    }
+    // public Task<IEnumerable<Announcement>> GetAllAnnouncementsForEnduser()
+    // {
+    //     return announcementRepository.GetAllForEnduser();
+    // }
 
     public Task<Announcement> GetAnnouncementById(Guid id)
     {

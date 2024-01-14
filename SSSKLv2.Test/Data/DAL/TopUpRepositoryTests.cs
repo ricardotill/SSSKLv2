@@ -1,12 +1,16 @@
+using Bogus;
+using Bogus.DataSets;
+using Microsoft.ApplicationInsights;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Moq;
 using SSSKLv2.Data;
 using SSSKLv2.Test.Util;
 
-namespace SSSKLv2.Test.Data.DTO;
+namespace SSSKLv2.Test.Data.DAL;
 
 [TestClass]
-public class ProductRepositoryTests : RepositoryTest
+public class TopUpRepositoryTests : RepositoryTest
 {
     private IDbContextFactory<ApplicationDbContext> _dbContextFactory;
 
@@ -14,7 +18,7 @@ public class ProductRepositoryTests : RepositoryTest
     public void TestInitialize()
     {
         InitializeDatabase();
-        _dbContextFactory = GetContextFactory();
+        _dbContextFactory = new MockDbContextFactory(GetOptions());
     }
 
     [TestCleanup]

@@ -3,10 +3,10 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SSSKLv2.Data;
 using SSSKLv2.Test.Util;
 
-namespace SSSKLv2.Test.Data.DTO;
+namespace SSSKLv2.Test.Data.DAL;
 
 [TestClass]
-public class ApplicationUserRepositoryTests : RepositoryTest
+public class ProductRepositoryTests : RepositoryTest
 {
     private IDbContextFactory<ApplicationDbContext> _dbContextFactory;
 
@@ -14,7 +14,7 @@ public class ApplicationUserRepositoryTests : RepositoryTest
     public void TestInitialize()
     {
         InitializeDatabase();
-        _dbContextFactory = GetContextFactory();
+        _dbContextFactory = new MockDbContextFactory(GetOptions());
     }
 
     [TestCleanup]

@@ -52,7 +52,7 @@ public class RssController(IProductService productService, IAnnouncementService 
     [Route("announcements.rss")]
     public async Task<IActionResult> GetAnnouncementsFeed()
     {
-        var announcements = await announcementService.GetAllAnnouncementsForEnduser();
+        var announcements = await announcementService.GetAllAnnouncements();
         var url = $"{Request.Scheme}://{Request.Host}{Request.PathBase}";
         
         var feed = new SyndicationFeed(

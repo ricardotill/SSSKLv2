@@ -63,7 +63,6 @@
 
   <ItemGroup>
     <Folder Include="Components\Pages\Admin\" />
-    <Folder Include="Hubs\" />
     <Folder Include="Migrations\" />
   </ItemGroup>
 

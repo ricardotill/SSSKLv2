@@ -60,25 +60,12 @@ jobs:
           path: .\.sonar\scanner
           key: ${{ runner.os }}-sonar-scanner
           restore-keys: ${{ runner.os }}-sonar-scanner
-      - name: Cache dotCover codecoverage tool
-        id: cache-dotcover
-        uses: actions/cache@v3
-        with:
-          path: .\.JetBrains\dotCover
-          key: ${{ runner.os }}-dotcover
-          restore-keys: ${{ runner.os }}-dotcover
       - name: Install SonarCloud scanner
         if: steps.cache-sonar-scanner.outputs.cache-hit != 'true'
         shell: powershell
         run: |
           New-Item -Path .\.sonar\scanner -ItemType Directory
           dotnet tool update dotnet-sonarscanner --tool-path .\.sonar\scanner
-      - name: Install dotCover
-        if: steps.cache-sonar-scanner.outputs.cache-hit != 'true'
-        shell: powershell
-        run: |
-          New-Item -Path .\.JetBrains\dotCover -ItemType Directory
-          dotnet tool update JetBrains.dotCover.GlobalTool --tool-path .\.JetBrains\dotCover
       - name: Build and analyze
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
@@ -88,6 +75,6 @@ jobs:
           .\.sonar\scanner\dotnet-sonarscanner begin /k:"ricardotill_SSSKLv2" /o:"ricardotill" /d:sonar.token="${{ secrets.SONAR_TOKEN }}" /d:sonar.host.url="https://sonarcloud.io"
           dotnet build SSSKLv2.sln
           dotnet test --no-build --verbosity normal
-          dotnet dotcover test --dcReportType=HTML
+          dotnet test --collect:"XPlat Code Coverage"
           .\.sonar\scanner\dotnet-sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
       - run: dotnet --version

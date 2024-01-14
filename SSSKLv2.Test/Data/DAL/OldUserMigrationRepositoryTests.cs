@@ -130,7 +130,7 @@ public class OldUserMigrationRepositoryTests : RepositoryTest
     }
 
     [TestMethod]
-    public async Task Create_WhenNewAnnouncement_ThenAddNewAnnouncement()
+    public async Task Create_WhenNewOldUserMigration_ThenAddNewOldUserMigration()
     {
         // Arrange
         var o1 = new OldUserMigration()

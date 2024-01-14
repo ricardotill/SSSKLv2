@@ -6,8 +6,7 @@ using SSSKLv2.Data.DAL.Interfaces;
 namespace SSSKLv2.Data.DAL;
 
 public class ApplicationUserRepository(
-    IDbContextFactory<ApplicationDbContext> _dbContextFactory,
-    UserManager<ApplicationUser> _userManager) : IApplicationUserRepository
+    IDbContextFactory<ApplicationDbContext> _dbContextFactory) : IApplicationUserRepository
 {
     public async Task<ApplicationUser> GetById(string id)
     {

@@ -39,7 +39,7 @@ public class ApplicationUserRepository(
         await using var context = await _dbContextFactory.CreateDbContextAsync();
         var list = await context.Users
             .AsNoTracking()
-            .OrderBy(x => x.Surname)
+            .OrderBy(x => x.Name)
             .ToListAsync();
 
         return list;

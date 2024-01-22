@@ -30,7 +30,6 @@
                         <TemplateColumn Title="Volledige naam" Context="u">
                             @u.Name @u.Surname
                         </TemplateColumn>
-                        <PropertyColumn Title="Gebruikersnaam" Property="@(u => u.UserName)" Sortable="true" Align="Align.Left" />
                         <TemplateColumn Title="#" Context="u">
                             <button class="btn btn-sm btn-info"
                                     @onclick="(() => EditUser(u))">

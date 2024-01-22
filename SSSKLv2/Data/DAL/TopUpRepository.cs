@@ -10,23 +10,19 @@ namespace SSSKLv2.Data.DAL;
 public class TopUpRepository(
     IDbContextFactory<ApplicationDbContext> _dbContextFactory) : ITopUpRepository
 {
-    public async Task<IQueryable<TopUp>> GetAllQueryable()
+    public IQueryable<TopUp> GetAllQueryable(ApplicationDbContext context)
     {
-        await using var context = await _dbContextFactory.CreateDbContextAsync();
-        return (await context.TopUp
+        return context.TopUp
                 .Include(x => x.User)
-                .ToListAsync())
-                .AsQueryable();
+                .OrderByDescending(x => x.CreatedOn);
     }
     
-    public async Task<IQueryable<TopUp>> GetPersonalQueryable(string username)
+    public IQueryable<TopUp> GetPersonalQueryable(string username, ApplicationDbContext context)
     {
-        await using var context = await _dbContextFactory.CreateDbContextAsync();
-        return (await context.TopUp
-                .Where(x => x.User.UserName == username)
-                .Include(x => x.User)
-                .ToListAsync())
-                .AsQueryable();
+        return context.TopUp
+            .Where(x => x.User.UserName == username)
+            .Include(x => x.User)
+            .OrderByDescending(x => x.CreatedOn);
     }
     
     public async Task<TopUp> GetById(Guid id)

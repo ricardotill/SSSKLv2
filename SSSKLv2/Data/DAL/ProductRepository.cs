@@ -22,7 +22,9 @@ public class ProductRepository(IDbContextFactory<ApplicationDbContext> _dbContex
     public async Task<IList<Product>> GetAll()
     {
         await using var context = await _dbContextFactory.CreateDbContextAsync();
-        var list = await context.Product.ToListAsync();
+        var list = await context.Product
+            .OrderByDescending(x => x.Orders.Count)
+            .ToListAsync();
         return list;
     }
     
@@ -31,6 +33,7 @@ public class ProductRepository(IDbContextFactory<ApplicationDbContext> _dbContex
         await using var context = await _dbContextFactory.CreateDbContextAsync();
         var list = await context.Product
             .Where(x => x.Stock > 0)
+            .OrderByDescending(x => x.Orders.Count)
             .ToListAsync();
         return list;
     }

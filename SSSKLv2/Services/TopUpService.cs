@@ -8,15 +8,15 @@ public class TopUpService(
     ITopUpRepository _topUpRepository,
     ILogger<TopUpService> _logger) : ITopUpService
 {
-    public async Task<IQueryable<TopUp>> GetAllQueryable()
+    public IQueryable<TopUp> GetAllQueryable(ApplicationDbContext dbContext)
     {
         _logger.LogInformation($"{GetType()}: Get All TopUps as Queryable");
-        return await _topUpRepository.GetAllQueryable();
+        return _topUpRepository.GetAllQueryable(dbContext);
     }
-    public async Task<IQueryable<TopUp>> GetPersonalQueryable(string username)
+    public IQueryable<TopUp> GetPersonalQueryable(string username, ApplicationDbContext dbContext)
     {
         _logger.LogInformation($"{GetType()}: Get Personal TopUps as Queryable for user with username {username}");
-        return await _topUpRepository.GetPersonalQueryable(username);
+        return _topUpRepository.GetPersonalQueryable(username, dbContext);
     }
     public async Task<TopUp> GetById(string id)
     {

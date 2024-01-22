@@ -2,8 +2,8 @@ namespace SSSKLv2.Data.DAL.Interfaces;
 
 public interface ITopUpRepository
 {
-    public Task<IQueryable<TopUp>> GetAllQueryable();
-    public Task<IQueryable<TopUp>> GetPersonalQueryable(string username);
+    public IQueryable<TopUp> GetAllQueryable(ApplicationDbContext context);
+    public IQueryable<TopUp> GetPersonalQueryable(string username, ApplicationDbContext context);
     public Task<TopUp> GetById(Guid id);
     public Task Create(TopUp topup);
     public Task Delete(Guid id);

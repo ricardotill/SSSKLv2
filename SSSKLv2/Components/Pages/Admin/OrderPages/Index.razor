@@ -3,11 +3,16 @@
 
 @attribute [Authorize(Policy = Policies.Admin)]
 
+@implements IDisposable
+@implements IAsyncDisposable
+
 @inject IOrderService OrderService
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 @using SSSKLv2.Data
 @using SSSKLv2.Services.Interfaces
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.QuickGrid
+@using Microsoft.EntityFrameworkCore
 @using SSSKLv2.Components.Account
 
 <PageTitle>SSSKLv2 | Orderbeheer</PageTitle>
@@ -15,7 +20,7 @@
 <h1>Orderbeheer</h1>
 
 <div class="table-responsive">
-    <QuickGrid Items="@Orders" Pagination="@pagination">
+    <QuickGrid Items="@Orders" Pagination="@Pagination">
         <PropertyColumn Title="Datum" Property="@(o => o.CreatedOn)" Format="dd/MM/yyyy HH:mm" Sortable="true" Align="Align.Left" />
         <TemplateColumn Title="Gebruiker" Context="order">
             @order.User.Name @order.User.Surname
@@ -29,23 +34,37 @@
     </QuickGrid>
 </div>
 
-<Paginator State="@pagination" />
+<Paginator State="@Pagination" />
 
 @code {
-    public PaginationState pagination = new() { ItemsPerPage = 15 };
+    public IQueryable<Order> Orders = default!;
+    public PaginationState Pagination = new() { ItemsPerPage = 12 };
     
     [CascadingParameter]
     private HttpContext HttpContext { get; set; } = default!;
     
-    public IQueryable<Order> Orders = default!;
-
+    private ApplicationDbContext? _dbContext;
+    
     protected override async Task OnInitializedAsync()
     {
-        await GetDataAsync();
+        _dbContext = await DbContextFactory.CreateDbContextAsync();
+        GetData();
     }
 
-    private async Task GetDataAsync()
+    private void GetData()
     {
-        Orders = await OrderService.GetAllQueryable();
+        if (_dbContext != null) 
+            Orders = OrderService.GetAllQueryable(_dbContext);
     }
+
+    public void Dispose()
+    {
+        _dbContext?.Dispose();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_dbContext != null) await _dbContext.DisposeAsync();
+    }
+
 }

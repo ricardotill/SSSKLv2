@@ -13,4 +13,9 @@ public class MockDbContextFactory : IDbContextFactory<ApplicationDbContext>
     }
 
     public ApplicationDbContext CreateDbContext() => new(_options);
+    public Task<ApplicationDbContext> CreateDbContextAsync() => Task.Run(async delegate
+    {
+        await Task.Delay(10);
+        return CreateDbContext();
+    });
 }

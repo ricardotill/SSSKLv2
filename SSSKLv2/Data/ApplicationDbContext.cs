@@ -33,7 +33,7 @@ namespace SSSKLv2.Data
             
             builder.Entity<Order>()
                 .HasOne(e => e.Product)
-                .WithMany()
+                .WithMany(e => e.Orders)
                 .OnDelete(DeleteBehavior.SetNull);
             
             builder.Entity<OldUserMigration>()

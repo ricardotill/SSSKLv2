@@ -31,9 +31,6 @@
                             @u.Name @u.Surname
                         </TemplateColumn>
                         <PropertyColumn Title="Gebruikersnaam" Property="@(u => u.UserName)" Sortable="true" Align="Align.Left" />
-                        <PropertyColumn Title="Saldo" Property="@(u => u.Saldo)" Format="C" Sortable="true" Align="Align.Left" />
-                        <PropertyColumn Title="E-mailadres" Property="@(u => u.Email)" Sortable="true" Align="Align.Left" />
-                        <PropertyColumn Title="E-mail bevestigd" Property="@(u => u.EmailConfirmed)" Sortable="true" Align="Align.Left" />
                         <TemplateColumn Title="#" Context="u">
                             <button class="btn btn-sm btn-info"
                                     @onclick="(() => EditUser(u))">
@@ -159,7 +156,7 @@
     [CascadingParameter]
     private Task<AuthenticationState> authenticationStateTask { get; set; }
     
-    public PaginationState pagination = new() { ItemsPerPage = 20 };
+    public PaginationState pagination = new() { ItemsPerPage = 12 };
 
     string ADMINISTRATION_ROLE = "Admin";
     ApplicationUser objUser = new ApplicationUser();

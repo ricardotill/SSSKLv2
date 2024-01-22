@@ -1,5 +1,3 @@
-using System.Data;
-using System.Data.Common;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -13,7 +11,7 @@ namespace SSSKLv2.Test.Data.DAL;
 [TestClass]
 public class AnnouncementRepositoryTests : RepositoryTest
 {
-    private IDbContextFactory<ApplicationDbContext> _dbContextFactory = null!;
+    private MockDbContextFactory _dbContextFactory = null!;
     private AnnouncementRepository _sut;
 
     [TestInitialize]

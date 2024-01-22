@@ -2,19 +2,24 @@
 @rendermode InteractiveServer
 @attribute [Authorize]
 
+@implements IDisposable
+@implements IAsyncDisposable
+
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 @inject IOrderService OrderService
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @using SSSKLv2.Data
 @using SSSKLv2.Services.Interfaces
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.QuickGrid
+@using Microsoft.EntityFrameworkCore
 
 <PageTitle>SSSKLv2 | Geschiedenis</PageTitle>
 
 <h1>Bestelgeschiedenis</h1>
 
 <div class="table-responsive">
-    <QuickGrid Items="@Orders" Pagination="@pagination">
+    <QuickGrid Items="@Orders" Pagination="@Pagination">
         <PropertyColumn Title="Datum" Property="@(o => o.CreatedOn)" Format="dd/MM/yyyy HH:mm" Sortable="true" Align="Align.Left" />
         <PropertyColumn Title="Product" Property="@(o => o.ProductNaam)" Sortable="true" Align="Align.Left" />
         <PropertyColumn Title="Hoeveel" Property="@(o => o.Amount)" Sortable="true" Align="Align.Right" />
@@ -25,19 +30,20 @@
     </QuickGrid>
 </div>
 
-<Paginator State="@pagination" />
+<Paginator State="@Pagination" />
 
 @code {
-    
-    public PaginationState pagination = new PaginationState() { ItemsPerPage = 20 };
+    public IQueryable<Order> Orders = default!;
+    public PaginationState Pagination = new PaginationState() { ItemsPerPage = 12 };
     
     [CascadingParameter]
     private HttpContext HttpContext { get; set; } = default!;
-    
-    public IQueryable<Order> Orders = default!;
+
+    private ApplicationDbContext? DbContext;
 
     protected override async Task OnInitializedAsync()
     {
+        DbContext = await DbContextFactory.CreateDbContextAsync();
         await GetDataAsync();
     }
 
@@ -46,7 +52,19 @@
         var state = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         if (state.User.Identity != null && state.User.Identity.IsAuthenticated)
         {
-            if (state.User.Identity.Name != null) Orders = await OrderService.GetPersonalQueryable(state.User.Identity.Name);
+            if (state.User.Identity.Name != null && DbContext != null)
+                Orders = OrderService.GetPersonalQueryable(state.User.Identity.Name, DbContext);
         }
     }
+
+    public void Dispose()
+    {
+        DbContext?.Dispose();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (DbContext != null) await DbContext.DisposeAsync();
+    }
+
 }

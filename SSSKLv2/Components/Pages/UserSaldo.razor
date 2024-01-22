@@ -3,12 +3,17 @@
 
 @attribute [Authorize]
 
+@implements IDisposable
+@implements IAsyncDisposable
+
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 @inject ITopUpService TopUpService
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @using SSSKLv2.Data
 @using SSSKLv2.Services.Interfaces
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.QuickGrid
+@using Microsoft.EntityFrameworkCore
 
 <PageTitle>SSSKLv2 | Saldo opwaarderingen</PageTitle>
 
@@ -17,9 +22,6 @@
 <div class="table-responsive">
     <QuickGrid Items="@TopUps" Pagination="@pagination">
         <PropertyColumn Title="Datum" Property="@(t => t.CreatedOn)" Format="dd/MM/yyyy" Sortable="true" Align="Align.Left" />
-        <TemplateColumn Title="Naam" Context="topup">
-            @topup.User.Name @topup.User.Surname
-        </TemplateColumn>
         <TemplateColumn Title="Saldo" Context="topup">
             <span class="text-nowrap">+ @topup.Saldo.ToString("C")</span>
         </TemplateColumn>
@@ -35,10 +37,13 @@
     
     public IQueryable<TopUp> TopUps = default!;
     
-    public PaginationState pagination = new PaginationState() { ItemsPerPage = 20 };
+    public PaginationState pagination = new PaginationState() { ItemsPerPage = 12 };
+
+    private ApplicationDbContext? _dbContext;
 
     protected override async Task OnInitializedAsync()
     {
+        _dbContext = await DbContextFactory.CreateDbContextAsync();
         await GetDataAsync();
     }
 
@@ -47,8 +52,19 @@
         var state = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         if (state.User.Identity != null && state.User.Identity.IsAuthenticated)
         {
-            if (state.User.Identity.Name != null) 
-                TopUps = await TopUpService.GetPersonalQueryable(state.User.Identity.Name);
+            if (state.User.Identity.Name != null && _dbContext != null) 
+                TopUps = TopUpService.GetPersonalQueryable(state.User.Identity.Name, _dbContext);
         }
     }
+
+    public void Dispose()
+    {
+        _dbContext?.Dispose();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_dbContext != null) await _dbContext.DisposeAsync();
+    }
+
 }

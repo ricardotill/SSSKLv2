@@ -20,5 +20,7 @@ namespace SSSKLv2.Data
         [Required]
         [DisplayName("Voorraad")]
         public int Stock { get; set; }
+        [DisplayName("Bestellingen")] 
+        public IList<Order> Orders { get; set; } = new List<Order>();
     }
 }

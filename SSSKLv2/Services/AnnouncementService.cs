@@ -6,9 +6,13 @@ namespace SSSKLv2.Services;
 
 public class AnnouncementService(IAnnouncementRepository announcementRepository) : IAnnouncementService
 {
-    public Task<IQueryable<Announcement>> GetAllAnnouncements()
+    public Task<IEnumerable<Announcement>> GetAllAnnouncements()
     {
         return announcementRepository.GetAll();
+    }
+    public IQueryable<Announcement> GetAllAnnouncementsQueryable(ApplicationDbContext context)
+    {
+        return announcementRepository.GetAllQueryable(context);
     }
 
     // public Task<IEnumerable<Announcement>> GetAllAnnouncementsForEnduser()

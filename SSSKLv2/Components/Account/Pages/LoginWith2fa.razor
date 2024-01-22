@@ -9,12 +9,12 @@
 @inject IdentityRedirectManager RedirectManager
 @inject ILogger<LoginWith2fa> Logger
 
-<PageTitle>Two-factor authentication</PageTitle>
+<PageTitle>Two-factor authenticatie</PageTitle>
 
-<h1>Two-factor authentication</h1>
+<h1>Two-factor authenticatie</h1>
 <hr />
 <StatusMessage Message="@message" />
-<p>Your login is protected with an authenticator app. Enter your authenticator code below.</p>
+<p>Jouw account is met Two-factor authenticatie beveiligd. Vul jouw authenticator code in het veld hieronder in.</p>
 <div class="row">
     <div class="col-md-4">
         <EditForm Model="Input" FormName="login-with-2fa" OnValidSubmit="OnValidSubmitAsync" method="post">
@@ -30,18 +30,18 @@
             <div class="checkbox mb-3">
                 <label for="remember-machine" class="form-label">
                     <InputCheckbox @bind-Value="Input.RememberMachine" />
-                    Remember this machine
+                    Onthoud dit apparaat
                 </label>
             </div>
             <div>
-                <button type="submit" class="w-100 btn btn-lg btn-primary">Log in</button>
+                <button type="submit" class="w-100 btn btn-lg btn-primary">Inloggen</button>
             </div>
         </EditForm>
     </div>
 </div>
 <p>
-    Don't have access to your authenticator device? You can
-    <a href="Account/LoginWithRecoveryCode?ReturnUrl=@ReturnUrl">log in with a recovery code</a>.
+    Geen toegang tot jouw authenticator app? Je kan ook
+    <a href="Account/LoginWithRecoveryCode?ReturnUrl=@ReturnUrl">inloggen met een recovery code</a>.
 </p>
 
 @code {
@@ -61,7 +61,7 @@
     {
         // Ensure the user has gone through the username & password screen first
         user = await SignInManager.GetTwoFactorAuthenticationUserAsync() ??
-            throw new InvalidOperationException("Unable to load two-factor authentication user.");
+            throw new InvalidOperationException("Kan de Two-factor authenticatie gebruiker niet ophalen.");
     }
 
     private async Task OnValidSubmitAsync()
@@ -83,19 +83,19 @@
         else
         {
             Logger.LogWarning("Invalid authenticator code entered for user with ID '{UserId}'.", userId);
-            message = "Error: Invalid authenticator code.";
+            message = "Error: Authenticator code invalide.";
         }
     }
 
     private sealed class InputModel
     {
         [Required]
-        [StringLength(7, ErrorMessage = "The {0} must be at least {2} and at max {1} characters long.", MinimumLength = 6)]
+        [StringLength(7, ErrorMessage = "De {0} moet ten minste {2} en maximaal {1} tekens lang zijn.", MinimumLength = 6)]
         [DataType(DataType.Text)]
         [Display(Name = "Authenticator code")]
         public string? TwoFactorCode { get; set; }
 
-        [Display(Name = "Remember this machine")]
+        [Display(Name = "Onthoud dit apparaat")]
         public bool RememberMachine { get; set; }
     }
 }

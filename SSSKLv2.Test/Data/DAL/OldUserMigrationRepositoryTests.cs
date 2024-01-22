@@ -11,7 +11,7 @@ namespace SSSKLv2.Test.Data.DAL;
 [TestClass]
 public class OldUserMigrationRepositoryTests : RepositoryTest
 {
-    private IDbContextFactory<ApplicationDbContext> _dbContextFactory = null!;
+    private MockDbContextFactory _dbContextFactory = null!;
     private OldUserMigrationRepository _sut = null!;
 
     [TestInitialize]

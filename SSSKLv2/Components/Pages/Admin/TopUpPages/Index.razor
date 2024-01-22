@@ -2,11 +2,17 @@
 @rendermode InteractiveServer
 
 @attribute [Authorize(Policy = Policies.Admin)]
+
+@implements IDisposable
+@implements IAsyncDisposable
+
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 @inject ITopUpService TopUpService
 @using SSSKLv2.Data
 @using SSSKLv2.Services.Interfaces
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.QuickGrid
+@using Microsoft.EntityFrameworkCore
 @using SSSKLv2.Components.Account
 
 <PageTitle>SSSKLv2 | Saldobeheer</PageTitle>
@@ -21,7 +27,7 @@
 </div>
 
 <div class="table-responsive">
-    <QuickGrid Items="@TopUps" Pagination="@pagination">
+    <QuickGrid Items="@TopUps" Pagination="@Pagination">
         <PropertyColumn Title="Datum" Property="@(t => t.CreatedOn)" Format="dd/MM/yyyy" Sortable="true" Align="Align.Left" />
         <TemplateColumn Title="Naam" Context="topup">
             @topup.User.Name @topup.User.Surname
@@ -35,22 +41,34 @@
     </QuickGrid>
 </div>
 
-<Paginator State="@pagination" />
+<Paginator State="@Pagination" />
 
 
 @code {
-    
     public IQueryable<TopUp> TopUps = default!;
-    
-    public PaginationState pagination = new PaginationState() { ItemsPerPage = 20 };
+    public PaginationState Pagination = new PaginationState() { ItemsPerPage = 12 };
+
+    private ApplicationDbContext? DbContext;
 
     protected override async Task OnInitializedAsync()
     {
-        await GetDataAsync();
+        DbContext = await DbContextFactory.CreateDbContextAsync();
+        GetDataAsync();
     }
 
-    private async Task GetDataAsync()
+    private void GetDataAsync()
     {
-        TopUps = await TopUpService.GetAllQueryable();
+        if (DbContext != null) TopUps = TopUpService.GetAllQueryable(DbContext);
     }
+
+    public void Dispose()
+    {
+        DbContext?.Dispose();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (DbContext != null) await DbContext.DisposeAsync();
+    }
+
 }

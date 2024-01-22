@@ -27,4 +27,8 @@
     <ProjectReference Include="..\SSSKLv2\SSSKLv2.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Validators\" />
+  </ItemGroup>
+
 </Project>

@@ -6,25 +6,19 @@ namespace SSSKLv2.Data.DAL;
 
 public class OrderRepository(IDbContextFactory<ApplicationDbContext> _dbContextFactory) : IOrderRepository
 {
-    public async Task<IQueryable<Order>> GetAllQueryable()
+    public IQueryable<Order> GetAllQueryable(ApplicationDbContext context)
     {
-        await using var context = await _dbContextFactory.CreateDbContextAsync();
-        return (await context.Order
+        return context.Order
             .Include(x => x.User)
-            .OrderByDescending(x => x.CreatedOn)
-            .ToListAsync())
-            .AsQueryable();
+            .OrderByDescending(x => x.CreatedOn);
     }
     
-    public async Task<IQueryable<Order>> GetPersonalQueryable(string username)
+    public IQueryable<Order> GetPersonalQueryable(string username, ApplicationDbContext context)
     {
-        await using var context = await _dbContextFactory.CreateDbContextAsync();
-        return (await context.Order
+        return context.Order
             .Include(x => x.User)
             .Where(x => x.User.UserName == username)
-            .OrderByDescending(x => x.CreatedOn)
-            .ToListAsync())
-            .AsQueryable();
+            .OrderByDescending(x => x.CreatedOn);
     }
     
     public async Task<IEnumerable<Order>> GetLatest()

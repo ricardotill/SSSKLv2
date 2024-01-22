@@ -9,16 +9,16 @@ public class OrderService(
     IOrderRepository _orderRepository,
     ILogger<OrderService> _logger) : IOrderService
 {
-    public async Task<IQueryable<Order>> GetAllQueryable()
+    public IQueryable<Order> GetAllQueryable(ApplicationDbContext dbContext)
     {
         _logger.LogInformation($"{GetType()}: Get All Orders as Queryable");
-        return await _orderRepository.GetAllQueryable();
+        return _orderRepository.GetAllQueryable(dbContext);
     }
     
-    public async Task<IQueryable<Order>> GetPersonalQueryable(string username)
+    public IQueryable<Order> GetPersonalQueryable(string username, ApplicationDbContext dbContext)
     {
         _logger.LogInformation($"{GetType()}: Get Personal Orders as Queryable for user with username {username}");
-        return await _orderRepository.GetPersonalQueryable(username);
+        return _orderRepository.GetPersonalQueryable(username, dbContext);
     }
     
     public async Task<IEnumerable<Order>> GetLatestOrders()

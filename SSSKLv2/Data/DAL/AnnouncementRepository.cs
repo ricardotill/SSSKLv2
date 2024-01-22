@@ -6,14 +6,20 @@ namespace SSSKLv2.Data.DAL;
 
 public class AnnouncementRepository(IDbContextFactory<ApplicationDbContext> _dbContextFactory) : IAnnouncementRepository
 {
-    public async Task<IQueryable<Announcement>> GetAll()
+    public async Task<IEnumerable<Announcement>> GetAll()
     {
         await using var context = await _dbContextFactory.CreateDbContextAsync();
-        return (await context.Announcement
+        return await context.Announcement
             .OrderBy(x => x.Order)
             .ThenBy(x => x.CreatedOn)
-            .ToListAsync())
-            .AsQueryable();
+            .ToListAsync();
+    }
+    
+    public IQueryable<Announcement> GetAllQueryable(ApplicationDbContext context)
+    {
+        return context.Announcement
+            .OrderBy(x => x.Order)
+            .ThenBy(x => x.CreatedOn);
     }
     
     // public async Task<IEnumerable<Announcement>> GetAllForEnduser()

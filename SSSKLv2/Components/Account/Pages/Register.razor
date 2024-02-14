@@ -118,7 +118,7 @@
 
         await EmailSender.SendConfirmationLinkAsync(user, Input.Email, HtmlEncoder.Default.Encode(callbackUrl));
         
-        await UserManager.AddToRoleAsync(user, "User");
+        await UserManager.AddToRoleAsync(user, "Guest");
 
         if (UserManager.Options.SignIn.RequireConfirmedAccount)
         {

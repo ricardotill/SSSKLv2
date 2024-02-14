@@ -144,6 +144,18 @@ else
         if (userModel != null) userModel.Selected = true;
     }
 
+    private async Task<bool> CheckIfNotGuest()
+    {
+        var user = await AuthStateProvider.GetAuthenticationStateAsync();
+        if (user.User.IsInRole("Guest"))
+        {
+            ToastService.ShowError("Je bent een gast en kan niet bestellen. Moet je dit wel kunnen doen? Neem contact op met de beheerder.");
+            return false;
+        }
+
+        return true;
+    }
+
     public async Task Clear()
     {
         Model = new();
@@ -155,6 +167,7 @@ else
         BestellingDtoValidator validator = new BestellingDtoValidator();
         var validationResults = validator.Validate(Model);
 
+        if (await CheckIfNotGuest() == false) return;
         if (!validationResults.IsValid)
         {
             foreach (var err in validationResults.Errors)

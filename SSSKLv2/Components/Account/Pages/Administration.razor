@@ -161,7 +161,7 @@
     ApplicationUser objUser = new ApplicationUser();
     IQueryable<ApplicationUser> ColUsers = default!;
 
-    List<string> Options = new () { "User", "Admin", "Kiosk" };
+    List<string> Options = new () { "User", "Admin", "Kiosk", "Guest" };
     List<string> OptionsTrueFalse = new () { "True", "False" };
     System.Security.Claims.ClaimsPrincipal CurrentUser;
     string EmailConfirmed { get; set; } = "False";

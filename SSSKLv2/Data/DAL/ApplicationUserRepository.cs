@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using SSSKLv2.Data.DAL.Exceptions;
 using SSSKLv2.Data.DAL.Interfaces;
@@ -90,7 +89,7 @@ public class ApplicationUserRepository(
         return from u in context.Users
             join ur in context.UserRoles on u.Id equals ur.UserId
             join r in context.Roles on ur.RoleId equals r.Id
-            where r.Name != "Kiosk"
+            where r.Name != "Kiosk" && r.Name != "Guest"
             select u;
     }
 }

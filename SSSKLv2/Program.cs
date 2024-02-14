@@ -48,6 +48,7 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("Admin", policy => policy.RequireRole("Admin"));
     options.AddPolicy("Kiosk", policy => policy.RequireRole("Kiosk"));
     options.AddPolicy("User", policy => policy.RequireRole("User"));
+    options.AddPolicy("Guest", policy => policy.RequireRole("Guest"));
 });
 
 var connection = "";
@@ -151,7 +152,7 @@ app.MapAdditionalIdentityEndpoints();
 using (var scope = app.Services.CreateScope())
 {
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-    var roles = new[] { "Admin", "User", "Kiosk" };
+    var roles = new[] { "Admin", "User", "Kiosk", "Guest" };
  
     foreach (var role in roles)
     {

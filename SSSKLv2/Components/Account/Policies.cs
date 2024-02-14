@@ -5,4 +5,5 @@ public static class Policies
     public const string User = "User";
     public const string Admin = "Admin";
     public const string Kiosk = "Kiosk";
+    public const string Guest = "Guest";
 }

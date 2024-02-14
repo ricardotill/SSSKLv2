@@ -17,6 +17,27 @@
 
 <div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
     <nav class="flex-column">
+        <AuthorizeView Policy="@Policies.Guest">
+            <Authorized>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                        <span class="bi bi-cup-straw" aria-hidden="true"></span> Bestellen
+                    </NavLink>
+                </div>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="orders">
+                        <span class="bi bi-receipt-cutoff" aria-hidden="true"></span> Geschiedenis
+                    </NavLink>
+                </div>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="usersaldos">
+                        <span class="bi bi-piggy-bank" aria-hidden="true"></span> Gebruikers
+                    </NavLink>
+                </div>
+                <hr/>
+            </Authorized>
+        </AuthorizeView>
+        
         <AuthorizeView Policy="@Policies.User">
             <Authorized>
                 <div class="nav-item px-3">

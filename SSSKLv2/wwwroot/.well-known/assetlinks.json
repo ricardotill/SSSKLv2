@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "nl.scoutingwilo.sssklv2",
+        "sha256_cert_fingerprints": ["BD:DB:EC:51:76:76:D0:86:27:FA:72:1D:1A:8D:64:CF:E4:F6:D7:59:A1:DB:03:80:30:3D:06:5B:1F:6E:CF:B1"]
+      }
+    }]

@@ -76,6 +76,19 @@
                         </li>
                     </Authorized>
                 </AuthorizeView>
+                <AuthorizeView Policy="@Policies.Guest">
+                    <Authorized>
+                        <li class="nav-item">
+                            <form action="Account/Logout" method="post">
+                                <AntiforgeryToken/>
+                                <input type="hidden" name="ReturnUrl" value="@currentUrl"/>
+                                <button type="submit" class="nav-link">
+                                    <span class="bi bi-arrow-bar-left-nav-menu" aria-hidden="true"></span> Uitloggen
+                                </button>
+                            </form>
+                        </li>
+                    </Authorized>
+                </AuthorizeView>
             </ul>
         </div>
         <article class="content px-3 pb-4">

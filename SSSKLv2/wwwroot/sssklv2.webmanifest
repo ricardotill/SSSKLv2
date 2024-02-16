@@ -54,7 +54,7 @@
     {
       "name": "Bestellen",
       "url": "/pos"
-    }
+    },
     {
       "name": "Leaderboard",
       "url": "/leaderboard"

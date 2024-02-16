@@ -9,6 +9,6 @@ public interface IOrderService
     public IQueryable<Order> GetAllQueryable(ApplicationDbContext dbContext);
     public IQueryable<Order> GetPersonalQueryable(string username, ApplicationDbContext dbContext);
     public Task<IEnumerable<Order>> GetLatestOrders();
-    public Task CreateOrder(Home.BestellingDto order);
+    public Task CreateOrder(POS.BestellingDto order);
     public Task DeleteOrder(Guid id);
 }

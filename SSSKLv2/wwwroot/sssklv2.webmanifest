@@ -52,6 +52,10 @@
   "background_color": "#212529",
   "shortcuts" : [
     {
+      "name": "Bestellen",
+      "url": "/pos"
+    }
+    {
       "name": "Leaderboard",
       "url": "/leaderboard"
     },

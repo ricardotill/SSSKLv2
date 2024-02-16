@@ -3,7 +3,7 @@ using SSSKLv2.Components.Pages;
 
 namespace SSSKLv2.Validators;
 
-public class BestellingDtoValidator : AbstractValidator<Home.BestellingDto>
+public class BestellingDtoValidator : AbstractValidator<POS.BestellingDto>
 {
     public BestellingDtoValidator()
     {

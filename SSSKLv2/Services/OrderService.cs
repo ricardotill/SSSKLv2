@@ -33,7 +33,7 @@ public class OrderService(
         return await _orderRepository.GetById(id);
     }
     
-    public async Task CreateOrder(Home.BestellingDto order)
+    public async Task CreateOrder(POS.BestellingDto order)
     {
         var products = order.Products
             .Where(x => x.Selected)

@@ -1,224 +1,58 @@
-﻿@page "/"
-@rendermode InteractiveServer
+@page "/"
 
-@using Microsoft.AspNetCore.Authorization
-@using SSSKLv2.Data
-@using SSSKLv2.Services.Interfaces
-@using System.ComponentModel.DataAnnotations
-@using System.Linq
-@using BlazorComponentUtilities
-@using Blazored.Toast.Configuration
-@using SSSKLv2.Validators
-@attribute [Authorize]
-
-@inject IHeaderService HeaderService
+@inject NavigationManager NavigationManager
 @inject AuthenticationStateProvider AuthStateProvider
-@inject IApplicationUserService ApplicationUserService
-@inject IProductService ProductService
-@inject IOrderService OrderService
-@inject IToastService ToastService
 
-<PageTitle>SSSKLv2 | Bestellen</PageTitle>
 
-@if (Model!.Products == null || Model!.Users == null)
-{
-    <p>Laden...</p>
-}
-else
-{
-    <EditForm method="post" Model="@Model" OnValidSubmit="@Submit" FormName="Bestellen" Enhance>
-        <DataAnnotationsValidator />
-        <ValidationSummary class="text1-danger" />
-        <div class="row">
-            <div class="col-md-4 mb-3">
-                <h4>Wat</h4>
-                <div class="row">
-                    @foreach (var product in Model.Products)
-                    {
-                        string css = new CssBuilder()
-                            .AddClass("btn")
-                            .AddClass("select-button")
-                            .AddClass("btn-secondary", when: !product.Selected)
-                            .AddClass("btn-primary", when: product.Selected)
-                            .AddClass("bg-body-tertiary")
-                            .AddClass("border-3")
-                            .AddClass("w-100")
-                            .AddClass("h-100")
-                            .AddClass("m-1")
-                            .AddClass("text-start")
-                            .AddClass("my-1")
-                            .ToString() ?? string.Empty;
-                        
-                        <div class="col-6 p-0 pe-3 pb-2">
-                            <button type="button" class="@css" @onclick="@(e => OnClick(e, product))">
-                                <InputCheckbox class="form-check-input btn-select-checkbox me-1" @bind-Value="product.Selected" />
-                                @product.Value.Name <small class="text-nowrap">@product.Value.Price.ToString("C")</small>
-                            </button>
-                        </div>
-                    }
-                </div>
-            </div>
-            <div class="col-md-4 mb-3">
-                <h4>Wie</h4>
-                <div class="row">
-                    @foreach (var user in Model.Users)
-                    {
-                        string css = new CssBuilder()
-                            .AddClass("btn")
-                            .AddClass("select-button")
-                            .AddClass("btn-secondary", when: !user.Selected)
-                            .AddClass("btn-primary", when: user.Selected)
-                            .AddClass("bg-body-tertiary")
-                            .AddClass("border-3")
-                            .AddClass("w-100")
-                            .AddClass("h-100")
-                            .AddClass("m-1")
-                            .AddClass("text-start")
-                            .AddClass("my-1")
-                            .ToString() ?? string.Empty;
-                        
-                        <div class="col-6 p-0 pe-3 pb-2">
-                            <button type="button" class="@css" @onclick="@(e => OnClick(e, user))">
-                                <InputCheckbox class="form-check-input btn-select-checkbox me-1" @bind-Value="user.Selected"/>
-                                @user.Value.Name @user.Value.Surname.First()
-                            </button>
-                        </div>
-                    }
-                </div>
-            </div>    
-            <div class="col-md-4">
-                <h4>Betalen</h4>
-                <div class="row mb-2">
-                    <div class="col-12">
-                        <div class="form-check">
-                            <InputCheckbox @bind-Value="@Model.Split" class="form-check-input" id="splitCheckbox"/>
-                            <label class="form-check-label" for="splitCheckbox">
-                                Rekening splitten?
-                            </label>
-                        </div>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="input-group mb-3 w-100">
-                        <span class="input-group-text" id="basic-addon1">Aantal</span>
-                        <InputNumber @bind-Value="@Model.Amount" class="form-control"/>
-                        <button type="submit" class="btn btn-primary">Betalen</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </EditForm>
-    <BlazoredToasts Position="ToastPosition.BottomRight"
-                    Timeout=5
-                    SuccessIcon="bi bi-check-circle"
-                    WarningIcon="bi bi-exclamation-triangle"
-                    ErrorIcon="bi bi-x-octagon"/>
-} 
+<div class="mb-3">
+    <h3>Welkom!</h3>
+    <h6>Je bent niet ingelogd.</h6>
+</div>
+
+<h4 class="mb-1">Changenotes</h4>
+<div class="mb-1">
+    <h5>2.1.0 : 14-02-2024</h5>
+    <p>
+        <b>Added "Guest" role</b>
+        <ul>
+            <li>
+                When registering as a new user, the default role is now "Guest".
+            </li>
+            <li>
+                Guests can't order, this privilege is reserved for User and above.
+            </li>
+            <li>
+                Guests don't appear in the orderingscreen and all leaderboards.
+            </li>
+            <li>
+                At most, a Guest can remove their own orders, just like a User can.
+            </li>
+        </ul>
+        <b>Added initial support for mobile apps and notifications.</b>
+    </p>
+</div>
+<div class="mb-1">
+    <h5>2.0.0 : 15-12-2023</h5>
+    <p>
+        <ul>
+            <li>
+                Initial release!
+            </li>
+        </ul>
+    </p>
+</div>
 
 @code {
-
-    [SupplyParameterFromForm]
-    public BestellingDto Model { get; set; } = new();
-    
     protected override async Task OnInitializedAsync()
     {
-        await GetData();
-    }
+        var authstate = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authstate.User;
 
-    public async Task GetData()
-    {
-        Model.Products = (await ProductService.GetAllAvailable())
-            .Select(x => new Select<Product> {Value = x})
-            .ToList();
-        Model.Users = (await ApplicationUserService.GetAllUsers())
-            .Select(x => new Select<ApplicationUser> {Value = x})
-            .ToList();
-        await SelectCurrentUser();
-    }
-
-    private async Task SelectCurrentUser()
-    {
-        var user = await AuthStateProvider.GetAuthenticationStateAsync();
-        var userModel = Model.Users
-            .SingleOrDefault(x => x.Value.UserName == user.User.Identity?.Name);
-        if (userModel != null) userModel.Selected = true;
-    }
-
-    private async Task<bool> CheckIfNotGuest()
-    {
-        var user = await AuthStateProvider.GetAuthenticationStateAsync();
-        if (user.User.IsInRole("Guest"))
+        if (user.Identity is not null && user.Identity.IsAuthenticated)
         {
-            ToastService.ShowError("Je bent een gast en kan niet bestellen. Moet je dit wel kunnen doen? Neem contact op met de beheerder.");
-            return false;
-        }
-
-        return true;
-    }
-
-    public async Task Clear()
-    {
-        Model = new();
-        await GetData();
-    }
-
-    public async Task Submit()
-    {
-        BestellingDtoValidator validator = new BestellingDtoValidator();
-        var validationResults = validator.Validate(Model);
-
-        if (await CheckIfNotGuest() == false) return;
-        if (!validationResults.IsValid)
-        {
-            foreach (var err in validationResults.Errors)
-            {
-                ToastService.ShowError(err.ErrorMessage);
-            }
-            return;
+            NavigationManager.NavigateTo("pos");
         }
         
-        await OrderService.CreateOrder(Model);
-        ToastService.ShowSuccess("Betaling gelukt");
-        await Clear();
-        HeaderService.NotifyHeaderChanged();
-    }
-
-    private void OnClick(MouseEventArgs args, Select select)
-    {
-        select.Selected = !select.Selected;
-    }
-
-    public class Select
-    {
-        public bool Selected { get; set; }
-    }
-
-    public class Select<T> : Select
-    {
-        public T Value { get; set; }
-    }
-
-    public class BestellingDto
-    {
-        [MinLength(1, ErrorMessage = "Er moeten minimaal 1 of meer producten worden geselecteerd")]
-        public IList<Select<Product>> Products { get; set; } = new List<Select<Product>>();
-        [MinLength(1, ErrorMessage = "Er moeten minimaal 1 of meer gebruikers worden geselecteerd")]
-        public IList<Select<ApplicationUser>> Users { get; set; } = new List<Select<ApplicationUser>>();
-        [Required]
-        public int Amount { get; set; } = 1;
-        public bool Split { get; set; }
-
-        public bool CheckStock()
-        {
-            var selected = Products
-                .Where(x => x.Selected);
-            var enumerable = selected as Select<Product>[] ?? selected.ToArray();
-            if (enumerable.Any())
-            {
-                return enumerable.Max(x => x.Value.Stock) >= Amount;
-            }
-
-            return true;
-        }
+        await  base.OnInitializedAsync();
     }
 }

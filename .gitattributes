@@ -62,6 +62,9 @@
 #*.rtf   diff=astextplain
 #*.RTF   diff=astextplain
 
+# Razor components
+*.razor linguist-language=C#
+
 # Combined and minified FE assets, including Bootstrap v5 and custom css.
 SSSKLv2/wwwroot/app.css -linguist-vendored
 SSSKLv2/wwwroot/app.css.map -linguist-vendored

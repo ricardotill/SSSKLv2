@@ -66,6 +66,6 @@
 *.razor linguist-language=C#
 
 # Combined and minified FE assets, including Bootstrap v5 and custom css.
-SSSKLv2/wwwroot/app.css -linguist-vendored
-SSSKLv2/wwwroot/app.css.map -linguist-vendored
-SSSKLv2/wwwroot/app.min.css -linguist-vendored
+app.css -linguist-vendored
+app.css.map -linguist-vendored
+app.min.css -linguist-vendored

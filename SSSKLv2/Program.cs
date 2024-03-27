@@ -75,7 +75,16 @@ Policy.Handle<SqlException>()
     {
         builder.Services.AddDbContextFactory<ApplicationDbContext>(
             options =>
-                options.UseSqlServer(connection));
+            {
+                options.UseSqlServer(connection,
+                    sqlServerOptionsAction: sqlOptions =>
+                    {
+                        sqlOptions.EnableRetryOnFailure(
+                            maxRetryCount: 5,
+                            maxRetryDelay: TimeSpan.FromSeconds(15),
+                            errorNumbersToAdd: null);
+                    });
+            });
     });
 
 if (builder.Environment.IsProduction())

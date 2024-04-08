@@ -11911,6 +11911,16 @@ h1, .h1, h2, .h2, h3, .h3, h4, .h4, h5, .h5, h6, .h6, .navbar-brand {
   display: none;
 }
 
+.saldo-positive > .nav-link,
+.top-row .nav-link,
+.top-row .btn-link {
+  color: #ced4da;
+}
+
+.saldo-negative > .nav-link {
+  color: #dc3545;
+}
+
 @media (max-width: 640.98px) {
   .mobile-hidden {
     display: none;

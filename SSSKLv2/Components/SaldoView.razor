@@ -7,7 +7,7 @@
 @inject AuthenticationStateProvider StateProvider;
 
 <ul class="nav me-auto">
-    <li class="nav-item">
+    <li class="nav-item @LinkStyleClass">
         <NavLink class="nav-link ms-0" href="saldo">@HeaderService.Saldo</NavLink>
     </li>
 </ul>
@@ -20,6 +20,8 @@
         HeaderService.HeaderChanged += OnChange;
         StateHasChanged();
     }
+    
+    public string LinkStyleClass => HeaderService.SaldoNegative ? "saldo-negative" : "saldo-positive";
     
     private void OnChange(object? sender, EventArgs e)
         => this.InvokeAsync(UpdateData);

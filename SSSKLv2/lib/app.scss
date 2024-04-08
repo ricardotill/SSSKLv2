@@ -66,6 +66,16 @@ h1, h2, h3, h4, h5, h6, .navbar-brand {
     display: none;
 }
 
+.saldo-positive > .nav-link, 
+.top-row .nav-link,
+.top-row .btn-link{
+    color: $gray-400;
+}
+
+.saldo-negative > .nav-link {
+    color: $danger;
+}
+
 @media (max-width: 640.98px) {
     .mobile-hidden {
         display: none;

@@ -17,6 +17,7 @@ namespace SSSKLv2.Data
         public IEnumerable<Order> Orders { get; set; } = new List<Order>();
         [PersonalData]
         public IEnumerable<TopUp> TopUps { get; set; } = new List<TopUp>();
+        public IEnumerable<AchievementEntry> CompletedAchievements { get; set; } = new List<AchievementEntry>();
         [Microsoft.Build.Framework.Required]
         public DateTime LastOrdered { get; set; } = DateTime.Now;
         public byte[]? ProfilePicture { get; set; }

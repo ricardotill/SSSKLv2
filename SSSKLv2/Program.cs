@@ -5,9 +5,11 @@ using SSSKLv2.Components;
 using SSSKLv2.Components.Account;
 using SSSKLv2.Data;
 using System.Globalization;
+using Azure.Identity;
 using Blazored.Toast;
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Logging.ApplicationInsights;
 using Polly;
 using Polly.Contrib.WaitAndRetry;
@@ -104,6 +106,12 @@ if (builder.Environment.IsProduction())
 
 builder.Services.AddQuickGridEntityFrameworkAdapter();
 
+builder.Services.AddAzureClients(clientBuilder =>
+{
+    // Register clients for each service
+    clientBuilder.AddBlobServiceClient(builder.Configuration.GetSection("Storage"));
+    clientBuilder.UseCredential(new DefaultAzureCredential());
+});
 
 builder.Services.AddIdentityCore<ApplicationUser>(options =>
     {

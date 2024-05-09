@@ -10,8 +10,10 @@ namespace SSSKLv2.Data
         public DbSet<SSSKLv2.Data.OldUserMigration> OldUserMigration { get; set; } = default!;
         public DbSet<SSSKLv2.Data.Order> Order { get; set; } = default!;
         public DbSet<SSSKLv2.Data.TopUp> TopUp { get; set; } = default!;
-        
         public DbSet<SSSKLv2.Data.Announcement> Announcement { get; set; } = default!;
+        public DbSet<SSSKLv2.Data.BlobStorageItem> BlobStorageItem { get; set; } = default!;
+        public DbSet<SSSKLv2.Data.Achievement> Achievement { get; set; } = default!;
+        public DbSet<SSSKLv2.Data.AchievementEntry> AchievementEntry { get; set; } = default!;
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -27,7 +29,7 @@ namespace SSSKLv2.Data
                 .OnDelete(DeleteBehavior.Cascade);
             
             builder.Entity<ApplicationUser>()
-                .HasMany<TopUp>(e => e.TopUps)
+                .HasMany<AchievementEntry>(e => e.CompletedAchievements)
                 .WithOne(e => e.User)
                 .OnDelete(DeleteBehavior.Cascade);
             
@@ -63,6 +65,43 @@ namespace SSSKLv2.Data
             builder.Entity<ApplicationUser>()
                 .Property(s => s.LastOrdered )
                 .HasDefaultValueSql("GETDATE()");
+            
+            builder.Entity<BlobStorageItem>()
+                .HasIndex(p => p.Id)
+                .IsUnique();
+            builder.Entity<BlobStorageItem>()
+                .Property(s => s.CreatedOn )
+                .HasDefaultValueSql("GETDATE()");
+            
+            builder.Entity<Achievement>()
+                .HasIndex(p => p.Id)
+                .IsUnique();
+            builder.Entity<Achievement>()
+                .Property(s => s.CreatedOn )
+                .HasDefaultValueSql("GETDATE()");
+            builder.Entity<Achievement>()
+                .HasOne(e => e.Image)
+                .WithMany()
+                .OnDelete(DeleteBehavior.SetNull);
+            builder.Entity<Achievement>()
+                .HasMany<AchievementEntry>(e => e.CompletedEntries)
+                .WithOne(e => e.Achievement)
+                .OnDelete(DeleteBehavior.Cascade);
+            
+            builder.Entity<AchievementEntry>()
+                .HasIndex(p => p.Id)
+                .IsUnique();
+            builder.Entity<AchievementEntry>()
+                .Property(s => s.CreatedOn )
+                .HasDefaultValueSql("GETDATE()");
+            builder.Entity<AchievementEntry>()
+                .HasOne(e => e.Achievement)
+                .WithMany(e => e.CompletedEntries)
+                .OnDelete(DeleteBehavior.SetNull);
+            builder.Entity<AchievementEntry>()
+                .HasOne(e => e.User)
+                .WithMany(e => e.CompletedAchievements)
+                .OnDelete(DeleteBehavior.SetNull);
         }
     }
 }

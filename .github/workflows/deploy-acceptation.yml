@@ -7,11 +7,6 @@ env:
   DOTNET_VERSION: '8.0.x'                 # set this to the .NET Core version to use
   WORKING_DIRECTORY: SSSKLv2
 
-on:
-  push:
-    branches: [ "master", "development" ]
-  workflow_dispatch:
-
 jobs:
   build:
     name: Build & Test

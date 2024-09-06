@@ -12,6 +12,7 @@ namespace SSSKLv2.Data
         public DbSet<SSSKLv2.Data.TopUp> TopUp { get; set; } = default!;
         public DbSet<SSSKLv2.Data.Announcement> Announcement { get; set; } = default!;
         public DbSet<SSSKLv2.Data.BlobStorageItem> BlobStorageItem { get; set; } = default!;
+        public DbSet<SSSKLv2.Data.AchievementImage> AchievementImage { get; set; } = default!;
         public DbSet<SSSKLv2.Data.Achievement> Achievement { get; set; } = default!;
         public DbSet<SSSKLv2.Data.AchievementEntry> AchievementEntry { get; set; } = default!;
 
@@ -27,7 +28,9 @@ namespace SSSKLv2.Data
                 .HasMany<Order>(e => e.Orders)
                 .WithOne(e => e.User)
                 .OnDelete(DeleteBehavior.Cascade);
-            
+            builder.Entity<ApplicationUser>()
+                .Property(s => s.LastOrdered )
+                .HasDefaultValueSql("GETDATE()");
             builder.Entity<ApplicationUser>()
                 .HasMany<AchievementEntry>(e => e.CompletedAchievements)
                 .WithOne(e => e.User)
@@ -41,11 +44,13 @@ namespace SSSKLv2.Data
             builder.Entity<OldUserMigration>()
                 .HasIndex(p => p.Username)
                 .IsUnique();
+            builder.Entity<OldUserMigration>()
+                .Property(s => s.CreatedOn )
+                .HasDefaultValueSql("GETDATE()");
 
             builder.Entity<Product>()
                 .HasIndex(p => p.Name)
                 .IsUnique();
-            
             builder.Entity<Product>()
                 .Property(s => s.CreatedOn )
                 .HasDefaultValueSql("GETDATE()");
@@ -58,18 +63,10 @@ namespace SSSKLv2.Data
                 .Property(s => s.CreatedOn )
                 .HasDefaultValueSql("GETDATE()");
             
-            builder.Entity<OldUserMigration>()
-                .Property(s => s.CreatedOn )
-                .HasDefaultValueSql("GETDATE()");
-            
-            builder.Entity<ApplicationUser>()
-                .Property(s => s.LastOrdered )
-                .HasDefaultValueSql("GETDATE()");
-            
-            builder.Entity<BlobStorageItem>()
+            builder.Entity<AchievementImage>()
                 .HasIndex(p => p.Id)
                 .IsUnique();
-            builder.Entity<BlobStorageItem>()
+            builder.Entity<AchievementImage>()
                 .Property(s => s.CreatedOn )
                 .HasDefaultValueSql("GETDATE()");
             
@@ -81,8 +78,16 @@ namespace SSSKLv2.Data
                 .HasDefaultValueSql("GETDATE()");
             builder.Entity<Achievement>()
                 .HasOne(e => e.Image)
-                .WithMany()
-                .OnDelete(DeleteBehavior.SetNull);
+                .WithOne(e => e.Achievement)
+                .IsRequired(false)
+                .HasForeignKey<AchievementImage>("AchievementId")
+                .OnDelete(DeleteBehavior.Cascade);
+            builder.Entity<Achievement>()
+                .Property(e => e.Action)
+                .HasConversion<int>();
+            builder.Entity<Achievement>()
+                .Property(e => e.ComparisonOperator)
+                .HasConversion<int>();
             builder.Entity<Achievement>()
                 .HasMany<AchievementEntry>(e => e.CompletedEntries)
                 .WithOne(e => e.Achievement)
@@ -95,13 +100,8 @@ namespace SSSKLv2.Data
                 .Property(s => s.CreatedOn )
                 .HasDefaultValueSql("GETDATE()");
             builder.Entity<AchievementEntry>()
-                .HasOne(e => e.Achievement)
-                .WithMany(e => e.CompletedEntries)
-                .OnDelete(DeleteBehavior.SetNull);
-            builder.Entity<AchievementEntry>()
-                .HasOne(e => e.User)
-                .WithMany(e => e.CompletedAchievements)
-                .OnDelete(DeleteBehavior.SetNull);
+                .Property(s => s.HasSeen )
+                .HasDefaultValue(false);
         }
     }
 }

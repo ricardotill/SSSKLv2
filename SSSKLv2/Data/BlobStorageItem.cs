@@ -6,3 +6,8 @@ public class BlobStorageItem : BaseModel
     public string Uri { get; set; }
     public string ContentType { get; set; }
 }
+
+public class AchievementImage : BlobStorageItem
+{
+    public Achievement Achievement { get; set; }
+}

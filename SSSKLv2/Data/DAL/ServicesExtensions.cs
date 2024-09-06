@@ -13,6 +13,7 @@ public static class ServicesExtensions
             .AddTransient<IOrderRepository, OrderRepository>()
             .AddTransient<IProductRepository, ProductRepository>()
             .AddTransient<ITopUpRepository, TopUpRepository>()
-            .AddTransient<IAnnouncementRepository, AnnouncementRepository>();
+            .AddTransient<IAnnouncementRepository, AnnouncementRepository>()
+            .AddTransient<IAchievementRepository, AchievementRepository>();
     }
 }

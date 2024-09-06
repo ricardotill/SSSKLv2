@@ -4,19 +4,24 @@ public class Achievement : BaseModel
 {
     public string Name { get; set; }
     public string Description { get; set; }
-    public BlobStorageItem Image { get; set; }
-    public UserAction Action { get; set; }
-    public ComparisonOperator Comparison { get; set; }
-    public decimal ComparisonValue { get; set; }
+    public AchievementImage? Image { get; set; }
+    public ActionOption Action { get; set; }
+    public ComparisonOperatorOption ComparisonOperator { get; set; }
+    public int ComparisonValue { get; set; }
     public IEnumerable<AchievementEntry> CompletedEntries { get; set; }
     
-    public enum UserAction
+    public enum ActionOption
     {
-        Buy, TopUp
+        UserBuy = 1,
+        TotalBuy = 2, 
+        UserTopUp = 3,
+        TotalTopUp = 4
     }
-    public enum ComparisonOperator
+    public enum ComparisonOperatorOption
     {
-        LessThan, GreaterThan,
-        LessThanOrEqual, GreaterThanOrEqual
+        LessThan = 1,
+        GreaterThan = 2,
+        LessThanOrEqual = 3, 
+        GreaterThanOrEqual = 4
     }
 }

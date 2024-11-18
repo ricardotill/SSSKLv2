@@ -6,31 +6,32 @@ using SSSKLv2.Services.Interfaces;
 namespace SSSKLv2.Services;
 
 public class OrderService(
-    IOrderRepository _orderRepository,
-    ILogger<OrderService> _logger) : IOrderService
+    IOrderRepository orderRepository,
+    ILogger<OrderService> logger) : IOrderService
 {
     public IQueryable<Order> GetAllQueryable(ApplicationDbContext dbContext)
     {
-        _logger.LogInformation($"{GetType()}: Get All Orders as Queryable");
-        return _orderRepository.GetAllQueryable(dbContext);
+        logger.LogInformation("{Type}: Get All Orders as Queryable", GetType());
+        return orderRepository.GetAllQueryable(dbContext);
     }
     
     public IQueryable<Order> GetPersonalQueryable(string username, ApplicationDbContext dbContext)
     {
-        _logger.LogInformation($"{GetType()}: Get Personal Orders as Queryable for user with username {username}");
-        return _orderRepository.GetPersonalQueryable(username, dbContext);
+        logger.LogInformation("{Type}: Get Personal Orders as Queryable for user with username {Username}", GetType(), username);
+        var output = orderRepository.GetPersonalQueryable(username, dbContext);
+        return output;
     }
     
     public async Task<IEnumerable<Order>> GetLatestOrders()
     {
-        _logger.LogInformation($"{GetType()}: Get Latest Orders");
-        return await _orderRepository.GetLatest();
+        logger.LogInformation("{Type}: Get Latest Orders", GetType());
+        return await orderRepository.GetLatest();
     }
     
     public async Task<Order> GetOrderById(Guid id)
     {
-        _logger.LogInformation($"{GetType()}: Get Order with ID {id}");
-        return await _orderRepository.GetById(id);
+        logger.LogInformation("{Type}: Get Order with ID {Id}", GetType(), id);
+        return await orderRepository.GetById(id);
     }
     
     public async Task CreateOrder(POS.BestellingDto order)
@@ -45,7 +46,7 @@ public class OrderService(
             .ToList();
         var orders = new List<Order>();
         
-        _logger.LogInformation($"{GetType()}: Create order for {products.Count} products and {products.Count} users");
+        logger.LogInformation("{Type}: Create order for {productsCount} products and {usersCount} users", GetType(), products.Count, users.Count);
 
         foreach (var p in products)
         {
@@ -53,26 +54,27 @@ public class OrderService(
             orders.AddRange(generatedOrders);
         }
         
-        await _orderRepository.CreateRange(orders);
+        await orderRepository.CreateRange(orders);
     }
 
     public async Task DeleteOrder(Guid id)
     {
-        _logger.LogInformation($"{GetType()}: Delete Order with ID {id}");
-        await _orderRepository.Delete(id);
+        logger.LogInformation("{Type}: Delete Order with ID {Id}", GetType(), id);
+        await orderRepository.Delete(id);
     }
 
     private IEnumerable<Order> GenerateUserOrders(IList<ApplicationUser> userList, Product p, int amount, bool goingDutch)
     {
         var paid = goingDutch ? Decimal.Round(p.Price / userList.Count, 2, MidpointRounding.ToPositiveInfinity) : p.Price;
-
+        var sharedAmount = goingDutch ? amount / userList.Count : amount;
+        
         var list = new List<Order>();
         foreach (var u in userList)
         {
             var order = new Order()
             {
                 User = u,
-                Amount = amount,
+                Amount = sharedAmount,
                 Paid = paid * amount,
                 ProductNaam = p.Name,
                 Product = p

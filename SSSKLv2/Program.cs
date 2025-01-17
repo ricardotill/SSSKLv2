@@ -42,6 +42,11 @@ builder.Services.AddAuthentication(options =>
     options.DefaultSignInScheme = IdentityConstants.ExternalScheme;
 })
 .AddIdentityCookies();
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.ExpireTimeSpan = TimeSpan.FromDays(180);
+    options.SlidingExpiration = false;
+});
 
 builder.Services.AddAuthorization(options =>
 {
@@ -68,22 +73,16 @@ else
 
 builder.Logging.AddFilter<ApplicationInsightsLoggerProvider>("SSSKLv2", LogLevel.Trace);
 
-Policy.Handle<SqlException>()
-    .WaitAndRetry(Backoff.LinearBackoff(TimeSpan.FromMilliseconds(100), retryCount: 5),
-        (ex, t, retryCount, c) => { Console.WriteLine($"Failed Attempt {retryCount}: {ex.GetType().Name}"); })
-    .Execute(() =>
+builder.Services.AddDbContextFactory<ApplicationDbContext>(
+    options =>
     {
-        builder.Services.AddDbContextFactory<ApplicationDbContext>(
-            options =>
+        options.UseSqlServer(connection,
+            sqlServerOptionsAction: sqlOptions =>
             {
-                options.UseSqlServer(connection,
-                    sqlServerOptionsAction: sqlOptions =>
-                    {
-                        sqlOptions.EnableRetryOnFailure(
-                            maxRetryCount: 5,
-                            maxRetryDelay: TimeSpan.FromSeconds(15),
-                            errorNumbersToAdd: null);
-                    });
+                sqlOptions.EnableRetryOnFailure(
+                    maxRetryCount: 15,
+                    maxRetryDelay: TimeSpan.FromSeconds(10),
+                    errorNumbersToAdd: null);
             });
     });
 
@@ -177,9 +176,9 @@ app.MapHealthChecks("/healthz");
 CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.GetCultureInfo("nl-NL");
 CultureInfo.DefaultThreadCurrentCulture = CultureInfo.GetCultureInfo("nl-NL");
 
-using (var scope = app.Services.GetService<IServiceScopeFactory>().CreateScope())
+using (var scope = app.Services.GetService<IServiceScopeFactory>()!.CreateScope())
 {
-    scope.ServiceProvider.GetRequiredService<ApplicationDbContext>().Database.Migrate();
+    await scope.ServiceProvider.GetRequiredService<ApplicationDbContext>().Database.MigrateAsync();
 }
 
-app.Run();
+await app.RunAsync();

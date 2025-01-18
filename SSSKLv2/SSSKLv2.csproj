@@ -5,6 +5,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>aspnet-SSSKLv2-3b416739-57c6-4151-a2e5-8cfca6f4185b</UserSecretsId>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <WasmEnableSIMD>false</WasmEnableSIMD>
+    <WasmEnableExceptionHandling>false</WasmEnableExceptionHandling>
+    <WasmBuildNative>true</WasmBuildNative>
   </PropertyGroup>
   <ItemGroup>
     <Content Remove="compilerconfig.json" />

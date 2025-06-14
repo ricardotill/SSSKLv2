@@ -19,6 +19,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddApplicationInsightsTelemetry();
 
 builder.Services.AddControllers();
+builder.Services.AddOpenApi();
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
@@ -112,7 +113,8 @@ builder.Services.AddIdentityCore<ApplicationUser>(options =>
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddSignInManager()
     .AddDefaultTokenProviders()
-    .AddClaimsPrincipalFactory<IdentityClaimsPrincipalFactory>();
+    .AddClaimsPrincipalFactory<IdentityClaimsPrincipalFactory>()
+    .AddApiEndpoints();
 
 if (builder.Environment.IsDevelopment()) builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
 else builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityEmailSender>();
@@ -152,6 +154,15 @@ app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
 app.MapControllers();
+app.MapIdentityApi<ApplicationUser>();
+if (app.Environment.IsDevelopment())
+{
+    app.MapOpenApi();
+    app.UseSwaggerUI(options =>
+    {
+        options.SwaggerEndpoint("/openapi/v1.json", "v1");
+    });
+}
 
 // Add additional endpoints required by the Identity /Account Razor components.
 app.MapAdditionalIdentityEndpoints();

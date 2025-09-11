@@ -15,11 +15,6 @@ public class AnnouncementService(IAnnouncementRepository announcementRepository)
         return announcementRepository.GetAllQueryable(context);
     }
 
-    // public Task<IEnumerable<Announcement>> GetAllAnnouncementsForEnduser()
-    // {
-    //     return announcementRepository.GetAllForEnduser();
-    // }
-
     public Task<Announcement> GetAnnouncementById(Guid id)
     {
         return announcementRepository.GetById(id);

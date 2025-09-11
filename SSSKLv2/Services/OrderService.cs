@@ -1,3 +1,4 @@
+using System.Text;
 using SSSKLv2.Components.Pages;
 using SSSKLv2.Data;
 using SSSKLv2.Data.DAL.Interfaces;
@@ -56,6 +57,23 @@ public class OrderService(
         
         await orderRepository.CreateRange(orders);
     }
+    
+    public async Task<string> ExportOrdersToCsvAsync()
+    {
+        var orders = await orderRepository.GetAllAsync(); // Returns IEnumerable<Order>
+        var csv = new StringBuilder();
+
+        // Header
+        csv.AppendLine("OrderId,CustomerUsername,OrderDate,ProductName,ProductAmount,TotalPaid");
+
+        // Rows
+        foreach (var order in orders)
+        {
+            csv.AppendLine($"{order.Id},{order.User.UserName},{order.CreatedOn:yyyy-MM-dd},{order.ProductName},{order.Amount},{order.Paid}");
+        }
+
+        return csv.ToString();
+    }
 
     public async Task DeleteOrder(Guid id)
     {
@@ -76,7 +94,7 @@ public class OrderService(
                 User = u,
                 Amount = sharedAmount,
                 Paid = paid * amount,
-                ProductNaam = p.Name,
+                ProductName = p.Name,
                 Product = p
             };
             list.Add(order);

@@ -4,8 +4,18 @@ using SSSKLv2.Data.DAL.Interfaces;
 
 namespace SSSKLv2.Data.DAL;
 
-public class OrderRepository(IDbContextFactory<ApplicationDbContext> _dbContextFactory) : IOrderRepository
+public class OrderRepository(IDbContextFactory<ApplicationDbContext> dbContextFactory) : IOrderRepository
 {
+    public async Task<IList<Order>> GetAllAsync()
+    {
+        await using var context = await dbContextFactory.CreateDbContextAsync();
+        return await context.Order
+            .Include(x => x.User)
+            .Include(x => x.Product)
+            .OrderByDescending(x => x.CreatedOn)
+            .ToListAsync();
+    }
+    
     public IQueryable<Order> GetAllQueryable(ApplicationDbContext context)
     {
         return context.Order
@@ -25,7 +35,7 @@ public class OrderRepository(IDbContextFactory<ApplicationDbContext> _dbContextF
     {
         var time = DateTime.Now.AddHours(-12);
 
-        await using var context = await _dbContextFactory.CreateDbContextAsync();
+        await using var context = await dbContextFactory.CreateDbContextAsync();
         return (await context.Order
                 .Where(x => x.CreatedOn > time)
                 .Include(x => x.User)
@@ -36,7 +46,7 @@ public class OrderRepository(IDbContextFactory<ApplicationDbContext> _dbContextF
     
     public async Task<Order> GetById(Guid id)
     {
-        await using var context = await _dbContextFactory.CreateDbContextAsync();
+        await using var context = await dbContextFactory.CreateDbContextAsync();
         var order = await context.Order
             .Include(x => x.User)
             .SingleOrDefaultAsync(x => x.Id == id);
@@ -51,11 +61,11 @@ public class OrderRepository(IDbContextFactory<ApplicationDbContext> _dbContextF
 
     public async Task CreateRange(IEnumerable<Order> orders)
     {
-        await using var context = await _dbContextFactory.CreateDbContextAsync();
+        await using var context = await dbContextFactory.CreateDbContextAsync();
         foreach (var obj in orders)
         {
             UpdateUserSaldo(obj, context);
-            UpdateProductInventory(obj, obj.Product, context);
+            if (obj.Product != null) UpdateProductInventory(obj, obj.Product, context);
             context.Order.Add(obj);
         }
         await context.SaveChangesAsync();
@@ -63,7 +73,7 @@ public class OrderRepository(IDbContextFactory<ApplicationDbContext> _dbContextF
 
     public async Task Delete(Guid id)
     {
-        await using var context = await _dbContextFactory.CreateDbContextAsync();
+        await using var context = await dbContextFactory.CreateDbContextAsync();
         var entry = await context.Order
             .Include(x => x.User)
             .SingleOrDefaultAsync(x => x.Id == id);
@@ -72,7 +82,7 @@ public class OrderRepository(IDbContextFactory<ApplicationDbContext> _dbContextF
         {
             UpdateUserSaldo(entry, context, false);
             var product = await context.Product
-                .SingleOrDefaultAsync(x => x.Name == entry.ProductNaam);
+                .SingleOrDefaultAsync(x => x.Name == entry.ProductName);
             if (product != null) UpdateProductInventory(entry, product, context, false);
             context.Order.Remove(entry);
             await context.SaveChangesAsync();

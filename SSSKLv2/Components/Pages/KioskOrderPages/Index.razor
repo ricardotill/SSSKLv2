@@ -25,7 +25,7 @@
         <TemplateColumn Title="Gebruiker" Context="order">
             <span class="text-nowrap">@order.User.Name @order.User.Surname.First()</span>
         </TemplateColumn>        
-        <PropertyColumn Title="Product" Property="@(o => o.ProductNaam)" Sortable="true" Align="Align.Left" />
+        <PropertyColumn Title="Product" Property="@(o => o.ProductName)" Sortable="true" Align="Align.Left" />
         <PropertyColumn Title="Hoeveel" Property="@(o => o.Amount)" Sortable="true" Align="Align.Right" />
         <PropertyColumn Title="Betaald" Property="@(o => o.Paid)" Format="C" Sortable="true" Align="Align.Right" />
         <TemplateColumn Context="order">

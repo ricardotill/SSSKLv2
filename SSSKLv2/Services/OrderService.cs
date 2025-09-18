@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using SSSKLv2.Components.Pages;
 using SSSKLv2.Data;
@@ -69,7 +70,8 @@ public class OrderService(
         // Rows
         foreach (var order in orders)
         {
-            csv.AppendLine($"{order.Id},{EscapeCsvField(order.User != null ? order.User.UserName : null)},{order.CreatedOn:yyyy-MM-dd},{EscapeCsvField(order.ProductNaam)},{order.Amount},{order.Paid}");
+            csv.AppendLine(
+                $"{order.Id},{EscapeCsvField(order.User != null ? order.User.UserName : null)},{order.CreatedOn:yyyy-MM-dd},{EscapeCsvField(order.ProductNaam)},{order.Amount},{order.Paid.ToString(CultureInfo.InvariantCulture)}");
         }
 
         return csv.ToString();
@@ -81,7 +83,7 @@ public class OrderService(
         if (field == null)
             return "\"\"";
         // Formula injection mitigation: prefix with ' if starts with =, +, -, or @
-        if (field.StartsWith("=") || field.StartsWith("+") || field.StartsWith("-") || field.StartsWith("@"))
+        if (field.StartsWith('=') || field.StartsWith('+') || field.StartsWith('-') || field.StartsWith('@'))
             field = "'" + field;
         // Escape double quotes by doubling them
         field = field.Replace("\"", "\"\"");

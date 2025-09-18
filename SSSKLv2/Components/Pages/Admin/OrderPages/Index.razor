@@ -8,10 +8,7 @@
 
 @inject IOrderService OrderService
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
-@inject IJSRuntime JS
-@inject ILogger<Admin.OrderPages.Index> Logger
 
-@using System.Text
 @using SSSKLv2.Data
 @using SSSKLv2.Services.Interfaces
 @using Microsoft.AspNetCore.Authorization
@@ -66,17 +63,6 @@
     {
         if (_dbContext != null) 
             Orders = OrderService.GetAllQueryable(_dbContext);
-    }
-    
-    private async Task ExportAllOrdersAsCsv()
-    {
-        var csv = OrderService.ExportOrdersFromPastTwoYearsToCsvAsync();
-        var filename = $"orders-{DateTime.Now:yyyyMMddHHmmss}.csv";
-
-        using var streamRef = new DotNetStreamReference(stream: new MemoryStream(Encoding.UTF8.GetBytes(csv.Result)));
-        Logger.LogInformation("Exporting orders to CSV: {Filename}, done by {Username}", filename, HttpContext.User.Identity?.Name);
-
-        await JS.InvokeVoidAsync("downloadFileFromStream", filename, streamRef);
     }
 
     public void Dispose()

@@ -69,7 +69,7 @@ public class OrderService(
         // Rows
         foreach (var order in orders)
         {
-            csv.AppendLine($"{order.Id},{EscapeCsvField(order.User.UserName)},{order.CreatedOn:yyyy-MM-dd},{EscapeCsvField(order.ProductNaam)},{order.Amount},{order.Paid}");
+            csv.AppendLine($"{order.Id},{EscapeCsvField(order.User != null ? order.User.UserName : null)},{order.CreatedOn:yyyy-MM-dd},{EscapeCsvField(order.ProductNaam)},{order.Amount},{order.Paid}");
         }
 
         return csv.ToString();

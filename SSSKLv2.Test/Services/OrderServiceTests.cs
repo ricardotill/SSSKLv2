@@ -1,3 +1,4 @@
+using System.Globalization;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -448,7 +449,7 @@ public class OrderServiceTests
         // Check that each order is in the CSV
         foreach (var order in orders)
         {
-            result.Should().Contain($"{order.Id},\"{order.User.UserName}\",{order.CreatedOn:yyyy-MM-dd},\"{order.ProductNaam}\",{order.Amount},{order.Paid}");
+            result.Should().Contain($"{order.Id},\"{order.User.UserName}\",{order.CreatedOn:yyyy-MM-dd},\"{order.ProductNaam}\",{order.Amount},{order.Paid.ToString(CultureInfo.InvariantCulture)}");
         }
 
         await _mockOrderRepository.Received(1).GetOrdersFromPastTwoYearsAsync();

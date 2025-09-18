@@ -8,6 +8,7 @@
 
 @inject IOrderService OrderService
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+
 @using SSSKLv2.Data
 @using SSSKLv2.Services.Interfaces
 @using Microsoft.AspNetCore.Authorization
@@ -17,7 +18,14 @@
 
 <PageTitle>SSSKLv2 | Orderbeheer</PageTitle>
 
-<h1>Orderbeheer</h1>
+<div class="row crud-form-header">
+    <div class="col-10 title-container">
+        <h1>Orderbeheer</h1>
+    </div>
+    <div class="col-2 text-end back-container">
+        <a class="btn btn-success bg-lg" href="/admin/orders/export">Exporteren als CSV</a>
+    </div>
+</div>
 
 <div class="table-responsive">
     <QuickGrid Items="@Orders" Pagination="@Pagination">

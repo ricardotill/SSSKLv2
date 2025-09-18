@@ -20,6 +20,8 @@ public class ProductRepositoryTests : RepositoryTest
         InitializeDatabase();
         _dbContextFactory = new MockDbContextFactory(GetOptions());
         _sut = new ProductRepository(_dbContextFactory);
+        // Ensure a clean slate for each test (RepositoryTest seeds one product by default)
+        ClearAllProducts().GetAwaiter().GetResult();
     }
 
     [TestCleanup]
@@ -32,24 +34,8 @@ public class ProductRepositoryTests : RepositoryTest
     public async Task GetAll_WhenProductsInDb_ReturnAll()
     {
         // Arrange
-        var p1 = new Product()
-        {
-            Id = Guid.NewGuid(),
-            Name = "name1",
-            Description = "description1",
-            Price = 30.32m,
-            Stock = 50,
-            CreatedOn = DateTime.Now
-        };
-        var p2 = new Product()
-        {
-            Id = Guid.NewGuid(),
-            Name = "name2",
-            Description = "description2",
-            Price = 18.99m,
-            Stock = 0,
-            CreatedOn = DateTime.Now
-        };
+        var p1 = NewProduct("name1", 30.32m, 50);
+        var p2 = NewProduct("name2", 18.99m, 0);
         await SaveProducts(p1, p2);
         
         // Act
@@ -66,33 +52,16 @@ public class ProductRepositoryTests : RepositoryTest
     {
         // Act
         var result = await _sut.GetAll();
-        
         // Assert
         result.Should().BeEmpty();
     }
-    
+
     [TestMethod]
     public async Task GetAllAvailable_WhenAllProductsInDbInStock_ReturnAllInStock()
     {
         // Arrange
-        var p1 = new Product()
-        {
-            Id = Guid.NewGuid(),
-            Name = "name1",
-            Description = "description1",
-            Price = 30.32m,
-            Stock = 50,
-            CreatedOn = DateTime.Now
-        };
-        var p2 = new Product()
-        {
-            Id = Guid.NewGuid(),
-            Name = "name2",
-            Description = "description2",
-            Price = 18.99m,
-            Stock = 30,
-            CreatedOn = DateTime.Now
-        };
+        var p1 = NewProduct("name1", 30.32m, 50);
+        var p2 = NewProduct("name2", 18.99m, 30);
         await SaveProducts(p1, p2);
         
         // Act
@@ -103,45 +72,29 @@ public class ProductRepositoryTests : RepositoryTest
         result.Should().ContainEquivalentOf(p1);
         result.Should().ContainEquivalentOf(p2);
     }
-    
+
     [TestMethod]
-    public async Task GetAllAvailable_WhenNotAllProductsInDbInStock_ReturnAllInStock()
+    public async Task GetAllAvailable_WhenNotAllProductsInDbInStock_ReturnOnlyInStock()
     {
         // Arrange
-        var p1 = new Product()
-        {
-            Id = Guid.NewGuid(),
-            Name = "name1",
-            Description = "description1",
-            Price = 30.32m,
-            Stock = 1,
-            CreatedOn = DateTime.Now
-        };
-        var p2 = new Product()
-        {
-            Id = Guid.NewGuid(),
-            Name = "name2",
-            Description = "description2",
-            Price = 18.99m,
-            Stock = 0,
-            CreatedOn = DateTime.Now
-        };
+        var p1 = NewProduct("name1", 30.32m, 1);
+        var p2 = NewProduct("name2", 18.99m, 0);
         await SaveProducts(p1, p2);
-        
+
         // Act
         var result = await _sut.GetAllAvailable();
 
         // Assert
         result.Should().HaveCount(1);
         result.Should().ContainEquivalentOf(p1);
+        result.Should().NotContainEquivalentOf(p2);
     }
-    
+
     [TestMethod]
     public async Task GetAllAvailable_WhenDbEmpty_ReturnNoProducts()
     {
         // Act
         var result = await _sut.GetAllAvailable();
-        
         // Assert
         result.Should().BeEmpty();
     }
@@ -150,15 +103,7 @@ public class ProductRepositoryTests : RepositoryTest
     public async Task GetById_WhenInDb_ThenReturnProduct()
     {
         // Arrange
-        var p1 = new Product()
-        {
-            Id = Guid.NewGuid(),
-            Name = "name1",
-            Description = "description1",
-            Price = 30.32m,
-            Stock = 1,
-            CreatedOn = DateTime.Now
-        };
+        var p1 = NewProduct("name1", 30.32m, 1);
         await SaveProducts(p1);
         
         // Act
@@ -173,216 +118,104 @@ public class ProductRepositoryTests : RepositoryTest
     {
         // Act
         Func<Task<Product>> function = () => _sut.GetById(Guid.NewGuid());
-
         // Assert
         await function.Should().ThrowAsync<NotFoundException>();
     }
 
     [TestMethod]
-    public async Task Create_WhenNewProduct_ThenAddNewProduct()
+    public async Task Create_WhenNewProduct_AddsProduct()
     {
-        // Arrange
-        var p1 = new Product()
-        {
-            Id = Guid.NewGuid(),
-            Name = "name1",
-            Description = "description1",
-            Price = 30.32m,
-            Stock = 1,
-            CreatedOn = DateTime.Now
-        };
-        
-        // Act
+        var p1 = NewProduct("name1", 30.32m, 1);
         await _sut.Create(p1);
-        
-        // Assert
         var dblist = await GetProducts();
-        dblist.Should().HaveCount(1);
-        dblist.Should().ContainEquivalentOf(p1);
+        dblist.Should().ContainSingle().And.ContainEquivalentOf(p1);
     }
 
     [TestMethod]
-    public async Task Create_WhenExistingId_ThenThrowDbException()
+    public async Task Create_WhenExistingId_ThrowsDbUpdateException()
     {
-        // Arrange
         var id = Guid.NewGuid();
-        var p1 = new Product()
-        {
-            Id = id,
-            Name = "name1",
-            Description = "description1",
-            Price = 30.32m,
-            Stock = 1,
-            CreatedOn = DateTime.Now
-        };
-        var p2 = new Product()
-        {
-            Id = id,
-            Name = "name2",
-            Description = "description2",
-            Price = 18.99m,
-            Stock = 0,
-            CreatedOn = DateTime.Now
-        };
+        var p1 = NewProduct("name1", 30.32m, 1, id);
+        var p2 = NewProduct("name2", 18.99m, 0, id);
         await SaveProducts(p1);
-        
-        // Act
-        Func<Task> function = () => _sut.Create(p2);
-
-        // Assert
-        await function.Should().ThrowAsync<DbUpdateException>();
+        Func<Task> act = () => _sut.Create(p2);
+        await act.Should().ThrowAsync<DbUpdateException>();
+        (await GetProducts()).Should().HaveCount(1).And.ContainEquivalentOf(p1);
+    }
+    
+    [TestMethod]
+    public async Task Create_WhenDuplicateName_RejectsSecondProductSinceUniqueConstraint()
+    {
+        var name = "dup";
+        var p1 = NewProduct(name, 30.32m, 1);
+        var p2 = NewProduct(name, 18.99m, 0);
+        await SaveProducts(p1);
+        var act = () => _ = _sut.Create(p2) ; // should fail (no unique constraint on Name)
+        await act.Should().ThrowAsync<DbUpdateException>();
         var dblist = await GetProducts();
-        dblist.Should().NotContainEquivalentOf(p2);
         dblist.Should().HaveCount(1);
     }
-    
+
     [TestMethod]
-    public async Task Create_WhenExistingUsername_ThenThrowDbException()
+    public async Task Update_WhenExistingProduct_UpdatesFields()
     {
-        // Arrange
-        var name = "name";
-        var p1 = new Product()
-        {
-            Id = Guid.NewGuid(),
-            Name = name,
-            Description = "description1",
-            Price = 30.32m,
-            Stock = 1,
-            CreatedOn = DateTime.Now
-        };
-        var p2 = new Product()
-        {
-            Id = Guid.NewGuid(),
-            Name = name,
-            Description = "description2",
-            Price = 18.99m,
-            Stock = 0,
-            CreatedOn = DateTime.Now
-        };
+        var p1 = NewProduct("name1", 30.32m, 1);
         await SaveProducts(p1);
-        
-        // Act
-        Func<Task> function = () => _sut.Create(p2);
-
-        // Assert
-        await function.Should().ThrowAsync<DbUpdateException>();
-        var dblist = await GetProducts();
-        dblist.Should().NotContainEquivalentOf(p2);
-        dblist.Should().HaveCount(1);
+        var loaded = (await GetProducts()).Single(p => p.Id == p1.Id);
+        loaded.Description = "changed";
+        loaded.Price = 99.99m;
+        await _sut.Update(loaded);
+        var refreshed = (await GetProducts()).Single();
+        refreshed.Description.Should().Be("changed");
+        refreshed.Price.Should().Be(99.99m);
     }
-    
+
     [TestMethod]
-    public async Task Update_WhenExistingAnnouncement_ThenUpdate()
+    public async Task Update_WhenProductNotInDb_ThrowsConcurrency()
     {
-        // Arrange
-        var p1 = new Product()
-        {
-            Id = Guid.NewGuid(),
-            Name = "name1",
-            Description = "description1",
-            Price = 30.32m,
-            Stock = 1,
-            CreatedOn = DateTime.Now
-        };
-        await SaveProducts(p1);
-        var p1_update = (await GetProducts()).FirstOrDefault(e => e.Id == p1.Id);
-        p1_update.Description = "desctest2";
-
-        // Act
-        await _sut.Update(p1_update);
-
-        // Assert
-        var dblist = await GetProducts();
-        dblist.Should().ContainEquivalentOf(p1_update);
+        var p1 = NewProduct("name1", 30.32m, 1);
+        Func<Task> act = () => _sut.Update(p1);
+        await act.Should().ThrowAsync<DbUpdateConcurrencyException>();
+        (await GetProducts()).Should().BeEmpty();
     }
-    
-    [TestMethod]
-    public async Task Update_WhenNotExistingAnnouncement_ThenThrowDbException()
-    {
-        // Arrange
-        var p1 = new Product()
-        {
-            Id = Guid.NewGuid(),
-            Name = "name1",
-            Description = "description1",
-            Price = 30.32m,
-            Stock = 1,
-            CreatedOn = DateTime.Now
-        };
 
-        // Act
-        Func<Task> function = () => _sut.Update(p1);
-
-        // Assert
-        await function.Should().ThrowAsync<DbUpdateConcurrencyException>();
-        var dblist = await GetProducts();
-        dblist.Should().BeEmpty();
-    }
-    
     [TestMethod]
-    public async Task Delete_WhenExistingOldUserMigration_ThenDeleteOldUserMigration()
+    public async Task Delete_WhenExistingProduct_RemovesIt()
     {
-        // Arrange
-        var p1 = new Product()
-        {
-            Id = Guid.NewGuid(),
-            Name = "name1",
-            Description = "description1",
-            Price = 30.32m,
-            Stock = 1,
-            CreatedOn = DateTime.Now
-        };
-        var p2 = new Product()
-        {
-            Id = Guid.NewGuid(),
-            Name = "name2",
-            Description = "description2",
-            Price = 18.99m,
-            Stock = 0,
-            CreatedOn = DateTime.Now
-        };
+        var p1 = NewProduct("name1", 30.32m, 1);
+        var p2 = NewProduct("name2", 18.99m, 0);
         await SaveProducts(p1, p2);
-
-        // Act
         await _sut.Delete(p1.Id);
-
-        // Assert
         var dblist = await GetProducts();
-        dblist.Should().NotContainEquivalentOf(p1);
-        dblist.Should().HaveCount(1);
+        dblist.Should().HaveCount(1).And.ContainEquivalentOf(p2).And.NotContainEquivalentOf(p1);
     }
     
     [TestMethod]
-    public async Task Delete_WhenNotExistingProduct_ThenThrowDbException()
+    public async Task Delete_WhenProductNotFound_ThrowsNotFound()
     {
-        // Arrange
-        var p1 = new Product()
-        {
-            Id = Guid.NewGuid(),
-            Name = "name1",
-            Description = "description1",
-            Price = 30.32m,
-            Stock = 1,
-            CreatedOn = DateTime.Now
-        };
-        var p2 = new Product()
-        {
-            Id = Guid.NewGuid(),
-            Name = "name2",
-            Description = "description2",
-            Price = 18.99m,
-            Stock = 0,
-            CreatedOn = DateTime.Now
-        };
+        var p1 = NewProduct("name1", 30.32m, 1);
         await SaveProducts(p1);
+        Func<Task> act = () => _sut.Delete(Guid.NewGuid());
+        await act.Should().ThrowAsync<NotFoundException>();
+        (await GetProducts()).Should().HaveCount(1);
+    }
 
-        // Act
-        Func<Task> function = () => _sut.Delete(p2.Id);
+    // Helpers
+    private Product NewProduct(string name, decimal price, int stock, Guid? id = null) => new()
+    {
+        Id = id ?? Guid.NewGuid(),
+        Name = name,
+        Description = $"description-{name}",
+        Price = price,
+        Stock = stock,
+        CreatedOn = DateTime.Now
+    };
 
-        // Assert
-        await function.Should().ThrowAsync<NotFoundException>();
-        var dblist = await GetProducts();
-        dblist.Should().HaveCount(1);
+    private async Task ClearAllProducts()
+    {
+        await using var context = await _dbContextFactory.CreateDbContextAsync();
+        context.Product.RemoveRange(context.Product);
+        await context.SaveChangesAsync();
     }
 
     private async Task<IList<Product>> GetProducts()

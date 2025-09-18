@@ -126,6 +126,8 @@ builder.Services.AddAntiforgery(o => o.SuppressXFrameOptionsHeader = true);
 
 var app = builder.Build();
 
+app.UsePathBase("/");
+
 await using (var scope = app.Services.CreateAsyncScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
@@ -144,11 +146,13 @@ else
 }
 
 app.UseHttpsRedirection();
-
+app.UseBlazorFrameworkFiles();
+app.UseStaticFiles();
 app.MapStaticAssets();
 app.UseAntiforgery();
 
 app.MapRazorComponents<App>()
+    .WithStaticAssets()
     .AddInteractiveServerRenderMode();
 
 app.MapControllers();

@@ -10,5 +10,6 @@ public interface IOrderService
     public IQueryable<Order> GetPersonalQueryable(string username, ApplicationDbContext dbContext);
     public Task<IEnumerable<Order>> GetLatestOrders();
     public Task CreateOrder(POS.BestellingDto order);
+    public Task<string> ExportOrdersFromPastTwoYearsToCsvAsync();
     public Task DeleteOrder(Guid id);
 }

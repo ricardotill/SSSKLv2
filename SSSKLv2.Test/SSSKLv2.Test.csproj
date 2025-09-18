@@ -15,6 +15,7 @@
     <PackageReference Include="FluentAssertions" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="Moq" />
+    <PackageReference Include="NSubstitute" />
     <PackageReference Include="MSTest.TestAdapter" />
     <PackageReference Include="MSTest.TestFramework" />
     <PackageReference Include="coverlet.collector">
@@ -24,8 +25,5 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\SSSKLv2\SSSKLv2.csproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Validators\" />
   </ItemGroup>
 </Project>

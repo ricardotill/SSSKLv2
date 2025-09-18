@@ -1,3 +1,5 @@
+using System.Globalization;
+using System.Text;
 using SSSKLv2.Components.Pages;
 using SSSKLv2.Data;
 using SSSKLv2.Data.DAL.Interfaces;
@@ -56,7 +58,38 @@ public class OrderService(
         
         await orderRepository.CreateRange(orders);
     }
+    
+    public async Task<string> ExportOrdersFromPastTwoYearsToCsvAsync()
+    {
+        var orders = await orderRepository.GetOrdersFromPastTwoYearsAsync(); // Returns IEnumerable<Order>
+        var csv = new StringBuilder();
 
+        // Header
+        csv.AppendLine("OrderId,CustomerUsername,OrderDate,ProductName,ProductAmount,TotalPaid");
+
+        // Rows
+        foreach (var order in orders)
+        {
+            csv.AppendLine(
+                $"{order.Id},{EscapeCsvField(order.User != null ? order.User.UserName : null)},{order.CreatedOn:yyyy-MM-dd},{EscapeCsvField(order.ProductNaam)},{order.Amount},{order.Paid.ToString(CultureInfo.InvariantCulture)}");
+        }
+
+        return csv.ToString();
+    }
+
+    // Escapes a field for CSV output, including formula injection mitigation
+    private static string EscapeCsvField(string field)
+    {
+        if (field == null)
+            return "\"\"";
+        // Formula injection mitigation: prefix with ' if starts with =, +, -, or @
+        if (field.StartsWith('=') || field.StartsWith('+') || field.StartsWith('-') || field.StartsWith('@'))
+            field = "'" + field;
+        // Escape double quotes by doubling them
+        field = field.Replace("\"", "\"\"");
+        // Wrap in double quotes
+        return $"\"{field}\"";
+    }
     public async Task DeleteOrder(Guid id)
     {
         logger.LogInformation("{Type}: Delete Order with ID {Id}", GetType(), id);

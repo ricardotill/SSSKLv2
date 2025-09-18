@@ -69,12 +69,25 @@ public class OrderService(
         // Rows
         foreach (var order in orders)
         {
-            csv.AppendLine($"{order.Id},{order.User.UserName},{order.CreatedOn:yyyy-MM-dd},{order.ProductNaam},{order.Amount},{order.Paid}");
+            csv.AppendLine($"{order.Id},{EscapeCsvField(order.User.UserName)},{order.CreatedOn:yyyy-MM-dd},{EscapeCsvField(order.ProductNaam)},{order.Amount},{order.Paid}");
         }
 
         return csv.ToString();
     }
 
+    // Escapes a field for CSV output, including formula injection mitigation
+    private static string EscapeCsvField(string field)
+    {
+        if (field == null)
+            return "\"\"";
+        // Formula injection mitigation: prefix with ' if starts with =, +, -, or @
+        if (field.StartsWith("=") || field.StartsWith("+") || field.StartsWith("-") || field.StartsWith("@"))
+            field = "'" + field;
+        // Escape double quotes by doubling them
+        field = field.Replace("\"", "\"\"");
+        // Wrap in double quotes
+        return $"\"{field}\"";
+    }
     public async Task DeleteOrder(Guid id)
     {
         logger.LogInformation("{Type}: Delete Order with ID {Id}", GetType(), id);

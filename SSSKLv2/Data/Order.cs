@@ -11,7 +11,7 @@ public class Order : BaseModel
     public ApplicationUser User { get; set; }
     [Microsoft.Build.Framework.Required]
     [DisplayName("ProductNaam")]
-    public string ProductName { get; set; }
+    public string ProductNaam { get; set; }
     [DisplayName("Product")]
     public Product? Product { get; set; }
     [Microsoft.Build.Framework.Required]

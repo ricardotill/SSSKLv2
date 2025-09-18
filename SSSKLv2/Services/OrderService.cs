@@ -58,9 +58,9 @@ public class OrderService(
         await orderRepository.CreateRange(orders);
     }
     
-    public async Task<string> ExportOrdersToCsvAsync()
+    public async Task<string> ExportOrdersFromPastTwoYearsToCsvAsync()
     {
-        var orders = await orderRepository.GetAllAsync(); // Returns IEnumerable<Order>
+        var orders = await orderRepository.GetOrdersFromPastTwoYearsAsync(); // Returns IEnumerable<Order>
         var csv = new StringBuilder();
 
         // Header
@@ -69,7 +69,7 @@ public class OrderService(
         // Rows
         foreach (var order in orders)
         {
-            csv.AppendLine($"{order.Id},{order.User.UserName},{order.CreatedOn:yyyy-MM-dd},{order.ProductName},{order.Amount},{order.Paid}");
+            csv.AppendLine($"{order.Id},{order.User.UserName},{order.CreatedOn:yyyy-MM-dd},{order.ProductNaam},{order.Amount},{order.Paid}");
         }
 
         return csv.ToString();
@@ -94,7 +94,7 @@ public class OrderService(
                 User = u,
                 Amount = sharedAmount,
                 Paid = paid * amount,
-                ProductName = p.Name,
+                ProductNaam = p.Name,
                 Product = p
             };
             list.Add(order);

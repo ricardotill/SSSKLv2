@@ -249,7 +249,7 @@ public class OrderRepositoryTests : RepositoryTest
             CreatedOn = DateTime.Now, 
             User = TestUser, 
             Product = null,
-            ProductName = "TestProduct",
+            ProductNaam = "TestProduct",
             Amount = 5,
             Paid = 25m
         };
@@ -281,7 +281,7 @@ public class OrderRepositoryTests : RepositoryTest
             CreatedOn = DateTime.Now, 
             User = TestUser, 
             Product = TestProduct,
-            ProductName = TestProduct.Name,
+            ProductNaam = TestProduct.Name,
             Amount = 5,
             Paid = 25m
         };
@@ -348,7 +348,7 @@ public class OrderRepositoryTests : RepositoryTest
         await UpdateProductDirectly(TestProduct);
 
         var order = CreateTestOrder(DateTime.Now, TestUser, paid: 25m, 5);
-        order.ProductName = TestProduct.Name; // Ensure product name matches
+        order.ProductNaam = TestProduct.Name; // Ensure product name matches
         await SaveOrdersDirectly(order);
 
         // Act
@@ -376,7 +376,7 @@ public class OrderRepositoryTests : RepositoryTest
         await UpdateProductDirectly(TestProduct);
 
         var order = CreateTestOrder(DateTime.Now, TestUser, paid: 25m);
-        order.ProductName = "DifferentProduct"; // Different from TestProduct.Name
+        order.ProductNaam = "DifferentProduct"; // Different from TestProduct.Name
         await SaveOrdersDirectly(order);
 
         // Act
@@ -414,7 +414,7 @@ public class OrderRepositoryTests : RepositoryTest
             Product = TestProduct,
             Amount = amount,
             Paid = paid,
-            ProductName = "Test"
+            ProductNaam = "Test"
         };
     }
     
@@ -472,5 +472,47 @@ public class OrderRepositoryTests : RepositoryTest
         await context.SaveChangesAsync();
     }
     
+    #endregion
+
+    #region GetOrdersFromPastTwoYearsAsync Tests
+
+    [TestMethod]
+    public async Task GetOrdersFromPastTwoYearsAsync_WithNoOrders_ReturnsEmptyList()
+    {
+        var result = await _sut.GetOrdersFromPastTwoYearsAsync();
+        Assert.AreEqual(0, result.Count);
+    }
+
+    [TestMethod]
+    public async Task GetOrdersFromPastTwoYearsAsync_WithAllOrdersOlderThanTwoYears_ReturnsEmptyList()
+    {
+        var order1 = CreateTestOrder(DateTime.Now.AddYears(-3));
+        var order2 = CreateTestOrder(DateTime.Now.AddYears(-5));
+        await SaveOrdersDirectly(order1, order2);
+        var result = await _sut.GetOrdersFromPastTwoYearsAsync();
+        Assert.AreEqual(0, result.Count);
+    }
+
+    [TestMethod]
+    public async Task GetOrdersFromPastTwoYearsAsync_WithAllOrdersWithinTwoYears_ReturnsAll()
+    {
+        var order1 = CreateTestOrder(DateTime.Now.AddMonths(-6));
+        var order2 = CreateTestOrder(DateTime.Now.AddMonths(-18));
+        await SaveOrdersDirectly(order1, order2);
+        var result = await _sut.GetOrdersFromPastTwoYearsAsync();
+        Assert.AreEqual(2, result.Count);
+        Assert.IsTrue(result.All(o => o.CreatedOn >= DateTime.Now.AddYears(-2)));
+    }
+
+    [TestMethod]
+    public async Task GetOrdersFromPastTwoYearsAsync_WithMixedOrders_ReturnsOnlyRecent()
+    {
+        var oldOrder = CreateTestOrder(DateTime.Now.AddYears(-3));
+        var recentOrder = CreateTestOrder(DateTime.Now.AddMonths(-3));
+        await SaveOrdersDirectly(oldOrder, recentOrder);
+        var result = await _sut.GetOrdersFromPastTwoYearsAsync();
+        Assert.AreEqual(1, result.Count);
+        Assert.AreEqual(recentOrder.Id, result[0].Id);
+    }
     #endregion
 }

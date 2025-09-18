@@ -8,6 +8,10 @@
 
 @inject IOrderService OrderService
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject IJSRuntime JS
+@inject ILogger<Admin.OrderPages.Index> Logger
+
+@using System.Text
 @using SSSKLv2.Data
 @using SSSKLv2.Services.Interfaces
 @using Microsoft.AspNetCore.Authorization
@@ -17,7 +21,14 @@
 
 <PageTitle>SSSKLv2 | Orderbeheer</PageTitle>
 
-<h1>Orderbeheer</h1>
+<div class="row crud-form-header">
+    <div class="col-10 title-container">
+        <h1>Orderbeheer</h1>
+    </div>
+    <div class="col-2 text-end back-container">
+        <a class="btn btn-success bg-lg" href="/admin/orders/export">Exporteren als CSV</a>
+    </div>
+</div>
 
 <div class="table-responsive">
     <QuickGrid Items="@Orders" Pagination="@Pagination">
@@ -25,7 +36,7 @@
         <TemplateColumn Title="Gebruiker" Context="order">
             @order.User.Name @order.User.Surname
         </TemplateColumn>        
-        <PropertyColumn Title="Product" Property="@(o => o.ProductName)" Sortable="true" Align="Align.Left" />
+        <PropertyColumn Title="Product" Property="@(o => o.ProductNaam)" Sortable="true" Align="Align.Left" />
         <PropertyColumn Title="Hoeveel" Property="@(o => o.Amount)" Sortable="true" Align="Align.Right" />
         <PropertyColumn Title="Betaald" Property="@(o => o.Paid)" Format="C" Sortable="true" Align="Align.Right" />
         <TemplateColumn Context="order">
@@ -55,6 +66,17 @@
     {
         if (_dbContext != null) 
             Orders = OrderService.GetAllQueryable(_dbContext);
+    }
+    
+    private async Task ExportAllOrdersAsCsv()
+    {
+        var csv = OrderService.ExportOrdersFromPastTwoYearsToCsvAsync();
+        var filename = $"orders-{DateTime.Now:yyyyMMddHHmmss}.csv";
+
+        using var streamRef = new DotNetStreamReference(stream: new MemoryStream(Encoding.UTF8.GetBytes(csv.Result)));
+        Logger.LogInformation("Exporting orders to CSV: {Filename}, done by {Username}", filename, HttpContext.User.Identity?.Name);
+
+        await JS.InvokeVoidAsync("downloadFileFromStream", filename, streamRef);
     }
 
     public void Dispose()

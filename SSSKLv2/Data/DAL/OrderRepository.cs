@@ -23,6 +23,18 @@ public class OrderRepository(IDbContextFactory<ApplicationDbContext> dbContextFa
             .OrderByDescending(x => x.CreatedOn);
     }
     
+    public async Task<IList<Order>> GetOrdersFromPastTwoYearsAsync()
+    {
+        var cutoff = DateTime.Now.AddYears(-2);
+        await using var context = await dbContextFactory.CreateDbContextAsync();
+        return await context.Order
+            .Where(x => x.CreatedOn >= cutoff)
+            .Include(x => x.User)
+            .Include(x => x.Product)
+            .OrderByDescending(x => x.CreatedOn)
+            .ToListAsync();
+    }
+    
     public IQueryable<Order> GetPersonalQueryable(string username, ApplicationDbContext context)
     {
         return context.Order
@@ -82,7 +94,7 @@ public class OrderRepository(IDbContextFactory<ApplicationDbContext> dbContextFa
         {
             UpdateUserSaldo(entry, context, false);
             var product = await context.Product
-                .SingleOrDefaultAsync(x => x.Name == entry.ProductName);
+                .SingleOrDefaultAsync(x => x.Name == entry.ProductNaam);
             if (product != null) UpdateProductInventory(entry, product, context, false);
             context.Order.Remove(entry);
             await context.SaveChangesAsync();
@@ -90,7 +102,7 @@ public class OrderRepository(IDbContextFactory<ApplicationDbContext> dbContextFa
         else throw new NotFoundException("Order Not Found");
     }
 
-    private void UpdateUserSaldo(
+    private static void UpdateUserSaldo(
         Order order, 
         ApplicationDbContext context, 
         bool isNegative = true)
@@ -102,7 +114,7 @@ public class OrderRepository(IDbContextFactory<ApplicationDbContext> dbContextFa
         context.Users.Update(order.User);
     }
     
-    private void UpdateProductInventory(
+    private static void UpdateProductInventory(
         Order order, 
         Product product, 
         ApplicationDbContext context, 
@@ -113,4 +125,6 @@ public class OrderRepository(IDbContextFactory<ApplicationDbContext> dbContextFa
         product.Stock += inventory;
         context.Product.Update(product);
     }
+
+
 }

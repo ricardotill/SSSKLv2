@@ -1,0 +1,73 @@
+@page "/admin/orders/export"
+@rendermode InteractiveServer
+
+@attribute [Authorize(Policy = Policies.Admin)]
+
+@inject IOrderService OrderService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JS
+@inject ILogger<Export> Logger
+
+@using System.Text
+@using SSSKLv2.Services.Interfaces
+@using Microsoft.AspNetCore.Authorization
+@using SSSKLv2.Components.Account
+
+<PageTitle>SSSKLv2 | Order export</PageTitle>
+
+<div class="row crud-form-header">
+    <div class="col-10 title-container">
+        <h1>Export</h1>
+    </div>
+    <div class="col-2 text-end back-container">
+        <a class="btn btn-secondary" href="/admin/orders"><i class="bi bi-arrow-left"></i></a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <h4 class="card-title">Order exporteren?</h4>
+        <hr/>
+        <dl class="row">
+            <dt class="col">Wil je alle bestaande orders van afgelopen 2 jaar exporteren?</dt>
+        </dl>
+        <button class="btn btn-success ml-4" @onclick="ExportAllOrdersAsCsv">Exporteren als CSV</button>
+    </div>
+</div>
+
+<script>
+    window.downloadFileFromStream = async (fileName, contentStreamReference) => {
+        console.log("Downloading file");
+        const arrayBuffer = await contentStreamReference.arrayBuffer();
+        const blob = new Blob([arrayBuffer]);
+        const url = URL.createObjectURL(blob);
+        const anchorElement = document.createElement('a');
+        anchorElement.href = url;
+        anchorElement.download = fileName ?? '';
+        anchorElement.click();
+        anchorElement.remove();
+        URL.revokeObjectURL(url);
+        console.log('Downloaded file');
+    }
+</script>
+
+@code {
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+    
+    private async Task ExportAllOrdersAsCsv()
+    {
+        var csv = await OrderService.ExportOrdersFromPastTwoYearsToCsvAsync();
+        var filename = $"orders-{DateTime.Now:yyyyMMddHHmmss}.csv";
+        
+        var user = (await AuthenticationStateProvider.GetAuthenticationStateAsync()).User;
+        var username = user.Identity?.Name ?? "Unknown user";
+
+        using var streamRef = new DotNetStreamReference(stream: new MemoryStream(Encoding.UTF8.GetBytes(csv)));
+        Logger.LogInformation("Exporting orders to CSV: {Filename}, done by {Username}", filename, username);
+
+        await JS.InvokeVoidAsync("downloadFileFromStream", filename, streamRef);
+        NavigationManager.NavigateTo("/admin/orders");
+    }
+}

@@ -278,8 +278,8 @@ public class OrderServiceTests
         // 2 selected products * 2 selected users = 4 orders
         await _mockOrderRepository.Received(1).CreateRange(Arg.Is<List<Order>>(
             orders => orders.Count == 4 && 
-                     orders.Count(o => o.ProductName == "Product 1") == 2 &&
-                     orders.Count(o => o.ProductName == "Product 2") == 2 &&
+                     orders.Count(o => o.ProductNaam == "Product 1") == 2 &&
+                     orders.Count(o => o.ProductNaam == "Product 2") == 2 &&
                      orders.All(o => o.Amount == 2) && // Each order has full amount
                      orders.Count(o => o.Paid == 20.00m) == 2 && // Product 1: 10.00 * 2
                      orders.Count(o => o.Paid == 30.00m) == 2)); // Product 2: 15.00 * 2
@@ -310,7 +310,7 @@ public class OrderServiceTests
         // Assert
         await _mockOrderRepository.Received(1).CreateRange(Arg.Is<List<Order>>(
             orders => orders.Count == 2 &&
-                     orders.All(o => o.ProductName == "Product 1") &&
+                     orders.All(o => o.ProductNaam == "Product 1") &&
                      orders.All(o => o.Amount == 1) && // 3 items split between 2 users = 1 per user (with rounding down)
                      orders.All(o => o.Paid == 15.00m))); // 10.00 per item * 3 items / 2 users = 15.00 per user
     }
@@ -436,10 +436,10 @@ public class OrderServiceTests
             CreateOrder(Guid.NewGuid(), "user2", "Product 2", 3, 15.00m, new DateTime(2025, 9, 2, 0, 0, 0, DateTimeKind.Utc))
         };
 
-        _mockOrderRepository.GetAllAsync().Returns(orders);
+        _mockOrderRepository.GetOrdersFromPastTwoYearsAsync().Returns(orders);
 
         // Act
-        var result = await _sut.ExportOrdersToCsvAsync();
+        var result = await _sut.ExportOrdersFromPastTwoYearsToCsvAsync();
 
         // Assert
         result.Should().NotBeNullOrWhiteSpace();
@@ -448,40 +448,40 @@ public class OrderServiceTests
         // Check that each order is in the CSV
         foreach (var order in orders)
         {
-            result.Should().Contain($"{order.Id},{order.User.UserName},{order.CreatedOn:yyyy-MM-dd},{order.ProductName},{order.Amount},{order.Paid}");
+            result.Should().Contain($"{order.Id},{order.User.UserName},{order.CreatedOn:yyyy-MM-dd},{order.ProductNaam},{order.Amount},{order.Paid}");
         }
 
-        await _mockOrderRepository.Received(1).GetAllAsync();
+        await _mockOrderRepository.Received(1).GetOrdersFromPastTwoYearsAsync();
     }
 
     [TestMethod]
     public async Task ExportOrdersToCsvAsync_WithNoOrders_ShouldReturnHeaderOnly()
     {
         // Arrange
-        _mockOrderRepository.GetAllAsync().Returns(new List<Order>());
+        _mockOrderRepository.GetOrdersFromPastTwoYearsAsync().Returns(new List<Order>());
 
         // Act
-        var result = await _sut.ExportOrdersToCsvAsync();
+        var result = await _sut.ExportOrdersFromPastTwoYearsToCsvAsync();
 
         // Assert
         result.Should().Be("OrderId,CustomerUsername,OrderDate,ProductName,ProductAmount,TotalPaid" + Environment.NewLine);
-        await _mockOrderRepository.Received(1).GetAllAsync();
+        await _mockOrderRepository.Received(1).GetOrdersFromPastTwoYearsAsync();
     }
 
     [TestMethod]
     public async Task ExportOrdersToCsvAsync_WhenRepositoryThrowsException_ShouldPropagateException()
     {
         // Arrange
-        _mockOrderRepository.GetAllAsync().Returns(Task.FromException<IList<Order>>(
+        _mockOrderRepository.GetOrdersFromPastTwoYearsAsync().Returns(Task.FromException<IList<Order>>(
             new InvalidOperationException("Database error")));
 
         // Act
-        Func<Task> act = async () => await _sut.ExportOrdersToCsvAsync();
+        Func<Task> act = async () => await _sut.ExportOrdersFromPastTwoYearsToCsvAsync();
 
         // Assert
         await act.Should().ThrowAsync<InvalidOperationException>()
             .WithMessage("Database error");
-        await _mockOrderRepository.Received(1).GetAllAsync();
+        await _mockOrderRepository.Received(1).GetOrdersFromPastTwoYearsAsync();
     }
 
     #endregion
@@ -645,7 +645,7 @@ public class OrderServiceTests
         {
             Id = id,
             User = new ApplicationUser { UserName = username },
-            ProductName = productName,
+            ProductNaam = productName,
             Amount = amount,
             Paid = paid,
             CreatedOn = createdOn ?? DateTime.UtcNow

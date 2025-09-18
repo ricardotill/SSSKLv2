@@ -628,7 +628,7 @@ public class ApplicationUserRepositoryTests : RepositoryTest
             Product = trackedProduct,
             Amount = 1,
             Paid = trackedProduct.Price,
-            ProductName = trackedProduct.Name,
+            ProductNaam = trackedProduct.Name,
             CreatedOn = DateTime.Now
         };
         

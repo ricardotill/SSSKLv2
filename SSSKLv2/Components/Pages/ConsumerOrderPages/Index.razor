@@ -21,7 +21,7 @@
 <div class="table-responsive">
     <QuickGrid Items="@Orders" Pagination="@Pagination">
         <PropertyColumn Title="Datum" Property="@(o => o.CreatedOn)" Format="dd/MM/yyyy HH:mm" Sortable="true" Align="Align.Left" />
-        <PropertyColumn Title="Product" Property="@(o => o.ProductName)" Sortable="true" Align="Align.Left" />
+        <PropertyColumn Title="Product" Property="@(o => o.ProductNaam)" Sortable="true" Align="Align.Left" />
         <PropertyColumn Title="Hoeveel" Property="@(o => o.Amount)" Sortable="true" Align="Align.Right" />
         <PropertyColumn Title="Betaald" Property="@(o => o.Paid)" Format="C" Sortable="true" Align="Align.Right" />
         <TemplateColumn Context="order">

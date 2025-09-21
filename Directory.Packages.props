@@ -5,6 +5,7 @@
     <NoWarn>$(NoWarn);NU1507</NoWarn>
   </PropertyGroup>
   <ItemGroup>
+    <PackageVersion Include="Azure.Storage.Blobs" Version="12.25.0" />
     <PackageVersion Include="BlazorComponentUtilities" Version="1.8.0" />
     <PackageVersion Include="Blazored.Toast" Version="4.2.1" />
     <PackageVersion Include="Bogus" Version="35.6.3" />

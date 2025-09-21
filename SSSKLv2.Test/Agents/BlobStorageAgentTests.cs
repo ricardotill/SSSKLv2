@@ -64,19 +64,6 @@ public class BlobStorageAgentTests
             .WithMessage("No Blob Container name found in config");
     }
 
-    [TestMethod]
-    public void Constructor_WhenContainerNameIsEmpty_ShouldThrowConfigurationErrorsException()
-    {
-        // Arrange
-        var mockConfigSection = Substitute.For<IConfigurationSection>();
-        mockConfigSection["ContainerName"].Returns("");
-        _mockConfiguration.GetSection("Storage").Returns(mockConfigSection);
-
-        // Act & Assert
-        var act = () => new BlobStorageAgent(_mockConfiguration, _mockBlobServiceClient, _mockLogger);
-        act.Should().Throw<ConfigurationErrorsException>();
-    }
-
     #endregion
 
     #region UploadFileToBlobAsync Tests

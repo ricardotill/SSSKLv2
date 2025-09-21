@@ -9,6 +9,8 @@ public class AchievementService(
     IOrderRepository orderRepository,
     ITopUpRepository topUpRepository) : IAchievementService
 {
+    // TODO: Add function to award achievement for a single user
+    // TODO: Add function to award achievement to all users
     public async Task CheckOrderForAchievements(Order order)
     {
         // Get all achievements the user hasn't completed yet

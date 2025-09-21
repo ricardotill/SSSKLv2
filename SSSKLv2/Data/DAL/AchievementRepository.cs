@@ -66,4 +66,20 @@ public class AchievementRepository(IDbContextFactory<ApplicationDbContext> _dbCo
         }
         else throw new NotFoundException("Achievement not found");
     }
+
+    public async Task<IEnumerable<Achievement>> GetUncompletedAchievementsForUser(string userId)
+    {
+        await using var context = await _dbContextFactory.CreateDbContextAsync();
+        
+        // Get all achievement IDs that the user has completed
+        var completedAchievementIds = context.AchievementEntry
+            .Where(entry => entry.User.Id == userId)
+            .Select(entry => entry.Achievement.Id);
+        
+        // Get all achievements that are NOT in the completed list
+        return await context.Achievement
+            .Where(achievement => !completedAchievementIds.Contains(achievement.Id))
+            .OrderBy(achievement => achievement.CreatedOn)
+            .ToListAsync();
+    }
 }

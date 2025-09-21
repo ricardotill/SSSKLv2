@@ -5,16 +5,16 @@ using SSSKLv2.Data;
 
 namespace SSSKLv2.Agents;
 
-public class BlobStorageService : IBlobStorageService
+public class BlobStorageAgent : IBlobStorageAgent
 {
     private readonly string _blobContainerName;
     private readonly BlobServiceClient _storage;
-    private readonly ILogger<BlobStorageService> _logger;
+    private readonly ILogger<BlobStorageAgent> _logger;
 
-    public BlobStorageService(
+    public BlobStorageAgent(
         IConfiguration configuration, 
         BlobServiceClient storage,
-        ILogger<BlobStorageService> logger)
+        ILogger<BlobStorageAgent> logger)
     {
         _blobContainerName = configuration.GetSection("Storage")["ContainerName"] 
                              ?? throw new ConfigurationErrorsException("No Blob Container name found in config");
@@ -32,6 +32,7 @@ public class BlobStorageService : IBlobStorageService
         await blob.DeleteIfExistsAsync(DeleteSnapshotsOption.IncludeSnapshots);
         await blob.UploadAsync(fileStream, new BlobHttpHeaders { ContentType = contentType });
         var urlString = blob.Uri.ToString();
+        _logger.LogInformation("File uploaded to Blob Storage: {FileName} ({ContentType})", strFileName, contentType);
         return new BlobStorageItem() { FileName = strFileName, Uri = urlString, ContentType = contentType };
     }
 
@@ -43,6 +44,7 @@ public class BlobStorageService : IBlobStorageService
             await container.SetAccessPolicyAsync(PublicAccessType.Blob);
         var blob = container.GetBlobClient(strFileName);
         await blob.DeleteIfExistsAsync(DeleteSnapshotsOption.IncludeSnapshots);
+        _logger.LogInformation("File deleted from Blob Storage: {FileName}", strFileName);
         return true;
     }
 }

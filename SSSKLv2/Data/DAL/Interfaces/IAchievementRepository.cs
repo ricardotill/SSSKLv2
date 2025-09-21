@@ -9,4 +9,5 @@ public interface IAchievementRepository
     Task Create(Achievement achievement);
     Task Update(Achievement achievement);
     Task Delete(Guid id);
+    Task<IEnumerable<Achievement>> GetUncompletedAchievementsForUser(string userId);
 }

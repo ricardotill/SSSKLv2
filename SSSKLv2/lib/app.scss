@@ -76,6 +76,19 @@ h1, h2, h3, h4, h5, h6, .navbar-brand {
     color: $danger;
 }
 
+//#components-reconnect-modal.components-reconnect-show,
+//#components-reconnect-modal.components-reconnect-failed,
+//#components-reconnect-modal.components-reconnect-rejected {
+//    color: $gray-400;
+//    .components-rejoining-animation div {
+//        border: 3px solid #c10d32!important;
+//    }
+//}
+
+.quickgrid > tbody > tr:not([aria-rowindex]), a[aria-rowindex=""]{
+    display: none;
+}
+
 @media (max-width: 640.98px) {
     .mobile-hidden {
         display: none;

@@ -34,7 +34,7 @@
 
 @code {
     public IQueryable<Order> Orders = default!;
-    public PaginationState Pagination = new PaginationState() { ItemsPerPage = 12 };
+    public PaginationState Pagination = new PaginationState();
     
     [CascadingParameter]
     private HttpContext HttpContext { get; set; } = default!;

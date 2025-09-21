@@ -12,94 +12,128 @@
 
 <h4 class="mb-1">Changenotes</h4>
 <div class="mb-1">
+    <h5>2.4.2 : 18-01-2025</h5>
+    <h6>Bugfixes</h6>
+    <ul>
+        <li>
+            Disabled WASM SIMD, because it causes crashes on some devices/browsers.
+        </li>
+    </ul>
+</div>
+<div class="mb-1">
+    <h5>2.4.1 : 17-01-2025</h5>
+    <h6>Fixes</h6>
+    <ul>
+        <li>
+            Authentication cookie has longer lifetime.
+        </li>
+        <li>
+            Increase reliability
+        </li>
+    </ul>
+    <h6>Known issues</h6>
+    <ul>
+        <li>
+            Bug: If after the order divide has residual value, this value is not taken off the stock.
+        </li>
+    </ul>
+</div>
+<div class="mb-1">
+    <h5>2.4.0 : 18-11-2024</h5>
+    <h6>New features</h6>
+    <ul>
+        <li>
+            Upgrade to .NET 9
+        </li>
+    </ul>
+    <h6>Bugfixes</h6>
+    <ul>
+        <li>
+            Bug: Orderamount is not divided when going dutch.
+        </li>
+    </ul>
+    <h6>Known issues</h6>
+    <ul>
+        <li>
+            Bug: If after the order divide has residual value, this value is not taken off the stock.
+        </li>
+    </ul>
+</div>
+<div class="mb-1">
     <h5>2.3.1 : 06-09-2024</h5>
-    <p>
     <ul>
         <li>
             Removed vulnerabilities by updating its packages.
         </li>
     </ul>
-    </p>
 </div>
 <div class="mb-1">
     <h5>2.3.0 : 08-04-2024</h5>
-    <p>
-        <ul>
-            <li>
-                Sub-menu items are no longer red, but grey.
-            </li>
-            <li>
-                When saldo is negative, the saldo is now red.
-            </li>
-        </ul>
-    </p>
+    <ul>
+        <li>
+            Sub-menu items are no longer red, but grey.
+        </li>
+        <li>
+            When saldo is negative, the saldo is now red.
+        </li>
+    </ul>
 </div>
 <div class="mb-1">
     <h5>2.2.0 : 27-03-2024</h5>
-    <p>
-        <ul>
-            <li>
-                Added support azure sql sleeping databases, by introducing sql server resiliency.
-            </li>
-        </ul>
-    </p>
+    <ul>
+        <li>
+            Added support azure sql sleeping databases, by introducing sql server resiliency.
+        </li>
+    </ul>
 </div>
 <div class="mb-1">
     <h5>2.1.2 : 21-02-2024</h5>
-    <p>
-        <ul>
-            <li>
-                Added menu-option for usersettings
-            </li>
-        </ul>
-    </p>
+    <ul>
+        <li>
+            Added menu-option for usersettings
+        </li>
+    </ul>
 </div>
 <div class="mb-1">
     <h5>2.1.1 : 20-02-2024</h5>
-    <p>
-        <ul>
-            <li>
-                Added 'Login' Call to Action button to Homescreen.
-            </li>
-            <li>
-                Update Packages
-            </li>
-            <li>
-                Bugfixes
-            </li>
-        </ul>
-    </p>
+    <ul>
+        <li>
+            Added 'Login' Call to Action button to Homescreen.
+        </li>
+        <li>
+            Update Packages
+        </li>
+        <li>
+            Bugfixes
+        </li>
+    </ul>
 </div>
 <div class="mb-1">
     <h5>2.1.0 : 14-02-2024</h5>
-    <p>
-        <b>Added "Guest" role</b>
-        <ul>
-            <li>
-                When registering as a new user, the default role is now "Guest".
-            </li>
-            <li>
-                Guests can't order, this privilege is reserved for User and above.
-            </li>
-            <li>
-                Guests don't appear in the orderingscreen and all leaderboards.
-            </li>
-            <li>
-                At most, a Guest can remove their own orders, just like a User can.
-            </li>
-        </ul>
-        <b>Added initial support for mobile apps and notifications.</b>
-    </p>
+    <b>Added "Guest" role</b>
+    <ul>
+        <li>
+            When registering as a new user, the default role is now "Guest".
+        </li>
+        <li>
+            Guests can't order, this privilege is reserved for User and above.
+        </li>
+        <li>
+            Guests don't appear in the orderingscreen and all leaderboards.
+        </li>
+        <li>
+            At most, a Guest can remove their own orders, just like a User can.
+        </li>
+    </ul>
+    <b>Added initial support for mobile apps and notifications.</b>
 </div>
 <div class="mb-1">
     <h5>2.0.0 : 15-12-2023</h5>
-    <p>
-        <ul>
-            <li>
-                Initial release!
-            </li>
-        </ul>
-    </p>
+    <ul>
+        <li>
+            Initial release!
+        </li>
+    </ul>
 </div>
 
 @code {

@@ -20,9 +20,30 @@ public abstract class RepositoryTest
         
         using var context = new ApplicationDbContext(_options);
         context.Database.EnsureCreated();
+        
+        context.Users.Add(TestUser);
+        context.Product.Add(TestProduct);
+        context.SaveChanges();
     }
 
     public DbContextOptions<ApplicationDbContext> GetOptions() => _options;
+    
+    protected ApplicationUser TestUser { get; } = new ApplicationUser() {
+        Id = Guid.NewGuid().ToString(),
+        UserName = "testuser",
+        Name = "Test",
+        Surname = "User",
+        Email = ""
+    };
+    
+    protected Product TestProduct { get; } = new Product() {
+        Id = Guid.NewGuid(),
+        Name = "Test",
+        Description = "Test Product",
+        Price = 10.00m,
+    };
+    
+    
 
     protected void CleanupDatabase()
     {

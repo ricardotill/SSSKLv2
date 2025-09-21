@@ -6,6 +6,7 @@ public interface IOrderRepository
     public IQueryable<Order> GetAllQueryable(ApplicationDbContext context);
     public Task<IList<Order>> GetOrdersFromPastTwoYearsAsync();
     public IQueryable<Order> GetPersonalQueryable(string username, ApplicationDbContext context);
+    public Task<IList<Order>> GetPersonal(string username);
     public Task<IEnumerable<Order>> GetLatest();
     public Task CreateRange(IEnumerable<Order> orders);
     public Task<Order> GetById(Guid id);

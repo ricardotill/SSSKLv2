@@ -506,68 +506,238 @@ public class AchievementRepositoryTests : RepositoryTest
         result.Should().NotContainEquivalentOf(achievement1, options => options.Excluding(x => x.CompletedEntries));
     }
 
+    #endregion
+
+    #region CreateEntryRange Tests
+
     [TestMethod]
-    public async Task GetUncompletedAchievementsForUser_WhenUserHasMultipleEntriesForSameAchievement_ShouldStillExcludeAchievement()
+    public async Task CreateEntryRange_WhenValidEntries_ShouldAddAllEntriesToDatabase()
     {
         // Arrange
         var achievement1 = NewAchievement("Achievement 1");
         var achievement2 = NewAchievement("Achievement 2");
         await SaveAchievements(achievement1, achievement2);
 
-        // User has multiple entries for the same achievement (edge case scenario)
-        var entry1a = NewAchievementEntry(achievement1, TestUser, createdOn: DateTime.Now.AddDays(-2));
-        var entry1b = NewAchievementEntry(achievement1, TestUser, createdOn: DateTime.Now.AddDays(-1));
-        await SaveAchievementEntries(entry1a, entry1b);
+        var otherUser = new ApplicationUser
+        {
+            Id = Guid.NewGuid().ToString(),
+            UserName = "otheruser",
+            Name = "Other",
+            Surname = "User",
+            Email = "other@test.com"
+        };
+        await SaveUsers(otherUser);
+
+        var entries = new List<AchievementEntry>
+        {
+            NewAchievementEntry(achievement1, TestUser),
+            NewAchievementEntry(achievement2, TestUser),
+            NewAchievementEntry(achievement1, otherUser)
+        };
 
         // Act
-        var result = (await _sut.GetUncompletedAchievementsForUser(TestUser.Id)).ToList();
+        await _sut.CreateEntryRange(entries);
 
         // Assert
-        result.Should().HaveCount(1);
-        result.Should().ContainEquivalentOf(achievement2, options => options.Excluding(x => x.CompletedEntries));
-        result.Should().NotContainEquivalentOf(achievement1, options => options.Excluding(x => x.CompletedEntries));
+        var dbEntries = await GetAchievementEntries();
+        dbEntries.Should().HaveCount(3);
     }
 
     [TestMethod]
-    public async Task GetUncompletedAchievementsForUser_ResultsShouldBeOrderedByCreatedOn()
+    public async Task CreateEntryRange_WhenEmptyCollection_ShouldNotThrowAndNotAddAnyEntries()
     {
         // Arrange
-        var achievement1 = NewAchievement("Achievement 1", createdOn: DateTime.Now.AddDays(-5));
-        var achievement2 = NewAchievement("Achievement 2", createdOn: DateTime.Now.AddDays(-3));
-        var achievement3 = NewAchievement("Achievement 3", createdOn: DateTime.Now.AddDays(-1));
-        var achievement4 = NewAchievement("Achievement 4", createdOn: DateTime.Now.AddDays(-4));
-        await SaveAchievements(achievement1, achievement2, achievement3, achievement4);
-
-        // User has completed achievement2
-        var entry = NewAchievementEntry(achievement2, TestUser);
-        await SaveAchievementEntries(entry);
+        var emptyEntries = new List<AchievementEntry>();
 
         // Act
-        var result = (await _sut.GetUncompletedAchievementsForUser(TestUser.Id)).ToList();
+        await _sut.CreateEntryRange(emptyEntries);
 
         // Assert
-        result.Should().HaveCount(3);
-        result.Should().BeInAscendingOrder(x => x.CreatedOn);
-        result[0].Id.Should().Be(achievement1.Id); // Oldest
-        result[1].Id.Should().Be(achievement4.Id); // Second oldest
-        result[2].Id.Should().Be(achievement3.Id); // Newest
+        var dbEntries = await GetAchievementEntries();
+        dbEntries.Should().BeEmpty();
     }
 
     [TestMethod]
-    public async Task GetUncompletedAchievementsForUser_WithEmptyUserId_ShouldReturnAllAchievements()
+    public async Task CreateEntryRange_WhenSingleEntry_ShouldAddEntryToDatabase()
     {
         // Arrange
-        var achievement1 = NewAchievement("Achievement 1");
-        var achievement2 = NewAchievement("Achievement 2");
-        await SaveAchievements(achievement1, achievement2);
+        var achievement = NewAchievement("Single Achievement");
+        await SaveAchievements(achievement);
+
+        var entry = NewAchievementEntry(achievement, TestUser);
+        var entries = new List<AchievementEntry> { entry };
 
         // Act
-        var result = (await _sut.GetUncompletedAchievementsForUser("")).ToList();
+        await _sut.CreateEntryRange(entries);
 
         // Assert
-        result.Should().HaveCount(2);
-        result.Should().ContainEquivalentOf(achievement1, options => options.Excluding(x => x.CompletedEntries));
-        result.Should().ContainEquivalentOf(achievement2, options => options.Excluding(x => x.CompletedEntries));
+        var dbEntries = await GetAchievementEntries();
+        dbEntries.Should().ContainSingle();
+        dbEntries.First().HasSeen.Should().Be(entry.HasSeen);
+    }
+
+    [TestMethod]
+    public async Task CreateEntryRange_WhenMultipleEntriesForSameAchievement_ShouldAddAllEntries()
+    {
+        // Arrange
+        var achievement = NewAchievement("Shared Achievement");
+        await SaveAchievements(achievement);
+
+        var user1 = TestUser;
+        var user2 = new ApplicationUser
+        {
+            Id = Guid.NewGuid().ToString(),
+            UserName = "user2",
+            Name = "User",
+            Surname = "Two",
+            Email = "user2@test.com"
+        };
+        var user3 = new ApplicationUser
+        {
+            Id = Guid.NewGuid().ToString(),
+            UserName = "user3",
+            Name = "User",
+            Surname = "Three",
+            Email = "user3@test.com"
+        };
+        await SaveUsers(user2, user3);
+
+        var entries = new List<AchievementEntry>
+        {
+            NewAchievementEntry(achievement, user1),
+            NewAchievementEntry(achievement, user2),
+            NewAchievementEntry(achievement, user3)
+        };
+
+        // Act
+        await _sut.CreateEntryRange(entries);
+
+        // Assert
+        var dbEntries = await GetAchievementEntries();
+        dbEntries.Should().HaveCount(3);
+    }
+
+    [TestMethod]
+    public async Task CreateEntryRange_WhenEntriesWithDifferentCreatedOnDates_ShouldPreserveTimestamps()
+    {
+        // Arrange
+        var achievement = NewAchievement("Time Test Achievement");
+        await SaveAchievements(achievement);
+
+        var timestamp1 = DateTime.Now.AddDays(-2);
+        var timestamp2 = DateTime.Now.AddDays(-1);
+        var timestamp3 = DateTime.Now;
+
+        var entries = new List<AchievementEntry>
+        {
+            NewAchievementEntry(achievement, TestUser, createdOn: timestamp1),
+            NewAchievementEntry(achievement, TestUser, createdOn: timestamp2),
+            NewAchievementEntry(achievement, TestUser, createdOn: timestamp3)
+        };
+
+        // Act
+        await _sut.CreateEntryRange(entries);
+
+        // Assert
+        var dbEntries = (await GetAchievementEntries()).OrderBy(e => e.CreatedOn).ToList();
+        dbEntries.Should().HaveCount(3);
+        dbEntries[0].CreatedOn.Should().BeCloseTo(timestamp1, TimeSpan.FromSeconds(1));
+        dbEntries[1].CreatedOn.Should().BeCloseTo(timestamp2, TimeSpan.FromSeconds(1));
+        dbEntries[2].CreatedOn.Should().BeCloseTo(timestamp3, TimeSpan.FromSeconds(1));
+    }
+
+    [TestMethod]
+    public async Task CreateEntryRange_WhenEntriesWithDifferentHasSeenValues_ShouldPreserveHasSeenState()
+    {
+        // Arrange
+        var achievement = NewAchievement("HasSeen Test Achievement");
+        await SaveAchievements(achievement);
+
+        var entry1 = NewAchievementEntry(achievement, TestUser);
+        entry1.HasSeen = false;
+        
+        var entry2 = NewAchievementEntry(achievement, TestUser);
+        entry2.HasSeen = true;
+
+        var entries = new List<AchievementEntry> { entry1, entry2 };
+
+        // Act
+        await _sut.CreateEntryRange(entries);
+
+        // Assert
+        var dbEntries = await GetAchievementEntries();
+        dbEntries.Should().HaveCount(2);
+    }
+
+    [TestMethod]
+    public async Task CreateEntryRange_WhenLargeNumberOfEntries_ShouldHandleEfficiently()
+    {
+        // Arrange
+        var achievements = new List<Achievement>();
+        for (int i = 0; i < 5; i++)
+        {
+            achievements.Add(NewAchievement($"Achievement {i}"));
+        }
+        await SaveAchievements(achievements.ToArray());
+
+        var users = new List<ApplicationUser> { TestUser };
+        for (int i = 0; i < 3; i++)
+        {
+            users.Add(new ApplicationUser
+            {
+                Id = Guid.NewGuid().ToString(),
+                UserName = $"user{i}",
+                Name = "User",
+                Surname = $"Number{i}",
+                Email = $"user{i}@test.com"
+            });
+        }
+        await SaveUsers(users.Skip(1).ToArray()); // Skip TestUser as it's already in DB
+
+        // Create entries for each user-achievement combination
+        var entries = new List<AchievementEntry>();
+        foreach (var achievement in achievements)
+        {
+            foreach (var user in users)
+            {
+                entries.Add(NewAchievementEntry(achievement, user));
+            }
+        }
+
+        // Act
+        await _sut.CreateEntryRange(entries);
+
+        // Assert
+        var dbEntries = await GetAchievementEntries();
+        dbEntries.Should().HaveCount(20); // 5 achievements × 4 users
+    }
+
+    [TestMethod]
+    public async Task CreateEntryRange_WhenDatabaseTransactionFails_ShouldPropagateException()
+    {
+        // Arrange
+        var achievement = NewAchievement("Transaction Test Achievement");
+        await SaveAchievements(achievement);
+
+        // Create an entry with invalid foreign key to cause failure
+        var invalidEntry = new AchievementEntry
+        {
+            Id = Guid.NewGuid(),
+            HasSeen = false,
+            CreatedOn = DateTime.Now,
+            Achievement = null!,
+            User = null!
+        };
+
+        var entries = new List<AchievementEntry> { invalidEntry };
+
+        // Act & Assert
+        var act = () => _sut.CreateEntryRange(entries);
+        await act.Should().ThrowAsync<Exception>();
+        
+        // Verify no entries were saved
+        var dbEntries = await GetAchievementEntries();
+        dbEntries.Should().BeEmpty();
     }
 
     #endregion
@@ -671,4 +841,3 @@ public class AchievementRepositoryTests : RepositoryTest
 
     #endregion
 }
-

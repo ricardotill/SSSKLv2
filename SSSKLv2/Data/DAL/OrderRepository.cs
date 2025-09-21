@@ -43,6 +43,12 @@ public class OrderRepository(IDbContextFactory<ApplicationDbContext> dbContextFa
             .OrderByDescending(x => x.CreatedOn);
     }
     
+    public async Task<IList<Order>> GetPersonal(string username)
+    {
+        await using var context = await dbContextFactory.CreateDbContextAsync();
+        return await GetPersonalQueryable(username, context).ToListAsync();
+    }
+    
     public async Task<IEnumerable<Order>> GetLatest()
     {
         var time = DateTime.Now.AddHours(-12);

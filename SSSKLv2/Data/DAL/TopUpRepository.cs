@@ -8,7 +8,7 @@ using SSSKLv2.Data.DAL.Interfaces;
 namespace SSSKLv2.Data.DAL;
 
 public class TopUpRepository(
-    IDbContextFactory<ApplicationDbContext> _dbContextFactory) : ITopUpRepository
+    IDbContextFactory<ApplicationDbContext> dbContextFactory) : ITopUpRepository
 {
     public IQueryable<TopUp> GetAllQueryable(ApplicationDbContext context)
     {
@@ -25,9 +25,15 @@ public class TopUpRepository(
             .OrderByDescending(x => x.CreatedOn);
     }
     
+    public async Task<IList<TopUp>> GetPersonal(string username)
+    {
+        await using var context = await dbContextFactory.CreateDbContextAsync();
+        return await GetPersonalQueryable(username, context).ToListAsync();
+    }
+    
     public async Task<TopUp> GetById(Guid id)
     {
-        await using var context = await _dbContextFactory.CreateDbContextAsync();
+        await using var context = await dbContextFactory.CreateDbContextAsync();
         var topup = await context.TopUp
             .Include(x => x.User)
             .FirstOrDefaultAsync(x => x.Id == id)!;
@@ -41,7 +47,7 @@ public class TopUpRepository(
 
     public async Task Create(TopUp topup)
     {
-        await using var context = await _dbContextFactory.CreateDbContextAsync();
+        await using var context = await dbContextFactory.CreateDbContextAsync();
         topup.User.Saldo += topup.Saldo;
         context.Users.Update(topup.User);
         context.TopUp.Add(topup);
@@ -50,7 +56,7 @@ public class TopUpRepository(
 
     public async Task Delete(Guid id)
     {
-        await using var context = await _dbContextFactory.CreateDbContextAsync();
+        await using var context = await dbContextFactory.CreateDbContextAsync();
         var entry = await context.TopUp
             .Include(x => x.User)
             .FirstOrDefaultAsync(x => x.Id == id)!;

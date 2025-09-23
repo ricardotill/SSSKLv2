@@ -3,6 +3,7 @@ using NSubstitute;
 using SSSKLv2.Data;
 using SSSKLv2.Data.DAL.Interfaces;
 using SSSKLv2.Services;
+using SSSKLv2.Services.Interfaces;
 
 namespace SSSKLv2.Test.Services;
 
@@ -13,6 +14,7 @@ public class AchievementServiceTests
     private IAchievementRepository _achievementRepository = null!;
     private IOrderRepository _orderRepository = null!;
     private ITopUpRepository _topUpRepository = null!;
+    private IApplicationUserRepository _applicationUserRepository = null!;
     
     private ApplicationUser _testUser = null!;
     private Order _testOrder = null!;
@@ -24,9 +26,11 @@ public class AchievementServiceTests
         _achievementRepository = Substitute.For<IAchievementRepository>();
         _orderRepository = Substitute.For<IOrderRepository>();
         _topUpRepository = Substitute.For<ITopUpRepository>();
+        _applicationUserRepository = Substitute.For<IApplicationUserRepository>();
         
         // Create the system under test
-        _sut = new AchievementService(_achievementRepository, _orderRepository, _topUpRepository);
+        _sut = new AchievementService(_achievementRepository, _orderRepository, _topUpRepository,
+            _applicationUserRepository);
         
         // Create test user
         _testUser = new ApplicationUser
@@ -626,5 +630,187 @@ public class AchievementServiceTests
         result.Should().Be(expected);
     }
     
+    #endregion
+
+    #region GetPersonalAchievements Tests
+
+    [TestMethod]
+    public async Task GetPersonalAchievements_NoAchievements_ReturnsEmptyList()
+    {
+        _achievementRepository.GetAll().Returns(new List<Achievement>());
+        _achievementRepository.GetAllEntriesOfUser(_testUser.Id).Returns(new List<AchievementEntry>());
+        var result = await _sut.GetPersonalAchievements(_testUser.Id);
+        result.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public async Task GetPersonalAchievements_UserHasNoAchievements_ReturnsAllWithCompletedFalse()
+    {
+        var achievements = new List<Achievement> {
+            new Achievement { Id = Guid.NewGuid(), Name = "A1" },
+            new Achievement { Id = Guid.NewGuid(), Name = "A2" }
+        };
+        _achievementRepository.GetAll().Returns(achievements);
+        _achievementRepository.GetAllEntriesOfUser(_testUser.Id).Returns(new List<AchievementEntry>());
+        var result = await _sut.GetPersonalAchievements(_testUser.Id);
+        result.Should().HaveCount(2);
+        result.All(a => !a.Completed).Should().BeTrue();
+    }
+
+    [TestMethod]
+    public async Task GetPersonalAchievements_UserHasSomeAchievements_ReturnsCorrectCompleted()
+    {
+        var a1 = new Achievement { Id = Guid.NewGuid(), Name = "A1" };
+        var a2 = new Achievement { Id = Guid.NewGuid(), Name = "A2" };
+        var achievements = new List<Achievement> { a1, a2 };
+        var entries = new List<AchievementEntry> {
+            new AchievementEntry { Achievement = a1, User = _testUser }
+        };
+        _achievementRepository.GetAll().Returns(achievements);
+        _achievementRepository.GetAllEntriesOfUser(_testUser.Id).Returns(entries);
+        var result = await _sut.GetPersonalAchievements(_testUser.Id);
+        result.Should().HaveCount(2);
+        result.Single(a => a.Name == "A1").Completed.Should().BeTrue();
+        result.Single(a => a.Name == "A2").Completed.Should().BeFalse();
+    }
+
+    [TestMethod]
+    public async Task GetPersonalAchievements_UserHasAllAchievements_ReturnsAllCompletedTrue()
+    {
+        var a1 = new Achievement { Id = Guid.NewGuid(), Name = "A1" };
+        var a2 = new Achievement { Id = Guid.NewGuid(), Name = "A2" };
+        var achievements = new List<Achievement> { a1, a2 };
+        var entries = new List<AchievementEntry> {
+            new AchievementEntry { Achievement = a1, User = _testUser },
+            new AchievementEntry { Achievement = a2, User = _testUser }
+        };
+        _achievementRepository.GetAll().Returns(achievements);
+        _achievementRepository.GetAllEntriesOfUser(_testUser.Id).Returns(entries);
+        var result = await _sut.GetPersonalAchievements(_testUser.Id);
+        result.All(a => a.Completed).Should().BeTrue();
+    }
+    #endregion
+
+    #region GetAchievements Tests
+
+    [TestMethod]
+    public async Task GetAchievements_NoAchievements_ReturnsEmpty()
+    {
+        _achievementRepository.GetAll().Returns(new List<Achievement>());
+        var result = await _sut.GetAchievements();
+        result.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public async Task GetAchievements_MultipleAchievements_ReturnsAll()
+    {
+        var achievements = new List<Achievement> {
+            new Achievement { Id = Guid.NewGuid(), Name = "A1" },
+            new Achievement { Id = Guid.NewGuid(), Name = "A2" }
+        };
+        _achievementRepository.GetAll().Returns(achievements);
+        var result = await _sut.GetAchievements();
+        result.Should().BeEquivalentTo(achievements);
+    }
+    #endregion
+
+    #region AwardAchievementToUser Tests
+
+    [TestMethod]
+    public async Task AwardAchievementToUser_AchievementDoesNotExist_ReturnsFalse()
+    {
+        _achievementRepository.GetAll().Returns(new List<Achievement>());
+        var result = await _sut.AwardAchievementToUser(_testUser.Id, Guid.NewGuid());
+        result.Should().BeFalse();
+    }
+
+    [TestMethod]
+    public async Task AwardAchievementToUser_UserAlreadyHasAchievement_ReturnsFalse()
+    {
+        var achievementId = Guid.NewGuid();
+        var achievement = new Achievement { Id = achievementId, Name = "A1" };
+        var entry = new AchievementEntry { Achievement = achievement, User = _testUser };
+        _achievementRepository.GetAll().Returns(new List<Achievement> { achievement });
+        _achievementRepository.GetAllEntriesOfUser(_testUser.Id).Returns(new List<AchievementEntry> { entry });
+        var result = await _sut.AwardAchievementToUser(_testUser.Id, achievementId);
+        result.Should().BeFalse();
+    }
+
+    [TestMethod]
+    public async Task AwardAchievementToUser_UserDoesNotHaveAchievement_AwardsAndReturnsTrue()
+    {
+        var achievementId = Guid.NewGuid();
+        var achievement = new Achievement { Id = achievementId, Name = "A1" };
+        _achievementRepository.GetAll().Returns(new List<Achievement> { achievement });
+        _achievementRepository.GetAllEntriesOfUser(_testUser.Id).Returns(new List<AchievementEntry>());
+        _achievementRepository.CreateEntryRange(Arg.Any<IEnumerable<AchievementEntry>>()).Returns(Task.CompletedTask);
+        var result = await _sut.AwardAchievementToUser(_testUser.Id, achievementId);
+        result.Should().BeTrue();
+        await _achievementRepository.Received(1).CreateEntryRange(Arg.Is<IEnumerable<AchievementEntry>>(entries =>
+            entries.Count() == 1 && entries.First().Achievement.Id == achievementId));
+    }
+    #endregion
+
+    #region AwardAchievementToAllUsers Tests
+
+    [TestMethod]
+    public async Task AwardAchievementToAllUsers_AchievementDoesNotExist_ReturnsZero()
+    {
+        var applicationUserRepository = Substitute.For<IApplicationUserRepository>();
+        var sut = new AchievementService(_achievementRepository, _orderRepository, _topUpRepository, applicationUserRepository);
+        applicationUserRepository.GetAll().Returns(new List<ApplicationUser>());
+        _achievementRepository.GetAll().Returns(new List<Achievement>());
+        var result = await sut.AwardAchievementToAllUsers(Guid.NewGuid());
+        result.Should().Be(0);
+    }
+
+    [TestMethod]
+    public async Task AwardAchievementToAllUsers_NoUsers_ReturnsZero()
+    {
+        var achievementId = Guid.NewGuid();
+        var achievement = new Achievement { Id = achievementId, Name = "A1" };
+        var applicationUserRepository = Substitute.For<IApplicationUserRepository>();
+        var sut = new AchievementService(_achievementRepository, _orderRepository, _topUpRepository, applicationUserRepository);
+        applicationUserRepository.GetAll().Returns(new List<ApplicationUser>());
+        _achievementRepository.GetAll().Returns(new List<Achievement> { achievement });
+        var result = await sut.AwardAchievementToAllUsers(achievementId);
+        result.Should().Be(0);
+    }
+
+    [TestMethod]
+    public async Task AwardAchievementToAllUsers_AllUsersAlreadyHaveAchievement_ReturnsZero()
+    {
+        var achievementId = Guid.NewGuid();
+        var achievement = new Achievement { Id = achievementId, Name = "A1" };
+        var users = new List<ApplicationUser> { _testUser };
+        var entry = new AchievementEntry { Achievement = achievement, User = _testUser };
+        var applicationUserRepository = Substitute.For<IApplicationUserRepository>();
+        var sut = new AchievementService(_achievementRepository, _orderRepository, _topUpRepository, applicationUserRepository);
+        applicationUserRepository.GetAll().Returns(users);
+        _achievementRepository.GetAll().Returns(new List<Achievement> { achievement });
+        _achievementRepository.GetAllEntriesOfUser(_testUser.Id).Returns(new List<AchievementEntry> { entry });
+        var result = await sut.AwardAchievementToAllUsers(achievementId);
+        result.Should().Be(0);
+    }
+
+    [TestMethod]
+    public async Task AwardAchievementToAllUsers_SomeUsersDoNotHaveAchievement_AwardsAndReturnsCount()
+    {
+        var achievementId = Guid.NewGuid();
+        var achievement = new Achievement { Id = achievementId, Name = "A1" };
+        var user1 = new ApplicationUser { Id = "u1" };
+        var user2 = new ApplicationUser { Id = "u2" };
+        var users = new List<ApplicationUser> { user1, user2 };
+        var applicationUserRepository = Substitute.For<IApplicationUserRepository>();
+        var sut = new AchievementService(_achievementRepository, _orderRepository, _topUpRepository, applicationUserRepository);
+        applicationUserRepository.GetAll().Returns(users);
+        _achievementRepository.GetAll().Returns(new List<Achievement> { achievement });
+        _achievementRepository.GetAllEntriesOfUser("u1").Returns(new List<AchievementEntry>());
+        _achievementRepository.GetAllEntriesOfUser("u2").Returns(new List<AchievementEntry> { new AchievementEntry { Achievement = achievement, User = user2 } });
+        _achievementRepository.CreateEntryRange(Arg.Any<IEnumerable<AchievementEntry>>()).Returns(Task.CompletedTask);
+        var result = await sut.AwardAchievementToAllUsers(achievementId);
+        result.Should().Be(1);
+        await _achievementRepository.Received(1).CreateEntryRange(Arg.Is<IEnumerable<AchievementEntry>>(entries => entries.Count() == 1 && entries.First().User.Id == "u1"));
+    }
     #endregion
 }

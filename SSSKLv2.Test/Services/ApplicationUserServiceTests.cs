@@ -11,6 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using SSSKLv2.Dto;
 
 namespace SSSKLv2.Test.Services;
 
@@ -694,11 +695,11 @@ public class ApplicationUserServiceTests
     public void DeterminePositions_OrdersEntriesByAmountDescending()
     {
         // Arrange
-        var entries = new List<LeaderboardEntry>
+        var entries = new List<LeaderboardEntryDto>
         {
-            new LeaderboardEntry { Amount = 5, FullName = "User1", ProductName = "Product" },
-            new LeaderboardEntry { Amount = 10, FullName = "User2", ProductName = "Product" },
-            new LeaderboardEntry { Amount = 3, FullName = "User3", ProductName = "Product" }
+            new LeaderboardEntryDto { Amount = 5, FullName = "User1", ProductName = "Product" },
+            new LeaderboardEntryDto { Amount = 10, FullName = "User2", ProductName = "Product" },
+            new LeaderboardEntryDto { Amount = 3, FullName = "User3", ProductName = "Product" }
         };
 
         // Act
@@ -719,11 +720,11 @@ public class ApplicationUserServiceTests
     public void DeterminePositions_HandlesTiedScores()
     {
         // Arrange
-        var entries = new List<LeaderboardEntry>
+        var entries = new List<LeaderboardEntryDto>
         {
-            new LeaderboardEntry { Amount = 5, FullName = "User1", ProductName = "Product" },
-            new LeaderboardEntry { Amount = 10, FullName = "User2", ProductName = "Product" },
-            new LeaderboardEntry { Amount = 5, FullName = "User3", ProductName = "Product" }
+            new LeaderboardEntryDto { Amount = 5, FullName = "User1", ProductName = "Product" },
+            new LeaderboardEntryDto { Amount = 10, FullName = "User2", ProductName = "Product" },
+            new LeaderboardEntryDto { Amount = 5, FullName = "User3", ProductName = "Product" }
         };
 
         // Act
@@ -744,11 +745,11 @@ public class ApplicationUserServiceTests
     public void DeterminePositions_HandlesZeroScores()
     {
         // Arrange
-        var entries = new List<LeaderboardEntry>
+        var entries = new List<LeaderboardEntryDto>
         {
-            new LeaderboardEntry { Amount = 5, FullName = "User1", ProductName = "Product" },
-            new LeaderboardEntry { Amount = 0, FullName = "User2", ProductName = "Product" },
-            new LeaderboardEntry { Amount = 3, FullName = "User3", ProductName = "Product" }
+            new LeaderboardEntryDto { Amount = 5, FullName = "User1", ProductName = "Product" },
+            new LeaderboardEntryDto { Amount = 0, FullName = "User2", ProductName = "Product" },
+            new LeaderboardEntryDto { Amount = 3, FullName = "User3", ProductName = "Product" }
         };
 
         // Act
@@ -769,7 +770,7 @@ public class ApplicationUserServiceTests
     public void DeterminePositions_HandlesEmptyList()
     {
         // Arrange
-        var entries = new List<LeaderboardEntry>();
+        var entries = new List<LeaderboardEntryDto>();
 
         // Act
         var result = InvokeDeterminePositions(entries);
@@ -853,13 +854,13 @@ public class ApplicationUserServiceTests
     }
 
     // Helper method to invoke private DeterminePositions method using reflection
-    private IEnumerable<LeaderboardEntry> InvokeDeterminePositions(IEnumerable<LeaderboardEntry> entries)
+    private IEnumerable<LeaderboardEntryDto> InvokeDeterminePositions(IEnumerable<LeaderboardEntryDto> entries)
     {
         var methodInfo = typeof(ApplicationUserService).GetMethod(
             "DeterminePositions", 
             System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
         
-        return (IEnumerable<LeaderboardEntry>)methodInfo!.Invoke(_sut, new object[] { entries })!;
+        return (IEnumerable<LeaderboardEntryDto>)methodInfo!.Invoke(_sut, new object[] { entries })!;
     }
 
     #endregion

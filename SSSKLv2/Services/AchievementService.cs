@@ -1,3 +1,4 @@
+using SSSKLv2.Dto;
 using SSSKLv2.Data;
 using SSSKLv2.Data.DAL.Interfaces;
 using SSSKLv2.Services.Interfaces;
@@ -7,10 +8,29 @@ namespace SSSKLv2.Services;
 public class AchievementService(
     IAchievementRepository achievementRepository,
     IOrderRepository orderRepository,
-    ITopUpRepository topUpRepository) : IAchievementService
+    ITopUpRepository topUpRepository,
+    IApplicationUserRepository applicationUserRepository) : IAchievementService
 {
-    // TODO: Add function to award achievement for a single user
-    // TODO: Add function to award achievement to all users
+    public async Task<List<AchievementDto>> GetPersonalAchievements(string userId)
+    {
+        var allAchievements = await achievementRepository.GetAll();
+        var achievementEntries = await achievementRepository.GetAllEntriesOfUser(userId);
+        
+        return allAchievements.Select(a =>
+            new AchievementDto(
+                a.Name,
+                a.Description,
+                a.Image?.Uri,
+                achievementEntries.Any(e => e.Achievement.Id == a.Id)
+            )
+        ).ToList();
+    }
+
+    public async Task<IEnumerable<Achievement>> GetAchievements()
+    {
+        return await achievementRepository.GetAll();
+    }
+    
     public async Task CheckOrderForAchievements(Order order)
     {
         // Get all achievements the user hasn't completed yet
@@ -85,6 +105,59 @@ public class AchievementService(
         {
             await achievementRepository.CreateEntryRange(newAchievementEntries);
         }
+    }
+    
+    public async Task<bool> AwardAchievementToUser(string userId, Guid achievementId)
+    {
+        // Check if user already has the achievement
+        var entries = await achievementRepository.GetAllEntriesOfUser(userId);
+        if (entries.Any(e => e.Achievement.Id == achievementId))
+            return false; // Already awarded
+
+        // Get achievement
+        var achievement = (await achievementRepository.GetAll()).FirstOrDefault(a => a.Id == achievementId);
+        if (achievement == null)
+            return false; // Achievement not found
+
+        // Create new entry
+        var achievementEntry = new AchievementEntry
+        {
+            Id = Guid.NewGuid(),
+            Achievement = achievement,
+            User = new ApplicationUser { Id = userId }, // Only Id is set, assuming repo will attach
+            HasSeen = false,
+            CreatedOn = DateTime.Now
+        };
+        await achievementRepository.CreateEntryRange(new List<AchievementEntry> { achievementEntry });
+        return true;
+    }
+    
+    public async Task<int> AwardAchievementToAllUsers(Guid achievementId)
+    {
+        var users = await applicationUserRepository.GetAll();
+        var achievement = (await achievementRepository.GetAll()).FirstOrDefault(a => a.Id == achievementId);
+        if (achievement == null)
+            return 0;
+
+        var newEntries = new List<AchievementEntry>();
+        foreach (var user in users)
+        {
+            var entries = await achievementRepository.GetAllEntriesOfUser(user.Id);
+            if (entries.All(e => e.Achievement.Id != achievementId))
+            {
+                newEntries.Add(new AchievementEntry
+                {
+                    Id = Guid.NewGuid(),
+                    Achievement = achievement,
+                    User = user,
+                    HasSeen = false,
+                    CreatedOn = DateTime.Now
+                });
+            }
+        }
+        if (newEntries.Any())
+            await achievementRepository.CreateEntryRange(newEntries);
+        return newEntries.Count;
     }
     
     private static bool CheckComparison(int actualValue, Achievement.ComparisonOperatorOption comparisonOperator, int targetValue)

@@ -4,6 +4,7 @@
 @using SSSKLv2.Services.Interfaces
 @using SSSKLv2.Data
 @using Blazored.Toast.Configuration
+@using SSSKLv2.Dto
 @inject IApplicationUserService ApplicationUserService
 @inject IProductService ProductService
 @inject IToastService ToastService
@@ -130,9 +131,9 @@ else
     public IEnumerable<Product> Products { get; set; } = new List<Product>();
     public string? SelectedProductId { get; set; }
     
-    public IEnumerable<LeaderboardEntry> Recently { get; set; } = new List<LeaderboardEntry>();
-    public IEnumerable<LeaderboardEntry> Monthly { get; set; } = new List<LeaderboardEntry>();
-    public IEnumerable<LeaderboardEntry> All { get; set; } = new List<LeaderboardEntry>();
+    public IEnumerable<LeaderboardEntryDto> Recently { get; set; } = new List<LeaderboardEntryDto>();
+    public IEnumerable<LeaderboardEntryDto> Monthly { get; set; } = new List<LeaderboardEntryDto>();
+    public IEnumerable<LeaderboardEntryDto> All { get; set; } = new List<LeaderboardEntryDto>();
     
     protected override async Task OnInitializedAsync()
     {

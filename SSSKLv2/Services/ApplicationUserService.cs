@@ -1,6 +1,7 @@
 using SSSKLv2.Components;
 using SSSKLv2.Data;
 using SSSKLv2.Data.DAL.Interfaces;
+using SSSKLv2.Dto;
 using SSSKLv2.Services.Interfaces;
 
 namespace SSSKLv2.Services;
@@ -52,12 +53,12 @@ public class ApplicationUserService(
         return result.AsQueryable();
     }
 
-    public async Task<IEnumerable<LeaderboardEntry>> GetAllLeaderboard(Guid productId)
+    public async Task<IEnumerable<LeaderboardEntryDto>> GetAllLeaderboard(Guid productId)
     {
         var ulist = await _applicationUserRepository.GetAllWithOrders();
         var product = await _productRepository.GetById(productId);
 
-        var leaderboard = new List<LeaderboardEntry>();
+        var leaderboard = new List<LeaderboardEntryDto>();
         foreach (var u in ulist)
         {
             int count;
@@ -71,12 +72,12 @@ public class ApplicationUserService(
             {
                 count = Int32.MaxValue;
             }
-            if (count > 0) leaderboard.Add(new LeaderboardEntry() { Amount = count, FullName = $"{u.Name} {u.Surname.First()}", ProductName = product.Name});
+            if (count > 0) leaderboard.Add(new LeaderboardEntryDto() { Amount = count, FullName = $"{u.Name} {u.Surname.First()}", ProductName = product.Name});
         }
         return DeterminePositions(leaderboard);
     }
     
-    public async Task<IEnumerable<LeaderboardEntry>> GetMonthlyLeaderboard(Guid productId)
+    public async Task<IEnumerable<LeaderboardEntryDto>> GetMonthlyLeaderboard(Guid productId)
     {
         var startDate = DateTime.Now.Date;
         startDate = new DateTime(startDate.Year, startDate.Month, 1);
@@ -85,7 +86,7 @@ public class ApplicationUserService(
         var product = await _productRepository.GetById(productId);
         var ulist = await _applicationUserRepository.GetAllWithOrders();
         
-        var leaderboard = new List<LeaderboardEntry>();
+        var leaderboard = new List<LeaderboardEntryDto>();
         foreach (var u in ulist)
         {
             int count;
@@ -101,19 +102,19 @@ public class ApplicationUserService(
                 count = Int32.MaxValue;
             }
             
-            if (count > 0) leaderboard.Add(new LeaderboardEntry() { Amount = count, FullName = $"{u.Name} {u.Surname.First()}", ProductName = product.Name});
+            if (count > 0) leaderboard.Add(new LeaderboardEntryDto() { Amount = count, FullName = $"{u.Name} {u.Surname.First()}", ProductName = product.Name});
         }
         return DeterminePositions(leaderboard);
     }
 
-    public async Task<IEnumerable<LeaderboardEntry>> Get12HourlyLeaderboard(Guid productId)
+    public async Task<IEnumerable<LeaderboardEntryDto>> Get12HourlyLeaderboard(Guid productId)
     {
         var time = DateTime.Now.AddHours(-12);
         
         var product = await _productRepository.GetById(productId);
         var ulist = await _applicationUserRepository.GetAllWithOrders();
         
-        var leaderboard = new List<LeaderboardEntry>();
+        var leaderboard = new List<LeaderboardEntryDto>();
         foreach (var u in ulist)
         {
             int count;
@@ -128,20 +129,20 @@ public class ApplicationUserService(
             {
                 count = Int32.MaxValue;
             }
-            if (count > 0) leaderboard.Add(new LeaderboardEntry() { Amount = count, FullName = $"{u.Name} {u.Surname.First()}", ProductName = product.Name});
+            if (count > 0) leaderboard.Add(new LeaderboardEntryDto() { Amount = count, FullName = $"{u.Name} {u.Surname.First()}", ProductName = product.Name});
         }
         
         return DeterminePositions(leaderboard);
     }
     
-    public async Task<IEnumerable<LeaderboardEntry>> Get12HourlyLiveLeaderboard(Guid productId)
+    public async Task<IEnumerable<LeaderboardEntryDto>> Get12HourlyLiveLeaderboard(Guid productId)
     {
         var time = DateTime.Now.AddHours(-12);
         
         var product = await _productRepository.GetById(productId);
         var ulist = await _applicationUserRepository.GetFirst12WithOrders();
         
-        var leaderboard = new List<LeaderboardEntry>();
+        var leaderboard = new List<LeaderboardEntryDto>();
         foreach (var u in ulist)
         {
             int count;
@@ -156,13 +157,13 @@ public class ApplicationUserService(
             {
                 count = Int32.MaxValue;
             }
-            if (count > 0) leaderboard.Add(new LeaderboardEntry() { Amount = count, FullName = $"{u.Name} {u.Surname.First()}", ProductName = product.Name});
+            if (count > 0) leaderboard.Add(new LeaderboardEntryDto() { Amount = count, FullName = $"{u.Name} {u.Surname.First()}", ProductName = product.Name});
         }
         
         return DeterminePositions(leaderboard);
     }
 
-    private IEnumerable<LeaderboardEntry> DeterminePositions(IEnumerable<LeaderboardEntry> leaderboard)
+    private IEnumerable<LeaderboardEntryDto> DeterminePositions(IEnumerable<LeaderboardEntryDto> leaderboard)
     {
         var list = leaderboard.OrderByDescending(x => x.Amount);
         int place = 0;

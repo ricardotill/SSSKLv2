@@ -1,0 +1,72 @@
+@inject IAchievementService AchievementService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject NavigationManager NavigationManager
+
+@page "/Achievements"
+@attribute [Authorize]
+
+@using Microsoft.AspNetCore.Authorization
+@using SSSKLv2.Dto
+@using SSSKLv2.Services.Interfaces
+
+<PageTitle>SSSKLv2 | Achievements</PageTitle>
+
+<h1>Achievements</h1>
+
+@if (isLoading)
+{
+    <div class="spinner-border" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+}
+else if (achievements.Count == 0)
+{
+    <div class="alert alert-info">Geen achievements gevonden.</div>
+}
+else
+{
+    <div class="row row-cols-1 row-cols-md-3 g-4">
+        @foreach (var achievement in achievements)
+        {
+            <div class="col">
+                <div class="card h-100 @(achievement.Completed ? "border-success" : "border-secondary")">
+                    @if (!string.IsNullOrEmpty(achievement.ImageUrl))
+                    {
+                        <img src="@achievement.ImageUrl" class="card-img-top" alt="@achievement.Name" style="max-height: 150px; object-fit: contain;" />
+                    }
+                    <div class="card-body">
+                        <h5 class="card-title">@achievement.Name</h5>
+                        <p class="card-text">@achievement.Description</p>
+                    </div>
+                    <div class="card-footer">
+                        @if (achievement.Completed)
+                        {
+                            <span class="badge bg-success">Compleet!</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary">Incompleet</span>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private List<AchievementDto> achievements = new();
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var userId = await GetCurrentUserIdAsync();
+        achievements = await AchievementService.GetPersonalAchievements(userId);
+        isLoading = false;
+    }
+
+    private async Task<string> GetCurrentUserIdAsync()
+    {
+        return (await AuthenticationStateProvider.GetAuthenticationStateAsync()).User.Identity?.Name ?? throw new InvalidOperationException();
+    }
+}

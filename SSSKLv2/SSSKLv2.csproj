@@ -64,11 +64,14 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Components\Pages\Admin\" />
     <Folder Include="Migrations\" />
   </ItemGroup>
 
   <ItemGroup>
+    <AdditionalFiles Include="Components\Pages\Admin\AchievementPages\Create.razor" />
+    <AdditionalFiles Include="Components\Pages\Admin\AchievementPages\Delete.razor" />
+    <AdditionalFiles Include="Components\Pages\Admin\AchievementPages\Edit.razor" />
+    <AdditionalFiles Include="Components\Pages\Admin\AchievementPages\Index.razor" />
     <AdditionalFiles Include="Components\Pages\Admin\OldUserMigrationPages\Create.razor" />
     <AdditionalFiles Include="Components\Pages\Admin\OldUserMigrationPages\Delete.razor" />
     <AdditionalFiles Include="Components\Pages\Admin\OldUserMigrationPages\Index.razor" />

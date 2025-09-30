@@ -1,0 +1,91 @@
+﻿@page "/admin/announcements/delete"
+@rendermode InteractiveServer
+
+@attribute [Authorize(Policy = Policies.Admin)]
+
+@inject IAnnouncementService AnnouncementService
+@using SSSKLv2.Data
+@inject NavigationManager NavigationManager
+@using SSSKLv2.Data.DAL.Exceptions
+@using SSSKLv2.Services.Interfaces
+@using Microsoft.AspNetCore.Authorization
+@using SSSKLv2.Components.Account
+
+<PageTitle>SSSKLv2 | Mededeling Verwijderen</PageTitle>
+
+<div class="row crud-form-header">
+    <div class="col-9 title-container">
+        <h1>Verwijderen</h1>
+    </div>
+    <div class="col-3 text-end back-container">
+        <a class="btn btn-secondary" href="/admin/announcements"><i class="bi bi-arrow-left"></i></a>
+    </div>
+</div>
+<hr />
+<div class="card">
+    <div class="card-body">
+        <h5 class="card-title">Mededeling</h5>
+        <hr/>
+        @if (announcement is null)
+        {
+            <p><em>Laden...</em></p>
+        }
+        else
+        {
+            <dl class="row">
+                <dt class="col-sm-2">Mededeling</dt>
+                <dd class="col-sm-10">@announcement.Message</dd>
+            </dl>
+            <dl class="row">
+                <dt class="col-sm-2">Beschrijving</dt>
+                <dd class="col-sm-10">@announcement.Description</dd>
+            </dl>
+            <dl class="row">
+                <dt class="col-sm-2">Volgorde</dt>
+                <dd class="col-sm-10">@announcement.Order</dd>
+            </dl>
+            <EditForm method="post" Model="announcement" OnValidSubmit="DeleteAnnouncement" FormName="delete" Enhance>
+                <button type="submit" class="btn btn-danger crud-form-submit" disabled="@(announcement is null)">Verwijderen</button>
+            </EditForm>
+        }
+    </div>
+</div>
+
+@code {
+    Announcement? announcement;
+
+    [SupplyParameterFromQuery]
+    public string Id { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetData();
+    }
+
+    public async Task GetData()
+    {
+        try
+        {
+            announcement = await AnnouncementService.GetAnnouncementById(Guid.Parse(Id));
+
+        }
+        catch (NotFoundException)
+        {
+            NavigationManager.NavigateTo("notfound");
+        }
+    }
+
+    public async Task DeleteAnnouncement()
+    {
+        try
+        {
+            await AnnouncementService.DeleteAnnouncement(Guid.Parse(Id));
+
+            NavigationManager.NavigateTo("/admin/announcements");
+        }
+        catch (NotFoundException)
+        {
+            NavigationManager.NavigateTo("notfound");
+        }
+    }
+}

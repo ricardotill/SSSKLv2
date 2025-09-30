@@ -64,7 +64,7 @@ public class AchievementRepositoryTests : RepositoryTest
 
     #endregion
 
-    #region GetAllEntriesOfAchievement Tests
+    #region GetAllEntries Tests
 
     [TestMethod]
     public async Task GetAllEntriesOfAchievement_WhenEntriesExist_ReturnAllOrderedByCreatedOn()
@@ -78,7 +78,7 @@ public class AchievementRepositoryTests : RepositoryTest
         await SaveAchievementEntries(entry1, entry2);
 
         // Act
-        var result = (await _sut.GetAllEntriesOfAchievement(achievement.Id)).ToList();
+        var result = (await _sut.GetAllEntries(achievement.Id)).ToList();
 
         // Assert
         result.Should().HaveCount(2);
@@ -95,7 +95,7 @@ public class AchievementRepositoryTests : RepositoryTest
         await SaveAchievements(achievement);
 
         // Act
-        var result = await _sut.GetAllEntriesOfAchievement(achievement.Id);
+        var result = await _sut.GetAllEntries(achievement.Id);
 
         // Assert
         result.Should().BeEmpty();
@@ -105,7 +105,7 @@ public class AchievementRepositoryTests : RepositoryTest
     public async Task GetAllEntriesOfAchievement_WhenAchievementDoesNotExist_ReturnEmptyCollection()
     {
         // Act
-        var result = await _sut.GetAllEntriesOfAchievement(Guid.NewGuid());
+        var result = await _sut.GetAllEntries(Guid.NewGuid());
 
         // Assert
         result.Should().BeEmpty();
@@ -124,7 +124,7 @@ public class AchievementRepositoryTests : RepositoryTest
         await SaveAchievementEntries(entry1, entry2);
 
         // Act
-        var result = (await _sut.GetAllEntriesOfAchievement(achievement1.Id)).ToList();
+        var result = (await _sut.GetAllEntries(achievement1.Id)).ToList();
 
         // Assert
         result.Should().HaveCount(1);

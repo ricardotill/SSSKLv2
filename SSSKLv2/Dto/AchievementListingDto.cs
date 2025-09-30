@@ -1,6 +1,6 @@
 namespace SSSKLv2.Dto;
 
-public record AchievementDto(
+public record AchievementListingDto(
     string Name,
     string Description,
     string? ImageUrl,

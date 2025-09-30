@@ -14,13 +14,25 @@ public class AchievementRepository(IDbContextFactory<ApplicationDbContext> dbCon
             .ToListAsync();
     }
     
-    public async Task<IEnumerable<AchievementEntry>> GetAllEntriesOfAchievement(Guid achievementId)
+    public IQueryable<Achievement> GetAllQueryable(ApplicationDbContext context)
+    {
+        return context.Achievement
+            .OrderBy(x => x.CreatedOn);
+    }
+    
+    public async Task<IEnumerable<AchievementEntry>> GetAllEntries(Guid achievementId)
     {
         await using var context = await dbContextFactory.CreateDbContextAsync();
         return await context.AchievementEntry
             .Where(x => x.Achievement.Id == achievementId)
             .OrderBy(x => x.CreatedOn)
             .ToListAsync();
+    }
+    
+    public IQueryable<AchievementEntry> GetAllEntriesQueryable(ApplicationDbContext context)
+    {
+        return context.AchievementEntry
+            .OrderBy(x => x.CreatedOn);
     }
     
     public async Task<IEnumerable<AchievementEntry>> GetAllEntriesOfUser(string userId)

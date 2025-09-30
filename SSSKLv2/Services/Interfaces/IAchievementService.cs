@@ -6,8 +6,10 @@ namespace SSSKLv2.Services.Interfaces;
 
 public interface IAchievementService
 {
-    Task<List<AchievementDto>> GetPersonalAchievements(string userId);
+    Task<List<AchievementListingDto>> GetPersonalAchievements(string userId);
     Task<IEnumerable<Achievement>> GetAchievements();
+    IQueryable<Achievement> GetAchievementsQueryable(ApplicationDbContext context);
+    IQueryable<AchievementEntry> GetAchievementEntriesQueryable(ApplicationDbContext context);
     Task CheckOrderForAchievements(Order order);
     Task<bool> AwardAchievementToUser(string userId, Guid achievementId);
     Task<int> AwardAchievementToAllUsers(Guid achievementId);

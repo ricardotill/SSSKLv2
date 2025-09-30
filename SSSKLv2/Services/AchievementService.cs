@@ -1,3 +1,4 @@
+using SSSKLv2.Agents;
 using SSSKLv2.Dto;
 using SSSKLv2.Data;
 using SSSKLv2.Data.DAL.Interfaces;
@@ -9,15 +10,16 @@ public class AchievementService(
     IAchievementRepository achievementRepository,
     IOrderRepository orderRepository,
     ITopUpRepository topUpRepository,
-    IApplicationUserRepository applicationUserRepository) : IAchievementService
+    IApplicationUserRepository applicationUserRepository,
+    IBlobStorageAgent blobStorageAgent) : IAchievementService
 {
-    public async Task<List<AchievementDto>> GetPersonalAchievements(string userId)
+    public async Task<List<AchievementListingDto>> GetPersonalAchievements(string userId)
     {
         var allAchievements = await achievementRepository.GetAll();
         var achievementEntries = await achievementRepository.GetAllEntriesOfUser(userId);
         
         return allAchievements.Select(a =>
-            new AchievementDto(
+            new AchievementListingDto(
                 a.Name,
                 a.Description,
                 a.Image?.Uri,
@@ -29,6 +31,16 @@ public class AchievementService(
     public async Task<IEnumerable<Achievement>> GetAchievements()
     {
         return await achievementRepository.GetAll();
+    }
+    
+    public IQueryable<Achievement> GetAchievementsQueryable(ApplicationDbContext context)
+    {
+        return achievementRepository.GetAllQueryable(context);
+    }
+    
+    public IQueryable<AchievementEntry> GetAchievementEntriesQueryable(ApplicationDbContext context)
+    {
+        return achievementRepository.GetAllEntriesQueryable(context);
     }
     
     public async Task CheckOrderForAchievements(Order order)
@@ -107,6 +119,8 @@ public class AchievementService(
         }
     }
     
+    
+    
     public async Task<bool> AwardAchievementToUser(string userId, Guid achievementId)
     {
         // Check if user already has the achievement
@@ -158,6 +172,27 @@ public class AchievementService(
         if (newEntries.Any())
             await achievementRepository.CreateEntryRange(newEntries);
         return newEntries.Count;
+    }
+    
+    public async Task AddAchievement(Achievement achievement)
+    {
+        // Upload image to blob storage
+        var blobItem = await blobStorageAgent.UploadFileToBlobAsync(fileName, contentType, imageStream);
+        // Create new Achievement
+        var achievement = new Achievement
+        {
+            Id = Guid.NewGuid(),
+            Name = dto.Name,
+            Description = dto.Description,
+            Image = blobItem,
+            // Set other properties as needed
+        };
+        await achievementRepository.Create(achievement);
+    }
+
+    private Task<AchievementImage> UploadFileToBlobAsync(string fileName, string contentType, Stream fileStream)
+    {
+        
     }
     
     private static bool CheckComparison(int actualValue, Achievement.ComparisonOperatorOption comparisonOperator, int targetValue)

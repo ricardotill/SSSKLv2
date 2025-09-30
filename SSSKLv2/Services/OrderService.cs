@@ -65,13 +65,13 @@ public class OrderService(
         var csv = new StringBuilder();
 
         // Header
-        csv.AppendLine("OrderId,CustomerUsername,OrderDate,ProductName,ProductAmount,TotalPaid");
+        csv.AppendLine("OrderId,CustomerUsername,OrderDateTime,ProductName,ProductAmount,TotalPaid");
 
         // Rows
         foreach (var order in orders)
         {
             csv.AppendLine(
-                $"{order.Id},{EscapeCsvField(order.User != null ? order.User.UserName : null)},{order.CreatedOn:yyyy-MM-dd},{EscapeCsvField(order.ProductNaam)},{order.Amount},{order.Paid.ToString(CultureInfo.InvariantCulture)}");
+                $"{order.Id},{EscapeCsvField(order.User != null ? order.User.UserName : null)},{order.CreatedOn:yyyy-MM-dd HH:mm:ss},{EscapeCsvField(order.ProductNaam)},{order.Amount},{order.Paid.ToString(CultureInfo.InvariantCulture)}");
         }
 
         return csv.ToString();

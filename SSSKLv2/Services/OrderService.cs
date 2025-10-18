@@ -59,7 +59,7 @@ public class OrderService(
         }
         
         await orderRepository.CreateRange(orders);
-        await NotifyPurchase(generatedOrders);
+        await NotifyPurchase(orders);
     }
     
     public async Task<string> ExportOrdersFromPastTwoYearsToCsvAsync()

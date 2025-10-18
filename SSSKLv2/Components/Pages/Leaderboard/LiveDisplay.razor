@@ -1,7 +1,6 @@
 @page "/leaderboard/livedisplay/{productId}"
 @rendermode InteractiveServer
 
-@implements IDisposable
 @implements IAsyncDisposable
 @inject IProductService ProductService;
 @inject IApplicationUserService UserService;
@@ -156,6 +155,7 @@ else
     {
         Hub = new HubConnectionBuilder()
             .WithUrl(Navigation.ToAbsoluteUri("/hubs/purchases"))
+            .WithAutomaticReconnect()
             .Build();
         await Hub.StartAsync();
         
@@ -182,11 +182,6 @@ else
     {
         LatestOrders.Add(dto);
         TotalQuantity += dto.Quantity;
-    }
-
-    public void Dispose()
-    {
-        Hub?.DisposeAsync();
     }
 
     public async ValueTask DisposeAsync()

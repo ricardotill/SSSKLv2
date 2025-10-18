@@ -8,6 +8,7 @@ using SSSKLv2.Data.DAL.Exceptions;
 using SSSKLv2.Data.DAL.Interfaces;
 using SSSKLv2.Services;
 using SSSKLv2.Components.Pages;
+using SSSKLv2.Services.Interfaces;
 
 namespace SSSKLv2.Test.Services;
 
@@ -15,6 +16,7 @@ namespace SSSKLv2.Test.Services;
 public class OrderServiceTests
 {
     private IOrderRepository _mockOrderRepository = null!;
+    private IPurchaseNotifier _purchaseNotifier = null!;
     private ILogger<OrderService> _mockLogger = null!;
     private OrderService _sut = null!;
 
@@ -22,8 +24,9 @@ public class OrderServiceTests
     public void TestInitialize()
     {
         _mockOrderRepository = Substitute.For<IOrderRepository>();
+        _purchaseNotifier = Substitute.For<IPurchaseNotifier>();
         _mockLogger = Substitute.For<ILogger<OrderService>>();
-        _sut = new OrderService(_mockOrderRepository, _mockLogger);
+        _sut = new OrderService(_mockOrderRepository, _purchaseNotifier, _mockLogger);
     }
 
     #region GetAllQueryable Tests

@@ -856,10 +856,10 @@ public class ApplicationUserServiceTests
     private IEnumerable<LeaderboardEntry> InvokeDeterminePositions(IEnumerable<LeaderboardEntry> entries)
     {
         var methodInfo = typeof(ApplicationUserService).GetMethod(
-            "DeterminePositions", 
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        
-        return (IEnumerable<LeaderboardEntry>)methodInfo!.Invoke(_sut, new object[] { entries })!;
+            "DeterminePositions",
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+
+        return (IEnumerable<LeaderboardEntry>)methodInfo!.Invoke(null, new object[] { entries })!;
     }
 
     #endregion

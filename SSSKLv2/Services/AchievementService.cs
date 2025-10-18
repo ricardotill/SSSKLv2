@@ -3,6 +3,7 @@ using SSSKLv2.Dto;
 using SSSKLv2.Data;
 using SSSKLv2.Data.DAL.Interfaces;
 using SSSKLv2.Services.Interfaces;
+using SSSKLv2.Util;
 
 namespace SSSKLv2.Services;
 
@@ -56,6 +57,9 @@ public class AchievementService(
         
         foreach (var achievement in uncompletedAchievements)
         {
+            if (!achievement.AutoAchieve) 
+                continue;
+            
             bool shouldAward = false;
             
             switch (achievement.Action)
@@ -174,25 +178,26 @@ public class AchievementService(
         return newEntries.Count;
     }
     
-    public async Task AddAchievement(Achievement achievement)
+    public async Task AddAchievement(AchievementDto dto)
     {
+        var extension = ContentTypeToExtensionMapper.GetExtension(dto.ImageContentType.MediaType);
+        var name = $"{dto.Name}-{Guid.NewGuid()}.{extension}";
+        
         // Upload image to blob storage
-        var blobItem = await blobStorageAgent.UploadFileToBlobAsync(fileName, contentType, imageStream);
+        var blobItem = await blobStorageAgent.UploadFileToBlobAsync(name,
+            dto.ImageContentType.MediaType,
+            dto.ImageContent);
+        
         // Create new Achievement
         var achievement = new Achievement
         {
             Id = Guid.NewGuid(),
             Name = dto.Name,
             Description = dto.Description,
-            Image = blobItem,
+            Image = AchievementImage.ToAchievementImage(blobItem),
             // Set other properties as needed
         };
         await achievementRepository.Create(achievement);
-    }
-
-    private Task<AchievementImage> UploadFileToBlobAsync(string fileName, string contentType, Stream fileStream)
-    {
-        
     }
     
     private static bool CheckComparison(int actualValue, Achievement.ComparisonOperatorOption comparisonOperator, int targetValue)

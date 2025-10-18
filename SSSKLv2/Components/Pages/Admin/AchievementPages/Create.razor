@@ -1,25 +1,27 @@
-﻿@page "/admin/announcements/create"
+﻿@page "/admin/achievements/create"
 @rendermode InteractiveServer
 
 @attribute [Authorize(Policy = Policies.Admin)]
 
-@inject IAnnouncementService AnnouncementService;
-@using SSSKLv2.Data
+@inject IAchievementService AchievementService;
+@using SSSKLv2.Dto
 @using Microsoft.AspNetCore.Authorization
 @using SSSKLv2.Components.Account
 @using SSSKLv2.Services.Interfaces
 @using System.ComponentModel.DataAnnotations
-@using System.ComponentModel
+@using System.Net.Mime
+@using SSSKLv2.Data
+@using SSSKLv2.Validators
 @inject NavigationManager NavigationManager
 
-<PageTitle>SSSKLv2 | Mededeling aanmaken</PageTitle>
+<PageTitle>SSSKLv2 | Achievement aanmaken</PageTitle>
 
 <div class="row crud-form-header">
     <div class="col-9 title-container">
-        <h1>Mededeling aanmaken</h1>
+        <h1>Achievement aanmaken</h1>
     </div>
     <div class="col-3 text-end back-container">
-        <a class="btn btn-secondary" href="/admin/announcements"><i class="bi bi-arrow-left"></i></a>
+        <a class="btn btn-secondary" href="/admin/achievements"><i class="bi bi-arrow-left"></i></a>
     </div>
 </div>
 <hr />
@@ -27,23 +29,46 @@
     <div class="card-body">
         <div class="row">
             <div class="col-md-4">
-                <EditForm method="post" Model="Announcement" OnValidSubmit="AddAnnouncement" FormName="create" Enhance>
+                <EditForm method="post" Model="Dto" OnValidSubmit="AddAchievement" FormName="create" Enhance>
                     <DataAnnotationsValidator />
                     <ValidationSummary />
                     <div class="mb-3">
-                        <label for="name" class="form-label">Mededeling:</label>
-                        <InputText id="name" @bind-Value="Announcement.Message" class="form-control" />
-                        <ValidationMessage For="() => Announcement.Message" class="text-danger" />
+                        <label for="name" class="form-label">Naam:</label>
+                        <InputText id="name" @bind-Value="Dto.Name" class="form-control" />
+                        <ValidationMessage For="() => Dto.Name" class="text-danger" />
                     </div>
                     <div class="mb-3">
                         <label for="description" class="form-label">Beschrijving:</label>
-                        <InputTextArea id="description" @bind-Value="Announcement.Description" class="form-control" />
-                        <ValidationMessage For="() => Announcement.Description" class="text-danger" />
+                        <InputTextArea id="description" @bind-Value="Dto.Description" class="form-control" />
+                        <ValidationMessage For="() => Dto.Description" class="text-danger" />
                     </div>
                     <div class="mb-3">
-                        <label for="order" class="form-label">Volgorde:</label>
-                        <InputNumber id="order" @bind-Value="Announcement.Order" class="form-control" />
-                        <ValidationMessage For="() => Announcement.Order" class="text-danger" />
+                        <label for="order" class="form-label">Afbeelding:</label>
+                        <InputFile OnChange="LoadFiles" class="form-control" />
+                        <ValidationMessage For="() => UploadedFilesCount" class="text-danger" />
+                    </div>
+                    <div class="mb-3">
+                        <label for="order" class="form-label">Automatisch toewijzen?</label>
+                        <InputFile OnChange="LoadFiles" class="form-control" />
+                        <InputCheckbox @bind-Value="Dto.AutoAchieve" class="form-control" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="usersSelect">Gebonden actie:</label>
+                        <InputSelect @bind-Value="Dto.Action" class="form-select" id="actionSelect">
+                            @foreach (var o in Enum.GetValues(typeof(Achievement.ActionOption)))
+                            {
+                                <option value="@o">@o.ToString()</option>
+                            }
+                        </InputSelect>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="usersSelect">Vergelijker:</label>
+                        <InputSelect @bind-Value="Dto.ComparisonOperator" class="form-select" id="usersSelect">
+                            @foreach (var o in Enum.GetValues(typeof(Achievement.ComparisonOperatorOption)))
+                            {
+                                <option value="@o">@o.ToString()</option>
+                            }
+                        </InputSelect>
                     </div>
                     <button type="submit" class="btn btn-primary">Opslaan</button>
                 </EditForm>
@@ -55,31 +80,27 @@
 @code {
 
     [SupplyParameterFromForm]
-    public AnnouncementDto Announcement { get; set; } = new();
+    public AchievementDto Dto { get; set; } = new();
+    
+    [MinLength(1, ErrorMessage = "Je moet minimaal 1 bestand uploaden.")]
+    public int UploadedFilesCount { get; set; } = 0;
+    
+    [Required(ErrorMessage = "Je moet een bestand selecteren.")]
+    [FileImageContentType(ErrorMessage = "Het geselecteerde bestand moet een afbeelding zijn (jpg, jpeg, png).")]
+    public IBrowserFile SelectedFile { get; set; }
 
-    public async Task AddAnnouncement()
+    public async Task AddAchievement()
     {
-        await AnnouncementService.CreateAnnouncement(new Announcement()
-        {
-            Message = Announcement.Message,
-            Description = Announcement.Description,
-            Order = Announcement.Order
-        });
+        Dto.ImageContentType = new ContentType(SelectedFile.ContentType);
+        Dto.ImageContent = SelectedFile.OpenReadStream();
+        await AchievementService.AddAchievement(Dto);
         
         NavigationManager.NavigateTo("/admin/announcements");
     }
-
-    public class AnnouncementDto
+    
+    private void LoadFiles(InputFileChangeEventArgs e)
     {
-        [Required]
-        [DisplayName("Bericht")]
-        public string Message { get; set; }
-    
-        [DisplayName("Beschrijving")]
-        public string? Description { get; set; }
-    
-        [Required]
-        [DisplayName("Volgorde")]
-        public int Order { get; set; }
+        SelectedFile = e.File;
+        UploadedFilesCount = e.FileCount;
     }
 }

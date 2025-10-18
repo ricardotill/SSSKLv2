@@ -13,4 +13,5 @@ public interface IAchievementService
     Task CheckOrderForAchievements(Order order);
     Task<bool> AwardAchievementToUser(string userId, Guid achievementId);
     Task<int> AwardAchievementToAllUsers(Guid achievementId);
+    Task AddAchievement(AchievementDto dto);
 }

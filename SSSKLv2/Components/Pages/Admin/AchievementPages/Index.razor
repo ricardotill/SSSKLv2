@@ -30,6 +30,7 @@
 <div class="table-responsive">
     <QuickGrid Items="@Achievements" Pagination="@Pagination">
         <PropertyColumn Title="Naam" Property="@(a => a.Name)" Align="Align.Left" />
+        <PropertyColumn Title="Auto-toewijzing" Property="@(a => a.AutoAchieve)" Align="Align.Left" />
         <PropertyColumn Title="Actie" Property="@(a => a.Action)" Align="Align.Left" />
         <TemplateColumn Title="#" Context="achievement">
             <a class="btn btn-info btn-sm" href="@($"admin/achievement/edit?id={achievement.Id}")" role="button"><i class="bi bi-pen"></i></a>
@@ -39,7 +40,6 @@
 </div>
 
 <Paginator State="@Pagination" />
-
 
 @code {
     

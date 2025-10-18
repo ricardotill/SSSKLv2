@@ -4,6 +4,7 @@ public class Achievement : BaseModel
 {
     public string Name { get; set; }
     public string Description { get; set; }
+    public bool AutoAchieve { get; set; }
     public AchievementImage? Image { get; set; }
     public ActionOption Action { get; set; }
     public ComparisonOperatorOption ComparisonOperator { get; set; }
@@ -12,6 +13,7 @@ public class Achievement : BaseModel
     
     public enum ActionOption
     {
+        None = 0,
         UserBuy = 1,
         TotalBuy = 2, 
         UserTopUp = 3,
@@ -20,6 +22,7 @@ public class Achievement : BaseModel
     }
     public enum ComparisonOperatorOption
     {
+        None = 0,
         LessThan = 1,
         GreaterThan = 2,
         LessThanOrEqual = 3, 

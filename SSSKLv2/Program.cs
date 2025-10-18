@@ -103,9 +103,10 @@ if (builder.Environment.IsProduction())
 builder.Services.AddQuickGridEntityFrameworkAdapter();
 
 // Register SignalR so the app can inject IHubContext and map hubs.
-builder.Services.AddSignalR();
-
-
+if (builder.Environment.IsDevelopment())
+{
+    builder.Services.AddSignalR();
+}
 builder.Services.AddIdentityCore<ApplicationUser>(options =>
     {
         options.SignIn.RequireConfirmedAccount = true;

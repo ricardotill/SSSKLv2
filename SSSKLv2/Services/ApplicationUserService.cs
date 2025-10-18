@@ -12,22 +12,22 @@ public class ApplicationUserService(
 {
     public async Task<ApplicationUser> GetUserById(string id)
     {
-        _logger.LogInformation($"{GetType()}: Get User with ID {id}");
+        _logger.LogInformation("{GetType}: Get User with ID {Id}", GetType(), id);
         return await _applicationUserRepository.GetById(id);
     }
     public async Task<ApplicationUser> GetUserByUsername(string username)
     {
-        _logger.LogInformation($"{GetType()}: Get User with username {username}");
+        _logger.LogInformation("{GetType}: Get User with username {Username}", GetType(), username);
         return await _applicationUserRepository.GetByUsername(username);
     }
     public async Task<IList<ApplicationUser>> GetAllUsers()
     {
-        _logger.LogInformation($"{GetType()}: Get All Users");
+        _logger.LogInformation("{GetType}: Get All Users", GetType());
         return await _applicationUserRepository.GetAll();
     }
     public async Task<IQueryable<ApplicationUser>> GetAllUsersObscured()
     {
-        _logger.LogInformation($"{GetType()}: Get All Users Obscured");
+        _logger.LogInformation("{GetType}: Get All Users Obscured", GetType());
         var result = new List<ApplicationUser>();
 
         var list = await _applicationUserRepository.GetAllForAdmin();
@@ -162,9 +162,12 @@ public class ApplicationUserService(
         return DeterminePositions(leaderboard);
     }
 
-    private IEnumerable<LeaderboardEntry> DeterminePositions(IEnumerable<LeaderboardEntry> leaderboard)
+    private static IEnumerable<LeaderboardEntry> DeterminePositions(IEnumerable<LeaderboardEntry> leaderboard)
     {
-        var list = leaderboard.OrderByDescending(x => x.Amount);
+        var list = leaderboard
+            .OrderByDescending(x => x.Amount)
+            .Take(18)
+            .ToList();
         int place = 0;
         int lastAmount = 0;
         foreach (var entry in list)

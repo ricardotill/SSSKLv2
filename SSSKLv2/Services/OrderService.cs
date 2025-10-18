@@ -9,6 +9,7 @@ namespace SSSKLv2.Services;
 
 public class OrderService(
     IOrderRepository orderRepository,
+    IPurchaseNotifier purchaseNotifier,
     ILogger<OrderService> logger) : IOrderService
 {
     public IQueryable<Order> GetAllQueryable(ApplicationDbContext dbContext)
@@ -50,13 +51,15 @@ public class OrderService(
         
         logger.LogInformation("{Type}: Create order for {productsCount} products and {usersCount} users", GetType(), products.Count, users.Count);
 
+        IList<Order> generatedOrders = new List<Order>();
         foreach (var p in products)
         {
-            var generatedOrders = GenerateUserOrders(users, p, order.Amount, order.Split);
+            generatedOrders = GenerateUserOrders(users, p, order.Amount, order.Split) ?? [];
             orders.AddRange(generatedOrders);
         }
         
         await orderRepository.CreateRange(orders);
+        await NotifyPurchase(generatedOrders);
     }
     
     public async Task<string> ExportOrdersFromPastTwoYearsToCsvAsync()
@@ -96,7 +99,7 @@ public class OrderService(
         await orderRepository.Delete(id);
     }
 
-    private IEnumerable<Order> GenerateUserOrders(IList<ApplicationUser> userList, Product p, int amount, bool goingDutch)
+    private IList<Order> GenerateUserOrders(IList<ApplicationUser> userList, Product p, int amount, bool goingDutch)
     {
         var paid = goingDutch ? Decimal.Round(p.Price / userList.Count, 2, MidpointRounding.ToPositiveInfinity) : p.Price;
         var sharedAmount = goingDutch ? amount / userList.Count : amount;
@@ -116,5 +119,19 @@ public class OrderService(
         }
 
         return list;
+    }
+    
+    private async Task NotifyPurchase(IEnumerable<Order> orders)
+    {
+        var Date = DateTime.Now;
+        foreach (var order in orders)
+        {
+            await purchaseNotifier.NotifyUserPurchaseAsync(new UserPurchaseDto(
+                order.User.FullName,
+                order.ProductNaam,
+                order.Amount,
+                Date
+            ));
+        }
     }
 }

@@ -5,10 +5,10 @@
 @implements IAsyncDisposable
 @inject IProductService ProductService;
 @inject IApplicationUserService UserService;
-@inject IOrderService OrderService;
+@using Microsoft.AspNetCore.SignalR.Client
+@inject NavigationManager Navigation
 @using SSSKLv2.Components.Layout
 @using SSSKLv2.Data
-@using SSSKLv2.Services
 @using SSSKLv2.Services.Interfaces
 @layout EmptyLayout;
 
@@ -90,6 +90,7 @@
                     @if (LatestOrders.Any())
                     {
                         <h5>Laatste Bestellingen</h5>
+                        <p>Totale aankopen: @TotalQuantity</p>
                         <div class="table-responsive text-start">
                             <table class="table table-striped">
                                 <thead>
@@ -101,13 +102,15 @@
                                 </tr>
                                 </thead>
                                 <tbody>
-                                @foreach (var o in LatestOrders)
+                                @foreach (var o in LatestOrders
+                                              .OrderByDescending(x => x.Timestamp)
+                                              .Take(10))
                                 {
                                     <tr>
-                                        <td>@o.CreatedOn.ToString("HH:mm")</td>
-                                        <td>@o.User.Name @o.User.Surname.First()</td>
-                                        <td>@o.ProductNaam</td>
-                                        <td>@o.Amount</td>
+                                        <td>@o.Timestamp.ToString("HH:mm")</td>
+                                        <td>@o.UserName</td>
+                                        <td>@o.ProductName</td>
+                                        <td>@o.Quantity</td>
                                     </tr>
                                 }
                                 </tbody>
@@ -135,21 +138,33 @@ else
     [Parameter]
     public string? ProductId { get; set; }
     
-    Timer timer;
-    
+    public HubConnection? Hub;
     public Product? Product { get; set; }
     public IEnumerable<LeaderboardEntry> Leaderboard { get; set; } = new List<LeaderboardEntry>();
     public IEnumerable<LeaderboardEntry> AllTimeLeaderboard { get; set; } = new List<LeaderboardEntry>();
-    public IEnumerable<Order> LatestOrders { get; set; } = new List<Order>();
+    
+    public IList<UserPurchaseDto> LatestOrders { get; } = new List<UserPurchaseDto>();
+    public int TotalQuantity = 0;
     
     protected override async Task OnInitializedAsync()
     {
+        await InitializeHubConnection();
         await GetData();
-        timer = new Timer(async _ =>
+    }
+
+    private async Task InitializeHubConnection()
+    {
+        Hub = new HubConnectionBuilder()
+            .WithUrl(Navigation.ToAbsoluteUri("/hubs/purchases"))
+            .Build();
+        await Hub.StartAsync();
+        
+        Hub.On<UserPurchaseDto>("UserPurchase", async dto =>
         {
+            ToevoegenPurchaseDto(dto);
             await GetData();
             await InvokeAsync(StateHasChanged);
-        }, null, 0, 15000);
+        });
     }
 
     private async Task GetData()
@@ -161,16 +176,21 @@ else
             Leaderboard = await UserService.Get12HourlyLiveLeaderboard(id);
             AllTimeLeaderboard = await UserService.GetAllLeaderboard(id);
         }
-        LatestOrders = await OrderService.GetLatestOrders();
+    }
+    
+    private void ToevoegenPurchaseDto(UserPurchaseDto dto)
+    {
+        LatestOrders.Add(dto);
+        TotalQuantity += dto.Quantity;
     }
 
     public void Dispose()
     {
-        timer.Dispose();
+        Hub?.DisposeAsync();
     }
 
-    public ValueTask DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
-        return timer.DisposeAsync();
+        if (Hub != null) await Hub.DisposeAsync();
     }
 }

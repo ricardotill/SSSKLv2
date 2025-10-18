@@ -13,6 +13,7 @@ public static class ServicesExtensions
             .AddTransient<IOrderService, OrderService>()
             .AddTransient<IProductService, ProductService>()
             .AddTransient<ITopUpService, TopUpService>()
-            .AddTransient<IAnnouncementService, AnnouncementService>();
+            .AddTransient<IAnnouncementService, AnnouncementService>()
+            .AddSingleton<IPurchaseNotifier, PurchaseNotifier>();
     }
 }

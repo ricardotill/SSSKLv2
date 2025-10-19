@@ -58,7 +58,7 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("Guest", policy => policy.RequireRole("Guest"));
 });
 
-var connection = "";
+string connection;
 if (builder.Environment.IsDevelopment())
 {
     builder.Services.AddDatabaseDeveloperPageExceptionFilter();
@@ -92,7 +92,7 @@ if (builder.Environment.IsProduction())
 {
     Policy.Handle<AzureSignalRException>()
         .WaitAndRetry(Backoff.LinearBackoff(TimeSpan.FromMilliseconds(100), retryCount: 5),
-            (ex, t, retryCount, c) => { Console.WriteLine($"Failed Attempt {retryCount}: {ex.GetType().Name}"); })
+            (ex, _, retryCount, _) => { Console.WriteLine($"Failed Attempt {retryCount}: {ex.GetType().Name}"); })
         .Execute(() =>
         {
             builder.Services.AddSignalR().AddAzureSignalR(options =>
@@ -104,6 +104,12 @@ if (builder.Environment.IsProduction())
 }
 
 builder.Services.AddQuickGridEntityFrameworkAdapter();
+
+// Register SignalR so the app can inject IHubContext and map hubs.
+if (builder.Environment.IsDevelopment())
+{
+    builder.Services.AddSignalR();
+}
 
 builder.Services.AddAzureClients(clientBuilder =>
 {
@@ -167,6 +173,9 @@ app.MapControllers();
 
 // Add additional endpoints required by the Identity /Account Razor components.
 app.MapAdditionalIdentityEndpoints();
+
+// Map our SignalR hub for user purchases
+app.MapHub<SSSKLv2.Services.Hubs.PurchaseHub>("/hubs/purchases");
 
 // Adding roles
 using (var scope = app.Services.CreateScope())

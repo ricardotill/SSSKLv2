@@ -21,6 +21,8 @@ namespace SSSKLv2.Data
         [Microsoft.Build.Framework.Required]
         public DateTime LastOrdered { get; set; } = DateTime.Now;
         public byte[]? ProfilePicture { get; set; }
+        
+        public string FullName => $"{Name} {Surname.First()}";
     }
 
 }

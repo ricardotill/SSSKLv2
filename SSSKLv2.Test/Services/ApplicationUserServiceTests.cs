@@ -1,16 +1,10 @@
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NSubstitute;
-using SSSKLv2.Components;
 using SSSKLv2.Data;
 using SSSKLv2.Data.DAL.Exceptions;
 using SSSKLv2.Data.DAL.Interfaces;
 using SSSKLv2.Services;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using SSSKLv2.Dto;
 
 namespace SSSKLv2.Test.Services;
@@ -858,9 +852,9 @@ public class ApplicationUserServiceTests
     {
         var methodInfo = typeof(ApplicationUserService).GetMethod(
             "DeterminePositions", 
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
         
-        return (IEnumerable<LeaderboardEntryDto>)methodInfo!.Invoke(_sut, new object[] { entries })!;
+        return (IEnumerable<LeaderboardEntryDto>)methodInfo!.Invoke(null, new object[] { entries })!;
     }
 
     #endregion

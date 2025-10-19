@@ -8,6 +8,7 @@ using SSSKLv2.Data.DAL.Exceptions;
 using SSSKLv2.Data.DAL.Interfaces;
 using SSSKLv2.Services;
 using SSSKLv2.Components.Pages;
+using SSSKLv2.Services.Interfaces;
 
 namespace SSSKLv2.Test.Services;
 
@@ -15,6 +16,7 @@ namespace SSSKLv2.Test.Services;
 public class OrderServiceTests
 {
     private IOrderRepository _mockOrderRepository = null!;
+    private IPurchaseNotifier _purchaseNotifier = null!;
     private ILogger<OrderService> _mockLogger = null!;
     private OrderService _sut = null!;
 
@@ -22,8 +24,9 @@ public class OrderServiceTests
     public void TestInitialize()
     {
         _mockOrderRepository = Substitute.For<IOrderRepository>();
+        _purchaseNotifier = Substitute.For<IPurchaseNotifier>();
         _mockLogger = Substitute.For<ILogger<OrderService>>();
-        _sut = new OrderService(_mockOrderRepository, _mockLogger);
+        _sut = new OrderService(_mockOrderRepository, _purchaseNotifier, _mockLogger);
     }
 
     #region GetAllQueryable Tests
@@ -444,12 +447,12 @@ public class OrderServiceTests
 
         // Assert
         result.Should().NotBeNullOrWhiteSpace();
-        result.Should().StartWith("OrderId,CustomerUsername,OrderDate,ProductName,ProductAmount,TotalPaid");
+        result.Should().StartWith("OrderId,CustomerUsername,OrderDateTime,ProductName,ProductAmount,TotalPaid");
 
         // Check that each order is in the CSV
         foreach (var order in orders)
         {
-            result.Should().Contain($"{order.Id},\"{order.User.UserName}\",{order.CreatedOn:yyyy-MM-dd},\"{order.ProductNaam}\",{order.Amount},{order.Paid.ToString(CultureInfo.InvariantCulture)}");
+            result.Should().Contain($"{order.Id},\"{order.User.UserName}\",{order.CreatedOn:yyyy-MM-dd HH:mm:ss},\"{order.ProductNaam}\",{order.Amount},{order.Paid.ToString(CultureInfo.InvariantCulture)}");
         }
 
         await _mockOrderRepository.Received(1).GetOrdersFromPastTwoYearsAsync();
@@ -465,7 +468,7 @@ public class OrderServiceTests
         var result = await _sut.ExportOrdersFromPastTwoYearsToCsvAsync();
 
         // Assert
-        result.Should().Be("OrderId,CustomerUsername,OrderDate,ProductName,ProductAmount,TotalPaid" + Environment.NewLine);
+        result.Should().Be("OrderId,CustomerUsername,OrderDateTime,ProductName,ProductAmount,TotalPaid" + Environment.NewLine);
         await _mockOrderRepository.Received(1).GetOrdersFromPastTwoYearsAsync();
     }
 

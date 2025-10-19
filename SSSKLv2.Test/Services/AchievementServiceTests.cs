@@ -1,5 +1,6 @@
 using FluentAssertions;
 using NSubstitute;
+using SSSKLv2.Agents;
 using SSSKLv2.Data;
 using SSSKLv2.Data.DAL.Interfaces;
 using SSSKLv2.Services;
@@ -15,6 +16,7 @@ public class AchievementServiceTests
     private IOrderRepository _orderRepository = null!;
     private ITopUpRepository _topUpRepository = null!;
     private IApplicationUserRepository _applicationUserRepository = null!;
+    private IBlobStorageAgent _blobStorageAgent = null!;
     
     private ApplicationUser _testUser = null!;
     private Order _testOrder = null!;
@@ -27,10 +29,11 @@ public class AchievementServiceTests
         _orderRepository = Substitute.For<IOrderRepository>();
         _topUpRepository = Substitute.For<ITopUpRepository>();
         _applicationUserRepository = Substitute.For<IApplicationUserRepository>();
+        _blobStorageAgent = Substitute.For<IBlobStorageAgent>();
         
         // Create the system under test
         _sut = new AchievementService(_achievementRepository, _orderRepository, _topUpRepository,
-            _applicationUserRepository);
+            _applicationUserRepository, _blobStorageAgent);
         
         // Create test user
         _testUser = new ApplicationUser
@@ -757,7 +760,7 @@ public class AchievementServiceTests
     public async Task AwardAchievementToAllUsers_AchievementDoesNotExist_ReturnsZero()
     {
         var applicationUserRepository = Substitute.For<IApplicationUserRepository>();
-        var sut = new AchievementService(_achievementRepository, _orderRepository, _topUpRepository, applicationUserRepository);
+        var sut = new AchievementService(_achievementRepository, _orderRepository, _topUpRepository, applicationUserRepository, _blobStorageAgent);
         applicationUserRepository.GetAll().Returns(new List<ApplicationUser>());
         _achievementRepository.GetAll().Returns(new List<Achievement>());
         var result = await sut.AwardAchievementToAllUsers(Guid.NewGuid());
@@ -770,7 +773,7 @@ public class AchievementServiceTests
         var achievementId = Guid.NewGuid();
         var achievement = new Achievement { Id = achievementId, Name = "A1" };
         var applicationUserRepository = Substitute.For<IApplicationUserRepository>();
-        var sut = new AchievementService(_achievementRepository, _orderRepository, _topUpRepository, applicationUserRepository);
+        var sut = new AchievementService(_achievementRepository, _orderRepository, _topUpRepository, applicationUserRepository, _blobStorageAgent);
         applicationUserRepository.GetAll().Returns(new List<ApplicationUser>());
         _achievementRepository.GetAll().Returns(new List<Achievement> { achievement });
         var result = await sut.AwardAchievementToAllUsers(achievementId);
@@ -785,7 +788,7 @@ public class AchievementServiceTests
         var users = new List<ApplicationUser> { _testUser };
         var entry = new AchievementEntry { Achievement = achievement, User = _testUser };
         var applicationUserRepository = Substitute.For<IApplicationUserRepository>();
-        var sut = new AchievementService(_achievementRepository, _orderRepository, _topUpRepository, applicationUserRepository);
+        var sut = new AchievementService(_achievementRepository, _orderRepository, _topUpRepository, applicationUserRepository, _blobStorageAgent);
         applicationUserRepository.GetAll().Returns(users);
         _achievementRepository.GetAll().Returns(new List<Achievement> { achievement });
         _achievementRepository.GetAllEntriesOfUser(_testUser.Id).Returns(new List<AchievementEntry> { entry });
@@ -802,7 +805,7 @@ public class AchievementServiceTests
         var user2 = new ApplicationUser { Id = "u2" };
         var users = new List<ApplicationUser> { user1, user2 };
         var applicationUserRepository = Substitute.For<IApplicationUserRepository>();
-        var sut = new AchievementService(_achievementRepository, _orderRepository, _topUpRepository, applicationUserRepository);
+        var sut = new AchievementService(_achievementRepository, _orderRepository, _topUpRepository, applicationUserRepository, _blobStorageAgent);
         applicationUserRepository.GetAll().Returns(users);
         _achievementRepository.GetAll().Returns(new List<Achievement> { achievement });
         _achievementRepository.GetAllEntriesOfUser("u1").Returns(new List<AchievementEntry>());

@@ -47,10 +47,13 @@
                         <InputFile OnChange="LoadFiles" class="form-control" />
                         <ValidationMessage For="() => UploadedFilesCount" class="text-danger" />
                     </div>
+                    <div class="mb-3 form-check">
+                        <InputCheckbox id="autoachieve" @bind-Value="Dto.AutoAchieve" class="form-check-input" />
+                        <label for="autoachieve" class="form-check-label">Automatisch toewijzen?</label>
+                    </div>
+                    <!-- Debug: show current value to detect binding issues -->
                     <div class="mb-3">
-                        <label for="order" class="form-label">Automatisch toewijzen?</label>
-                        <InputFile OnChange="LoadFiles" class="form-control" />
-                        <InputCheckbox @bind-Value="Dto.AutoAchieve" class="form-control" />
+                        <small>Debug - AutoAchieve value: <strong>@Dto.AutoAchieve</strong></small>
                     </div>
                     <div class="mb-3">
                         <label class="form-label" for="usersSelect">Gebonden actie:</label>
@@ -70,6 +73,10 @@
                             }
                         </InputSelect>
                     </div>
+                    <div class="mb-3">
+                        <label for="comparisonValue" class="form-label">Vergelijkingswaarde:</label>
+                        <InputNumber id="comparisonValue" @bind-Value="Dto.ComparisonValue" class="form-control" />
+                    </div>
                     <button type="submit" class="btn btn-primary">Opslaan</button>
                 </EditForm>
             </div>
@@ -79,8 +86,9 @@
 
 @code {
 
-    [SupplyParameterFromForm]
     public AchievementDto Dto { get; set; } = new();
+    
+    // Using standard @bind-Value for the InputCheckbox to keep two-way binding behavior.
     
     [MinLength(1, ErrorMessage = "Je moet minimaal 1 bestand uploaden.")]
     public int UploadedFilesCount { get; set; } = 0;
@@ -95,7 +103,7 @@
         Dto.ImageContent = SelectedFile.OpenReadStream();
         await AchievementService.AddAchievement(Dto);
         
-        NavigationManager.NavigateTo("/admin/announcements");
+        NavigationManager.NavigateTo("/admin/achievements");
     }
     
     private void LoadFiles(InputFileChangeEventArgs e)

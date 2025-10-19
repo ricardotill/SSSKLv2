@@ -35,10 +35,12 @@ public class AchievementRepository(IDbContextFactory<ApplicationDbContext> dbCon
             .OrderBy(x => x.CreatedOn);
     }
     
-    public async Task<IEnumerable<AchievementEntry>> GetAllEntriesOfUser(string userId)
+    public async Task<IList<AchievementEntry>> GetAllEntriesOfUser(string userId)
     {
         await using var context = await dbContextFactory.CreateDbContextAsync();
         return await context.AchievementEntry
+            .Include(x => x.Achievement)
+            .Include(x => x.User)
             .Where(x => x.User.Id == userId)
             .OrderBy(x => x.CreatedOn)
             .ToListAsync();
@@ -89,9 +91,63 @@ public class AchievementRepository(IDbContextFactory<ApplicationDbContext> dbCon
     public async Task Update(Achievement achievement)
     {
         await using var context = await dbContextFactory.CreateDbContextAsync();
-        context.Update(achievement);
-        await context.SaveChangesAsync();
-    }
+
+        // Load existing achievement including its image
+        var existing = await context.Achievement
+            .Include(a => a.Image)
+            .FirstOrDefaultAsync(a => a.Id == achievement.Id);
+
+        if (existing == null)
+            throw new NotFoundException("Achievement not found");
+
+        // Update scalar properties
+        existing.Name = achievement.Name;
+        existing.Description = achievement.Description;
+        existing.AutoAchieve = achievement.AutoAchieve;
+        existing.Action = achievement.Action;
+        existing.ComparisonOperator = achievement.ComparisonOperator;
+        existing.ComparisonValue = achievement.ComparisonValue;
+
+        // Handle image replacement/removal
+        if (achievement.Image == null)
+        {
+            // User wants to remove the image
+            if (existing.Image != null)
+            {
+                context.AchievementImage.Remove(existing.Image);
+            }
+        }
+        else
+        {
+            // New image provided. Remove old image if present, then insert new AchievementImage
+            if (existing.Image != null)
+            {
+                context.AchievementImage.Remove(existing.Image);
+                await context.SaveChangesAsync();
+            }
+
+            // Create a new AchievementImage entity and set the shadow FK AchievementId to link it
+            var newImage = new AchievementImage
+            {
+                FileName = achievement.Image.FileName,
+                Uri = achievement.Image.Uri,
+                ContentType = achievement.Image.ContentType,
+                CreatedOn = achievement.Image.CreatedOn == default ? DateTime.Now : achievement.Image.CreatedOn
+            };
+
+            // If the incoming image object has an Id (e.g. created by BlobStorageAgent), preserve it
+            if (achievement.Image.Id != Guid.Empty)
+            {
+                newImage.Id = achievement.Image.Id;
+            }
+
+            await context.AchievementImage.AddAsync(newImage);
+             // Set shadow FK to link to this achievement
+             context.Entry(newImage).Property("AchievementId").CurrentValue = existing.Id;
+         }
+
+         await context.SaveChangesAsync();
+     }
 
     public async Task Delete(Guid id)
     {
@@ -103,6 +159,19 @@ public class AchievementRepository(IDbContextFactory<ApplicationDbContext> dbCon
             await context.SaveChangesAsync();
         }
         else throw new NotFoundException("Achievement not found");
+    }
+    
+    public async Task DeleteAchievementEntryRange(IEnumerable<AchievementEntry> entries)
+    {
+        await using var context = await dbContextFactory.CreateDbContextAsync();
+        // Delete entries by their Ids to avoid issues with detached entities
+        var ids = entries.Select(e => e.Id).ToList();
+        var entriesInDb = await context.AchievementEntry.Where(e => ids.Contains(e.Id)).ToListAsync();
+        if (entriesInDb.Any())
+        {
+            context.AchievementEntry.RemoveRange(entriesInDb);
+            await context.SaveChangesAsync();
+        }
     }
 
     public async Task<IEnumerable<Achievement>> GetUncompletedAchievementsForUser(string userId)

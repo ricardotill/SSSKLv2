@@ -8,11 +8,11 @@ using System.Globalization;
 using Azure.Identity;
 using Blazored.Toast;
 using Microsoft.Azure.SignalR.Common;
-using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Logging.ApplicationInsights;
 using Polly;
 using Polly.Contrib.WaitAndRetry;
+using SSSKLv2.Agents;
 using SSSKLv2.Data.DAL;
 using SSSKLv2.Services;
 
@@ -113,9 +113,32 @@ if (builder.Environment.IsDevelopment())
 
 builder.Services.AddAzureClients(clientBuilder =>
 {
-    // Register clients for each service
-    clientBuilder.AddBlobServiceClient(builder.Configuration.GetSection("Storage"));
-    clientBuilder.UseCredential(new DefaultAzureCredential());
+    // Register BlobServiceClient with a dev-friendly configuration.
+    // For local development (Azurite) prefer a connection string or the emulator alias.
+    var storageSection = builder.Configuration.GetSection("Storage");
+    var connectionString = storageSection["ConnectionString"];
+    var serviceUri = storageSection["ServiceUri"];
+
+    if (builder.Environment.IsDevelopment())
+    {
+        // Prefer an explicit connection string set in appsettings.Development.json.
+        // If none is provided, fall back to the Storage Emulator alias which works with Azurite/Storage Emulator.
+        var devConn = !string.IsNullOrWhiteSpace(connectionString) ? connectionString : "UseDevelopmentStorage=true";
+        clientBuilder.AddBlobServiceClient(devConn);
+    }
+    else
+    {
+        // In production, prefer a ServiceUri with DefaultAzureCredential or an explicit connection string.
+        if (!string.IsNullOrWhiteSpace(connectionString))
+        {
+            clientBuilder.AddBlobServiceClient(connectionString);
+        }
+        else if (!string.IsNullOrWhiteSpace(serviceUri))
+        {
+            clientBuilder.AddBlobServiceClient(new Uri(serviceUri));
+            clientBuilder.UseCredential(new DefaultAzureCredential());
+        }
+    }
 });
 
 builder.Services.AddIdentityCore<ApplicationUser>(options =>
@@ -134,7 +157,8 @@ else builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityEmailS
 builder.Services.AddBlazoredToast();
 
 builder.Services.AddServicesDI();
-builder.Services.AddDataDI(); 
+builder.Services.AddDataDI();
+builder.Services.AddAgentsDI();
 
 builder.Services.AddAntiforgery(o => o.SuppressXFrameOptionsHeader = true);
 

@@ -14,7 +14,7 @@ public class AchievementService(
     IApplicationUserRepository applicationUserRepository,
     IBlobStorageAgent blobStorageAgent) : IAchievementService
 {
-    public async Task<List<AchievementListingDto>> GetPersonalAchievements(string userId)
+    public async Task<IList<AchievementListingDto>> GetPersonalAchievements(string userId)
     {
         var allAchievements = await achievementRepository.GetAll();
         var achievementEntries = await achievementRepository.GetAllEntriesOfUser(userId);
@@ -29,9 +29,34 @@ public class AchievementService(
         ).ToList();
     }
 
+    public async Task<IList<AchievementEntry>> GetPersonalAchievementEntries(string userId)
+    {
+        return await achievementRepository.GetAllEntriesOfUser(userId);
+    }
+
     public async Task<IEnumerable<Achievement>> GetAchievements()
     {
         return await achievementRepository.GetAll();
+    }
+    
+    public async Task<Achievement> GetAchievementById(Guid id)
+    {
+        return await achievementRepository.GetById(id);
+    }
+    
+    public async Task UpdateAchievement(Achievement achievement)
+    {
+        await achievementRepository.Update(achievement);
+    }
+    
+    public async Task DeleteAchievement(Guid id)
+    {
+        await achievementRepository.Delete(id);
+    }
+    
+    public async Task DeleteAchievementEntryRange(IEnumerable<AchievementEntry> entries)
+    {
+        await achievementRepository.DeleteAchievementEntryRange(entries);
     }
     
     public IQueryable<Achievement> GetAchievementsQueryable(ApplicationDbContext context)
@@ -195,6 +220,10 @@ public class AchievementService(
             Name = dto.Name,
             Description = dto.Description,
             Image = AchievementImage.ToAchievementImage(blobItem),
+            AutoAchieve = dto.AutoAchieve,
+            Action = dto.Action,
+            ComparisonOperator = dto.ComparisonOperator,
+            ComparisonValue = dto.ComparisonValue
             // Set other properties as needed
         };
         await achievementRepository.Create(achievement);

@@ -309,9 +309,126 @@ public class AchievementRepositoryTests : RepositoryTest
         Func<Task> act = () => _sut.Update(achievement);
 
         // Assert
-        await act.Should().ThrowAsync<DbUpdateConcurrencyException>();
+        await act.Should().ThrowAsync<NotFoundException>();
         var dbAchievements = await GetAchievements();
         dbAchievements.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public async Task Update_WhenReplacingImage_ReplacesImageRowInDatabase()
+    {
+        // Arrange: create achievement with an initial image
+        var initialImage = new AchievementImage
+        {
+            Id = Guid.NewGuid(),
+            FileName = "old.png",
+            Uri = "http://old",
+            ContentType = "image/png",
+            CreatedOn = DateTime.Now.AddMinutes(-10)
+        };
+        var achievement = NewAchievement("With Image");
+        achievement.Image = initialImage;
+        await SaveAchievements(achievement);
+
+        // Act: update achievement providing a new image
+        var newImage = new AchievementImage
+        {
+            Id = Guid.NewGuid(),
+            FileName = "new.png",
+            Uri = "http://new",
+            ContentType = "image/png",
+            CreatedOn = DateTime.Now
+        };
+        var updated = new Achievement
+        {
+            Id = achievement.Id,
+            Name = achievement.Name,
+            Description = achievement.Description,
+            AutoAchieve = achievement.AutoAchieve,
+            Action = achievement.Action,
+            ComparisonOperator = achievement.ComparisonOperator,
+            ComparisonValue = achievement.ComparisonValue,
+            Image = newImage
+        };
+
+        await _sut.Update(updated);
+
+        // Assert: only one image row exists and it's the new one
+        var images = await GetAchievementImagesForAchievement(achievement.Id);
+        images.Should().HaveCount(1);
+        images.Single().FileName.Should().Be("new.png");
+        images.Single().Uri.Should().Be("http://new");
+    }
+
+    [TestMethod]
+    public async Task Update_WhenRemovingImage_RemovesImageRowFromDatabase()
+    {
+        // Arrange: create achievement with image
+        var initialImage = new AchievementImage
+        {
+            Id = Guid.NewGuid(),
+            FileName = "toremove.png",
+            Uri = "http://toremove",
+            ContentType = "image/png"
+        };
+        var achievement = NewAchievement("With Image To Remove");
+        achievement.Image = initialImage;
+        await SaveAchievements(achievement);
+
+        // Act: update achievement with Image = null
+        var updated = new Achievement
+        {
+            Id = achievement.Id,
+            Name = achievement.Name,
+            Description = achievement.Description,
+            AutoAchieve = achievement.AutoAchieve,
+            Action = achievement.Action,
+            ComparisonOperator = achievement.ComparisonOperator,
+            ComparisonValue = achievement.ComparisonValue,
+            Image = null
+        };
+
+        await _sut.Update(updated);
+
+        // Assert: no image rows exist for this achievement
+        var images = await GetAchievementImagesForAchievement(achievement.Id);
+        images.Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public async Task Update_WhenAddingImageToAchievementWithoutImage_AddsImageRow()
+    {
+        // Arrange: achievement without image
+        var achievement = NewAchievement("No Image");
+        await SaveAchievements(achievement);
+
+        var addedImage = new AchievementImage
+        {
+            Id = Guid.NewGuid(),
+            FileName = "added.png",
+            Uri = "http://added",
+            ContentType = "image/png"
+        };
+
+        var updated = new Achievement
+        {
+            Id = achievement.Id,
+            Name = achievement.Name,
+            Description = achievement.Description,
+            AutoAchieve = achievement.AutoAchieve,
+            Action = achievement.Action,
+            ComparisonOperator = achievement.ComparisonOperator,
+            ComparisonValue = achievement.ComparisonValue,
+            Image = addedImage
+        };
+
+        // Act
+        await _sut.Update(updated);
+
+        // Assert
+        var images = await GetAchievementImagesForAchievement(achievement.Id);
+        images.Should().HaveCount(1);
+        images.Single().FileName.Should().Be("added.png");
     }
 
     #endregion
@@ -743,6 +860,15 @@ public class AchievementRepositoryTests : RepositoryTest
     #endregion
 
     #region Helper Methods
+
+    private async Task<IList<AchievementImage>> GetAchievementImagesForAchievement(Guid achievementId)
+    {
+        await using var context = await _dbContextFactory.CreateDbContextAsync();
+        return await context.AchievementImage
+            .Where(ai => EF.Property<Guid>(ai, "AchievementId") == achievementId)
+            .AsNoTracking()
+            .ToListAsync();
+    }
 
     private Achievement NewAchievement(string name, Guid? id = null, DateTime? createdOn = null) => new()
     {

@@ -23,7 +23,9 @@
         <h1>Achievementbeheer</h1>
     </div>
     <div class="col-2 text-end back-container">
-        <a class="btn btn-success bg-lg" href="/admin/achievement/create" role="button"><i class="bi bi-plus-circle"></i></a>
+        <a class="btn btn-success bg-lg" href="/admin/achievements/create" role="button"><i class="bi bi-plus-circle"></i></a>
+        <a class="btn btn-primary ms-2" href="/admin/achievements/entries/assign" role="button" title="Achievement toewijzen"><i class="bi bi-person-plus"></i></a>
+        <a class="btn btn-danger ms-2" href="/admin/achievements/entries/remove" role="button" title="Achievement verwijderen bij gebruiker"><i class="bi bi-person-dash"></i></a>
     </div>
 </div>
 
@@ -33,8 +35,8 @@
         <PropertyColumn Title="Auto-toewijzing" Property="@(a => a.AutoAchieve)" Align="Align.Left" />
         <PropertyColumn Title="Actie" Property="@(a => a.Action)" Align="Align.Left" />
         <TemplateColumn Title="#" Context="achievement">
-            <a class="btn btn-info btn-sm" href="@($"admin/achievement/edit?id={achievement.Id}")" role="button"><i class="bi bi-pen"></i></a>
-            <a class="btn btn-danger btn-sm" href="@($"admin/achievement/delete?id={achievement.Id}")" role="button"><i class="bi bi-trash"></i></a>
+            <a class="btn btn-info btn-sm" href="@($"/admin/achievements/edit?id={achievement.Id}")" role="button"><i class="bi bi-pen"></i></a>
+            <a class="btn btn-danger btn-sm" href="@($"/admin/achievements/delete?id={achievement.Id}")" role="button"><i class="bi bi-trash"></i></a>
         </TemplateColumn>
     </QuickGrid>
 </div>

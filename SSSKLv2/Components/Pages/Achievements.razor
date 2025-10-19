@@ -55,7 +55,7 @@ else
 }
 
 @code {
-    private List<AchievementListingDto> achievements = new();
+    private IList<AchievementListingDto> achievements = new List<AchievementListingDto>();
     private bool isLoading = true;
 
     protected override async Task OnInitializedAsync()

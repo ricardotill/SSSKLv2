@@ -199,7 +199,7 @@ app.MapControllers();
 app.MapAdditionalIdentityEndpoints();
 
 // Map our SignalR hub for user purchases
-app.MapHub<SSSKLv2.Services.Hubs.PurchaseHub>("/hubs/purchases");
+app.MapHub<SSSKLv2.Services.Hubs.LiveMetricsHub>("/hubs/livemetrics");
 
 // Adding roles
 using (var scope = app.Services.CreateScope())

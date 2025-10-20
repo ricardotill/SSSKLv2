@@ -17,6 +17,8 @@ public interface IAchievementService
     IQueryable<Achievement> GetAchievementsQueryable(ApplicationDbContext context);
     IQueryable<AchievementEntry> GetAchievementEntriesQueryable(ApplicationDbContext context);
     Task CheckOrdersForAchievements(IEnumerable<Order> orders);
+    Task CheckTopUpForAchievements(TopUp topUp);
+    Task CheckUserForAchievements(string username);
     Task<bool> AwardAchievementToUser(string userId, Guid achievementId);
     Task<int> AwardAchievementToAllUsers(Guid achievementId);
     Task AddAchievement(AchievementDto dto);

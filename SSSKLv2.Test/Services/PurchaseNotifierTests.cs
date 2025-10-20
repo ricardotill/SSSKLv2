@@ -14,7 +14,7 @@ namespace SSSKLv2.Test.Services
         public async Task NotifyUserPurchaseAsync_Calls_ClientsAll_SendCoreAsync_With_Dto()
         {
             // Arrange
-            var hubContext = Substitute.For<IHubContext<PurchaseHub>>();
+            var hubContext = Substitute.For<IHubContext<LiveMetricsHub>>();
             var hubClients = Substitute.For<IHubClients>();
             var clientProxy = Substitute.For<IClientProxy>();
 
@@ -23,7 +23,7 @@ namespace SSSKLv2.Test.Services
 
             var notifier = new PurchaseNotifier(hubContext);
 
-            var dto = new UserPurchaseDto("user1", "product1", 2, DateTime.UtcNow);
+            var dto = new UserPurchaseEvent("user1", "product1", 2, DateTime.UtcNow);
 
             // Act
             await notifier.NotifyUserPurchaseAsync(dto);
@@ -39,7 +39,7 @@ namespace SSSKLv2.Test.Services
         public async Task NotifyUserPurchaseAsync_When_SendCoreAsync_Throws_Propagates_Exception()
         {
             // Arrange
-            var hubContext = Substitute.For<IHubContext<PurchaseHub>>();
+            var hubContext = Substitute.For<IHubContext<LiveMetricsHub>>();
             var hubClients = Substitute.For<IHubClients>();
             var clientProxy = Substitute.For<IClientProxy>();
 
@@ -51,7 +51,7 @@ namespace SSSKLv2.Test.Services
                        .Do(ci => throw new InvalidOperationException("boom"));
 
             var notifier = new PurchaseNotifier(hubContext);
-            var dto = new UserPurchaseDto("user", "product", 1, DateTime.UtcNow);
+            var dto = new UserPurchaseEvent("user", "product", 1, DateTime.UtcNow);
 
             // Act
             Func<Task> act = () => notifier.NotifyUserPurchaseAsync(dto);

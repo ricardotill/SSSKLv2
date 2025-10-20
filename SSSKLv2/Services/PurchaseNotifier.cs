@@ -6,16 +6,20 @@ namespace SSSKLv2.Services;
 
 public class PurchaseNotifier : IPurchaseNotifier
 {
-    private readonly IHubContext<PurchaseHub> _hubContext;
+    private readonly IHubContext<LiveMetricsHub> _hubContext;
 
-    public PurchaseNotifier(IHubContext<PurchaseHub> hubContext)
+    public PurchaseNotifier(IHubContext<LiveMetricsHub> hubContext)
     {
         _hubContext = hubContext;
     }
 
-    public Task NotifyUserPurchaseAsync(UserPurchaseDto dto)
+    public Task NotifyUserPurchaseAsync(UserPurchaseEvent @event)
     {
-        // Broadcast to all connected clients; client method name: "UserPurchase"
-        return _hubContext.Clients.All.SendAsync("UserPurchase", dto);
+        return _hubContext.Clients.All.SendAsync("UserPurchase", @event);
+    }
+    
+    public Task NotifyAchievementAsync(AchievementEvent @event)
+    {
+        return _hubContext.Clients.All.SendAsync("Achievement", @event);
     }
 }

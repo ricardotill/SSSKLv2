@@ -12,6 +12,7 @@ public class AchievementService(
     IOrderRepository orderRepository,
     ITopUpRepository topUpRepository,
     IApplicationUserRepository applicationUserRepository,
+    IPurchaseNotifier purchaseNotifier,
     IBlobStorageAgent blobStorageAgent) : IAchievementService
 {
     public async Task<IList<AchievementListingDto>> GetPersonalAchievements(string userId)
@@ -95,11 +96,7 @@ public class AchievementService(
     {
         foreach (var order in orders)
         {
-            // Get all achievements the user hasn't completed yet
-            var userId = order.User.Id;
-            var uncompletedAchievements = await achievementRepository.GetUncompletedAchievementsForUser(userId);
-            
-            // Get user's order history for calculations
+            var uncompletedAchievements = await achievementRepository.GetUncompletedAchievementsForUser(order.User.UserName!);
             var userOrders = await orderRepository.GetPersonal(order.User.UserName!);
             
             var newAchievementEntries = new List<AchievementEntry>();
@@ -114,38 +111,30 @@ public class AchievementService(
                 switch (achievement.Action)
                 {
                     case Achievement.ActionOption.UserBuy:
-                        // Check if user has bought enough items
                         var userTotalBought = userOrders.Sum(o => o.Amount);
-                        shouldAward = CheckComparison(userTotalBought, achievement.ComparisonOperator, achievement.ComparisonValue);
+                        shouldAward = AchievementRulesUtil.CheckComparison(userTotalBought, achievement.ComparisonOperator, achievement.ComparisonValue);
                         break;
                         
                     case Achievement.ActionOption.TotalBuy:
-                        // Check if user's total purchase amount meets criteria
                         var userTotalSpent = userOrders.Sum(o => o.Paid);
-                        shouldAward = CheckComparison((int)userTotalSpent, achievement.ComparisonOperator, achievement.ComparisonValue);
+                        shouldAward = AchievementRulesUtil.CheckComparison((int)userTotalSpent, achievement.ComparisonOperator, achievement.ComparisonValue);
                         break;
-                        
-                    case Achievement.ActionOption.UserTopUp:
-                        // Get user's top-up history
-                        var userTopUps = await topUpRepository.GetPersonal(userId);
-                        var userTopUpCount = userTopUps.Count;
-                        shouldAward = CheckComparison(userTopUpCount, achievement.ComparisonOperator, achievement.ComparisonValue);
+                    
+                    case Achievement.ActionOption.OrdersWithinHour:
+                        var ordersWithinHour = userOrders.Count(x => DateTime.Now.Subtract(x.CreatedOn).TotalHours <= 1);
+                        shouldAward = AchievementRulesUtil.CheckComparison(ordersWithinHour, achievement.ComparisonOperator, achievement.ComparisonValue);
                         break;
-                        
-                    case Achievement.ActionOption.TotalTopUp:
-                        // Get user's total top-up amount (using Saldo property)
-                        var SumTopUps = (await topUpRepository.GetPersonal(userId)).Sum(t => t.Saldo);
-                        var roundedSumTopUps = (int)Math.Round(SumTopUps);
-                        shouldAward = CheckComparison(roundedSumTopUps, achievement.ComparisonOperator, achievement.ComparisonValue);
-                        break;
-                        
-                    case Achievement.ActionOption.YearsOfMembership:
-                        // Calculate years of membership based on the oldest order date as a proxy for membership start
-                        var oldestOrder = userOrders.OrderBy(o => o.CreatedOn).FirstOrDefault();
-                        if (oldestOrder != null)
+                    
+                    case Achievement.ActionOption.MinutesBetweenOrders:
+                        var lastTwoOrders = userOrders.Where(x => DateTime.Now.Subtract(x.CreatedOn).TotalHours <= 12)
+                            .OrderByDescending(x => x.CreatedOn)
+                            .Take(2)
+                            .Select(x => x.CreatedOn)
+                            .ToList();
+                        if (lastTwoOrders.Count == 2)
                         {
-                            var membershipYears = (DateTime.Now - oldestOrder.CreatedOn).Days / 365;
-                            shouldAward = CheckComparison(membershipYears, achievement.ComparisonOperator, achievement.ComparisonValue);
+                            var minutes = lastTwoOrders[0].Subtract(lastTwoOrders[1]).Minutes;
+                            shouldAward = AchievementRulesUtil.CheckComparison(minutes, achievement.ComparisonOperator, achievement.ComparisonValue);
                         }
                         break;
                 }
@@ -169,32 +158,132 @@ public class AchievementService(
             if (newAchievementEntries.Any())
             {
                 await achievementRepository.CreateEntryRange(newAchievementEntries);
+                await NotifyAchievement(newAchievementEntries);
             }
+        }
+    }
+    
+    public async Task CheckTopUpForAchievements(TopUp topUp)
+    {
+        var userTopUps = await topUpRepository.GetPersonal(topUp.User.UserName!);
+        var uncompletedAchievements = await achievementRepository.GetUncompletedAchievementsForUser(topUp.User.UserName!);
+        
+        var newAchievementEntries = new List<AchievementEntry>();
+        
+        foreach (var achievement in uncompletedAchievements)
+        {
+            if (!achievement.AutoAchieve) 
+                continue;
+            
+            bool shouldAward = false;
+            
+            switch (achievement.Action)
+            {
+                case Achievement.ActionOption.UserTopUp:
+                    var roundedTopUpCount = (int)Math.Round(topUp.Saldo);
+                    shouldAward = AchievementRulesUtil.CheckComparison(roundedTopUpCount, achievement.ComparisonOperator, achievement.ComparisonValue);
+                    break;
+                    
+                case Achievement.ActionOption.TotalTopUp:
+                    var sumTopUps = userTopUps.Sum(t => t.Saldo);
+                    var roundedSumTopUps = (int)Math.Round(sumTopUps);
+                    shouldAward = AchievementRulesUtil.CheckComparison(roundedSumTopUps, achievement.ComparisonOperator, achievement.ComparisonValue);
+                    break;
+                
+                case Achievement.ActionOption.MinutesBetweenTopUp:
+                    var lastTwoTopUps = userTopUps
+                        .Where(x => DateTime.Now.Subtract(x.CreatedOn).TotalHours <= 12)
+                        .OrderByDescending(x => x.CreatedOn)
+                        .Take(2)
+                        .Select(x => x.CreatedOn)
+                        .ToList();
+                    if (lastTwoTopUps.Count == 2)
+                    {
+                        var minutes = lastTwoTopUps[0].Subtract(lastTwoTopUps[1]).Minutes;
+                        shouldAward = AchievementRulesUtil.CheckComparison(minutes, achievement.ComparisonOperator, achievement.ComparisonValue);
+                    }
+                    break;
+            }
+            
+            if (shouldAward)
+            {
+                var achievementEntry = new AchievementEntry
+                {
+                    Id = Guid.NewGuid(),
+                    Achievement = achievement,
+                    User = topUp.User,
+                    HasSeen = false,
+                    CreatedOn = DateTime.Now
+                };
+                
+                newAchievementEntries.Add(achievementEntry);
+            }
+        }
+        
+        if (newAchievementEntries.Any())
+        {
+            await achievementRepository.CreateEntryRange(newAchievementEntries);
+            await NotifyAchievement(newAchievementEntries);
+        }
+    }
+    
+    public async Task CheckUserForAchievements(string username)
+    {
+        var uncompletedAchievements = await achievementRepository.GetUncompletedAchievementsForUser(username);
+        var user = await applicationUserRepository.GetByUsername(username);
+        
+        var newAchievementEntries = new List<AchievementEntry>();
+        
+        foreach (var achievement in uncompletedAchievements)
+        {
+            if (!achievement.AutoAchieve) 
+                continue;
+            
+            bool shouldAward = AchievementRulesUtil.CheckSpecialAchievementRules(achievement, user);
+            
+            if (shouldAward)
+            {
+                var achievementEntry = new AchievementEntry
+                {
+                    Id = Guid.NewGuid(),
+                    Achievement = achievement,
+                    User = user,
+                    HasSeen = false,
+                    CreatedOn = DateTime.Now
+                };
+                
+                newAchievementEntries.Add(achievementEntry);
+            }
+        }
+        
+        if (newAchievementEntries.Any())
+        {
+            await achievementRepository.CreateEntryRange(newAchievementEntries);
+            await NotifyAchievement(newAchievementEntries);
         }
     }
     
     public async Task<bool> AwardAchievementToUser(string userId, Guid achievementId)
     {
-        // Check if user already has the achievement
         var entries = await achievementRepository.GetAllEntriesOfUser(userId);
+        var user = await applicationUserRepository.GetById(userId);
         if (entries.Any(e => e.Achievement.Id == achievementId))
             return false; // Already awarded
 
-        // Get achievement
         var achievement = (await achievementRepository.GetAll()).FirstOrDefault(a => a.Id == achievementId);
         if (achievement == null)
             return false; // Achievement not found
 
-        // Create new entry
         var achievementEntry = new AchievementEntry
         {
             Id = Guid.NewGuid(),
             Achievement = achievement,
-            User = new ApplicationUser { Id = userId }, // Only Id is set, assuming repo will attach
+            User = user,
             HasSeen = false,
             CreatedOn = DateTime.Now
         };
         await achievementRepository.CreateEntryRange(new List<AchievementEntry> { achievementEntry });
+        await NotifyAchievement(new List<AchievementEntry> { achievementEntry });
         return true;
     }
     
@@ -223,6 +312,7 @@ public class AchievementService(
         }
         if (newEntries.Any())
             await achievementRepository.CreateEntryRange(newEntries);
+        await NotifyAchievement(newEntries);
         return newEntries.Count;
     }
     
@@ -231,12 +321,10 @@ public class AchievementService(
         var extension = ContentTypeToExtensionMapper.GetExtension(dto.ImageContentType.MediaType);
         var name = $"{dto.Name}-{Guid.NewGuid()}.{extension}";
         
-        // Upload image to blob storage
         var blobItem = await blobStorageAgent.UploadFileToBlobAsync(name,
             dto.ImageContentType.MediaType,
             dto.ImageContent);
         
-        // Create new Achievement
         var achievement = new Achievement
         {
             Id = Guid.NewGuid(),
@@ -252,15 +340,15 @@ public class AchievementService(
         await achievementRepository.Create(achievement);
     }
     
-    private static bool CheckComparison(int actualValue, Achievement.ComparisonOperatorOption comparisonOperator, int targetValue)
+    private async Task NotifyAchievement(IEnumerable<AchievementEntry> achievements)
     {
-        return comparisonOperator switch
+        foreach (var achievement in achievements)
         {
-            Achievement.ComparisonOperatorOption.LessThan => actualValue < targetValue,
-            Achievement.ComparisonOperatorOption.GreaterThan => actualValue > targetValue,
-            Achievement.ComparisonOperatorOption.LessThanOrEqual => actualValue <= targetValue,
-            Achievement.ComparisonOperatorOption.GreaterThanOrEqual => actualValue >= targetValue,
-            _ => false
-        };
+            await purchaseNotifier.NotifyAchievementAsync(new AchievementEvent(
+                achievement.Achievement.Name,
+                achievement.User.FullName,
+                achievement.Achievement.Image?.Uri
+            ));
+        }
     }
 }

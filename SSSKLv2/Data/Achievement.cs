@@ -18,7 +18,10 @@ public class Achievement : BaseModel
         TotalBuy = 2, 
         UserTopUp = 3,
         TotalTopUp = 4,
-        YearsOfMembership = 5
+        YearsOfMembership = 5,
+        OrdersWithinHour = 6,
+        MinutesBetweenOrders = 7,
+        MinutesBetweenTopUp = 8
     }
     public enum ComparisonOperatorOption
     {

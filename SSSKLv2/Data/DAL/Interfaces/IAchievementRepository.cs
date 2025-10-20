@@ -15,5 +15,5 @@ public interface IAchievementRepository
     Task UpdateAchievementEntryRange(IEnumerable<AchievementEntry> entries);
     Task Delete(Guid id);
     Task DeleteAchievementEntryRange(IEnumerable<AchievementEntry> entries);
-    Task<IEnumerable<Achievement>> GetUncompletedAchievementsForUser(string userId);
+    Task<IEnumerable<Achievement>> GetUncompletedAchievementsForUser(string username);
 }

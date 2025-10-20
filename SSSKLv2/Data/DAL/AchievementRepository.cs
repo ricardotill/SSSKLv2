@@ -201,13 +201,13 @@ public class AchievementRepository(IDbContextFactory<ApplicationDbContext> dbCon
         }
     }
 
-    public async Task<IEnumerable<Achievement>> GetUncompletedAchievementsForUser(string userId)
+    public async Task<IEnumerable<Achievement>> GetUncompletedAchievementsForUser(string username)
     {
         await using var context = await dbContextFactory.CreateDbContextAsync();
         
         // Get all achievement IDs that the user has completed
         var completedAchievementIds = context.AchievementEntry
-            .Where(entry => entry.User.Id == userId)
+            .Where(entry => entry.User.UserName == username)
             .Select(entry => entry.Achievement.Id);
         
         // Get all achievements that are NOT in the completed list

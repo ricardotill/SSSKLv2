@@ -40,8 +40,8 @@
             width: '100%',
             height: '100%',
             // pointer-events is forced via injected stylesheet with !important above
-            // Put the fireworks canvas under modal/backdrop (Bootstrap uses ~1050),
-            // but high enough to show above most page content.
+            // Place the fireworks canvas beneath Bootstrap modals (which use ~1050),
+            // so existing pages that show Bootstrap modals remain on top.
             zIndex: '1030',
             display: 'block',
             

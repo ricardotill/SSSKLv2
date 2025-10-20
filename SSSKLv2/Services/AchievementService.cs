@@ -20,15 +20,37 @@ public class AchievementService(
         var achievementEntries = await achievementRepository.GetAllEntriesOfUser(userId);
         
         return allAchievements.Select(a =>
-            new AchievementListingDto(
+        {
+            var entry = achievementEntries.SingleOrDefault(e => e.Achievement.Id == a.Id);
+            return new AchievementListingDto(
                 a.Name,
                 a.Description,
+                entry?.CreatedOn,
                 a.Image?.Uri,
-                achievementEntries.Any(e => e.Achievement.Id == a.Id)
-            )
+                entry != null
+            );
+        }
+            
         ).ToList();
     }
 
+    public async Task<IList<AchievementEntry>> GetPersonalUnseenAchievementEntries(string username)
+    {
+        var list = (await achievementRepository.GetPersonalUnseenAchievementEntries(username))?.ToList() ?? new List<AchievementEntry>();
+
+        if (list.Any())
+        {
+            // Project into a new list where HasSeen is set to true
+            var updatedList = list.Select(e => { e.HasSeen = true; return e; }).ToList();
+
+            // Persist the updates
+            await achievementRepository.UpdateAchievementEntryRange(updatedList);
+
+            return updatedList;
+        }
+
+        return list;
+    }
     public async Task<IList<AchievementEntry>> GetPersonalAchievementEntries(string userId)
     {
         return await achievementRepository.GetAllEntriesOfUser(userId);
@@ -69,86 +91,87 @@ public class AchievementService(
         return achievementRepository.GetAllEntriesQueryable(context);
     }
     
-    public async Task CheckOrderForAchievements(Order order)
+    public async Task CheckOrdersForAchievements(IEnumerable<Order> orders)
     {
-        // Get all achievements the user hasn't completed yet
-        var userId = order.User.Id;
-        var uncompletedAchievements = await achievementRepository.GetUncompletedAchievementsForUser(userId);
-        
-        // Get user's order history for calculations
-        var userOrders = await orderRepository.GetPersonal(order.User.Id);
-        
-        var newAchievementEntries = new List<AchievementEntry>();
-        
-        foreach (var achievement in uncompletedAchievements)
+        foreach (var order in orders)
         {
-            if (!achievement.AutoAchieve) 
-                continue;
+            // Get all achievements the user hasn't completed yet
+            var userId = order.User.Id;
+            var uncompletedAchievements = await achievementRepository.GetUncompletedAchievementsForUser(userId);
             
-            bool shouldAward = false;
+            // Get user's order history for calculations
+            var userOrders = await orderRepository.GetPersonal(order.User.UserName!);
             
-            switch (achievement.Action)
+            var newAchievementEntries = new List<AchievementEntry>();
+            
+            foreach (var achievement in uncompletedAchievements)
             {
-                case Achievement.ActionOption.UserBuy:
-                    // Check if user has bought enough items
-                    var userTotalBought = userOrders.Sum(o => o.Amount);
-                    shouldAward = CheckComparison(userTotalBought, achievement.ComparisonOperator, achievement.ComparisonValue);
-                    break;
-                    
-                case Achievement.ActionOption.TotalBuy:
-                    // Check if user's total purchase amount meets criteria
-                    var userTotalSpent = userOrders.Sum(o => o.Paid);
-                    shouldAward = CheckComparison((int)userTotalSpent, achievement.ComparisonOperator, achievement.ComparisonValue);
-                    break;
-                    
-                case Achievement.ActionOption.UserTopUp:
-                    // Get user's top-up history
-                    var userTopUps = await topUpRepository.GetPersonal(userId);
-                    var userTopUpCount = userTopUps.Count;
-                    shouldAward = CheckComparison(userTopUpCount, achievement.ComparisonOperator, achievement.ComparisonValue);
-                    break;
-                    
-                case Achievement.ActionOption.TotalTopUp:
-                    // Get user's total top-up amount (using Saldo property)
-                    var SumTopUps = (await topUpRepository.GetPersonal(userId)).Sum(t => t.Saldo);
-                    var roundedSumTopUps = (int)Math.Round(SumTopUps);
-                    shouldAward = CheckComparison(roundedSumTopUps, achievement.ComparisonOperator, achievement.ComparisonValue);
-                    break;
-                    
-                case Achievement.ActionOption.YearsOfMembership:
-                    // Calculate years of membership based on the oldest order date as a proxy for membership start
-                    var oldestOrder = userOrders.OrderBy(o => o.CreatedOn).FirstOrDefault();
-                    if (oldestOrder != null)
-                    {
-                        var membershipYears = (DateTime.Now - oldestOrder.CreatedOn).Days / 365;
-                        shouldAward = CheckComparison(membershipYears, achievement.ComparisonOperator, achievement.ComparisonValue);
-                    }
-                    break;
-            }
-            
-            if (shouldAward)
-            {
-                var achievementEntry = new AchievementEntry
-                {
-                    Id = Guid.NewGuid(),
-                    Achievement = achievement,
-                    User = order.User,
-                    HasSeen = false,
-                    CreatedOn = DateTime.Now
-                };
+                if (!achievement.AutoAchieve) 
+                    continue;
                 
-                newAchievementEntries.Add(achievementEntry);
+                bool shouldAward = false;
+                
+                switch (achievement.Action)
+                {
+                    case Achievement.ActionOption.UserBuy:
+                        // Check if user has bought enough items
+                        var userTotalBought = userOrders.Sum(o => o.Amount);
+                        shouldAward = CheckComparison(userTotalBought, achievement.ComparisonOperator, achievement.ComparisonValue);
+                        break;
+                        
+                    case Achievement.ActionOption.TotalBuy:
+                        // Check if user's total purchase amount meets criteria
+                        var userTotalSpent = userOrders.Sum(o => o.Paid);
+                        shouldAward = CheckComparison((int)userTotalSpent, achievement.ComparisonOperator, achievement.ComparisonValue);
+                        break;
+                        
+                    case Achievement.ActionOption.UserTopUp:
+                        // Get user's top-up history
+                        var userTopUps = await topUpRepository.GetPersonal(userId);
+                        var userTopUpCount = userTopUps.Count;
+                        shouldAward = CheckComparison(userTopUpCount, achievement.ComparisonOperator, achievement.ComparisonValue);
+                        break;
+                        
+                    case Achievement.ActionOption.TotalTopUp:
+                        // Get user's total top-up amount (using Saldo property)
+                        var SumTopUps = (await topUpRepository.GetPersonal(userId)).Sum(t => t.Saldo);
+                        var roundedSumTopUps = (int)Math.Round(SumTopUps);
+                        shouldAward = CheckComparison(roundedSumTopUps, achievement.ComparisonOperator, achievement.ComparisonValue);
+                        break;
+                        
+                    case Achievement.ActionOption.YearsOfMembership:
+                        // Calculate years of membership based on the oldest order date as a proxy for membership start
+                        var oldestOrder = userOrders.OrderBy(o => o.CreatedOn).FirstOrDefault();
+                        if (oldestOrder != null)
+                        {
+                            var membershipYears = (DateTime.Now - oldestOrder.CreatedOn).Days / 365;
+                            shouldAward = CheckComparison(membershipYears, achievement.ComparisonOperator, achievement.ComparisonValue);
+                        }
+                        break;
+                }
+                
+                if (shouldAward)
+                {
+                    var achievementEntry = new AchievementEntry
+                    {
+                        Id = Guid.NewGuid(),
+                        Achievement = achievement,
+                        User = order.User,
+                        HasSeen = false,
+                        CreatedOn = DateTime.Now
+                    };
+                    
+                    newAchievementEntries.Add(achievementEntry);
+                }
             }
-        }
-        
-        // Save new achievement entries to database
-        if (newAchievementEntries.Any())
-        {
-            await achievementRepository.CreateEntryRange(newAchievementEntries);
+            
+            // Save new achievement entries to database
+            if (newAchievementEntries.Any())
+            {
+                await achievementRepository.CreateEntryRange(newAchievementEntries);
+            }
         }
     }
-    
-    
     
     public async Task<bool> AwardAchievementToUser(string userId, Guid achievementId)
     {

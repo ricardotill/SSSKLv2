@@ -1,32 +1,57 @@
 @inject IAchievementService AchievementService
 @inject AuthenticationStateProvider AuthenticationStateProvider
-@inject NavigationManager NavigationManager
+@using Microsoft.Extensions.Logging
+@inject ILogger<Achievements> Logger
+@inject IApplicationUserService ApplicationUserService
 
 @page "/Achievements"
+@rendermode InteractiveServer
 @attribute [Authorize]
 
+@using System.Security.Claims
 @using Microsoft.AspNetCore.Authorization
 @using SSSKLv2.Dto
 @using SSSKLv2.Services.Interfaces
+@using SSSKLv2.Data
 
 <PageTitle>SSSKLv2 | Achievements</PageTitle>
 
 <h1>Achievements</h1>
 
-@if (isLoading)
+<!-- Filter controls: show all, only complete, only incomplete -->
+<div class="mb-3 d-flex align-items-center">
+    <label class="me-2 mb-0" for="achievement-filter">Filter:</label>
+    <select id="achievement-filter" class="form-select w-auto" @bind="Filter" aria-label="Filter achievements">
+        <option value="all">Alles</option>
+        <option value="complete">Compleet</option>
+        <option value="incomplete">Incompleet</option>
+    </select>
+
+    <div class="ms-3 d-flex align-items-center">
+        <label class="me-2 mb-0" for="achievement-user">Gebruiker:</label>
+        <select id="achievement-user" class="form-select w-auto" @bind="SelectedUserId" aria-label="Select user to view achievements">
+            @foreach (var u in _users)
+            {
+                <option value="@u.Id">@u.FullName</option>
+            }
+        </select>
+    </div>
+</div>
+
+@if (_isLoading)
 {
     <div class="spinner-border" role="status">
         <span class="visually-hidden">Loading...</span>
     </div>
 }
-else if (achievements.Count == 0)
+else if (!_filteredAchievements.Any())
 {
     <div class="alert alert-info">Geen achievements gevonden.</div>
 }
 else
 {
-    <div class="row row-cols-1 row-cols-md-3 g-4">
-        @foreach (var achievement in achievements)
+    <div @key="_renderKey" class="row row-cols-1 row-cols-md-3 g-4">
+        @foreach (var achievement in _filteredAchievements)
         {
             <div class="col">
                 <div class="card h-100 @(achievement.Completed ? "border-success" : "border-secondary")">
@@ -39,14 +64,16 @@ else
                         <p class="card-text">@achievement.Description</p>
                     </div>
                     <div class="card-footer">
-                        @if (achievement.Completed)
+                        @if (achievement.Completed && achievement.DateAdded.HasValue)
                         {
                             <span class="badge bg-success">Compleet!</span>
+                            <span class="ml-auto badge bg-secondary">@achievement.DateAdded.Value.ToString("dd/MM/yyyy")</span>
                         }
                         else
                         {
                             <span class="badge bg-secondary">Incompleet</span>
                         }
+                        
                     </div>
                 </div>
             </div>
@@ -55,18 +82,105 @@ else
 }
 
 @code {
-    private IList<AchievementListingDto> achievements = new List<AchievementListingDto>();
-    private bool isLoading = true;
+    private IList<AchievementListingDto> _achievements = new List<AchievementListingDto>();
+    private IList<AchievementListingDto> _filteredAchievements = new List<AchievementListingDto>();
+    private bool _isLoading = true;
+    private string _filter = "all"; // possible values: all, complete, incomplete
+    private string _renderKey = Guid.NewGuid().ToString();
+
+    // Users for the user-select control
+    private IList<ApplicationUser> _users = new List<ApplicationUser>();
+    private string _selectedUserId = string.Empty;
+
+    // Bindable property for the select; setter triggers loading achievements for the selected user.
+    private string SelectedUserId
+    {
+        get => _selectedUserId;
+        set
+        {
+            if (_selectedUserId == value) return;
+            _selectedUserId = value;
+            // Fire-and-forget the load; UI will update when the task completes.
+            _ = LoadAchievementsForUser(_selectedUserId);
+        }
+    }
+
+    private string Filter
+    {
+        get => _filter;
+        set
+        {
+            if (_filter == value) return;
+            _filter = value;
+            AddDebug($"Filter setter: new value='{_filter}'");
+            UpdateFilteredAchievements();
+            // Force a more aggressive re-render: temporarily clear the list and reassign
+            var backup = _filteredAchievements;
+            _filteredAchievements = new List<AchievementListingDto>();
+            _ = InvokeAsync(() => { StateHasChanged(); return Task.CompletedTask; });
+            _filteredAchievements = backup;
+            _renderKey = Guid.NewGuid().ToString();
+            _ = InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private List<string> _debugMessages = new();
+    private void AddDebug(string message)
+    {
+        _debugMessages.Insert(0, $"{DateTime.Now:HH:mm:ss} - {message}");
+        if (_debugMessages.Count > 50) _debugMessages.RemoveRange(50, _debugMessages.Count - 50);
+    }
+
+    private void UpdateFilteredAchievements()
+    {
+        _filteredAchievements = _achievements.Where(a =>
+            _filter == "all" ||
+            (_filter == "complete" && a.Completed) ||
+            (_filter == "incomplete" && !a.Completed)
+        ).ToList();
+
+        Logger?.LogDebug("Filtered achievements updated. Total: {Total}, Filtered: {Filtered}, Filter: {Filter}", _achievements.Count, _filteredAchievements.Count, _filter);
+        AddDebug($"Updated filtered list. Total={_achievements.Count}, Filtered={_filteredAchievements.Count}, Filter={_filter}");
+    }
 
     protected override async Task OnInitializedAsync()
     {
-        var userId = await GetCurrentUserIdAsync();
-        achievements = await AchievementService.GetPersonalAchievements(userId);
-        isLoading = false;
+        // Load available users and default selection to the current user
+        var currentUserId = await GetCurrentUserIdAsync();
+        // ApplicationUserService.GetAllUsers returns a non-nullable IList<ApplicationUser>, so avoid redundant null checks
+        _users = (await ApplicationUserService.GetAllUsers()).ToList();
+        if (_users.Any())
+        {
+            // assign backing field directly to avoid triggering the SelectedUserId setter twice
+            _selectedUserId = _users.FirstOrDefault(u => u.Id == currentUserId)?.Id ?? _users.First().Id;
+            await LoadAchievementsForUser(_selectedUserId);
+        }
+        else
+        {
+            _achievements = new List<AchievementListingDto>();
+            UpdateFilteredAchievements();
+        }
+        _isLoading = false;
     }
 
+    private async Task LoadAchievementsForUser(string userId)
+    {
+        _isLoading = true;
+        StateHasChanged();
+        _achievements = await AchievementService.GetPersonalAchievements(userId);
+        UpdateFilteredAchievements();
+        _isLoading = false;
+        StateHasChanged();
+    }
+    
     private async Task<string> GetCurrentUserIdAsync()
     {
-        return (await AuthenticationStateProvider.GetAuthenticationStateAsync()).User.Identity?.Name ?? throw new InvalidOperationException();
+        var user = (await AuthenticationStateProvider.GetAuthenticationStateAsync()).User;
+        var id = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(id))
+            throw new InvalidOperationException("User id not found in claims.");
+        return id;
     }
+
+
 }

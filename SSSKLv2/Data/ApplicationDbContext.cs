@@ -80,7 +80,7 @@ namespace SSSKLv2.Data
                 .HasOne(e => e.Image)
                 .WithOne(e => e.Achievement)
                 .IsRequired(false)
-                .HasForeignKey<AchievementImage>("AchievementId")
+                .HasForeignKey<Achievement>("ImageId")
                 .OnDelete(DeleteBehavior.Cascade);
             builder.Entity<Achievement>()
                 .Property(e => e.Action)

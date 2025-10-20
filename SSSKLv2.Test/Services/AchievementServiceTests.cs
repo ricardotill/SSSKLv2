@@ -57,30 +57,75 @@ public class AchievementServiceTests
         };
     }
     
-    #region CheckOrderForAchievements Tests
+    #region CheckOrdersForAchievements Tests
     
     [TestMethod]
-    public async Task CheckOrderForAchievements_WhenNoUncompletedAchievements_ShouldNotCreateEntries()
+    public async Task CheckOrdersForAchievements_EmptyOrdersList_ShouldNotThrow()
     {
         // Arrange
-        _achievementRepository.GetUncompletedAchievementsForUser(_testUser.Id)
-            .Returns(new List<Achievement>());
-            
+        var emptyOrders = new List<Order>();
+        
         // Act
-        await _sut.CheckOrderForAchievements(_testOrder);
+        await _sut.CheckOrdersForAchievements(emptyOrders);
         
         // Assert
         await _achievementRepository.DidNotReceive().CreateEntryRange(Arg.Any<IEnumerable<AchievementEntry>>());
     }
     
     [TestMethod]
-    public async Task CheckOrderForAchievements_WhenUserBuyAchievementMet_ShouldCreateEntry()
+    public async Task CheckOrdersForAchievements_NoUncompletedAchievements_ShouldNotCreateEntries()
     {
         // Arrange
+        var orders = new List<Order> { _testOrder };
+        _achievementRepository.GetUncompletedAchievementsForUser(_testUser.Id)
+            .Returns(new List<Achievement>());
+        
+        // Act
+        await _sut.CheckOrdersForAchievements(orders);
+        
+        // Assert
+        await _achievementRepository.DidNotReceive().CreateEntryRange(Arg.Any<IEnumerable<AchievementEntry>>());
+    }
+    
+    [TestMethod]
+    public async Task CheckOrdersForAchievements_AllAchievementsAutoAchieveFalse_ShouldNotCreateEntries()
+    {
+        // Arrange
+        var orders = new List<Order> { _testOrder };
+        var achievements = new List<Achievement>
+        {
+            new()
+            {
+                Id = Guid.NewGuid(),
+                Name = "Manual Achievement",
+                AutoAchieve = false,
+                Action = Achievement.ActionOption.UserBuy,
+                ComparisonOperator = Achievement.ComparisonOperatorOption.GreaterThanOrEqual,
+                ComparisonValue = 1
+            }
+        };
+        
+        _achievementRepository.GetUncompletedAchievementsForUser(_testUser.Id)
+            .Returns(achievements);
+        _orderRepository.GetPersonal(_testUser.Id).Returns(new List<Order> { _testOrder });
+        
+        // Act
+        await _sut.CheckOrdersForAchievements(orders);
+        
+        // Assert
+        await _achievementRepository.DidNotReceive().CreateEntryRange(Arg.Any<IEnumerable<AchievementEntry>>());
+    }
+    
+    [TestMethod]
+    public async Task CheckOrdersForAchievements_UserBuyAchievementMet_ShouldCreateEntry()
+    {
+        // Arrange
+        var orders = new List<Order> { _testOrder };
         var achievement = new Achievement
         {
             Id = Guid.NewGuid(),
             Name = "Buy 5 Items",
+            AutoAchieve = true,
             Action = Achievement.ActionOption.UserBuy,
             ComparisonOperator = Achievement.ComparisonOperatorOption.GreaterThanOrEqual,
             ComparisonValue = 5
@@ -88,18 +133,17 @@ public class AchievementServiceTests
         
         _achievementRepository.GetUncompletedAchievementsForUser(_testUser.Id)
             .Returns(new List<Achievement> { achievement });
-            
-        var pastOrders = new List<Order>
+        
+        var userOrders = new List<Order>
         {
             new() { User = _testUser, Amount = 2, CreatedOn = DateTime.Now.AddDays(-5) },
-            new() { User = _testUser, Amount = 3, CreatedOn = DateTime.Now.AddDays(-1) },
-            _testOrder // Current order with Amount = 1, total = 6
+            new() { User = _testUser, Amount = 3, CreatedOn = DateTime.Now.AddDays(-1) }
         };
         
-        _orderRepository.GetPersonal(_testUser.Id).Returns(pastOrders);
+        _orderRepository.GetPersonal(_testUser.Id).Returns(userOrders);
         
         // Act
-        await _sut.CheckOrderForAchievements(_testOrder);
+        await _sut.CheckOrdersForAchievements(orders);
         
         // Assert
         await _achievementRepository.Received(1).CreateEntryRange(Arg.Is<IEnumerable<AchievementEntry>>(
@@ -110,13 +154,15 @@ public class AchievementServiceTests
     }
     
     [TestMethod]
-    public async Task CheckOrderForAchievements_WhenUserBuyAchievementNotMet_ShouldNotCreateEntry()
+    public async Task CheckOrdersForAchievements_UserBuyAchievementNotMet_ShouldNotCreateEntry()
     {
         // Arrange
+        var orders = new List<Order> { _testOrder };
         var achievement = new Achievement
         {
             Id = Guid.NewGuid(),
             Name = "Buy 10 Items",
+            AutoAchieve = true,
             Action = Achievement.ActionOption.UserBuy,
             ComparisonOperator = Achievement.ComparisonOperatorOption.GreaterThanOrEqual,
             ComparisonValue = 10
@@ -124,31 +170,32 @@ public class AchievementServiceTests
         
         _achievementRepository.GetUncompletedAchievementsForUser(_testUser.Id)
             .Returns(new List<Achievement> { achievement });
-            
-        var pastOrders = new List<Order>
+        
+        var userOrders = new List<Order>
         {
             new() { User = _testUser, Amount = 2, CreatedOn = DateTime.Now.AddDays(-5) },
-            new() { User = _testUser, Amount = 3, CreatedOn = DateTime.Now.AddDays(-1) },
-            _testOrder // Current order with Amount = 1, total = 6
+            new() { User = _testUser, Amount = 3, CreatedOn = DateTime.Now.AddDays(-1) }
         };
         
-        _orderRepository.GetPersonal(_testUser.Id).Returns(pastOrders);
+        _orderRepository.GetPersonal(_testUser.Id).Returns(userOrders);
         
         // Act
-        await _sut.CheckOrderForAchievements(_testOrder);
+        await _sut.CheckOrdersForAchievements(orders);
         
         // Assert
         await _achievementRepository.DidNotReceive().CreateEntryRange(Arg.Any<IEnumerable<AchievementEntry>>());
     }
     
     [TestMethod]
-    public async Task CheckOrderForAchievements_WhenTotalBuyAchievementMet_ShouldCreateEntry()
+    public async Task CheckOrdersForAchievements_TotalBuyAchievementMet_ShouldCreateEntry()
     {
         // Arrange
+        var orders = new List<Order> { _testOrder };
         var achievement = new Achievement
         {
             Id = Guid.NewGuid(),
             Name = "Spend 50",
+            AutoAchieve = true,
             Action = Achievement.ActionOption.TotalBuy,
             ComparisonOperator = Achievement.ComparisonOperatorOption.GreaterThanOrEqual,
             ComparisonValue = 50
@@ -156,35 +203,67 @@ public class AchievementServiceTests
         
         _achievementRepository.GetUncompletedAchievementsForUser(_testUser.Id)
             .Returns(new List<Achievement> { achievement });
-            
-        var pastOrders = new List<Order>
+        
+        var userOrders = new List<Order>
         {
             new() { User = _testUser, Paid = 20m, CreatedOn = DateTime.Now.AddDays(-5) },
-            new() { User = _testUser, Paid = 25m, CreatedOn = DateTime.Now.AddDays(-1) },
-            _testOrder // Current order with Paid = 10, total = 55
+            new() { User = _testUser, Paid = 35m, CreatedOn = DateTime.Now.AddDays(-1) }
         };
         
-        _orderRepository.GetPersonal(_testUser.Id).Returns(pastOrders);
+        _orderRepository.GetPersonal(_testUser.Id).Returns(userOrders);
         
         // Act
-        await _sut.CheckOrderForAchievements(_testOrder);
+        await _sut.CheckOrdersForAchievements(orders);
         
         // Assert
         await _achievementRepository.Received(1).CreateEntryRange(Arg.Is<IEnumerable<AchievementEntry>>(
             entries => entries.Count() == 1 && 
-                      entries.First().Achievement.Id == achievement.Id &&
-                      entries.First().User.Id == _testUser.Id
+                      entries.First().Achievement.Id == achievement.Id
         ));
     }
     
     [TestMethod]
-    public async Task CheckOrderForAchievements_WhenUserTopUpAchievementMet_ShouldCreateEntry()
+    public async Task CheckOrdersForAchievements_TotalBuyWithDecimal_ShouldTruncateToInt()
     {
         // Arrange
+        var orders = new List<Order> { _testOrder };
+        var achievement = new Achievement
+        {
+            Id = Guid.NewGuid(),
+            Name = "Spend 50",
+            AutoAchieve = true,
+            Action = Achievement.ActionOption.TotalBuy,
+            ComparisonOperator = Achievement.ComparisonOperatorOption.GreaterThanOrEqual,
+            ComparisonValue = 50
+        };
+        
+        _achievementRepository.GetUncompletedAchievementsForUser(_testUser.Id)
+            .Returns(new List<Achievement> { achievement });
+        
+        var userOrders = new List<Order>
+        {
+            new() { User = _testUser, Paid = 49.99m, CreatedOn = DateTime.Now.AddDays(-5) }
+        };
+        
+        _orderRepository.GetPersonal(_testUser.Id).Returns(userOrders);
+        
+        // Act
+        await _sut.CheckOrdersForAchievements(orders);
+        
+        // Assert - 49.99 truncates to 49, which is less than 50
+        await _achievementRepository.DidNotReceive().CreateEntryRange(Arg.Any<IEnumerable<AchievementEntry>>());
+    }
+    
+    [TestMethod]
+    public async Task CheckOrdersForAchievements_UserTopUpAchievementMet_ShouldCreateEntry()
+    {
+        // Arrange
+        var orders = new List<Order> { _testOrder };
         var achievement = new Achievement
         {
             Id = Guid.NewGuid(),
             Name = "Top Up 3 Times",
+            AutoAchieve = true,
             Action = Achievement.ActionOption.UserTopUp,
             ComparisonOperator = Achievement.ComparisonOperatorOption.GreaterThanOrEqual,
             ComparisonValue = 3
@@ -192,7 +271,7 @@ public class AchievementServiceTests
         
         _achievementRepository.GetUncompletedAchievementsForUser(_testUser.Id)
             .Returns(new List<Achievement> { achievement });
-            
+        
         var topUps = new List<TopUp>
         {
             new() { User = _testUser, Saldo = 10m, CreatedOn = DateTime.Now.AddDays(-10) },
@@ -201,28 +280,28 @@ public class AchievementServiceTests
         };
         
         _topUpRepository.GetPersonal(_testUser.Id).Returns(topUps);
-        
         _orderRepository.GetPersonal(_testUser.Id).Returns(new List<Order> { _testOrder });
         
         // Act
-        await _sut.CheckOrderForAchievements(_testOrder);
+        await _sut.CheckOrdersForAchievements(orders);
         
         // Assert
         await _achievementRepository.Received(1).CreateEntryRange(Arg.Is<IEnumerable<AchievementEntry>>(
             entries => entries.Count() == 1 && 
-                      entries.First().Achievement.Id == achievement.Id &&
-                      entries.First().User.Id == _testUser.Id
+                      entries.First().Achievement.Id == achievement.Id
         ));
     }
     
     [TestMethod]
-    public async Task CheckOrderForAchievements_WhenTotalTopUpAchievementMet_ShouldCreateEntry()
+    public async Task CheckOrdersForAchievements_TotalTopUpAchievementMet_ShouldCreateEntry()
     {
         // Arrange
+        var orders = new List<Order> { _testOrder };
         var achievement = new Achievement
         {
             Id = Guid.NewGuid(),
             Name = "Top Up Total 50",
+            AutoAchieve = true,
             Action = Achievement.ActionOption.TotalTopUp,
             ComparisonOperator = Achievement.ComparisonOperatorOption.GreaterThanOrEqual,
             ComparisonValue = 50
@@ -230,38 +309,72 @@ public class AchievementServiceTests
         
         _achievementRepository.GetUncompletedAchievementsForUser(_testUser.Id)
             .Returns(new List<Achievement> { achievement });
-            
+        
         var topUps = new List<TopUp>
         {
-            new() { User = _testUser, Saldo = 20m, CreatedOn = DateTime.Now.AddDays(-10) },
-            new() { User = _testUser, Saldo = 15.5m, CreatedOn = DateTime.Now.AddDays(-5) },
-            new() { User = _testUser, Saldo = 15m, CreatedOn = DateTime.Now.AddDays(-1) }
-            // Total: 50.5, rounds to 51
+            new() { User = _testUser, Saldo = 20.4m, CreatedOn = DateTime.Now.AddDays(-10) },
+            new() { User = _testUser, Saldo = 15.3m, CreatedOn = DateTime.Now.AddDays(-5) },
+            new() { User = _testUser, Saldo = 15.3m, CreatedOn = DateTime.Now.AddDays(-1) }
+            // Total: 51.0, rounds to 51
         };
         
         _topUpRepository.GetPersonal(_testUser.Id).Returns(topUps);
-        
         _orderRepository.GetPersonal(_testUser.Id).Returns(new List<Order> { _testOrder });
         
         // Act
-        await _sut.CheckOrderForAchievements(_testOrder);
+        await _sut.CheckOrdersForAchievements(orders);
         
         // Assert
         await _achievementRepository.Received(1).CreateEntryRange(Arg.Is<IEnumerable<AchievementEntry>>(
             entries => entries.Count() == 1 && 
-                      entries.First().Achievement.Id == achievement.Id &&
-                      entries.First().User.Id == _testUser.Id
+                      entries.First().Achievement.Id == achievement.Id
         ));
     }
     
     [TestMethod]
-    public async Task CheckOrderForAchievements_WhenYearsOfMembershipAchievementMet_ShouldCreateEntry()
+    public async Task CheckOrdersForAchievements_TotalTopUpRoundsCorrectly_ShouldHandleRounding()
     {
         // Arrange
+        var orders = new List<Order> { _testOrder };
+        var achievement = new Achievement
+        {
+            Id = Guid.NewGuid(),
+            Name = "Top Up Total 50",
+            AutoAchieve = true,
+            Action = Achievement.ActionOption.TotalTopUp,
+            ComparisonOperator = Achievement.ComparisonOperatorOption.GreaterThanOrEqual,
+            ComparisonValue = 50
+        };
+        
+        _achievementRepository.GetUncompletedAchievementsForUser(_testUser.Id)
+            .Returns(new List<Achievement> { achievement });
+        
+        var topUps = new List<TopUp>
+        {
+            new() { User = _testUser, Saldo = 49.4m, CreatedOn = DateTime.Now.AddDays(-10) }
+            // Total: 49.4, rounds to 49
+        };
+        
+        _topUpRepository.GetPersonal(_testUser.Id).Returns(topUps);
+        _orderRepository.GetPersonal(_testUser.Id).Returns(new List<Order> { _testOrder });
+        
+        // Act
+        await _sut.CheckOrdersForAchievements(orders);
+        
+        // Assert - 49.4 rounds to 49, which is less than 50
+        await _achievementRepository.DidNotReceive().CreateEntryRange(Arg.Any<IEnumerable<AchievementEntry>>());
+    }
+    
+    [TestMethod]
+    public async Task CheckOrdersForAchievements_YearsOfMembershipAchievementMet_ShouldCreateEntry()
+    {
+        // Arrange
+        var orders = new List<Order> { _testOrder };
         var achievement = new Achievement
         {
             Id = Guid.NewGuid(),
             Name = "Member for 2 Years",
+            AutoAchieve = true,
             Action = Achievement.ActionOption.YearsOfMembership,
             ComparisonOperator = Achievement.ComparisonOperatorOption.GreaterThanOrEqual,
             ComparisonValue = 2
@@ -269,35 +382,36 @@ public class AchievementServiceTests
         
         _achievementRepository.GetUncompletedAchievementsForUser(_testUser.Id)
             .Returns(new List<Achievement> { achievement });
-            
-        var pastOrders = new List<Order>
+        
+        var userOrders = new List<Order>
         {
             new() { User = _testUser, CreatedOn = DateTime.Now.AddYears(-3) }, // Oldest order from 3 years ago
             new() { User = _testUser, CreatedOn = DateTime.Now.AddYears(-1) },
-            _testOrder // Current order
+            _testOrder
         };
         
-        _orderRepository.GetPersonal(_testUser.Id).Returns(pastOrders);
+        _orderRepository.GetPersonal(_testUser.Id).Returns(userOrders);
         
         // Act
-        await _sut.CheckOrderForAchievements(_testOrder);
+        await _sut.CheckOrdersForAchievements(orders);
         
         // Assert
         await _achievementRepository.Received(1).CreateEntryRange(Arg.Is<IEnumerable<AchievementEntry>>(
             entries => entries.Count() == 1 && 
-                      entries.First().Achievement.Id == achievement.Id &&
-                      entries.First().User.Id == _testUser.Id
+                      entries.First().Achievement.Id == achievement.Id
         ));
     }
     
     [TestMethod]
-    public async Task CheckOrderForAchievements_WhenYearsOfMembershipNoOldOrders_ShouldNotCreateEntry()
+    public async Task CheckOrdersForAchievements_YearsOfMembershipNoOldestOrder_ShouldNotCreateEntry()
     {
         // Arrange
+        var orders = new List<Order> { _testOrder };
         var achievement = new Achievement
         {
             Id = Guid.NewGuid(),
             Name = "Member for 2 Years",
+            AutoAchieve = true,
             Action = Achievement.ActionOption.YearsOfMembership,
             ComparisonOperator = Achievement.ComparisonOperatorOption.GreaterThanOrEqual,
             ComparisonValue = 2
@@ -305,89 +419,131 @@ public class AchievementServiceTests
         
         _achievementRepository.GetUncompletedAchievementsForUser(_testUser.Id)
             .Returns(new List<Achievement> { achievement });
-            
-        // Only the current order exists
-        _orderRepository.GetPersonal(_testUser.Id).Returns(new List<Order> { _testOrder });
+        
+        // Empty orders history
+        _orderRepository.GetPersonal(_testUser.Id).Returns(new List<Order>());
         
         // Act
-        await _sut.CheckOrderForAchievements(_testOrder);
+        await _sut.CheckOrdersForAchievements(orders);
         
         // Assert
         await _achievementRepository.DidNotReceive().CreateEntryRange(Arg.Any<IEnumerable<AchievementEntry>>());
     }
     
     [TestMethod]
-    public async Task CheckOrderForAchievements_WithDifferentComparisonOperators_ShouldApplyCorrectly()
+    public async Task CheckOrdersForAchievements_LessThanOperator_ShouldWorkCorrectly()
     {
         // Arrange
-        var achievements = new List<Achievement>
+        var orders = new List<Order> { _testOrder };
+        var achievement = new Achievement
         {
-            new()
-            {
-                Id = Guid.NewGuid(),
-                Name = "Less than 10 purchases",
-                Action = Achievement.ActionOption.UserBuy,
-                ComparisonOperator = Achievement.ComparisonOperatorOption.LessThan,
-                ComparisonValue = 10
-            },
-            new()
-            {
-                Id = Guid.NewGuid(),
-                Name = "Greater than 2 purchases",
-                Action = Achievement.ActionOption.UserBuy,
-                ComparisonOperator = Achievement.ComparisonOperatorOption.GreaterThan,
-                ComparisonValue = 2
-            },
-            new()
-            {
-                Id = Guid.NewGuid(),
-                Name = "Exactly 5 purchases (LE)",
-                Action = Achievement.ActionOption.UserBuy,
-                ComparisonOperator = Achievement.ComparisonOperatorOption.LessThanOrEqual,
-                ComparisonValue = 5
-            },
-            new()
-            {
-                Id = Guid.NewGuid(),
-                Name = "At least 5 purchases (GE)",
-                Action = Achievement.ActionOption.UserBuy,
-                ComparisonOperator = Achievement.ComparisonOperatorOption.GreaterThanOrEqual,
-                ComparisonValue = 5
-            }
+            Id = Guid.NewGuid(),
+            Name = "Less than 10 purchases",
+            AutoAchieve = true,
+            Action = Achievement.ActionOption.UserBuy,
+            ComparisonOperator = Achievement.ComparisonOperatorOption.LessThan,
+            ComparisonValue = 10
         };
         
         _achievementRepository.GetUncompletedAchievementsForUser(_testUser.Id)
-            .Returns(achievements);
-            
-        var pastOrders = new List<Order>
+            .Returns(new List<Achievement> { achievement });
+        
+        var userOrders = new List<Order>
         {
-            new() { User = _testUser, Amount = 1, CreatedOn = DateTime.Now.AddDays(-10) },
-            new() { User = _testUser, Amount = 1, CreatedOn = DateTime.Now.AddDays(-5) },
-            new() { User = _testUser, Amount = 2, CreatedOn = DateTime.Now.AddDays(-1) },
-            _testOrder // Current order with Amount = 1, total = 5
+            new() { User = _testUser, Amount = 5, CreatedOn = DateTime.Now.AddDays(-5) }
         };
         
-        _orderRepository.GetPersonal(_testUser.Id).Returns(pastOrders);
+        _orderRepository.GetPersonal(_testUser.Id).Returns(userOrders);
         
         // Act
-        await _sut.CheckOrderForAchievements(_testOrder);
+        await _sut.CheckOrdersForAchievements(orders);
         
-        // Assert - All 4 achievements should be awarded
+        // Assert - 5 < 10 is true
         await _achievementRepository.Received(1).CreateEntryRange(Arg.Is<IEnumerable<AchievementEntry>>(
-            entries => entries.Count() == 4
+            entries => entries.Count() == 1
         ));
     }
     
     [TestMethod]
-    public async Task CheckOrderForAchievements_WithMultipleAchievementsMet_ShouldCreateMultipleEntries()
+    public async Task CheckOrdersForAchievements_GreaterThanOperator_ShouldWorkCorrectly()
     {
         // Arrange
+        var orders = new List<Order> { _testOrder };
+        var achievement = new Achievement
+        {
+            Id = Guid.NewGuid(),
+            Name = "More than 2 purchases",
+            AutoAchieve = true,
+            Action = Achievement.ActionOption.UserBuy,
+            ComparisonOperator = Achievement.ComparisonOperatorOption.GreaterThan,
+            ComparisonValue = 2
+        };
+        
+        _achievementRepository.GetUncompletedAchievementsForUser(_testUser.Id)
+            .Returns(new List<Achievement> { achievement });
+        
+        var userOrders = new List<Order>
+        {
+            new() { User = _testUser, Amount = 5, CreatedOn = DateTime.Now.AddDays(-5) }
+        };
+        
+        _orderRepository.GetPersonal(_testUser.Id).Returns(userOrders);
+        
+        // Act
+        await _sut.CheckOrdersForAchievements(orders);
+        
+        // Assert - 5 > 2 is true
+        await _achievementRepository.Received(1).CreateEntryRange(Arg.Is<IEnumerable<AchievementEntry>>(
+            entries => entries.Count() == 1
+        ));
+    }
+    
+    [TestMethod]
+    public async Task CheckOrdersForAchievements_LessThanOrEqualOperator_ShouldWorkCorrectly()
+    {
+        // Arrange
+        var orders = new List<Order> { _testOrder };
+        var achievement = new Achievement
+        {
+            Id = Guid.NewGuid(),
+            Name = "At most 5 purchases",
+            AutoAchieve = true,
+            Action = Achievement.ActionOption.UserBuy,
+            ComparisonOperator = Achievement.ComparisonOperatorOption.LessThanOrEqual,
+            ComparisonValue = 5
+        };
+        
+        _achievementRepository.GetUncompletedAchievementsForUser(_testUser.Id)
+            .Returns(new List<Achievement> { achievement });
+        
+        var userOrders = new List<Order>
+        {
+            new() { User = _testUser, Amount = 5, CreatedOn = DateTime.Now.AddDays(-5) }
+        };
+        
+        _orderRepository.GetPersonal(_testUser.Id).Returns(userOrders);
+        
+        // Act
+        await _sut.CheckOrdersForAchievements(orders);
+        
+        // Assert - 5 <= 5 is true
+        await _achievementRepository.Received(1).CreateEntryRange(Arg.Is<IEnumerable<AchievementEntry>>(
+            entries => entries.Count() == 1
+        ));
+    }
+    
+    [TestMethod]
+    public async Task CheckOrdersForAchievements_MultipleAchievementsMet_ShouldCreateMultipleEntries()
+    {
+        // Arrange
+        var orders = new List<Order> { _testOrder };
         var achievements = new List<Achievement>
         {
             new()
             {
                 Id = Guid.NewGuid(),
                 Name = "Buy 5 Items",
+                AutoAchieve = true,
                 Action = Achievement.ActionOption.UserBuy,
                 ComparisonOperator = Achievement.ComparisonOperatorOption.GreaterThanOrEqual,
                 ComparisonValue = 5
@@ -396,6 +552,7 @@ public class AchievementServiceTests
             {
                 Id = Guid.NewGuid(),
                 Name = "Spend 50",
+                AutoAchieve = true,
                 Action = Achievement.ActionOption.TotalBuy,
                 ComparisonOperator = Achievement.ComparisonOperatorOption.GreaterThanOrEqual,
                 ComparisonValue = 50
@@ -404,18 +561,17 @@ public class AchievementServiceTests
         
         _achievementRepository.GetUncompletedAchievementsForUser(_testUser.Id)
             .Returns(achievements);
-            
-        var pastOrders = new List<Order>
+        
+        var userOrders = new List<Order>
         {
-            new() { User = _testUser, Amount = 2, Paid = 20m, CreatedOn = DateTime.Now.AddDays(-5) },
-            new() { User = _testUser, Amount = 3, Paid = 25m, CreatedOn = DateTime.Now.AddDays(-1) },
-            _testOrder // Current order with Amount = 1, Paid = 10m, totals = 6 items, 55m spent
+            new() { User = _testUser, Amount = 3, Paid = 30m, CreatedOn = DateTime.Now.AddDays(-5) },
+            new() { User = _testUser, Amount = 2, Paid = 25m, CreatedOn = DateTime.Now.AddDays(-1) }
         };
         
-        _orderRepository.GetPersonal(_testUser.Id).Returns(pastOrders);
+        _orderRepository.GetPersonal(_testUser.Id).Returns(userOrders);
         
         // Act
-        await _sut.CheckOrderForAchievements(_testOrder);
+        await _sut.CheckOrdersForAchievements(orders);
         
         // Assert - Both achievements should be awarded
         await _achievementRepository.Received(1).CreateEntryRange(Arg.Is<IEnumerable<AchievementEntry>>(
@@ -424,15 +580,78 @@ public class AchievementServiceTests
     }
     
     [TestMethod]
-    public async Task CheckOrderForAchievements_WhenAllAchievementTypesMet_ShouldCreateAllEntries()
+    public async Task CheckOrdersForAchievements_MultipleOrders_ShouldProcessEachOrder()
     {
         // Arrange
+        var user2 = new ApplicationUser
+        {
+            Id = "test-user-2",
+            UserName = "testuser2",
+            Name = "Test2",
+            Surname = "User2"
+        };
+        
+        var order1 = _testOrder;
+        var order2 = new Order
+        {
+            Id = Guid.NewGuid(),
+            User = user2,
+            ProductNaam = "Test Product 2",
+            Amount = 1,
+            Paid = 10.0m,
+            CreatedOn = DateTime.Now
+        };
+        
+        var orders = new List<Order> { order1, order2 };
+        
+        var achievement = new Achievement
+        {
+            Id = Guid.NewGuid(),
+            Name = "Buy 5 Items",
+            AutoAchieve = true,
+            Action = Achievement.ActionOption.UserBuy,
+            ComparisonOperator = Achievement.ComparisonOperatorOption.GreaterThanOrEqual,
+            ComparisonValue = 5
+        };
+        
+        _achievementRepository.GetUncompletedAchievementsForUser(_testUser.Id)
+            .Returns(new List<Achievement> { achievement });
+        _achievementRepository.GetUncompletedAchievementsForUser(user2.Id)
+            .Returns(new List<Achievement> { achievement });
+        
+        var user1Orders = new List<Order>
+        {
+            new() { User = _testUser, Amount = 5, CreatedOn = DateTime.Now.AddDays(-5) }
+        };
+        var user2Orders = new List<Order>
+        {
+            new() { User = user2, Amount = 6, CreatedOn = DateTime.Now.AddDays(-5) }
+        };
+        
+        _orderRepository.GetPersonal(_testUser.Id).Returns(user1Orders);
+        _orderRepository.GetPersonal(user2.Id).Returns(user2Orders);
+        
+        // Act
+        await _sut.CheckOrdersForAchievements(orders);
+        
+        // Assert - Both users should get the achievement (called twice, once per user)
+        await _achievementRepository.Received(2).CreateEntryRange(Arg.Is<IEnumerable<AchievementEntry>>(
+            entries => entries.Count() == 1
+        ));
+    }
+    
+    [TestMethod]
+    public async Task CheckOrdersForAchievements_MixedAutoAchieve_ShouldOnlyProcessAutoAchieve()
+    {
+        // Arrange
+        var orders = new List<Order> { _testOrder };
         var achievements = new List<Achievement>
         {
             new()
             {
                 Id = Guid.NewGuid(),
-                Name = "Buy 5 Items",
+                Name = "Auto Achievement",
+                AutoAchieve = true,
                 Action = Achievement.ActionOption.UserBuy,
                 ComparisonOperator = Achievement.ComparisonOperatorOption.GreaterThanOrEqual,
                 ComparisonValue = 5
@@ -440,7 +659,55 @@ public class AchievementServiceTests
             new()
             {
                 Id = Guid.NewGuid(),
-                Name = "Spend 50",
+                Name = "Manual Achievement",
+                AutoAchieve = false,
+                Action = Achievement.ActionOption.UserBuy,
+                ComparisonOperator = Achievement.ComparisonOperatorOption.GreaterThanOrEqual,
+                ComparisonValue = 5
+            }
+        };
+        
+        _achievementRepository.GetUncompletedAchievementsForUser(_testUser.Id)
+            .Returns(achievements);
+        
+        var userOrders = new List<Order>
+        {
+            new() { User = _testUser, Amount = 5, CreatedOn = DateTime.Now.AddDays(-5) }
+        };
+        
+        _orderRepository.GetPersonal(_testUser.Id).Returns(userOrders);
+        
+        // Act
+        await _sut.CheckOrdersForAchievements(orders);
+        
+        // Assert - Only 1 achievement (the AutoAchieve one) should be awarded
+        await _achievementRepository.Received(1).CreateEntryRange(Arg.Is<IEnumerable<AchievementEntry>>(
+            entries => entries.Count() == 1 && 
+                      entries.First().Achievement.Name == "Auto Achievement"
+        ));
+    }
+    
+    [TestMethod]
+    public async Task CheckOrdersForAchievements_AllActionTypesInSingleBatch_ShouldProcessAll()
+    {
+        // Arrange
+        var orders = new List<Order> { _testOrder };
+        var achievements = new List<Achievement>
+        {
+            new()
+            {
+                Id = Guid.NewGuid(),
+                Name = "UserBuy Achievement",
+                AutoAchieve = true,
+                Action = Achievement.ActionOption.UserBuy,
+                ComparisonOperator = Achievement.ComparisonOperatorOption.GreaterThanOrEqual,
+                ComparisonValue = 5
+            },
+            new()
+            {
+                Id = Guid.NewGuid(),
+                Name = "TotalBuy Achievement",
+                AutoAchieve = true,
                 Action = Achievement.ActionOption.TotalBuy,
                 ComparisonOperator = Achievement.ComparisonOperatorOption.GreaterThanOrEqual,
                 ComparisonValue = 50
@@ -448,7 +715,8 @@ public class AchievementServiceTests
             new()
             {
                 Id = Guid.NewGuid(),
-                Name = "Top Up 3 Times",
+                Name = "UserTopUp Achievement",
+                AutoAchieve = true,
                 Action = Achievement.ActionOption.UserTopUp,
                 ComparisonOperator = Achievement.ComparisonOperatorOption.GreaterThanOrEqual,
                 ComparisonValue = 3
@@ -456,7 +724,8 @@ public class AchievementServiceTests
             new()
             {
                 Id = Guid.NewGuid(),
-                Name = "Top Up Total 50",
+                Name = "TotalTopUp Achievement",
+                AutoAchieve = true,
                 Action = Achievement.ActionOption.TotalTopUp,
                 ComparisonOperator = Achievement.ComparisonOperatorOption.GreaterThanOrEqual,
                 ComparisonValue = 50
@@ -464,7 +733,8 @@ public class AchievementServiceTests
             new()
             {
                 Id = Guid.NewGuid(),
-                Name = "Member for 2 Years",
+                Name = "YearsOfMembership Achievement",
+                AutoAchieve = true,
                 Action = Achievement.ActionOption.YearsOfMembership,
                 ComparisonOperator = Achievement.ComparisonOperatorOption.GreaterThanOrEqual,
                 ComparisonValue = 2
@@ -473,109 +743,31 @@ public class AchievementServiceTests
         
         _achievementRepository.GetUncompletedAchievementsForUser(_testUser.Id)
             .Returns(achievements);
-            
-        var pastOrders = new List<Order>
-        {
-            new() { User = _testUser, Amount = 2, Paid = 20m, CreatedOn = DateTime.Now.AddYears(-3) },
-            new() { User = _testUser, Amount = 2, Paid = 25m, CreatedOn = DateTime.Now.AddDays(-1) },
-            _testOrder // Current order with Amount = 1, Paid = 10m, totals = 5 items, 55m spent
-        };
         
-        _orderRepository.GetPersonal(_testUser.Id).Returns(pastOrders);
+        var userOrders = new List<Order>
+        {
+            new() { User = _testUser, Amount = 3, Paid = 30m, CreatedOn = DateTime.Now.AddYears(-3) },
+            new() { User = _testUser, Amount = 2, Paid = 25m, CreatedOn = DateTime.Now.AddDays(-1) }
+        };
         
         var topUps = new List<TopUp>
         {
             new() { User = _testUser, Saldo = 20m, CreatedOn = DateTime.Now.AddDays(-10) },
             new() { User = _testUser, Saldo = 15m, CreatedOn = DateTime.Now.AddDays(-5) },
-            new() { User = _testUser, Saldo = 15m, CreatedOn = DateTime.Now.AddDays(-1) }
+            new() { User = _testUser, Saldo = 16m, CreatedOn = DateTime.Now.AddDays(-1) }
         };
         
+        _orderRepository.GetPersonal(_testUser.Id).Returns(userOrders);
         _topUpRepository.GetPersonal(_testUser.Id).Returns(topUps);
         
         // Act
-        await _sut.CheckOrderForAchievements(_testOrder);
+        await _sut.CheckOrdersForAchievements(orders);
         
-        // Assert - All 5 achievements should be awarded
+        // Assert - All 5 achievement types should be awarded
         await _achievementRepository.Received(1).CreateEntryRange(Arg.Is<IEnumerable<AchievementEntry>>(
             entries => entries.Count() == 5
         ));
     }
-    
-    [TestMethod]
-    public async Task CheckOrderForAchievements_WhenNoAchievementsMet_ShouldNotCreateEntries()
-    {
-        // Arrange
-        var achievements = new List<Achievement>
-        {
-            new()
-            {
-                Id = Guid.NewGuid(),
-                Name = "Buy 100 Items",
-                Action = Achievement.ActionOption.UserBuy,
-                ComparisonOperator = Achievement.ComparisonOperatorOption.GreaterThanOrEqual,
-                ComparisonValue = 100
-            },
-            new()
-            {
-                Id = Guid.NewGuid(),
-                Name = "Spend 500",
-                Action = Achievement.ActionOption.TotalBuy,
-                ComparisonOperator = Achievement.ComparisonOperatorOption.GreaterThanOrEqual,
-                ComparisonValue = 500
-            }
-        };
-        
-        _achievementRepository.GetUncompletedAchievementsForUser(_testUser.Id)
-            .Returns(achievements);
-            
-        var pastOrders = new List<Order>
-        {
-            new() { User = _testUser, Amount = 2, Paid = 20m, CreatedOn = DateTime.Now.AddDays(-5) },
-            new() { User = _testUser, Amount = 3, Paid = 25m, CreatedOn = DateTime.Now.AddDays(-1) },
-            _testOrder // Current order with Amount = 1, Paid = 10m, totals = 6 items, 55m spent
-        };
-        
-        _orderRepository.GetPersonal(_testUser.Id).Returns(pastOrders);
-        
-        // Act
-        await _sut.CheckOrderForAchievements(_testOrder);
-        
-        // Assert - No achievements should be awarded
-        await _achievementRepository.DidNotReceive().CreateEntryRange(Arg.Any<IEnumerable<AchievementEntry>>());
-    }
-    
-    [TestMethod]
-    public async Task CheckOrderForAchievements_WhenInvalidComparisonOperator_ShouldNotCreateEntries()
-    {
-        // Arrange
-        var invalidAchievement = new Achievement
-        {
-            Id = Guid.NewGuid(),
-            Name = "Invalid Operator",
-            Action = Achievement.ActionOption.UserBuy,
-            ComparisonOperator = (Achievement.ComparisonOperatorOption)999, // Invalid enum value
-            ComparisonValue = 5
-        };
-        
-        _achievementRepository.GetUncompletedAchievementsForUser(_testUser.Id)
-            .Returns(new List<Achievement> { invalidAchievement });
-            
-        var pastOrders = new List<Order>
-        {
-            new() { User = _testUser, Amount = 2, CreatedOn = DateTime.Now.AddDays(-5) },
-            new() { User = _testUser, Amount = 3, CreatedOn = DateTime.Now.AddDays(-1) },
-            _testOrder // Current order with Amount = 1, total = 6
-        };
-        
-        _orderRepository.GetPersonal(_testUser.Id).Returns(pastOrders);
-        
-        // Act
-        await _sut.CheckOrderForAchievements(_testOrder);
-        
-        // Assert - No achievements should be awarded due to invalid operator
-        await _achievementRepository.DidNotReceive().CreateEntryRange(Arg.Any<IEnumerable<AchievementEntry>>());
-    }
-    
     #endregion
     
     #region CheckComparison Tests

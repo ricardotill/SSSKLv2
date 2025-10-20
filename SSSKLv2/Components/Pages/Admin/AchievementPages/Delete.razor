@@ -77,7 +77,7 @@
         {
             await AchievementService.DeleteAchievement(Guid.Parse(Id));
 
-            NavigationManager.NavigateTo("/admin/announcements");
+            NavigationManager.NavigateTo("/admin/achievements");
         }
         catch (NotFoundException)
         {

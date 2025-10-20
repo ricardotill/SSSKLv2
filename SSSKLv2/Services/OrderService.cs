@@ -9,6 +9,7 @@ namespace SSSKLv2.Services;
 
 public class OrderService(
     IOrderRepository orderRepository,
+    IAchievementService achievementService,
     IPurchaseNotifier purchaseNotifier,
     ILogger<OrderService> logger) : IOrderService
 {
@@ -60,6 +61,7 @@ public class OrderService(
         
         await orderRepository.CreateRange(orders);
         await NotifyPurchase(orders);
+        await achievementService.CheckOrdersForAchievements(orders);
     }
     
     public async Task<string> ExportOrdersFromPastTwoYearsToCsvAsync()

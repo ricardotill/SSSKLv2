@@ -8,6 +8,7 @@ public interface IAchievementService
 {
     Task<IList<AchievementListingDto>> GetPersonalAchievements(string userId);
     Task<IList<AchievementEntry>> GetPersonalAchievementEntries(string userId);
+    Task<IList<AchievementEntry>> GetPersonalUnseenAchievementEntries(string username);
     Task<IEnumerable<Achievement>> GetAchievements();
     Task<Achievement> GetAchievementById(Guid id);
     Task UpdateAchievement(Achievement achievement);
@@ -15,7 +16,7 @@ public interface IAchievementService
     Task DeleteAchievementEntryRange(IEnumerable<AchievementEntry> entries);
     IQueryable<Achievement> GetAchievementsQueryable(ApplicationDbContext context);
     IQueryable<AchievementEntry> GetAchievementEntriesQueryable(ApplicationDbContext context);
-    Task CheckOrderForAchievements(Order order);
+    Task CheckOrdersForAchievements(IEnumerable<Order> orders);
     Task<bool> AwardAchievementToUser(string userId, Guid achievementId);
     Task<int> AwardAchievementToAllUsers(Guid achievementId);
     Task AddAchievement(AchievementDto dto);

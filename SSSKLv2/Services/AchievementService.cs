@@ -198,7 +198,7 @@ public class AchievementService(
                         .ToList();
                     if (lastTwoTopUps.Count == 2)
                     {
-                        var minutes = lastTwoTopUps[0].Subtract(lastTwoTopUps[1]).Minutes;
+                        var minutes = (int)lastTwoTopUps[0].Subtract(lastTwoTopUps[1]).TotalMinutes;
                         shouldAward = AchievementRulesUtil.CheckComparison(minutes, achievement.ComparisonOperator, achievement.ComparisonValue);
                     }
                     break;

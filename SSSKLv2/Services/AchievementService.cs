@@ -110,12 +110,12 @@ public class AchievementService(
                 
                 switch (achievement.Action)
                 {
-                    case Achievement.ActionOption.UserBuy:
+                    case Achievement.ActionOption.UserOrderAmountBought:
                         var userTotalBought = userOrders.Sum(o => o.Amount);
                         shouldAward = AchievementRulesUtil.CheckComparison(userTotalBought, achievement.ComparisonOperator, achievement.ComparisonValue);
                         break;
                         
-                    case Achievement.ActionOption.TotalBuy:
+                    case Achievement.ActionOption.UserOrderAmountPaid:
                         var userTotalSpent = userOrders.Sum(o => o.Paid);
                         shouldAward = AchievementRulesUtil.CheckComparison((int)userTotalSpent, achievement.ComparisonOperator, achievement.ComparisonValue);
                         break;
@@ -179,12 +179,12 @@ public class AchievementService(
             
             switch (achievement.Action)
             {
-                case Achievement.ActionOption.UserTopUp:
+                case Achievement.ActionOption.UserIndividualTopUp:
                     var roundedTopUpCount = (int)Math.Round(topUp.Saldo);
                     shouldAward = AchievementRulesUtil.CheckComparison(roundedTopUpCount, achievement.ComparisonOperator, achievement.ComparisonValue);
                     break;
                     
-                case Achievement.ActionOption.TotalTopUp:
+                case Achievement.ActionOption.UserTotalTopUp:
                     var sumTopUps = userTopUps.Sum(t => t.Saldo);
                     var roundedSumTopUps = (int)Math.Round(sumTopUps);
                     shouldAward = AchievementRulesUtil.CheckComparison(roundedSumTopUps, achievement.ComparisonOperator, achievement.ComparisonValue);

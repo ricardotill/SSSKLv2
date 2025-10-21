@@ -874,7 +874,7 @@ public class AchievementRepositoryTests : RepositoryTest
         Id = id ?? Guid.NewGuid(),
         Name = name,
         Description = $"Description for {name}",
-        Action = Achievement.ActionOption.UserBuy,
+        Action = Achievement.ActionOption.UserOrderAmountBought,
         ComparisonOperator = Achievement.ComparisonOperatorOption.GreaterThanOrEqual,
         ComparisonValue = 10,
         CompletedEntries = null!, // Set to null to match database behavior

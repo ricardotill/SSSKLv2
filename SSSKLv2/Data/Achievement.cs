@@ -14,10 +14,10 @@ public class Achievement : BaseModel
     public enum ActionOption
     {
         None = 0,
-        UserBuy = 1,
-        TotalBuy = 2, 
-        UserTopUp = 3,
-        TotalTopUp = 4,
+        UserOrderAmountBought = 1,
+        UserOrderAmountPaid = 2, 
+        UserIndividualTopUp = 3,
+        UserTotalTopUp = 4,
         YearsOfMembership = 5,
         OrdersWithinHour = 6,
         MinutesBetweenOrders = 7,

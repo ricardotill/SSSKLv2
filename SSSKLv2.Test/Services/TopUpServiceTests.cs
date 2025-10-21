@@ -8,6 +8,7 @@ using SSSKLv2.Data;
 using SSSKLv2.Data.DAL.Exceptions;
 using SSSKLv2.Data.DAL.Interfaces;
 using SSSKLv2.Services;
+using SSSKLv2.Services.Interfaces;
 
 namespace SSSKLv2.Test.Services;
 
@@ -15,6 +16,7 @@ namespace SSSKLv2.Test.Services;
 public class TopUpServiceTests
 {
     private ITopUpRepository _mockRepository = null!;
+    private IAchievementService _achievementService = null!;
     private ILogger<TopUpService> _mockLogger = null!;
     private TopUpService _sut = null!;
 
@@ -22,8 +24,9 @@ public class TopUpServiceTests
     public void TestInitialize()
     {
         _mockRepository = Substitute.For<ITopUpRepository>();
+        _achievementService = Substitute.For<IAchievementService>();
         _mockLogger = Substitute.For<ILogger<TopUpService>>();
-        _sut = new TopUpService(_mockRepository, _mockLogger);
+        _sut = new TopUpService(_mockRepository, _achievementService, _mockLogger);
     }
 
     #region GetAllQueryable Tests

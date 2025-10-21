@@ -163,7 +163,7 @@ public class ApplicationUserService(
         return DeterminePositions(leaderboard);
     }
 
-    private IEnumerable<LeaderboardEntryDto> DeterminePositions(IEnumerable<LeaderboardEntryDto> leaderboard)
+    private static IEnumerable<LeaderboardEntryDto> DeterminePositions(IEnumerable<LeaderboardEntryDto> leaderboard)
     {
         var list = leaderboard
             .OrderByDescending(x => x.Amount)

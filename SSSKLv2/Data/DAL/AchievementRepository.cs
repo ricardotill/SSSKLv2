@@ -141,8 +141,16 @@ public class AchievementRepository(IDbContextFactory<ApplicationDbContext> dbCon
             // New image provided. Remove old image if present, then insert new AchievementImage
             if (existing.Image != null)
             {
-                context.AchievementImage.Remove(existing.Image);
+                // Update existing image properties instead of deleting/recreating to avoid FK cascade issues
+                existing.Image.FileName = achievement.Image.FileName;
+                existing.Image.Uri = achievement.Image.Uri;
+                existing.Image.ContentType = achievement.Image.ContentType;
+                existing.Image.CreatedOn = achievement.Image.CreatedOn == default ? DateTime.Now : achievement.Image.CreatedOn;
+                // We've updated the existing image entity; no need to add/remove
+                // Save will persist these changes below
+                // Exit the image handling block early
                 await context.SaveChangesAsync();
+                return;
             }
 
             // Create a new AchievementImage entity and set the shadow FK AchievementId to link it
@@ -160,10 +168,19 @@ public class AchievementRepository(IDbContextFactory<ApplicationDbContext> dbCon
                 newImage.Id = achievement.Image.Id;
             }
 
+            // Add new image entity to context so it's inserted
             await context.AchievementImage.AddAsync(newImage);
-        }
+            // Set navigation and the shadow FK explicitly to ensure proper linking
+            existing.Image = newImage;
+            // If caller provided an Id for the image, preserve it on the shadow FK.
+            // If Id is Guid.Empty, let EF generate the Id and manage the FK via the navigation property.
+            if (newImage.Id != Guid.Empty)
+            {
+                context.Entry(existing).Property("ImageId").CurrentValue = newImage.Id;
+            }
+         }
 
-        await context.SaveChangesAsync();
+         await context.SaveChangesAsync();
     }
     
     public async Task UpdateAchievementEntryRange(IEnumerable<AchievementEntry> entries)
@@ -205,10 +222,19 @@ public class AchievementRepository(IDbContextFactory<ApplicationDbContext> dbCon
     {
         await using var context = await dbContextFactory.CreateDbContextAsync();
         
-        // Get all achievement IDs that the user has completed
+        // Resolve the user for the provided username. If user doesn't exist, return all achievements.
+        var user = await context.Users.SingleOrDefaultAsync(u => u.UserName == username);
+        if (user == null)
+        {
+            return await context.Achievement
+                .OrderBy(achievement => achievement.CreatedOn)
+                .ToListAsync();
+        }
+        
+        // Query completed achievement IDs using shadow FK properties to ensure translation
         var completedAchievementIds = context.AchievementEntry
-            .Where(entry => entry.User.UserName == username)
-            .Select(entry => entry.Achievement.Id);
+            .Where(entry => EF.Property<string>(entry, "UserId") == user.Id)
+            .Select(entry => EF.Property<Guid>(entry, "AchievementId"));
         
         // Get all achievements that are NOT in the completed list
         return await context.Achievement

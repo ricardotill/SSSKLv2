@@ -320,7 +320,6 @@ public class AchievementRepositoryTests : RepositoryTest
         // Arrange: create achievement with an initial image
         var initialImage = new AchievementImage
         {
-            Id = Guid.NewGuid(),
             FileName = "old.png",
             Uri = "http://old",
             ContentType = "image/png",
@@ -333,7 +332,6 @@ public class AchievementRepositoryTests : RepositoryTest
         // Act: update achievement providing a new image
         var newImage = new AchievementImage
         {
-            Id = Guid.NewGuid(),
             FileName = "new.png",
             Uri = "http://new",
             ContentType = "image/png",
@@ -366,7 +364,6 @@ public class AchievementRepositoryTests : RepositoryTest
         // Arrange: create achievement with image
         var initialImage = new AchievementImage
         {
-            Id = Guid.NewGuid(),
             FileName = "toremove.png",
             Uri = "http://toremove",
             ContentType = "image/png"
@@ -504,7 +501,7 @@ public class AchievementRepositoryTests : RepositoryTest
         await SaveAchievements(achievement1, achievement2, achievement3);
 
         // Act
-        var result = (await _sut.GetUncompletedAchievementsForUser(TestUser.Id)).ToList();
+        var result = (await _sut.GetUncompletedAchievementsForUser(TestUser.UserName)).ToList();
 
         // Assert
         result.Should().HaveCount(3);
@@ -530,7 +527,7 @@ public class AchievementRepositoryTests : RepositoryTest
         await SaveAchievementEntries(entry1, entry3);
 
         // Act
-        var result = (await _sut.GetUncompletedAchievementsForUser(TestUser.Id)).ToList();
+        var result = (await _sut.GetUncompletedAchievementsForUser(TestUser.UserName)).ToList();
 
         // Assert
         result.Should().HaveCount(2);
@@ -555,7 +552,7 @@ public class AchievementRepositoryTests : RepositoryTest
         await SaveAchievementEntries(entry1, entry2);
 
         // Act
-        var result = await _sut.GetUncompletedAchievementsForUser(TestUser.Id);
+        var result = await _sut.GetUncompletedAchievementsForUser(TestUser.UserName);
 
         // Assert
         result.Should().BeEmpty();
@@ -565,7 +562,7 @@ public class AchievementRepositoryTests : RepositoryTest
     public async Task GetUncompletedAchievementsForUser_WhenNoAchievementsExist_ReturnEmptyCollection()
     {
         // Act
-        var result = await _sut.GetUncompletedAchievementsForUser(TestUser.Id);
+        var result = await _sut.GetUncompletedAchievementsForUser(TestUser.UserName);
 
         // Assert
         result.Should().BeEmpty();
@@ -613,7 +610,7 @@ public class AchievementRepositoryTests : RepositoryTest
         await SaveAchievementEntries(testUserEntry, otherUserEntry);
 
         // Act
-        var result = (await _sut.GetUncompletedAchievementsForUser(TestUser.Id)).ToList();
+        var result = (await _sut.GetUncompletedAchievementsForUser(TestUser.UserName)).ToList();
 
         // Assert
         result.Should().HaveCount(2);
@@ -864,8 +861,10 @@ public class AchievementRepositoryTests : RepositoryTest
     private async Task<IList<AchievementImage>> GetAchievementImagesForAchievement(Guid achievementId)
     {
         await using var context = await _dbContextFactory.CreateDbContextAsync();
-        return await context.AchievementImage
-            .Where(ai => EF.Property<Guid>(ai, "AchievementId") == achievementId)
+        // The FK from Achievement to AchievementImage is ImageId (on Achievement), so query the Achievement and project its Image
+        return await context.Achievement
+            .Where(a => a.Id == achievementId && a.Image != null)
+            .Select(a => a.Image!)
             .AsNoTracking()
             .ToListAsync();
     }

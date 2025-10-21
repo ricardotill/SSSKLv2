@@ -17,6 +17,7 @@
 <PageTitle>SSSKLv2 | Live Leaderboard</PageTitle>
 
 <script src="/js/fireworks.js?v=2"></script>
+<script src="/js/leaderboard.js?v=1"></script>
 
 @if (Env?.IsDevelopment() == true)
 {
@@ -30,7 +31,7 @@
 {
     <div class="sssk-celebrate-overlay" role="dialog" aria-modal="true">
         <div class="sssk-celebrate-content">
-            @if (!string.IsNullOrEmpty(CurrentAchievementEvent.ImageUrl))
+            @if (!string.IsNullOrEmpty(CurrentAchievementEvent.ImageUrl) && _achievementImageLoaded)
             {
                 <img src="@CurrentAchievementEvent.ImageUrl" alt="@CurrentAchievementEvent.AchievementName" class="sssk-celebrate-image" />
             }
@@ -266,6 +267,7 @@ else
     private bool ShowAchievementOverlay { get; set; } = false;
     private AchievementEvent? CurrentAchievementEvent { get; set; }
     private CancellationTokenSource? _achievementCts;
+    private bool _achievementImageLoaded = false;
 
     private async Task CelebrateAchievement(AchievementEvent @event)
     {
@@ -274,12 +276,16 @@ else
         {
             _achievementCts?.Cancel();
         }
-        catch { }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error cancelling previous achievement task: {ex}");
+        }
 
         _achievementCts = new CancellationTokenSource();
         var token = _achievementCts.Token;
 
         CurrentAchievementEvent = @event;
+        _achievementImageLoaded = false; // reset
         // Start fireworks first so they are visible behind the overlay
         try
         {
@@ -289,12 +295,43 @@ else
         {
             Console.WriteLine($"Failed to start fireworks: {ex.Message}");
         }
-        // give the browser a bit more time to render the canvas so fireworks are visible behind the overlay
-        try
+
+        // Attempt to preload the image while we wait a short time for the UI to render.
+        if (!string.IsNullOrEmpty(CurrentAchievementEvent?.ImageUrl))
         {
-            await Task.Delay(800, token);
+            try
+            {
+                // Start a JS preload and wait up to 2s for it while still honoring the UI render delay below.
+                var jsPreloadTask = JS.InvokeAsync<bool>("leaderboard.preloadImage", CurrentAchievementEvent.ImageUrl).AsTask();
+                var renderDelayTask = Task.Delay(800, token);
+
+                // Wait for the render delay (so fireworks canvas is visible), but let preload run concurrently with a timeout
+                var finished = await Task.WhenAny(jsPreloadTask, Task.Delay(4000, token));
+                if (finished == jsPreloadTask && jsPreloadTask.IsCompletedSuccessfully && jsPreloadTask.Result)
+                {
+                    _achievementImageLoaded = true;
+                }
+                else
+                {
+                    // preload failed or timed out; we'll still show the overlay but hide the image to avoid a broken image icon
+                    _achievementImageLoaded = false;
+                    Console.WriteLine("Achievement image preload failed or timed out.");
+                }
+
+                // Ensure we still wait the short render delay so fireworks render behind overlay
+                try { await renderDelayTask; } catch (OperationCanceledException) { }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error preloading achievement image: {ex.Message}");
+                try { await Task.Delay(800, token); } catch (OperationCanceledException) { }
+            }
         }
-        catch (OperationCanceledException) { }
+        else
+        {
+            // No image to preload; still give a small render delay
+            try { await Task.Delay(800, token); } catch (OperationCanceledException) { }
+        }
 
         ShowAchievementOverlay = true;
         await InvokeAsync(StateHasChanged);
@@ -321,13 +358,15 @@ else
             }
             ShowAchievementOverlay = false;
             CurrentAchievementEvent = null;
+            _achievementImageLoaded = false;
             await InvokeAsync(StateHasChanged);
         }
     }
 
     public Task TestCelebrate()
     {
-        var sample = new AchievementEvent("Top Seller", "Demo User", null);
+        // Use a known reachable placeholder image so testing shows the image.
+        var sample = new AchievementEvent("Top Seller", "Demo User", "https://via.placeholder.com/300x180.png?text=Achievement");
         return CelebrateAchievement(sample);
     }
 
@@ -340,14 +379,20 @@ else
             _achievementCts?.Dispose();
             _achievementCts = null;
         }
-        catch { }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error disposing achievement CTS: {ex}");
+        }
 
         // Ensure fireworks are stopped
         try
         {
             await JS.InvokeVoidAsync("fireworks.stop");
         }
-        catch { }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error stopping fireworks during dispose: {ex}");
+        }
 
         // Dispose hub connection
         if (Hub != null)
@@ -356,7 +401,10 @@ else
             {
                 await Hub.DisposeAsync();
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error disposing SignalR hub: {ex}");
+            }
             Hub = null;
         }
     }

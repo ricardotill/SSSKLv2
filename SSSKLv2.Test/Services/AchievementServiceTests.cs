@@ -101,7 +101,7 @@ public class AchievementServiceTests
                 Id = Guid.NewGuid(),
                 Name = "Manual Achievement",
                 AutoAchieve = false,
-                Action = Achievement.ActionOption.UserBuy,
+                Action = Achievement.ActionOption.UserOrderAmountBought,
                 ComparisonOperator = Achievement.ComparisonOperatorOption.GreaterThanOrEqual,
                 ComparisonValue = 1
             }
@@ -128,7 +128,7 @@ public class AchievementServiceTests
             Id = Guid.NewGuid(),
             Name = "Buy 5 Items",
             AutoAchieve = true,
-            Action = Achievement.ActionOption.UserBuy,
+            Action = Achievement.ActionOption.UserOrderAmountBought,
             ComparisonOperator = Achievement.ComparisonOperatorOption.GreaterThanOrEqual,
             ComparisonValue = 5
         };
@@ -165,7 +165,7 @@ public class AchievementServiceTests
             Id = Guid.NewGuid(),
             Name = "Buy 10 Items",
             AutoAchieve = true,
-            Action = Achievement.ActionOption.UserBuy,
+            Action = Achievement.ActionOption.UserOrderAmountBought,
             ComparisonOperator = Achievement.ComparisonOperatorOption.GreaterThanOrEqual,
             ComparisonValue = 10
         };
@@ -198,7 +198,7 @@ public class AchievementServiceTests
             Id = Guid.NewGuid(),
             Name = "Spend 50",
             AutoAchieve = true,
-            Action = Achievement.ActionOption.TotalBuy,
+            Action = Achievement.ActionOption.UserOrderAmountPaid,
             ComparisonOperator = Achievement.ComparisonOperatorOption.GreaterThanOrEqual,
             ComparisonValue = 50
         };
@@ -234,7 +234,7 @@ public class AchievementServiceTests
             Id = Guid.NewGuid(),
             Name = "Spend 50",
             AutoAchieve = true,
-            Action = Achievement.ActionOption.TotalBuy,
+            Action = Achievement.ActionOption.UserOrderAmountPaid,
             ComparisonOperator = Achievement.ComparisonOperatorOption.GreaterThanOrEqual,
             ComparisonValue = 50
         };
@@ -266,7 +266,7 @@ public class AchievementServiceTests
             Id = Guid.NewGuid(),
             Name = "Top Up Total 50",
             AutoAchieve = true,
-            Action = Achievement.ActionOption.TotalTopUp,
+            Action = Achievement.ActionOption.UserTotalTopUp,
             ComparisonOperator = Achievement.ComparisonOperatorOption.GreaterThanOrEqual,
             ComparisonValue = 50
         };
@@ -300,7 +300,7 @@ public class AchievementServiceTests
             Id = Guid.NewGuid(),
             Name = "Less than 10 purchases",
             AutoAchieve = true,
-            Action = Achievement.ActionOption.UserBuy,
+            Action = Achievement.ActionOption.UserOrderAmountBought,
             ComparisonOperator = Achievement.ComparisonOperatorOption.LessThan,
             ComparisonValue = 10
         };
@@ -334,7 +334,7 @@ public class AchievementServiceTests
             Id = Guid.NewGuid(),
             Name = "At most 5 purchases",
             AutoAchieve = true,
-            Action = Achievement.ActionOption.UserBuy,
+            Action = Achievement.ActionOption.UserOrderAmountBought,
             ComparisonOperator = Achievement.ComparisonOperatorOption.LessThanOrEqual,
             ComparisonValue = 5
         };
@@ -370,7 +370,7 @@ public class AchievementServiceTests
                 Id = Guid.NewGuid(),
                 Name = "Buy 5 Items",
                 AutoAchieve = true,
-                Action = Achievement.ActionOption.UserBuy,
+                Action = Achievement.ActionOption.UserOrderAmountBought,
                 ComparisonOperator = Achievement.ComparisonOperatorOption.GreaterThanOrEqual,
                 ComparisonValue = 5
             },
@@ -379,7 +379,7 @@ public class AchievementServiceTests
                 Id = Guid.NewGuid(),
                 Name = "Spend 50",
                 AutoAchieve = true,
-                Action = Achievement.ActionOption.TotalBuy,
+                Action = Achievement.ActionOption.UserOrderAmountPaid,
                 ComparisonOperator = Achievement.ComparisonOperatorOption.GreaterThanOrEqual,
                 ComparisonValue = 50
             }
@@ -435,7 +435,7 @@ public class AchievementServiceTests
             Id = Guid.NewGuid(),
             Name = "Buy 5 Items",
             AutoAchieve = true,
-            Action = Achievement.ActionOption.UserBuy,
+            Action = Achievement.ActionOption.UserOrderAmountBought,
             ComparisonOperator = Achievement.ComparisonOperatorOption.GreaterThanOrEqual,
             ComparisonValue = 5
         };
@@ -478,7 +478,7 @@ public class AchievementServiceTests
                 Id = Guid.NewGuid(),
                 Name = "Auto Achievement",
                 AutoAchieve = true,
-                Action = Achievement.ActionOption.UserBuy,
+                Action = Achievement.ActionOption.UserOrderAmountBought,
                 ComparisonOperator = Achievement.ComparisonOperatorOption.GreaterThanOrEqual,
                 ComparisonValue = 5
             },
@@ -487,7 +487,7 @@ public class AchievementServiceTests
                 Id = Guid.NewGuid(),
                 Name = "Manual Achievement",
                 AutoAchieve = false,
-                Action = Achievement.ActionOption.UserBuy,
+                Action = Achievement.ActionOption.UserOrderAmountBought,
                 ComparisonOperator = Achievement.ComparisonOperatorOption.GreaterThanOrEqual,
                 ComparisonValue = 5
             }
@@ -523,18 +523,18 @@ public class AchievementServiceTests
             new()
             {
                 Id = Guid.NewGuid(),
-                Name = "UserBuy Achievement",
+                Name = "UserOrderAmountBought Achievement",
                 AutoAchieve = true,
-                Action = Achievement.ActionOption.UserBuy,
+                Action = Achievement.ActionOption.UserOrderAmountBought,
                 ComparisonOperator = Achievement.ComparisonOperatorOption.GreaterThanOrEqual,
                 ComparisonValue = 5
             },
             new()
             {
                 Id = Guid.NewGuid(),
-                Name = "TotalBuy Achievement",
+                Name = "UserOrderAmountPaid Achievement",
                 AutoAchieve = true,
-                Action = Achievement.ActionOption.TotalBuy,
+                Action = Achievement.ActionOption.UserOrderAmountPaid,
                 ComparisonOperator = Achievement.ComparisonOperatorOption.GreaterThanOrEqual,
                 ComparisonValue = 50
             }
@@ -598,7 +598,7 @@ public class AchievementServiceTests
                 Id = Guid.NewGuid(),
                 Name = "Manual TopUp",
                 AutoAchieve = false,
-                Action = Achievement.ActionOption.UserTopUp,
+                Action = Achievement.ActionOption.UserIndividualTopUp,
                 ComparisonOperator = Achievement.ComparisonOperatorOption.GreaterThanOrEqual,
                 ComparisonValue = 1
             }
@@ -623,7 +623,7 @@ public class AchievementServiceTests
             Id = Guid.NewGuid(),
             Name = "Top Up 6",
             AutoAchieve = true,
-            Action = Achievement.ActionOption.UserTopUp,
+            Action = Achievement.ActionOption.UserIndividualTopUp,
             ComparisonOperator = Achievement.ComparisonOperatorOption.GreaterThanOrEqual,
             ComparisonValue = 6
         };
@@ -650,7 +650,7 @@ public class AchievementServiceTests
             Id = Guid.NewGuid(),
             Name = "Top Up 6",
             AutoAchieve = true,
-            Action = Achievement.ActionOption.UserTopUp,
+            Action = Achievement.ActionOption.UserIndividualTopUp,
             ComparisonOperator = Achievement.ComparisonOperatorOption.GreaterThanOrEqual,
             ComparisonValue = 6
         };
@@ -674,7 +674,7 @@ public class AchievementServiceTests
             Id = Guid.NewGuid(),
             Name = "Total TopUp 50",
             AutoAchieve = true,
-            Action = Achievement.ActionOption.TotalTopUp,
+            Action = Achievement.ActionOption.UserTotalTopUp,
             ComparisonOperator = Achievement.ComparisonOperatorOption.GreaterThanOrEqual,
             ComparisonValue = 50
         };
@@ -707,7 +707,7 @@ public class AchievementServiceTests
             Id = Guid.NewGuid(),
             Name = "Total TopUp 50",
             AutoAchieve = true,
-            Action = Achievement.ActionOption.TotalTopUp,
+            Action = Achievement.ActionOption.UserTotalTopUp,
             ComparisonOperator = Achievement.ComparisonOperatorOption.GreaterThanOrEqual,
             ComparisonValue = 50
         };
@@ -767,18 +767,18 @@ public class AchievementServiceTests
             new()
             {
                 Id = Guid.NewGuid(),
-                Name = "UserTopUp 10",
+                Name = "UserIndividualTopUp 10",
                 AutoAchieve = true,
-                Action = Achievement.ActionOption.UserTopUp,
+                Action = Achievement.ActionOption.UserIndividualTopUp,
                 ComparisonOperator = Achievement.ComparisonOperatorOption.GreaterThanOrEqual,
                 ComparisonValue = 10
             },
             new()
             {
                 Id = Guid.NewGuid(),
-                Name = "TotalTopUp 20",
+                Name = "UserTotalTopUp 20",
                 AutoAchieve = true,
-                Action = Achievement.ActionOption.TotalTopUp,
+                Action = Achievement.ActionOption.UserTotalTopUp,
                 ComparisonOperator = Achievement.ComparisonOperatorOption.GreaterThanOrEqual,
                 ComparisonValue = 20
             }

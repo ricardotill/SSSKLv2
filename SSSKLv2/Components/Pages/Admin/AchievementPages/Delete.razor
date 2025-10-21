@@ -1,0 +1,87 @@
+﻿@page "/admin/achievements/delete"
+@rendermode InteractiveServer
+
+@attribute [Authorize(Policy = Policies.Admin)]
+
+@inject IAchievementService AchievementService
+@using SSSKLv2.Data
+@inject NavigationManager NavigationManager
+@using SSSKLv2.Data.DAL.Exceptions
+@using SSSKLv2.Services.Interfaces
+@using Microsoft.AspNetCore.Authorization
+@using SSSKLv2.Components.Account
+
+<PageTitle>SSSKLv2 | Achievement Verwijderen</PageTitle>
+
+<div class="row crud-form-header">
+    <div class="col-9 title-container">
+        <h1>Verwijderen</h1>
+    </div>
+    <div class="col-3 text-end back-container">
+        <a class="btn btn-secondary" href="/admin/announcements"><i class="bi bi-arrow-left"></i></a>
+    </div>
+</div>
+<hr />
+<div class="card">
+    <div class="card-body">
+        <h5 class="card-title">Achievement</h5>
+        <hr/>
+        @if (achievement is null)
+        {
+            <p><em>Laden...</em></p>
+        }
+        else
+        {
+            <dl class="row">
+                <dt class="col-sm-2">Naam</dt>
+                <dd class="col-sm-10">@achievement.Name</dd>
+            </dl>
+            <dl class="row">
+                <dt class="col-sm-2">Beschrijving</dt>
+                <dd class="col-sm-10">@achievement.Description</dd>
+            </dl>
+            <EditForm method="post" Model="achievement" OnValidSubmit="DeleteAnnouncement" FormName="delete" Enhance>
+                <button type="submit" class="btn btn-danger crud-form-submit" disabled="@(achievement is null)">Verwijderen</button>
+            </EditForm>
+        }
+    </div>
+</div>
+
+@code {
+    Achievement? achievement;
+
+    [SupplyParameterFromQuery]
+    public string Id { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetData();
+    }
+
+    public async Task GetData()
+    {
+        try
+        {
+            achievement = await AchievementService.GetAchievementById(Guid.Parse(Id));
+
+        }
+        catch (NotFoundException)
+        {
+            NavigationManager.NavigateTo("notfound");
+        }
+    }
+
+    public async Task DeleteAnnouncement()
+    {
+        try
+        {
+            await AchievementService.DeleteAchievement(Guid.Parse(Id));
+
+            NavigationManager.NavigateTo("/admin/achievements");
+        }
+        catch (NotFoundException)
+        {
+            NavigationManager.NavigateTo("notfound");
+        }
+    }
+}

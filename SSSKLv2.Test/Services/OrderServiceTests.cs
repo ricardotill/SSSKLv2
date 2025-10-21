@@ -17,6 +17,7 @@ public class OrderServiceTests
 {
     private IOrderRepository _mockOrderRepository = null!;
     private IPurchaseNotifier _purchaseNotifier = null!;
+    private IAchievementService _achievementService = null!;
     private ILogger<OrderService> _mockLogger = null!;
     private OrderService _sut = null!;
 
@@ -25,8 +26,9 @@ public class OrderServiceTests
     {
         _mockOrderRepository = Substitute.For<IOrderRepository>();
         _purchaseNotifier = Substitute.For<IPurchaseNotifier>();
+        _achievementService = Substitute.For<IAchievementService>();
         _mockLogger = Substitute.For<ILogger<OrderService>>();
-        _sut = new OrderService(_mockOrderRepository, _purchaseNotifier, _mockLogger);
+        _sut = new OrderService(_mockOrderRepository, _achievementService, _purchaseNotifier, _mockLogger);
     }
 
     #region GetAllQueryable Tests

@@ -5,37 +5,38 @@
     <NoWarn>$(NoWarn);NU1507</NoWarn>
   </PropertyGroup>
   <ItemGroup>
+    <PackageVersion Include="Azure.Storage.Blobs" Version="12.26.0" />
     <PackageVersion Include="BlazorComponentUtilities" Version="1.8.0" />
     <PackageVersion Include="Blazored.Toast" Version="4.2.1" />
-    <PackageVersion Include="Bogus" Version="35.6.3" />
+    <PackageVersion Include="Bogus" Version="35.6.4" />
     <PackageVersion Include="coverlet.collector" Version="6.0.4" />
     <PackageVersion Include="coverlet.msbuild" Version="6.0.4" />
-    <PackageVersion Include="FluentAssertions" Version="8.6.0" />
+    <PackageVersion Include="FluentAssertions" Version="8.7.1" />
     <PackageVersion Include="FluentValidation" Version="12.0.0" />
     <PackageVersion Include="Microsoft.ApplicationInsights" Version="2.23.0" />
     <PackageVersion Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.23.0" />
     <PackageVersion Include="Microsoft.ApplicationInsights.DependencyCollector" Version="2.23.0" />
-    <PackageVersion Include="Microsoft.AspNetCore.Components.QuickGrid.EntityFrameworkAdapter" Version="9.0.9" />
-    <PackageVersion Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="9.0.9" />
-    <PackageVersion Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="9.0.9" />
-    <PackageVersion Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="9.0.9" />
-    <PackageVersion Include="Microsoft.AspNetCore.SignalR.Client" Version="9.0.9" />
-    <PackageVersion Include="Microsoft.Azure.AppConfiguration.AspNetCore" Version="8.3.0" />
+    <PackageVersion Include="Microsoft.AspNetCore.Components.QuickGrid.EntityFrameworkAdapter" Version="9.0.10" />
+    <PackageVersion Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="9.0.10" />
+    <PackageVersion Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="9.0.10" />
+    <PackageVersion Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="9.0.10" />
+    <PackageVersion Include="Microsoft.AspNetCore.SignalR.Client" Version="9.0.10" />
+    <PackageVersion Include="Microsoft.Azure.AppConfiguration.AspNetCore" Version="8.4.0" />
     <PackageVersion Include="Microsoft.Azure.SignalR" Version="1.32.0" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.9" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.9" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.9" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.10" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.10" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.10" />
     <PackageVersion Include="Microsoft.Extensions.Logging.ApplicationInsights" Version="2.23.0" />
-    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.0.0" />
     <PackageVersion Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="9.0.0" />
     <PackageVersion Include="Moq" Version="4.18.4" />
     <PackageVersion Include="NSubstitute" Version="5.3.0" />
-    <PackageVersion Include="MSTest.TestAdapter" Version="3.10.4" />
-    <PackageVersion Include="MSTest.TestFramework" Version="3.10.4" />
-    <PackageVersion Include="Polly" Version="8.6.3" />
+    <PackageVersion Include="MSTest.TestAdapter" Version="4.0.1" />
+    <PackageVersion Include="MSTest.TestFramework" Version="4.0.1" />
+    <PackageVersion Include="Polly" Version="8.6.4" />
     <PackageVersion Include="Polly.Contrib.WaitAndRetry" Version="1.1.1" />
-    <PackageVersion Include="QRCoder" Version="1.6.0" />
+    <PackageVersion Include="QRCoder" Version="1.7.0" />
     <PackageVersion Include="SendGrid" Version="9.29.3" />
-    <PackageVersion Include="System.ServiceModel.Syndication" Version="9.0.9" />
+    <PackageVersion Include="System.ServiceModel.Syndication" Version="9.0.10" />
   </ItemGroup>
 </Project>

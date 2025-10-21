@@ -16,7 +16,9 @@
 @inject IApplicationUserService ApplicationUserService
 @inject IProductService ProductService
 @inject IOrderService OrderService
+@inject IAchievementService AchievementService
 @inject IToastService ToastService
+@inject IJSRuntime JS
 
 <PageTitle>SSSKLv2 | Bestellen</PageTitle>
 
@@ -80,7 +82,7 @@ else
                         <div class="col-6 p-0 pe-3 pb-2">
                             <button type="button" class="@css" @onclick="@(e => OnClick(e, user))">
                                 <InputCheckbox class="form-check-input btn-select-checkbox me-1" @bind-Value="user.Selected"/>
-                                @user.Value.Name @user.Value.Surname.First()
+                                @user.Value.FullName
                             </button>
                         </div>
                     }
@@ -108,11 +110,78 @@ else
             </div>
         </div>
     </EditForm>
+    
     <BlazoredToasts Position="ToastPosition.BottomRight"
                     Timeout=5
                     SuccessIcon="bi bi-check-circle"
                     WarningIcon="bi bi-exclamation-triangle"
                     ErrorIcon="bi bi-x-octagon"/>
+
+    <script src="/js/fireworks.js?v=2"></script>
+
+    <style>
+        /* Achievement modal/backdrop animations */
+        .sssk-achievement-overlay {
+            /* initial transparent background; keyframes will animate to semi-opaque */
+            background-color: rgba(0,0,0,0);
+            animation: sssk-backdrop 420ms ease-out forwards;
+        }
+        @@keyframes sssk-backdrop {
+            from { background-color: rgba(0,0,0,0); }
+            to { background-color: rgba(0,0,0,0.5); }
+        }
+
+        .sssk-modal-content {
+            transform-origin: center top;
+            opacity: 0;
+            transform: translateY(8px) scale(0.985);
+            animation: sssk-modal-enter 420ms cubic-bezier(.16,.84,.44,1) forwards;
+        }
+        @@keyframes sssk-modal-enter {
+            from { opacity: 0; transform: translateY(8px) scale(0.985); }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+    </style>
+
+    @* Achievement modal: shows when there are unseen AchievementEntries *@
+    @if (ShowAchievementModal && AchievementEntries.Any())
+    {
+        <div class="modal fade show d-block sssk-achievement-overlay" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content sssk-modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">@((AchievementEntries.Count > 1) ? "Nieuwe prestaties behaald!" : "Nieuwe prestatie behaald!")</h5>
+                        <button type="button" class="btn-close" @onclick="CloseAchievementModal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        @if (CurrentAchievement != null)
+                        {
+                            <div class="text-center">
+                                @if (!string.IsNullOrEmpty(CurrentAchievement.Achievement?.Image?.Uri))
+                                {
+                                    <img src="@CurrentAchievement.Achievement.Image.Uri" alt="@CurrentAchievement.Achievement.Name" class="img-fluid mb-3" />
+                                }
+                                <h4>@CurrentAchievement.Achievement?.Name</h4>
+                                <p>@CurrentAchievement.Achievement?.Description</p>
+                                <small class="text-muted">Voor: @CurrentAchievement.User?.Name @CurrentAchievement.User?.Surname</small>
+                            </div>
+                        }
+                        else
+                        {
+                            <p>Geen prestatie gevonden.</p>
+                        }
+                    </div>
+                    <div class="modal-footer">
+                        @if (AchievementEntries.Count > CurrentAchievementIndex + 1)
+                        {
+                            <button class="btn btn-primary" @onclick="ShowNextAchievement">Volgende</button>
+                        }
+                        <button class="btn btn-secondary" @onclick="CloseAchievementModal">Sluit</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
 } 
 
 @code {
@@ -120,6 +189,15 @@ else
     [SupplyParameterFromForm]
     public BestellingDto Model { get; set; } = new();
     
+    public IList<AchievementEntry> AchievementEntries { get; set; } = new List<AchievementEntry>();
+
+    // --- modal state ---
+    private bool ShowAchievementModal { get; set; } = false;
+    private int CurrentAchievementIndex { get; set; } = 0;
+    private AchievementEntry? CurrentAchievement => (AchievementEntries != null && AchievementEntries.Count > CurrentAchievementIndex)
+        ? AchievementEntries[CurrentAchievementIndex]
+        : null;
+
     protected override async Task OnInitializedAsync()
     {
         await GetData();
@@ -181,11 +259,77 @@ else
         ToastService.ShowSuccess("Betaling gelukt");
         await Clear();
         HeaderService.NotifyHeaderChanged();
+
+        var user = (await AuthStateProvider.GetAuthenticationStateAsync()).User.Identity?.Name ?? string.Empty;
+        var entries = (await AchievementService.GetPersonalUnseenAchievementEntries(user))?.ToList() ?? new List<AchievementEntry>();
+        AchievementEntries = entries;
+
+        // If there are unseen achievements, start fireworks immediately and show the modal after 2s
+        if (AchievementEntries.Any())
+        {
+            CurrentAchievementIndex = 0;
+            // start fireworks first so they appear BEFORE the modal
+            await StartFireworksAsync();
+            // delay modal to let fireworks be visible a bit earlier
+            await Task.Delay(2000);
+            ShowAchievementModal = true;
+            StateHasChanged();
+        }
     }
 
     private void OnClick(MouseEventArgs args, Select select)
     {
         select.Selected = !select.Selected;
+    }
+
+    private async Task StartFireworksAsync()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("fireworks.start");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to start fireworks: {ex.Message}");
+        }
+    }
+
+    private async Task StopFireworksAsync()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("fireworks.stop");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to stop fireworks: {ex.Message}");
+        }
+    }
+
+    // New helper methods for modal
+    private async Task CloseAchievementModal()
+    {
+        // stop fireworks and clear entries
+        await StopFireworksAsync();
+        AchievementEntries.Clear();
+        ShowAchievementModal = false;
+        CurrentAchievementIndex = 0;
+        StateHasChanged();
+    }
+
+    private void ShowNextAchievement()
+    {
+        if (AchievementEntries == null || !AchievementEntries.Any()) return;
+        if (CurrentAchievementIndex + 1 < AchievementEntries.Count)
+        {
+            CurrentAchievementIndex++;
+            StateHasChanged();
+        }
+        else
+        {
+            // reached the end -> close
+            _ = CloseAchievementModal();
+        }
     }
 
     public class Select
@@ -195,7 +339,7 @@ else
 
     public class Select<T> : Select
     {
-        public T Value { get; set; }
+        public T Value { get; set; } = default!;
     }
 
     public class BestellingDto

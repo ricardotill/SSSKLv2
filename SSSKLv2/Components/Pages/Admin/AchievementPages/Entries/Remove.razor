@@ -1,0 +1,238 @@
+@page "/admin/achievements/entries/remove"
+@rendermode InteractiveServer
+
+@attribute [Authorize(Policy = Policies.Admin)]
+
+@using SSSKLv2.Services.Interfaces
+@using SSSKLv2.Data
+@using SSSKLv2.Data.DAL.Interfaces
+@using Microsoft.AspNetCore.Authorization
+@using System.ComponentModel.DataAnnotations
+@using SSSKLv2.Components.Account
+
+@inject IApplicationUserRepository ApplicationUserRepository
+@inject IAchievementService AchievementService
+
+<PageTitle>SSSKLv2 | Achievement verwijderen</PageTitle>
+
+<div class="row crud-form-header">
+    <div class="col-9 title-container">
+        <h1>Achievement verwijderen bij gebruiker</h1>
+    </div>
+    <div class="col-3 text-end back-container">
+        <a class="btn btn-secondary" href="/admin/achievements"><i class="bi bi-arrow-left"></i></a>
+    </div>
+</div>
+<hr />
+
+<div class="card">
+    <div class="card-body">
+        @if (isLoading)
+        {
+            <p><em>Laden...</em></p>
+        }
+        else
+        {
+            <EditForm Model="Model" OnValidSubmit="RemoveAchievement" Enhance="true">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+
+                <div class="mb-3">
+                    <label for="userSelect" class="form-label">Gebruiker</label>
+                    <InputSelect id="userSelect" TValue="string" @bind-Value="SelectedUserId" class="form-select">
+                        <option value="">-- Selecteer gebruiker --</option>
+                        @foreach (var u in Users)
+                        {
+                            <option value="@u.Id">@u.Name @u.Surname (@u.Email)</option>
+                        }
+                    </InputSelect>
+                    <ValidationMessage For="() => Model.UserId" class="text-danger" />
+                </div>
+
+                <div class="mb-3">
+                    <label for="achievementSelect" class="form-label">Achieved Achievement (gebruiker heeft)</label>
+                    @if (entriesLoading)
+                    {
+                        <div class="form-text">Laden achievements...</div>
+                    }
+                    <InputSelect id="achievementSelect" TValue="System.Guid?" @bind-Value="Model.AchievementId" class="form-select" disabled="@((!UserEntries?.Any() ?? true) || entriesLoading)">
+                        <option value="">-- Selecteer achievement --</option>
+                        @if (UserEntries != null)
+                        {
+                            foreach (var entry in UserEntries)
+                            {
+                                <option value="@entry.Achievement.Id">@entry.Achievement.Name (@entry.CreatedOn.ToShortDateString())</option>
+                            }
+                        }
+                    </InputSelect>
+                    <ValidationMessage For="() => Model.AchievementId" class="text-danger" />
+                    @if (!entriesLoading && (UserEntries == null || !UserEntries.Any()))
+                    {
+                        <div class="form-text text-muted">Deze gebruiker heeft geen achievements.</div>
+                    }
+                    else if (!entriesLoading && UserEntries != null)
+                    {
+                        <div class="form-text text-muted">Aantal entries: @UserEntries.Count</div>
+                    }
+                </div>
+
+                <button type="submit" class="btn btn-danger">Verwijderen</button>
+                <a class="btn btn-secondary ms-2" href="/admin/achievements">Annuleren</a>
+
+                @if (!string.IsNullOrEmpty(StatusMessage))
+                {
+                    <div class="mt-3 alert @StatusClass" role="alert">@StatusMessage</div>
+                }
+            </EditForm>
+        }
+    </div>
+</div>
+
+@code {
+    class RemoveModel
+    {
+        [Required(ErrorMessage = "Selecteer een gebruiker")]
+        public string? UserId { get; set; }
+
+        [Required(ErrorMessage = "Selecteer een achievement")]
+        public Guid? AchievementId { get; set; }
+    }
+
+    RemoveModel Model { get; set; } = new();
+
+    List<ApplicationUser> Users { get; set; } = new();
+    IList<AchievementEntry>? UserEntries { get; set; }
+
+    bool isLoading = true;
+    bool entriesLoading = false;
+    string StatusMessage = string.Empty;
+    string StatusClass = "alert-info";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadUsers();
+    }
+
+    async Task LoadUsers()
+    {
+        isLoading = true;
+        try
+        {
+            Users = (await ApplicationUserRepository.GetAll()).OrderBy(u => u.Name).ToList();
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    async Task RemoveAchievement()
+    {
+        StatusMessage = string.Empty;
+        StatusClass = "alert-info";
+
+        if (string.IsNullOrEmpty(Model.UserId) || Model.AchievementId == null)
+        {
+            StatusMessage = "Selecteer zowel een gebruiker als een achievement om te verwijderen.";
+            StatusClass = "alert-warning";
+            return;
+        }
+
+        try
+        {
+            var entriesToRemove = UserEntries!
+                .Where(x => x.Achievement.Id == Model.AchievementId.Value)
+                .ToList();
+
+            if (!entriesToRemove.Any())
+            {
+                StatusMessage = "Geen achievement entries gevonden voor deze gebruiker en achievement.";
+                StatusClass = "alert-warning";
+                return;
+            }
+
+            await AchievementService.DeleteAchievementEntryRange(entriesToRemove);
+
+            StatusMessage = $"Verwijderd {entriesToRemove.Count} entry(ies) voor gebruiker.";
+            StatusClass = "alert-success";
+
+            // Refresh entries list for the user
+            await RefreshUserEntries(Model.UserId);
+
+            Model.AchievementId = null;
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Fout bij verwijderen: {ex.Message}";
+            StatusClass = "alert-danger";
+        }
+
+        StateHasChanged();
+    }
+    
+    private async Task RefreshUserEntries(string? userId)
+    {
+        if (string.IsNullOrEmpty(userId))
+        {
+            UserEntries = null;
+            StateHasChanged();
+            return;
+        }
+
+        entriesLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            UserEntries = await AchievementService.GetPersonalAchievementEntries(userId);
+            if (UserEntries == null || !UserEntries.Any())
+            {
+                StatusMessage = "Deze gebruiker heeft geen achievements.";
+                StatusClass = "alert-info";
+            }
+            else
+            {
+                StatusMessage = string.Empty;
+            }
+        }
+        catch (Exception ex)
+        {
+            UserEntries = null;
+            StatusMessage = $"Fout bij laden van entries: {ex.Message}";
+            StatusClass = "alert-danger";
+        }
+        finally
+        {
+            entriesLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    string? SelectedUserId
+     {
+         get => Model.UserId;
+         set
+         {
+             if (Model.UserId == value) return;
+ 
+             Model.UserId = value;
+             Model.AchievementId = null;
+             StatusMessage = string.Empty;
+ 
+             if (string.IsNullOrEmpty(Model.UserId))
+             {
+                 UserEntries = null;
+                 StateHasChanged();
+                 return;
+             }
+ 
+             // mark entries-loading and render immediately so the achievements select disables while we fetch
+             entriesLoading = true;
+             StateHasChanged();
+ 
+             // fire-and-forget the refresh; RefreshUserEntries will call StateHasChanged when done
+             _ = RefreshUserEntries(value);
+         }
+     }
+}

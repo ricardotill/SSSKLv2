@@ -5,11 +5,14 @@ using SSSKLv2.Components;
 using SSSKLv2.Components.Account;
 using SSSKLv2.Data;
 using System.Globalization;
+using Azure.Identity;
 using Blazored.Toast;
 using Microsoft.Azure.SignalR.Common;
+using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Logging.ApplicationInsights;
 using Polly;
 using Polly.Contrib.WaitAndRetry;
+using SSSKLv2.Agents;
 using SSSKLv2.Data.DAL;
 using SSSKLv2.Services;
 
@@ -107,6 +110,37 @@ if (builder.Environment.IsDevelopment())
 {
     builder.Services.AddSignalR();
 }
+
+builder.Services.AddAzureClients(clientBuilder =>
+{
+    // Register BlobServiceClient with a dev-friendly configuration.
+    // For local development (Azurite) prefer a connection string or the emulator alias.
+    var storageSection = builder.Configuration.GetSection("Storage");
+    var connectionString = storageSection["ConnectionString"];
+    var serviceUri = storageSection["ServiceUri"];
+
+    if (builder.Environment.IsDevelopment())
+    {
+        // Prefer an explicit connection string set in appsettings.Development.json.
+        // If none is provided, fall back to the Storage Emulator alias which works with Azurite/Storage Emulator.
+        var devConn = !string.IsNullOrWhiteSpace(connectionString) ? connectionString : "UseDevelopmentStorage=true";
+        clientBuilder.AddBlobServiceClient(devConn);
+    }
+    else
+    {
+        // In production, prefer a ServiceUri with DefaultAzureCredential or an explicit connection string.
+        if (!string.IsNullOrWhiteSpace(connectionString))
+        {
+            clientBuilder.AddBlobServiceClient(connectionString);
+        }
+        else if (!string.IsNullOrWhiteSpace(serviceUri))
+        {
+            clientBuilder.AddBlobServiceClient(new Uri(serviceUri));
+            clientBuilder.UseCredential(new DefaultAzureCredential());
+        }
+    }
+});
+
 builder.Services.AddIdentityCore<ApplicationUser>(options =>
     {
         options.SignIn.RequireConfirmedAccount = true;
@@ -123,7 +157,8 @@ else builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityEmailS
 builder.Services.AddBlazoredToast();
 
 builder.Services.AddServicesDI();
-builder.Services.AddDataDI(); 
+builder.Services.AddDataDI();
+builder.Services.AddAgentsDI();
 
 builder.Services.AddAntiforgery(o => o.SuppressXFrameOptionsHeader = true);
 
@@ -164,7 +199,7 @@ app.MapControllers();
 app.MapAdditionalIdentityEndpoints();
 
 // Map our SignalR hub for user purchases
-app.MapHub<SSSKLv2.Services.Hubs.PurchaseHub>("/hubs/purchases");
+app.MapHub<SSSKLv2.Services.Hubs.LiveMetricsHub>("/hubs/livemetrics");
 
 // Adding roles
 using (var scope = app.Services.CreateScope())

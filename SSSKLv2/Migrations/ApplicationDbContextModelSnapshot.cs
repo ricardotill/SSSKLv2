@@ -17,7 +17,7 @@ namespace SSSKLv2.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.0")
+                .HasAnnotation("ProductVersion", "9.0.9")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -155,6 +155,87 @@ namespace SSSKLv2.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("SSSKLv2.Data.Achievement", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Action")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("AutoAchieve")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("ComparisonOperator")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ComparisonValue")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETDATE()");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("ImageId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Id")
+                        .IsUnique();
+
+                    b.HasIndex("ImageId")
+                        .IsUnique()
+                        .HasFilter("[ImageId] IS NOT NULL");
+
+                    b.ToTable("Achievement");
+                });
+
+            modelBuilder.Entity("SSSKLv2.Data.AchievementEntry", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("AchievementId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETDATE()");
+
+                    b.Property<bool>("HasSeen")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AchievementId");
+
+                    b.HasIndex("Id")
+                        .IsUnique();
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("AchievementEntry");
+                });
+
             modelBuilder.Entity("SSSKLv2.Data.Announcement", b =>
                 {
                     b.Property<Guid>("Id")
@@ -280,6 +361,43 @@ namespace SSSKLv2.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
+            modelBuilder.Entity("SSSKLv2.Data.BlobStorageItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETDATE()");
+
+                    b.Property<string>("Discriminator")
+                        .IsRequired()
+                        .HasMaxLength(21)
+                        .HasColumnType("nvarchar(21)");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Uri")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("BlobStorageItem");
+
+                    b.HasDiscriminator().HasValue("BlobStorageItem");
+
+                    b.UseTphMappingStrategy();
+                });
+
             modelBuilder.Entity("SSSKLv2.Data.OldUserMigration", b =>
                 {
                     b.Property<Guid>("Id")
@@ -401,6 +519,16 @@ namespace SSSKLv2.Migrations
                     b.ToTable("TopUp");
                 });
 
+            modelBuilder.Entity("SSSKLv2.Data.AchievementImage", b =>
+                {
+                    b.HasBaseType("SSSKLv2.Data.BlobStorageItem");
+
+                    b.HasIndex("Id")
+                        .IsUnique();
+
+                    b.HasDiscriminator().HasValue("AchievementImage");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
@@ -452,6 +580,35 @@ namespace SSSKLv2.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("SSSKLv2.Data.Achievement", b =>
+                {
+                    b.HasOne("SSSKLv2.Data.AchievementImage", "Image")
+                        .WithOne("Achievement")
+                        .HasForeignKey("SSSKLv2.Data.Achievement", "ImageId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.Navigation("Image");
+                });
+
+            modelBuilder.Entity("SSSKLv2.Data.AchievementEntry", b =>
+                {
+                    b.HasOne("SSSKLv2.Data.Achievement", "Achievement")
+                        .WithMany("CompletedEntries")
+                        .HasForeignKey("AchievementId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SSSKLv2.Data.ApplicationUser", "User")
+                        .WithMany("CompletedAchievements")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Achievement");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("SSSKLv2.Data.Order", b =>
                 {
                     b.HasOne("SSSKLv2.Data.Product", "Product")
@@ -481,8 +638,15 @@ namespace SSSKLv2.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("SSSKLv2.Data.Achievement", b =>
+                {
+                    b.Navigation("CompletedEntries");
+                });
+
             modelBuilder.Entity("SSSKLv2.Data.ApplicationUser", b =>
                 {
+                    b.Navigation("CompletedAchievements");
+
                     b.Navigation("Orders");
 
                     b.Navigation("TopUps");
@@ -491,6 +655,12 @@ namespace SSSKLv2.Migrations
             modelBuilder.Entity("SSSKLv2.Data.Product", b =>
                 {
                     b.Navigation("Orders");
+                });
+
+            modelBuilder.Entity("SSSKLv2.Data.AchievementImage", b =>
+                {
+                    b.Navigation("Achievement")
+                        .IsRequired();
                 });
 #pragma warning restore 612, 618
         }

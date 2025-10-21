@@ -9,6 +9,7 @@ namespace SSSKLv2.Services;
 
 public class OrderService(
     IOrderRepository orderRepository,
+    IAchievementService achievementService,
     IPurchaseNotifier purchaseNotifier,
     ILogger<OrderService> logger) : IOrderService
 {
@@ -60,6 +61,11 @@ public class OrderService(
         
         await orderRepository.CreateRange(orders);
         await NotifyPurchase(orders);
+        await achievementService.CheckOrdersForAchievements(orders);
+        foreach (var user in order.Users)
+        {
+            await achievementService.CheckUserForAchievements(user.Value.UserName!);
+        }
     }
     
     public async Task<string> ExportOrdersFromPastTwoYearsToCsvAsync()
@@ -126,7 +132,7 @@ public class OrderService(
         var Date = DateTime.Now;
         foreach (var order in orders)
         {
-            await purchaseNotifier.NotifyUserPurchaseAsync(new UserPurchaseDto(
+            await purchaseNotifier.NotifyUserPurchaseAsync(new UserPurchaseEvent(
                 order.User.FullName,
                 order.ProductNaam,
                 order.Amount,

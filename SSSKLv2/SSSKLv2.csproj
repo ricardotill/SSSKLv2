@@ -1,4 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
+
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
     <Nullable>enable</Nullable>
@@ -9,9 +10,11 @@
     <WasmEnableExceptionHandling>false</WasmEnableExceptionHandling>
     <WasmBuildNative>true</WasmBuildNative>
   </PropertyGroup>
+
   <ItemGroup>
     <Content Remove="compilerconfig.json" />
   </ItemGroup>
+
   <ItemGroup>
     <_ContentIncludedByDefault Remove="compilerconfig.json" />
     <_ContentIncludedByDefault Remove="Components\Pages\ProductPages\Create.razor" />
@@ -25,10 +28,13 @@
     <_ContentIncludedByDefault Remove="Components\Pages\OrderPages\Delete.razor" />
     <_ContentIncludedByDefault Remove="Components\Pages\OrderPages\Index.razor" />
   </ItemGroup>
+
   <ItemGroup>
     <None Include="compilerconfig.json" />
   </ItemGroup>
+
   <ItemGroup>
+    <PackageReference Include="Azure.Storage.Blobs" />
     <PackageReference Include="BlazorComponentUtilities" />
     <PackageReference Include="Blazored.Toast" />
     <PackageReference Include="FluentValidation" />
@@ -56,11 +62,16 @@
     <PackageReference Include="SendGrid" />
     <PackageReference Include="System.ServiceModel.Syndication" />
   </ItemGroup>
+
   <ItemGroup>
-    <Folder Include="Components\Pages\Admin\" />
     <Folder Include="Migrations\" />
   </ItemGroup>
+
   <ItemGroup>
+    <AdditionalFiles Include="Components\Pages\Admin\AchievementPages\Create.razor" />
+    <AdditionalFiles Include="Components\Pages\Admin\AchievementPages\Delete.razor" />
+    <AdditionalFiles Include="Components\Pages\Admin\AchievementPages\Edit.razor" />
+    <AdditionalFiles Include="Components\Pages\Admin\AchievementPages\Index.razor" />
     <AdditionalFiles Include="Components\Pages\Admin\OldUserMigrationPages\Create.razor" />
     <AdditionalFiles Include="Components\Pages\Admin\OldUserMigrationPages\Delete.razor" />
     <AdditionalFiles Include="Components\Pages\Admin\OldUserMigrationPages\Index.razor" />
@@ -74,7 +85,9 @@
     <AdditionalFiles Include="Components\Pages\Admin\TopUpPages\Delete.razor" />
     <AdditionalFiles Include="Components\Pages\Admin\TopUpPages\Index.razor" />
   </ItemGroup>
+
   <ItemGroup>
     <Compile Remove="Services\Interfaces\IOrderEventBus.cs" />
   </ItemGroup>
+
 </Project>

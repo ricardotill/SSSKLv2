@@ -1,0 +1,75 @@
+﻿@page "/admin/achievements"
+@rendermode InteractiveServer
+
+@attribute [Authorize(Policy = Policies.Admin)]
+
+@implements IDisposable
+@implements IAsyncDisposable
+
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject IAchievementService AchievementService
+
+@using SSSKLv2.Data
+@using SSSKLv2.Services.Interfaces
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.QuickGrid
+@using Microsoft.EntityFrameworkCore
+@using SSSKLv2.Components.Account
+
+<PageTitle>SSSKLv2 | Achievementbeheer</PageTitle>
+
+<div class="row crud-form-header">
+    <div class="col-10 title-container">
+        <h1>Achievementbeheer</h1>
+    </div>
+    <div class="col-2 text-end back-container">
+        <a class="btn btn-success bg-lg" href="/admin/achievements/create" role="button"><i class="bi bi-plus-circle"></i></a>
+        <a class="btn btn-primary ms-2" href="/admin/achievements/entries/assign" role="button" title="Achievement toewijzen"><i class="bi bi-person-plus"></i></a>
+        <a class="btn btn-danger ms-2" href="/admin/achievements/entries/remove" role="button" title="Achievement verwijderen bij gebruiker"><i class="bi bi-person-dash"></i></a>
+    </div>
+</div>
+
+<div class="table-responsive">
+    <QuickGrid Items="@Achievements" Pagination="@Pagination">
+        <PropertyColumn Title="Naam" Property="@(a => a.Name)" Align="Align.Left" />
+        <PropertyColumn Title="Auto-toewijzing" Property="@(a => a.AutoAchieve)" Align="Align.Left" />
+        <PropertyColumn Title="Actie" Property="@(a => a.Action)" Align="Align.Left" />
+        <TemplateColumn Title="#" Context="achievement">
+            <a class="btn btn-info btn-sm" href="@($"/admin/achievements/edit?id={achievement.Id}")" role="button"><i class="bi bi-pen"></i></a>
+            <a class="btn btn-danger btn-sm" href="@($"/admin/achievements/delete?id={achievement.Id}")" role="button"><i class="bi bi-trash"></i></a>
+        </TemplateColumn>
+    </QuickGrid>
+</div>
+
+<Paginator State="@Pagination" />
+
+@code {
+    
+    public IQueryable<Achievement> Achievements = default!;
+    
+    public PaginationState Pagination = new PaginationState() { ItemsPerPage = 12 };
+
+    private ApplicationDbContext? _dbContext;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _dbContext = await DbContextFactory.CreateDbContextAsync();
+        GetDataAsync();
+    }
+
+    private void GetDataAsync()
+    {
+        if (_dbContext != null) Achievements = AchievementService.GetAchievementsQueryable(_dbContext);
+    }
+
+    public void Dispose()
+    {
+        _dbContext?.Dispose();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_dbContext != null) await _dbContext.DisposeAsync();
+    }
+
+}

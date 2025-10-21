@@ -1,0 +1,114 @@
+﻿@page "/admin/achievements/create"
+@rendermode InteractiveServer
+
+@attribute [Authorize(Policy = Policies.Admin)]
+
+@inject IAchievementService AchievementService;
+@using SSSKLv2.Dto
+@using Microsoft.AspNetCore.Authorization
+@using SSSKLv2.Components.Account
+@using SSSKLv2.Services.Interfaces
+@using System.ComponentModel.DataAnnotations
+@using System.Net.Mime
+@using SSSKLv2.Data
+@using SSSKLv2.Validators
+@inject NavigationManager NavigationManager
+
+<PageTitle>SSSKLv2 | Achievement aanmaken</PageTitle>
+
+<div class="row crud-form-header">
+    <div class="col-9 title-container">
+        <h1>Achievement aanmaken</h1>
+    </div>
+    <div class="col-3 text-end back-container">
+        <a class="btn btn-secondary" href="/admin/achievements"><i class="bi bi-arrow-left"></i></a>
+    </div>
+</div>
+<hr />
+<div class="card">
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-4">
+                <EditForm method="post" Model="Dto" OnValidSubmit="AddAchievement" FormName="create" Enhance>
+                    <DataAnnotationsValidator />
+                    <ValidationSummary />
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Naam:</label>
+                        <InputText id="name" @bind-Value="Dto.Name" class="form-control" />
+                        <ValidationMessage For="() => Dto.Name" class="text-danger" />
+                    </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Beschrijving:</label>
+                        <InputTextArea id="description" @bind-Value="Dto.Description" class="form-control" />
+                        <ValidationMessage For="() => Dto.Description" class="text-danger" />
+                    </div>
+                    <div class="mb-3">
+                        <label for="order" class="form-label">Afbeelding:</label>
+                        <InputFile OnChange="LoadFiles" class="form-control" />
+                        <ValidationMessage For="() => UploadedFilesCount" class="text-danger" />
+                    </div>
+                    <div class="mb-3 form-check">
+                        <InputCheckbox id="autoachieve" @bind-Value="Dto.AutoAchieve" class="form-check-input" />
+                        <label for="autoachieve" class="form-check-label">Automatisch toewijzen?</label>
+                    </div>
+                    <!-- Debug: show current value to detect binding issues -->
+                    <div class="mb-3">
+                        <small>Debug - AutoAchieve value: <strong>@Dto.AutoAchieve</strong></small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="usersSelect">Gebonden actie:</label>
+                        <InputSelect @bind-Value="Dto.Action" class="form-select" id="actionSelect">
+                            @foreach (var o in Enum.GetValues(typeof(Achievement.ActionOption)))
+                            {
+                                <option value="@o">@o.ToString()</option>
+                            }
+                        </InputSelect>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="usersSelect">Vergelijker:</label>
+                        <InputSelect @bind-Value="Dto.ComparisonOperator" class="form-select" id="usersSelect">
+                            @foreach (var o in Enum.GetValues(typeof(Achievement.ComparisonOperatorOption)))
+                            {
+                                <option value="@o">@o.ToString()</option>
+                            }
+                        </InputSelect>
+                    </div>
+                    <div class="mb-3">
+                        <label for="comparisonValue" class="form-label">Vergelijkingswaarde:</label>
+                        <InputNumber id="comparisonValue" @bind-Value="Dto.ComparisonValue" class="form-control" />
+                    </div>
+                    <button type="submit" class="btn btn-primary">Opslaan</button>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+
+    public AchievementDto Dto { get; set; } = new();
+    
+    // Using standard @bind-Value for the InputCheckbox to keep two-way binding behavior.
+    
+    [MinLength(1, ErrorMessage = "Je moet minimaal 1 bestand uploaden.")]
+    public int UploadedFilesCount { get; set; } = 0;
+    
+    [Required(ErrorMessage = "Je moet een bestand selecteren.")]
+    [FileImageContentType(ErrorMessage = "Het geselecteerde bestand moet een afbeelding zijn (jpg, jpeg, png).")]
+    public IBrowserFile SelectedFile { get; set; }
+
+    public async Task AddAchievement()
+    {
+        Dto.ImageContentType = new ContentType(SelectedFile.ContentType);
+        Dto.ImageContent = SelectedFile.OpenReadStream();
+        await AchievementService.AddAchievement(Dto);
+        
+        NavigationManager.NavigateTo("/admin/achievements");
+    }
+    
+    private void LoadFiles(InputFileChangeEventArgs e)
+    {
+        SelectedFile = e.File;
+        UploadedFilesCount = e.FileCount;
+    }
+}

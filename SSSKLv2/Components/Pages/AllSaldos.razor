@@ -23,7 +23,7 @@
     @foreach (var user in Users)
     {
         <tr>
-            <td>@user.Name @user.Surname.First()</td>
+            <td>@user.FullName</td>
             <td>@user.Saldo.ToString("C")</td>
         </tr>
     }

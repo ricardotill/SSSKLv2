@@ -1,6 +1,6 @@
-namespace SSSKLv2.Components;
+namespace SSSKLv2.Dto;
 
-public class LeaderboardEntry
+public class LeaderboardEntryDto
 {
     public int Position { get; set; }
     public string FullName { get; set; }

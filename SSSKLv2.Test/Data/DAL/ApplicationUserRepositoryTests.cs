@@ -67,8 +67,8 @@ public class ApplicationUserRepositoryTests : RepositoryTest
     public async Task GetById_WithNullOrEmptyId_ThrowsException()
     {
         // Act & Assert
-        await Assert.ThrowsExceptionAsync<NotFoundException>(() => _sut.GetById(null!));
-        await Assert.ThrowsExceptionAsync<NotFoundException>(() => _sut.GetById(string.Empty));
+        await Assert.ThrowsAsync<NotFoundException>(() => _sut.GetById(null!));
+        await Assert.ThrowsAsync<NotFoundException>(() => _sut.GetById(string.Empty));
     }
     
     #endregion
@@ -107,8 +107,8 @@ public class ApplicationUserRepositoryTests : RepositoryTest
     public async Task GetByUsername_WithNullOrEmptyUsername_ThrowsException()
     {
         // Act & Assert
-        await Assert.ThrowsExceptionAsync<NotFoundException>(() => _sut.GetByUsername(null!));
-        await Assert.ThrowsExceptionAsync<NotFoundException>(() => _sut.GetByUsername(string.Empty));
+        await Assert.ThrowsAsync<NotFoundException>(() => _sut.GetByUsername(null!));
+        await Assert.ThrowsAsync<NotFoundException>(() => _sut.GetByUsername(string.Empty));
     }
     
     #endregion
@@ -446,12 +446,12 @@ public class ApplicationUserRepositoryTests : RepositoryTest
         var repository = new ApplicationUserRepository(mockFactory);
         
         // Act & Assert
-        await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => repository.GetById("testid"));
-        await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => repository.GetByUsername("testuser"));
-        await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => repository.GetAll());
-        await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => repository.GetAllForAdmin());
-        await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => repository.GetAllWithOrders());
-        await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => repository.GetFirst12WithOrders());
+        await Assert.ThrowsAsync<InvalidOperationException>(() => repository.GetById("testid"));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => repository.GetByUsername("testuser"));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => repository.GetAll());
+        await Assert.ThrowsAsync<InvalidOperationException>(() => repository.GetAllForAdmin());
+        await Assert.ThrowsAsync<InvalidOperationException>(() => repository.GetAllWithOrders());
+        await Assert.ThrowsAsync<InvalidOperationException>(() => repository.GetFirst12WithOrders());
     }
     
     #endregion

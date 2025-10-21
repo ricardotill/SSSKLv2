@@ -2,16 +2,87 @@
 @rendermode InteractiveServer
 
 @implements IAsyncDisposable
-@inject IProductService ProductService;
-@inject IApplicationUserService UserService;
+@inject IProductService ProductService
+@inject IApplicationUserService UserService
+@inject IJSRuntime JS
 @using Microsoft.AspNetCore.SignalR.Client
 @inject NavigationManager Navigation
+@inject IWebHostEnvironment Env
 @using SSSKLv2.Components.Layout
 @using SSSKLv2.Data
+@using SSSKLv2.Dto
 @using SSSKLv2.Services.Interfaces
 @layout EmptyLayout;
 
 <PageTitle>SSSKLv2 | Live Leaderboard</PageTitle>
+
+<script src="/js/fireworks.js?v=2"></script>
+
+@if (Env?.IsDevelopment() == true)
+{
+    <div class="position-absolute p-2" style="right:0;top:0;z-index:3000;">
+        <button class="btn btn-sm btn-outline-light" @onclick="TestCelebrate">Test Celebrate</button>
+    </div>
+}
+
+@* Achievement celebration overlay *@
+@if (ShowAchievementOverlay && CurrentAchievementEvent != null)
+{
+    <div class="sssk-celebrate-overlay" role="dialog" aria-modal="true">
+        <div class="sssk-celebrate-content">
+            @if (!string.IsNullOrEmpty(CurrentAchievementEvent.ImageUrl))
+            {
+                <img src="@CurrentAchievementEvent.ImageUrl" alt="@CurrentAchievementEvent.AchievementName" class="sssk-celebrate-image" />
+            }
+            <h2 class="sssk-celebrate-title">@CurrentAchievementEvent.AchievementName</h2>
+            <p class="sssk-celebrate-user">@CurrentAchievementEvent.UserFullName</p>
+        </div>
+    </div>
+}
+
+<style>
+    .sssk-celebrate-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.45);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 2050; /* above fireworks canvas (1030) */
+        /* slower fade so it's more perceivable */
+        animation: sssk-fade-in 1200ms ease-out forwards;
+        pointer-events: none; /* allow clicks through if needed; content will be non-pointer */
+    }
+    .sssk-celebrate-content {
+        pointer-events: auto;
+        text-align: center;
+        color: white;
+        padding: 1.5rem;
+        border-radius: 12px;
+        background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
+        backdrop-filter: blur(6px) saturate(120%);
+        box-shadow: 0 8px 30px rgba(0,0,0,0.6);
+        max-width: 90vw;
+        width: 560px;
+        transform-origin: center;
+        /* slightly longer pop so it's visible but snappy */
+        animation: sssk-pop-in 420ms cubic-bezier(.16,.84,.44,1) forwards;
+    }
+    .sssk-celebrate-image {
+        max-height: 180px;
+        object-fit: contain;
+        margin-bottom: 0.8rem;
+        border-radius: 8px;
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    .sssk-celebrate-title { margin: 0.2rem 0; font-weight: 700; font-size: 1.6rem; }
+    .sssk-celebrate-user { opacity: 0.95; margin: 0; }
+
+    @@keyframes sssk-fade-in { from { opacity: 0 } to { opacity: 1 } }
+    @@keyframes sssk-pop-in { from { opacity: 0; transform: translateY(8px) scale(0.98) } to { opacity: 1; transform: translateY(0) scale(1) } }
+</style>
 
 @if (Product != null)
 {
@@ -139,10 +210,10 @@ else
     
     public HubConnection? Hub;
     public Product? Product { get; set; }
-    public IEnumerable<LeaderboardEntry> Leaderboard { get; set; } = new List<LeaderboardEntry>();
-    public IEnumerable<LeaderboardEntry> AllTimeLeaderboard { get; set; } = new List<LeaderboardEntry>();
+    public IEnumerable<LeaderboardEntryDto> Leaderboard { get; set; } = new List<LeaderboardEntryDto>();
+    public IEnumerable<LeaderboardEntryDto> AllTimeLeaderboard { get; set; } = new List<LeaderboardEntryDto>();
     
-    public IList<UserPurchaseDto> LatestOrders { get; } = new List<UserPurchaseDto>();
+    public IList<UserPurchaseEvent> LatestOrders { get; } = new List<UserPurchaseEvent>();
     public int TotalQuantity = 0;
     
     protected override async Task OnInitializedAsync()
@@ -154,14 +225,22 @@ else
     private async Task InitializeHubConnection()
     {
         Hub = new HubConnectionBuilder()
-            .WithUrl(Navigation.ToAbsoluteUri("/hubs/purchases"))
+            .WithUrl(Navigation.ToAbsoluteUri("/hubs/livemetrics"))
             .WithAutomaticReconnect()
             .Build();
         await Hub.StartAsync();
         
-        Hub.On<UserPurchaseDto>("UserPurchase", async dto =>
+        Hub.On<UserPurchaseEvent>("UserPurchase", async dto =>
         {
             ToevoegenPurchaseDto(dto);
+            await GetData();
+            await InvokeAsync(StateHasChanged);
+        });
+        
+        Hub.On<AchievementEvent>("Achievement", async dto =>
+        {
+            // Await celebration so it runs immediately and overlaps with any other UI updates
+            await CelebrateAchievement(dto);
             await GetData();
             await InvokeAsync(StateHasChanged);
         });
@@ -178,14 +257,107 @@ else
         }
     }
     
-    private void ToevoegenPurchaseDto(UserPurchaseDto dto)
+    private void ToevoegenPurchaseDto(UserPurchaseEvent @event)
     {
-        LatestOrders.Add(dto);
-        TotalQuantity += dto.Quantity;
+        LatestOrders.Add(@event);
+        TotalQuantity += @event.Quantity;
+    }
+    
+    private bool ShowAchievementOverlay { get; set; } = false;
+    private AchievementEvent? CurrentAchievementEvent { get; set; }
+    private CancellationTokenSource? _achievementCts;
+
+    private async Task CelebrateAchievement(AchievementEvent @event)
+    {
+        // Cancel any previous celebration
+        try
+        {
+            _achievementCts?.Cancel();
+        }
+        catch { }
+
+        _achievementCts = new CancellationTokenSource();
+        var token = _achievementCts.Token;
+
+        CurrentAchievementEvent = @event;
+        // Start fireworks first so they are visible behind the overlay
+        try
+        {
+            await JS.InvokeVoidAsync("fireworks.start");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to start fireworks: {ex.Message}");
+        }
+        // give the browser a bit more time to render the canvas so fireworks are visible behind the overlay
+        try
+        {
+            await Task.Delay(800, token);
+        }
+        catch (OperationCanceledException) { }
+
+        ShowAchievementOverlay = true;
+        await InvokeAsync(StateHasChanged);
+
+        try
+        {
+            // Show for ~5 seconds or until cancelled
+            await Task.Delay(5000, token);
+        }
+        catch (OperationCanceledException)
+        {
+            // ignore
+        }
+        finally
+        {
+            // stop fireworks and hide
+            try
+            {
+                await JS.InvokeVoidAsync("fireworks.stop");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to stop fireworks: {ex.Message}");
+            }
+            ShowAchievementOverlay = false;
+            CurrentAchievementEvent = null;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    public Task TestCelebrate()
+    {
+        var sample = new AchievementEvent("Top Seller", "Demo User", null);
+        return CelebrateAchievement(sample);
     }
 
     public async ValueTask DisposeAsync()
     {
-        if (Hub != null) await Hub.DisposeAsync();
+        // Cancel any running celebration
+        try
+        {
+            _achievementCts?.Cancel();
+            _achievementCts?.Dispose();
+            _achievementCts = null;
+        }
+        catch { }
+
+        // Ensure fireworks are stopped
+        try
+        {
+            await JS.InvokeVoidAsync("fireworks.stop");
+        }
+        catch { }
+
+        // Dispose hub connection
+        if (Hub != null)
+        {
+            try
+            {
+                await Hub.DisposeAsync();
+            }
+            catch { }
+            Hub = null;
+        }
     }
 }

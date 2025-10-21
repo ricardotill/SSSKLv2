@@ -1,0 +1,182 @@
+﻿@page "/admin/achievements/edit"
+@rendermode InteractiveServer
+
+@attribute [Authorize(Policy = Policies.Admin)]
+
+@using SSSKLv2.Dto
+@using SSSKLv2.Data
+@using SSSKLv2.Services.Interfaces
+@using SSSKLv2.Agents
+@using SSSKLv2.Components.Account
+@using Microsoft.AspNetCore.Authorization
+
+@inject IAchievementService AchievementService
+@inject IBlobStorageAgent BlobStorageAgent
+@inject NavigationManager NavigationManager
+
+<PageTitle>SSSKLv2 | Achievement bewerken</PageTitle>
+
+<div class="row crud-form-header">
+    <div class="col-9 title-container">
+        <h1>Achievement bewerken</h1>
+    </div>
+    <div class="col-3 text-end back-container">
+        <a class="btn btn-secondary" href="/admin/achievements"><i class="bi bi-arrow-left"></i></a>
+    </div>
+</div>
+<hr />
+<div class="card">
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                @if (isLoading)
+                {
+                    <p><em>Laden...</em></p>
+                }
+                else if (achievement is null)
+                {
+                    <p><em>Achievement niet gevonden.</em></p>
+                }
+                else
+                {
+                    <EditForm Model="achievement" OnValidSubmit="SaveAchievement" Enhance="true">
+                        <DataAnnotationsValidator />
+                        <ValidationSummary />
+
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Naam:</label>
+                            <InputText id="name" @bind-Value="achievement.Name" class="form-control" />
+                            <ValidationMessage For="() => achievement.Name" class="text-danger" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Beschrijving:</label>
+                            <InputTextArea id="description" @bind-Value="achievement.Description" class="form-control" />
+                            <ValidationMessage For="() => achievement.Description" class="text-danger" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="image" class="form-label">Afbeelding (optioneel vervangen):</label>
+                            @if (!string.IsNullOrEmpty(achievement.Image?.Uri))
+                            {
+                                <div class="mb-2">
+                                    <img src="@achievement.Image.Uri" alt="Achievement image" style="max-width: 200px; max-height: 200px;" />
+                                </div>
+                            }
+                            <InputFile id="image" OnChange="LoadFiles" class="form-control" />
+                            <small class="form-text text-muted">Laat leeg om huidige afbeelding te behouden.</small>
+                        </div>
+
+                        <div class="mb-3 form-check">
+                            <InputCheckbox @bind-Value="achievement.AutoAchieve" class="form-check-input" id="autoAchieveCheck" />
+                            <label class="form-check-label" for="autoAchieveCheck">Automatisch toewijzen?</label>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label" for="actionSelect">Gebonden actie:</label>
+                            <InputSelect @bind-Value="achievement.Action" class="form-select" id="actionSelect">
+                                @foreach (var o in Enum.GetValues(typeof(Achievement.ActionOption)))
+                                {
+                                    <option value="@o">@o.ToString()</option>
+                                }
+                            </InputSelect>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label" for="comparisonSelect">Vergelijker:</label>
+                            <InputSelect @bind-Value="achievement.ComparisonOperator" class="form-select" id="comparisonSelect">
+                                @foreach (var o in Enum.GetValues(typeof(Achievement.ComparisonOperatorOption)))
+                                {
+                                    <option value="@o">@o.ToString()</option>
+                                }
+                            </InputSelect>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="comparisonValue" class="form-label">Vergelijkingswaarde:</label>
+                            <InputNumber id="comparisonValue" @bind-Value="achievement.ComparisonValue" class="form-control" />
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">Opslaan</button>
+                        <a class="btn btn-secondary ms-2" href="/admin/achievements">Annuleren</a>
+                    </EditForm>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [SupplyParameterFromQuery]
+    public string Id { get; set; } = string.Empty;
+
+    Achievement? achievement;
+    IBrowserFile? SelectedFile { get; set; }
+    bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAchievement();
+    }
+
+    async Task LoadAchievement()
+    {
+        try
+        {
+            if (Guid.TryParse(Id, out var guid))
+            {
+                achievement = await AchievementService.GetAchievementById(guid);
+                if (achievement != null)
+                {
+                    // No extra DTO mapping required; the form binds directly to `achievement`.
+                }
+            }
+            else
+            {
+                achievement = null;
+            }
+        }
+        catch (Exception)
+        {
+            // NotFoundException and others will land here - redirect to notfound
+            NavigationManager.NavigateTo("notfound");
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void LoadFiles(InputFileChangeEventArgs e)
+    {
+        SelectedFile = e.File;
+    }
+
+    public async Task SaveAchievement()
+    {
+        if (achievement is null)
+        {
+            NavigationManager.NavigateTo("notfound");
+            return;
+        }
+
+        // At this point `achievement` has been edited directly by the bound form inputs.
+
+        // If a new file was selected, upload it and set the Achievement.Image
+        if (SelectedFile is not null)
+        {
+            var contentType = SelectedFile.ContentType;
+            var content = SelectedFile.OpenReadStream();
+            var extension = System.IO.Path.GetExtension(SelectedFile.Name)?.TrimStart('.') ?? "bin";
+            var fileName = $"{achievement.Name}-{Guid.NewGuid()}.{extension}";
+
+            var blobItem = await BlobStorageAgent.UploadFileToBlobAsync(fileName, contentType, content);
+            achievement.Image = AchievementImage.ToAchievementImage(blobItem);
+        }
+
+        await AchievementService.UpdateAchievement(achievement);
+
+        NavigationManager.NavigateTo("/admin/achievements");
+    }
+}

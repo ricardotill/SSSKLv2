@@ -6,6 +6,7 @@ namespace SSSKLv2.Services;
 
 public class TopUpService(
     ITopUpRepository _topUpRepository,
+    IAchievementService _achievementService,
     ILogger<TopUpService> _logger) : ITopUpService
 {
     public IQueryable<TopUp> GetAllQueryable(ApplicationDbContext dbContext)
@@ -27,6 +28,8 @@ public class TopUpService(
     {
         _logger.LogInformation($"{GetType()}: Create TopUp for user {topup.User.UserName} with amount {topup.Saldo}");
         await _topUpRepository.Create(topup);
+        await _achievementService.CheckTopUpForAchievements(topup);
+        await _achievementService.CheckUserForAchievements(topup.User.UserName!);
     }
     public async Task DeleteTopUp(Guid id)
     {

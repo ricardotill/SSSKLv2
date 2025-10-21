@@ -5,6 +5,7 @@ namespace SSSKLv2.Util
         private static readonly Dictionary<string, string> ContentTypeToExtension = new()
         {
             { "image/jpeg", ".jpeg" },
+            { "image/jpg", ".jpg" },
             { "image/png", ".png" }
         };
         

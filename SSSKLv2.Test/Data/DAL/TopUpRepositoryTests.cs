@@ -338,9 +338,9 @@ public class TopUpRepositoryTests : RepositoryTest
         var repository = new TopUpRepository(mockFactory);
         
         // Act & Assert
-        await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => repository.GetById(Guid.NewGuid()));
-        await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => repository.Create(new TopUp()));
-        await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => repository.Delete(Guid.NewGuid()));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => repository.GetById(Guid.NewGuid()));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => repository.Create(new TopUp()));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => repository.Delete(Guid.NewGuid()));
     }
     
     #endregion

@@ -199,7 +199,7 @@ public class OrderRepositoryTests : RepositoryTest
         var invalidId = Guid.NewGuid();
 
         // Act & Assert
-        await Assert.ThrowsExceptionAsync<NotFoundException>(() => _sut.GetById(invalidId));
+        await Assert.ThrowsAsync<NotFoundException>(() => _sut.GetById(invalidId));
     }
 
     [TestMethod]
@@ -312,7 +312,7 @@ public class OrderRepositoryTests : RepositoryTest
         var invalidId = Guid.NewGuid();
 
         // Act & Assert
-        var exception = await Assert.ThrowsExceptionAsync<NotFoundException>(() => _sut.Delete(invalidId));
+        var exception = await Assert.ThrowsAsync<NotFoundException>(() => _sut.Delete(invalidId));
         Assert.AreEqual("Order Not Found", exception.Message);
     }
 

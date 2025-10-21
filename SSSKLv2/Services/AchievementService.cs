@@ -94,10 +94,10 @@ public class AchievementService(
     
     public async Task CheckOrdersForAchievements(IEnumerable<Order> orders)
     {
-        foreach (var order in orders)
+        foreach (var user in orders.Select(x => x.User))
         {
-            var uncompletedAchievements = await achievementRepository.GetUncompletedAchievementsForUser(order.User.UserName!);
-            var userOrders = await orderRepository.GetPersonal(order.User.UserName!);
+            var uncompletedAchievements = await achievementRepository.GetUncompletedAchievementsForUser(user.UserName!);
+            var userOrders = await orderRepository.GetPersonal(user.UserName!);
             
             var newAchievementEntries = new List<AchievementEntry>();
             
@@ -145,7 +145,7 @@ public class AchievementService(
                     {
                         Id = Guid.NewGuid(),
                         Achievement = achievement,
-                        User = order.User,
+                        User = user,
                         HasSeen = false,
                         CreatedOn = DateTime.Now
                     };
@@ -192,7 +192,6 @@ public class AchievementService(
                 
                 case Achievement.ActionOption.MinutesBetweenTopUp:
                     var lastTwoTopUps = userTopUps
-                        .Where(x => DateTime.Now.Subtract(x.CreatedOn).TotalHours <= 12)
                         .OrderByDescending(x => x.CreatedOn)
                         .Take(2)
                         .Select(x => x.CreatedOn)

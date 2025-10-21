@@ -82,7 +82,7 @@ else
                         <div class="col-6 p-0 pe-3 pb-2">
                             <button type="button" class="@css" @onclick="@(e => OnClick(e, user))">
                                 <InputCheckbox class="form-check-input btn-select-checkbox me-1" @bind-Value="user.Selected"/>
-                                @user.Value.Name @user.Value.Surname.First()
+                                @user.Value.FullName
                             </button>
                         </div>
                     }

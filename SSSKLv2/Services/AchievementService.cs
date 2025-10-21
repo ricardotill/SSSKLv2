@@ -133,7 +133,7 @@ public class AchievementService(
                             .ToList();
                         if (lastTwoOrders.Count == 2)
                         {
-                            var minutes = lastTwoOrders[0].Subtract(lastTwoOrders[1]).Minutes;
+                            var minutes = (int)lastTwoOrders[0].Subtract(lastTwoOrders[1]).TotalMinutes;
                             shouldAward = AchievementRulesUtil.CheckComparison(minutes, achievement.ComparisonOperator, achievement.ComparisonValue);
                         }
                         break;

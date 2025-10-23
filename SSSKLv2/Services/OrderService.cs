@@ -3,6 +3,7 @@ using System.Text;
 using SSSKLv2.Components.Pages;
 using SSSKLv2.Data;
 using SSSKLv2.Data.DAL.Interfaces;
+using SSSKLv2.Dto.Api.v1;
 using SSSKLv2.Services.Interfaces;
 
 namespace SSSKLv2.Services;
@@ -11,30 +12,32 @@ public class OrderService(
     IOrderRepository orderRepository,
     IAchievementService achievementService,
     IPurchaseNotifier purchaseNotifier,
+    IProductService productService,
+    IApplicationUserService applicationUserService,
     ILogger<OrderService> logger) : IOrderService
 {
     public IQueryable<Order> GetAllQueryable(ApplicationDbContext dbContext)
     {
-        logger.LogInformation("{Type}: Get All Orders as Queryable", GetType());
+        logger.LogInformation("{Type}: Get All Orders as Queryable", nameof(OrderService));
         return orderRepository.GetAllQueryable(dbContext);
     }
     
     public IQueryable<Order> GetPersonalQueryable(string username, ApplicationDbContext dbContext)
     {
-        logger.LogInformation("{Type}: Get Personal Orders as Queryable for user with username {Username}", GetType(), username);
+        logger.LogInformation("{Type}: Get Personal Orders as Queryable for user with username {Username}", nameof(OrderService), username);
         var output = orderRepository.GetPersonalQueryable(username, dbContext);
         return output;
     }
     
     public async Task<IEnumerable<Order>> GetLatestOrders()
     {
-        logger.LogInformation("{Type}: Get Latest Orders", GetType());
+        logger.LogInformation("{Type}: Get Latest Orders", nameof(OrderService));
         return await orderRepository.GetLatest();
     }
     
     public async Task<Order> GetOrderById(Guid id)
     {
-        logger.LogInformation("{Type}: Get Order with ID {Id}", GetType(), id);
+        logger.LogInformation("{Type}: Get Order with ID {Id}", nameof(OrderService), id);
         return await orderRepository.GetById(id);
     }
     
@@ -49,22 +52,61 @@ public class OrderService(
             .Select(x => x.Value)
             .ToList();
         var orders = new List<Order>();
-        
-        logger.LogInformation("{Type}: Create order for {productsCount} products and {usersCount} users", GetType(), products.Count, users.Count);
 
-        IList<Order> generatedOrders = new List<Order>();
+        logger.LogInformation("{Type}: Create order for {ProductsCount} products and {UsersCount} users", nameof(OrderService), products.Count, users.Count);
+
         foreach (var p in products)
         {
-            generatedOrders = GenerateUserOrders(users, p, order.Amount, order.Split) ?? [];
-            orders.AddRange(generatedOrders);
+            var generated = GenerateUserOrders(users, p, order.Amount, order.Split);
+            orders.AddRange(generated);
         }
-        
+
         await orderRepository.CreateRange(orders);
         await NotifyPurchase(orders);
         await achievementService.CheckOrdersForAchievements(orders);
         foreach (var user in order.Users)
         {
             await achievementService.CheckUserForAchievements(user.Value.UserName!);
+        }
+    }
+
+    // New overload: accept API DTO directly
+    public async Task CreateOrder(OrderSubmitDto order)
+    {
+        if (order == null) throw new ArgumentNullException(nameof(order));
+
+        // Fetch products by ids
+        var products = new List<Product>();
+        foreach (var pid in order.Products)
+        {
+            var p = await productService.GetProductById(pid);
+            products.Add(p);
+        }
+
+        // Fetch users by ids (ApplicationUser.Id is string, DTO uses GUIDs so convert)
+        var users = new List<ApplicationUser>();
+        foreach (var uid in order.Users)
+        {
+            var user = await applicationUserService.GetUserById(uid.ToString());
+            users.Add(user);
+        }
+
+        var orders = new List<Order>();
+
+        logger.LogInformation("{Type}: Create order for {ProductsCount} products and {UsersCount} users", nameof(OrderService), products.Count, users.Count);
+
+        foreach (var p in products)
+        {
+            var generated = GenerateUserOrders(users, p, order.Amount, order.Split);
+            orders.AddRange(generated);
+        }
+
+        await orderRepository.CreateRange(orders);
+        await NotifyPurchase(orders);
+        await achievementService.CheckOrdersForAchievements(orders);
+        foreach (var u in users)
+        {
+            await achievementService.CheckUserForAchievements(u.UserName!);
         }
     }
     
@@ -101,7 +143,7 @@ public class OrderService(
     }
     public async Task DeleteOrder(Guid id)
     {
-        logger.LogInformation("{Type}: Delete Order with ID {Id}", GetType(), id);
+        logger.LogInformation("{Type}: Delete Order with ID {Id}", nameof(OrderService), id);
         await orderRepository.Delete(id);
     }
 
@@ -129,14 +171,14 @@ public class OrderService(
     
     private async Task NotifyPurchase(IEnumerable<Order> orders)
     {
-        var Date = DateTime.Now;
+        var date = DateTime.Now;
         foreach (var order in orders)
         {
             await purchaseNotifier.NotifyUserPurchaseAsync(new UserPurchaseEvent(
                 order.User.FullName,
                 order.ProductNaam,
                 order.Amount,
-                Date
+                date
             ));
         }
     }

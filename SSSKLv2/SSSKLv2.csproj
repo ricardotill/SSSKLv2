@@ -38,6 +38,7 @@
     <PackageReference Include="BlazorComponentUtilities" />
     <PackageReference Include="Blazored.Toast" />
     <PackageReference Include="FluentValidation" />
+    <PackageReference Include="FluentValidation.AspNetCore" />
     <PackageReference Include="Microsoft.ApplicationInsights" />
     <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" />
     <PackageReference Include="Microsoft.ApplicationInsights.DependencyCollector" />
@@ -45,6 +46,7 @@
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" />
     <PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" />
     <PackageReference Include="Microsoft.Azure.AppConfiguration.AspNetCore" />
     <PackageReference Include="Microsoft.Azure.SignalR" />
@@ -59,6 +61,8 @@
     <PackageReference Include="Polly" />
     <PackageReference Include="Polly.Contrib.WaitAndRetry" />
     <PackageReference Include="QRCoder" />
+    <PackageReference Include="Scalar.AspNetCore" />
+    <PackageReference Include="Scalar.AspNetCore.Microsoft" />
     <PackageReference Include="SendGrid" />
     <PackageReference Include="System.ServiceModel.Syndication" />
   </ItemGroup>

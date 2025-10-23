@@ -1,9 +1,8 @@
 using FluentValidation;
-using SSSKLv2.Data;
 
-namespace SSSKLv2.Validators;
+namespace SSSKLv2.Validators.Announcement;
 
-public class AnnouncementValidator : AbstractValidator<Announcement>
+public class AnnouncementValidator : AbstractValidator<Data.Announcement>
 {
     public AnnouncementValidator()
     {

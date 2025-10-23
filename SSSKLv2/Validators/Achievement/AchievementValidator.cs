@@ -1,11 +1,10 @@
 using FluentValidation;
-using SSSKLv2.Dto;
 
-namespace SSSKLv2.Validators;
+namespace SSSKLv2.Validators.Achievement;
 
-public class AchievementUploadValidator : AbstractValidator<AchievementDto>
+public class AchievementValidator : AbstractValidator<Data.Achievement>
 {
-    public AchievementUploadValidator()
+    public AchievementValidator()
     {
         RuleFor(x => x.Name)
             .NotNull()

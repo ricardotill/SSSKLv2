@@ -7,13 +7,18 @@ using SSSKLv2.Data;
 using System.Globalization;
 using Azure.Identity;
 using Blazored.Toast;
+using FluentValidation;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Logging.ApplicationInsights;
+using Microsoft.OpenApi.Models;
 using Polly;
 using Polly.Contrib.WaitAndRetry;
+using Scalar.AspNetCore;
 using SSSKLv2.Agents;
 using SSSKLv2.Data.DAL;
+using SSSKLv2.Registrations;
 using SSSKLv2.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -21,6 +26,24 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddApplicationInsightsTelemetry();
 
 builder.Services.AddControllers();
+
+// Register all FluentValidation validators from this assembly
+builder.Services.AddFluentAssertionsRegistrations();
+
+builder.Services.AddOpenApi(opt =>
+{
+    opt.AddDocumentTransformer<BearerSecuritySchemeTransformer>();
+    opt.AddDocumentTransformer((document, _, _) =>
+    {
+        document.Info.Contact = new OpenApiContact
+        {
+            Name = "Scouting Wilo",
+            Email = "webmaster@scoutingwilo.nl"
+        };
+        return Task.CompletedTask;
+    });
+});
+
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
@@ -149,7 +172,8 @@ builder.Services.AddIdentityCore<ApplicationUser>(options =>
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddSignInManager()
     .AddDefaultTokenProviders()
-    .AddClaimsPrincipalFactory<IdentityClaimsPrincipalFactory>();
+    .AddClaimsPrincipalFactory<IdentityClaimsPrincipalFactory>()
+    .AddApiEndpoints();
 
 if (builder.Environment.IsDevelopment()) builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
 else builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityEmailSender>();
@@ -193,10 +217,19 @@ app.MapRazorComponents<App>()
     .WithStaticAssets()
     .AddInteractiveServerRenderMode();
 
-app.MapControllers();
-
-// Add additional endpoints required by the Identity /Account Razor components.
 app.MapAdditionalIdentityEndpoints();
+
+app.MapGroup("/api")
+    .MapControllers();
+app.MapGroup("/api/v1/identity")
+    .MapIdentityApi<IdentityUser>();
+
+
+if (app.Environment.IsDevelopment())
+{
+    app.MapOpenApi();
+    app.MapScalarApiReference();
+}
 
 // Map our SignalR hub for user purchases
 app.MapHub<SSSKLv2.Services.Hubs.LiveMetricsHub>("/hubs/livemetrics");

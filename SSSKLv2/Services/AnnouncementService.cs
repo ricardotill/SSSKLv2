@@ -15,7 +15,7 @@ public class AnnouncementService(IAnnouncementRepository announcementRepository)
         return announcementRepository.GetAllQueryable(context);
     }
 
-    public Task<Announcement> GetAnnouncementById(Guid id)
+    public Task<Announcement?> GetAnnouncementById(Guid id)
     {
         return announcementRepository.GetById(id);
     }

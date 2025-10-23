@@ -4,11 +4,11 @@ using SSSKLv2.Data.DAL.Interfaces;
 
 namespace SSSKLv2.Data.DAL;
 
-public class AnnouncementRepository(IDbContextFactory<ApplicationDbContext> _dbContextFactory) : IAnnouncementRepository
+public class AnnouncementRepository(IDbContextFactory<ApplicationDbContext> dbContextFactory) : IAnnouncementRepository
 {
     public async Task<IEnumerable<Announcement>> GetAll()
     {
-        await using var context = await _dbContextFactory.CreateDbContextAsync();
+        await using var context = await dbContextFactory.CreateDbContextAsync();
         return await context.Announcement
             .OrderBy(x => x.Order)
             .ThenBy(x => x.CreatedOn)
@@ -22,9 +22,9 @@ public class AnnouncementRepository(IDbContextFactory<ApplicationDbContext> _dbC
             .ThenBy(x => x.CreatedOn);
     }
 
-    public async Task<Announcement> GetById(Guid id)
+    public async Task<Announcement?> GetById(Guid id)
     {
-        await using var context = await _dbContextFactory.CreateDbContextAsync();
+        await using var context = await dbContextFactory.CreateDbContextAsync();
         var announcement = await context.Announcement.FindAsync(id);
         if (announcement != null) return announcement;
         
@@ -33,21 +33,21 @@ public class AnnouncementRepository(IDbContextFactory<ApplicationDbContext> _dbC
 
     public async Task Create(Announcement announcement)
     {
-        await using var context = await _dbContextFactory.CreateDbContextAsync();
+        await using var context = await dbContextFactory.CreateDbContextAsync();
         await context.AddAsync(announcement);
         await context.SaveChangesAsync();
     }
 
     public async Task Update(Announcement announcement)
     {
-        await using var context = await _dbContextFactory.CreateDbContextAsync();
+        await using var context = await dbContextFactory.CreateDbContextAsync();
         context.Update(announcement);
         await context.SaveChangesAsync();
     }
 
     public async Task Delete(Guid id)
     {
-        await using var context = await _dbContextFactory.CreateDbContextAsync();
+        await using var context = await dbContextFactory.CreateDbContextAsync();
         var announcement = await context.Announcement.FindAsync(id);
         if (announcement != null)
         {

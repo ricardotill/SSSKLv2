@@ -1,7 +1,7 @@
 using FluentValidation;
 using SSSKLv2.Components.Pages;
 
-namespace SSSKLv2.Validators;
+namespace SSSKLv2.Validators.Order;
 
 public class BestellingDtoValidator : AbstractValidator<POS.BestellingDto>
 {

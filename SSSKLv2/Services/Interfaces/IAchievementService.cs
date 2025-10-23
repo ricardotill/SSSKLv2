@@ -7,7 +7,9 @@ namespace SSSKLv2.Services.Interfaces;
 public interface IAchievementService
 {
     Task<IList<AchievementListingDto>> GetPersonalAchievements(string userId);
+    Task<IList<AchievementListingDto>> GetPersonalAchievementsByUsername(string username);
     Task<IList<AchievementEntry>> GetPersonalAchievementEntries(string userId);
+    Task<IList<AchievementEntry>> GetPersonalAchievementEntriesByUsername(string username);
     Task<IList<AchievementEntry>> GetPersonalUnseenAchievementEntries(string username);
     Task<IEnumerable<Achievement>> GetAchievements();
     Task<Achievement> GetAchievementById(Guid id);

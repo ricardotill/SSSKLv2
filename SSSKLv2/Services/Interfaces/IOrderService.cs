@@ -6,9 +6,13 @@ namespace SSSKLv2.Services.Interfaces;
 
 public interface IOrderService
 {
+    Task<int> GetCount();
+    Task<int> GetPersonalCount(string username);
     public Task<Order> GetOrderById(Guid id);
     public IQueryable<Order> GetAllQueryable(ApplicationDbContext dbContext);
     public IQueryable<Order> GetPersonalQueryable(string username, ApplicationDbContext dbContext);
+    public Task<IList<Order>> GetAll(int skip, int take);
+    public Task<IList<Order>> GetPersonal(string username, int skip, int take);
     public Task<IEnumerable<Order>> GetLatestOrders();
     public Task CreateOrder(POS.BestellingDto order);
     public Task CreateOrder(OrderSubmitDto order);

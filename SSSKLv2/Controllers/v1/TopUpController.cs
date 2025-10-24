@@ -6,6 +6,7 @@ using SSSKLv2.Dto.Api.v1;
 
 namespace SSSKLv2.Controllers.v1;
 
+[Authorize]
 [Route("v1/[controller]")]
 [ApiController]
 public class TopUpController : ControllerBase
@@ -20,28 +21,47 @@ public class TopUpController : ControllerBase
     }
 
     // GET v1/topup
+    [Authorize(Roles = "Admin")]
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<TopUpDto>>> GetAll([FromServices] ApplicationDbContext dbContext)
+    public async Task<ActionResult<IEnumerable<TopUpDto>>> GetAll([FromQuery] int skip = 0, [FromQuery] int take = 15)
     {
+        var username = User.Identity!.Name; // non-nullable per auth
+        if (string.IsNullOrWhiteSpace(username)) return Unauthorized();
+        
         _logger.LogInformation("{Controller}: Get all topups", nameof(TopUpController));
-        var query = _topUpService.GetAllQueryable(dbContext);
-        var list = await Task.FromResult(query.ToList());
-        var dto = list.Select(MapToDto).ToList();
+        var list = await _topUpService.GetAll(skip, take);
+        var count = await _topUpService.GetCount();
+        var dto = new PaginationObject<TopUpDto>
+        {
+            Items = list.Select(MapToDto).ToList(),
+            TotalCount = count
+        };
+        
         return Ok(dto);
     }
 
-    // GET v1/topup/personal/{username}
-    [HttpGet("personal/{username}")]
-    public async Task<ActionResult<IEnumerable<TopUpDto>>> GetPersonal(string username, [FromServices] ApplicationDbContext dbContext)
+    // GET v1/topup/personal
+    [Authorize]
+    [HttpGet("personal")]
+    public async Task<ActionResult<IEnumerable<TopUpDto>>> GetPersonal([FromQuery] int skip = 0, [FromQuery] int take = 15)
     {
+        var username = User.Identity!.Name; // non-nullable per auth
+        if (string.IsNullOrWhiteSpace(username)) return Unauthorized();
+        
         _logger.LogInformation("{Controller}: Get personal topups for {Username}", nameof(TopUpController), username);
-        var query = _topUpService.GetPersonalQueryable(username, dbContext);
-        var list = await Task.FromResult(query.ToList());
-        var dto = list.Select(MapToDto).ToList();
+        var list = await _topUpService.GetAll(skip, take);
+        var count = await _topUpService.GetCount();
+        var dto = new PaginationObject<TopUpDto>
+        {
+            Items = list.Select(MapToDto).ToList(),
+            TotalCount = count
+        };
+        
         return Ok(dto);
     }
 
     // GET v1/topup/{id}
+    [Authorize(Roles = "Admin")]
     [HttpGet("{id}")]
     public async Task<ActionResult<TopUpDto>> GetById(string id)
     {

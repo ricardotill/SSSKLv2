@@ -15,6 +15,8 @@ public class AchievementService(
     IPurchaseNotifier purchaseNotifier,
     IBlobStorageAgent blobStorageAgent) : IAchievementService
 {
+    public Task<int> GetCount() => achievementRepository.GetCount();
+    
     public async Task<IList<AchievementListingDto>> GetPersonalAchievements(string userId)
     {
         var allAchievements = await achievementRepository.GetAll();
@@ -91,6 +93,11 @@ public class AchievementService(
     public async Task<IEnumerable<Achievement>> GetAchievements()
     {
         return await achievementRepository.GetAll();
+    }
+    
+    public async Task<IList<Achievement>> GetAchievements(int skip, int take)
+    {
+        return await achievementRepository.GetAll(skip, take);
     }
     
     public async Task<Achievement> GetAchievementById(Guid id)

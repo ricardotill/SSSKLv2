@@ -4,7 +4,6 @@ using SSSKLv2.Services.Interfaces;
 using SSSKLv2.Data;
 using SSSKLv2.Data.DAL.Exceptions;
 using SSSKLv2.Dto.Api.v1;
-using SSSKLv2.Validators;
 using SSSKLv2.Validators.Announcement;
 
 namespace SSSKLv2.Controllers.v1;
@@ -22,10 +21,16 @@ public class AnnouncementController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Announcement>>> GetAll()
+    public async Task<ActionResult<IEnumerable<Announcement>>> GetAll([FromQuery] int skip = 0, [FromQuery] int take = 15)
     {
-        var items = await _announcementService.GetAllAnnouncements();
-        return Ok(items);
+        var list = await _announcementService.GetAllAnnouncements(skip, take);
+        var totalCount = await _announcementService.GetCount();
+
+        return Ok(new PaginationObject<Announcement>()
+        {
+            Items = list,
+            TotalCount = totalCount
+        });
     }
 
     [HttpGet("{id}")]
@@ -56,8 +61,6 @@ public class AnnouncementController : ControllerBase
         {
             Message = dto.Message,
             Description = dto.Description,
-            FotoUrl = dto.FotoUrl,
-            Url = dto.Url,
             Order = dto.Order,
             IsScheduled = dto.IsScheduled,
             PlannedFrom = dto.PlannedFrom,
@@ -92,8 +95,6 @@ public class AnnouncementController : ControllerBase
             // Map update DTO onto existing
             existing.Message = dto.Message;
             existing.Description = dto.Description;
-            existing.FotoUrl = dto.FotoUrl;
-            existing.Url = dto.Url;
             existing.Order = dto.Order;
             existing.IsScheduled = dto.IsScheduled;
             existing.PlannedFrom = dto.PlannedFrom;

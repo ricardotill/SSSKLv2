@@ -26,20 +26,54 @@ public class ApplicationUserController : ControllerBase
     {
         Id = u.Id,
         UserName = u.UserName ?? string.Empty,
-        FullName = u.FullName ?? string.Empty,
+        FullName = u.FullName,
         Saldo = u.Saldo,
         LastOrdered = u.LastOrdered
     };
 
+    // New: map to the more detailed DTO (does NOT include password)
+    private static ApplicationUserDetailedDto MapToDetailedDto(ApplicationUser u) => new ApplicationUserDetailedDto
+    {
+        Id = u.Id,
+        UserName = u.UserName ?? string.Empty,
+        Email = u.Email,
+        EmailConfirmed = u.EmailConfirmed,
+        PhoneNumber = u.PhoneNumber,
+        PhoneNumberConfirmed = u.PhoneNumberConfirmed,
+        Name = u.Name,
+        Surname = u.Surname,
+        FullName = u.FullName,
+        Saldo = u.Saldo,
+        LastOrdered = u.LastOrdered,
+        ProfilePictureBase64 = u.ProfilePicture != null ? Convert.ToBase64String(u.ProfilePicture) : null
+    };
+
+    [Authorize(Roles = "Admin")]
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<ApplicationUserDto>>> GetAll([FromQuery] int skip = 0, [FromQuery] int take = 15)
+    {
+        _logger.LogInformation("{Controller}: Get all users", nameof(ApplicationUserController));
+        
+        var list = await _applicationUserService.GetAllUsers(skip, take);
+        var totalCount = await _applicationUserService.GetCount();
+        var dtoItems = list.Select(MapToDto).ToList();
+        
+        return Ok(new PaginationObject<ApplicationUserDto>()
+        {
+            Items = dtoItems,
+            TotalCount = totalCount
+        });
+    }
+
     [Authorize(Roles = "Admin")]
     [HttpGet("{id}")]
-    public async Task<ActionResult<ApplicationUserDto>> GetById(string id)
+    public async Task<ActionResult<ApplicationUserDetailedDto>> GetById(string id)
     {
         _logger.LogInformation("{Controller}: Get user by id {Id}", nameof(ApplicationUserController), id);
         try
         {
             var user = await _applicationUserService.GetUserById(id);
-            return Ok(MapToDto(user));
+            return Ok(MapToDetailedDto(user));
         }
         catch (NotFoundException)
         {
@@ -49,27 +83,18 @@ public class ApplicationUserController : ControllerBase
 
     [Authorize(Roles = "Admin")]
     [HttpGet("by-username/{username}")]
-    public async Task<ActionResult<ApplicationUserDto>> GetByUsername(string username)
+    public async Task<ActionResult<ApplicationUserDetailedDto>> GetByUsername(string username)
     {
         _logger.LogInformation("{Controller}: Get user by username {Username}", nameof(ApplicationUserController), username);
         try
         {
             var user = await _applicationUserService.GetUserByUsername(username);
-            return Ok(MapToDto(user));
+            return Ok(MapToDetailedDto(user));
         }
         catch (NotFoundException)
         {
             return NotFound();
         }
-    }
-
-    [Authorize(Roles = "Admin")]
-    [HttpGet]
-    public async Task<ActionResult<IList<ApplicationUserDto>>> GetAll()
-    {
-        _logger.LogInformation("{Controller}: Get all users", nameof(ApplicationUserController));
-        var users = await _applicationUserService.GetAllUsers();
-        return Ok(users.Select(MapToDto).ToList());
     }
 
     [Authorize(Roles = "Admin")]
@@ -144,9 +169,9 @@ public class ApplicationUserController : ControllerBase
 
     // GET v1/applicationuser/me
     [HttpGet("me")]
-    public async Task<ActionResult<ApplicationUserDto>> GetCurrent()
+    public async Task<ActionResult<ApplicationUserDetailedDto>> GetCurrent()
     {
-        var username = User?.Identity?.Name;
+        var username = User.Identity?.Name;
         if (string.IsNullOrWhiteSpace(username))
         {
             return Unauthorized();
@@ -155,11 +180,48 @@ public class ApplicationUserController : ControllerBase
         try
         {
             var user = await _applicationUserService.GetUserByUsername(username);
-            return Ok(MapToDto(user));
+            return Ok(MapToDetailedDto(user));
         }
         catch (NotFoundException)
         {
             return NotFound();
         }
     }
-}
+
+    // PUT v1/applicationuser/{id} - update user (Admin or owner)
+    [HttpPut("{id}")]
+    public async Task<IActionResult> Update(string id, [FromBody] ApplicationUserUpdateDto? dto)
+    {
+        if (dto == null) return BadRequest();
+        if (!string.IsNullOrWhiteSpace(dto.Id) && dto.Id != id) return BadRequest("Id in payload does not match route id");
+
+        try
+        {
+            // Fetch existing first so NotFound from the service is returned when appropriate
+            var existing = await _applicationUserService.GetUserById(id);
+
+            var username = User.Identity?.Name;
+            if (string.IsNullOrWhiteSpace(username)) return Unauthorized();
+
+            var isAdmin = User.IsInRole("Admin");
+            if (!isAdmin && existing.UserName != username)
+            {
+                return Forbid();
+            }
+
+            var updated = await _applicationUserService.UpdateUser(id, dto);
+            return Ok(MapToDetailedDto(updated));
+        }
+        catch (NotFoundException)
+        {
+            return NotFound();
+        }
+        catch (InvalidOperationException ex)
+        {
+            // user manager errors surfaced as InvalidOperationException in service
+            _logger.LogWarning(ex, "Failed to update user {Id}", id);
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+ }

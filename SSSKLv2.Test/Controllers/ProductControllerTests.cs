@@ -35,7 +35,9 @@ public class ProductControllerTests
             new Product { Id = Guid.NewGuid(), Name = "P1", Price = 1.0m, Stock = 5 },
             new Product { Id = Guid.NewGuid(), Name = "P2", Price = 2.0m, Stock = 3 }
         };
-        _mockService.GetAll().Returns(items);
+        // Controller calls GetAll(skip,take) and GetCount()
+        _mockService.GetAll(Arg.Any<int>(), Arg.Any<int>()).Returns(Task.FromResult((IList<Product>)items));
+        _mockService.GetCount().Returns(items.Count);
 
         // Act
         var result = await _sut.GetAll();
@@ -43,30 +45,8 @@ public class ProductControllerTests
         // Assert
         var ok = result.Result as OkObjectResult;
         ok.Should().NotBeNull();
-        var dtoList = ok!.Value as IEnumerable<ProductDto>;
-        dtoList.Should().NotBeNull();
-        dtoList!.Should().BeEquivalentTo(items.Select(p => new ProductDto { Id = p.Id, Name = p.Name, Description = p.Description, Price = p.Price, Stock = p.Stock }));
-    }
-
-    [TestMethod]
-    public async Task GetAllAvailable_ReturnsOkWithItems()
-    {
-        // Arrange
-        var items = new List<Product>
-        {
-            new Product { Id = Guid.NewGuid(), Name = "P1", Price = 1.0m, Stock = 5 }
-        };
-        _mockService.GetAllAvailable().Returns(items);
-
-        // Act
-        var result = await _sut.GetAllAvailable();
-
-        // Assert
-        var ok = result.Result as OkObjectResult;
-        ok.Should().NotBeNull();
-        var dtoList = ok!.Value as IEnumerable<ProductDto>;
-        dtoList.Should().NotBeNull();
-        dtoList!.Should().BeEquivalentTo(items.Select(p => new ProductDto { Id = p.Id, Name = p.Name, Description = p.Description, Price = p.Price, Stock = p.Stock }));
+        var expectedDtos = items.Select(p => new ProductDto { Id = p.Id, Name = p.Name, Description = p.Description, Price = p.Price, Stock = p.Stock }).ToList();
+        ok!.Value.Should().BeEquivalentTo(new PaginationObject<ProductDto> { Items = expectedDtos, TotalCount = items.Count });
     }
 
     [TestMethod]

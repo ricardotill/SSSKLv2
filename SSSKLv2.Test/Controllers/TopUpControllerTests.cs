@@ -33,17 +33,27 @@ public class TopUpControllerTests
             new TopUp { Id = Guid.NewGuid(), User = new ApplicationUser { UserName = "u1" }, Saldo = 1.50m },
             new TopUp { Id = Guid.NewGuid(), User = new ApplicationUser { UserName = "u2" }, Saldo = 2.00m }
         };
-        _mockService.GetAllQueryable(null!).Returns(items.AsQueryable());
+        // Controller expects an authenticated user and calls GetAll(skip,take) and GetCount()
+        _mockService.GetAll(Arg.Any<int>(), Arg.Any<int>()).Returns(Task.FromResult<IEnumerable<TopUp>>(items));
+        _mockService.GetCount().Returns(items.Count);
+
+        // Set authenticated user on controller (controller checks User.Identity.Name)
+        _sut.ControllerContext = new Microsoft.AspNetCore.Mvc.ControllerContext
+        {
+            HttpContext = new Microsoft.AspNetCore.Http.DefaultHttpContext
+            {
+                User = new System.Security.Claims.ClaimsPrincipal(new System.Security.Claims.ClaimsIdentity(new[] { new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Name, "admin") }, "TestAuth"))
+            }
+        };
 
         // Act
-        var result = await _sut.GetAll(null!);
+        var result = await _sut.GetAll();
 
         // Assert
         var ok = result.Result as OkObjectResult;
         ok.Should().NotBeNull();
-        var dtoList = ok!.Value as IEnumerable<TopUpDto>;
-        dtoList.Should().NotBeNull();
-        dtoList!.Should().BeEquivalentTo(items.Select(t => new TopUpDto { Id = t.Id, UserName = t.User.UserName, Saldo = t.Saldo }));
+        var expectedDtos = items.Select(t => new TopUpDto { Id = t.Id, UserName = t.User.UserName, Saldo = t.Saldo }).ToList();
+        ok!.Value.Should().BeEquivalentTo(new PaginationObject<TopUpDto> { Items = expectedDtos, TotalCount = items.Count });
     }
 
     [TestMethod]
@@ -55,17 +65,26 @@ public class TopUpControllerTests
         {
             new TopUp { Id = Guid.NewGuid(), User = new ApplicationUser { UserName = username }, Saldo = 5.00m }
         };
-        _mockService.GetPersonalQueryable(username, null!).Returns(items.AsQueryable());
+        _mockService.GetAll(Arg.Any<int>(), Arg.Any<int>()).Returns(Task.FromResult<IEnumerable<TopUp>>(items));
+        _mockService.GetCount().Returns(items.Count);
+
+        // Set authenticated user on controller
+        _sut.ControllerContext = new Microsoft.AspNetCore.Mvc.ControllerContext
+        {
+            HttpContext = new Microsoft.AspNetCore.Http.DefaultHttpContext
+            {
+                User = new System.Security.Claims.ClaimsPrincipal(new System.Security.Claims.ClaimsIdentity(new[] { new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Name, username) }, "TestAuth"))
+            }
+        };
 
         // Act
-        var result = await _sut.GetPersonal(username, null!);
+        var result = await _sut.GetPersonal(1, 1);
 
         // Assert
         var ok = result.Result as OkObjectResult;
         ok.Should().NotBeNull();
-        var dtoList = ok!.Value as IEnumerable<TopUpDto>;
-        dtoList.Should().NotBeNull();
-        dtoList!.Should().BeEquivalentTo(items.Select(t => new TopUpDto { Id = t.Id, UserName = t.User.UserName, Saldo = t.Saldo }));
+        var expectedDtos = items.Select(t => new TopUpDto { Id = t.Id, UserName = t.User.UserName, Saldo = t.Saldo }).ToList();
+        ok!.Value.Should().BeEquivalentTo(new PaginationObject<TopUpDto> { Items = expectedDtos, TotalCount = items.Count });
     }
 
     [TestMethod]
@@ -172,4 +191,3 @@ public class TopUpControllerTests
         result.Should().BeOfType<NotFoundResult>();
     }
 }
-

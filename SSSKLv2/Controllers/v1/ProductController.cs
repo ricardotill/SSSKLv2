@@ -4,10 +4,10 @@ using SSSKLv2.Services.Interfaces;
 using SSSKLv2.Data;
 using SSSKLv2.Data.DAL.Exceptions;
 using SSSKLv2.Dto.Api.v1;
-using SSSKLv2.Validators;
 
 namespace SSSKLv2.Controllers.v1;
 
+[Authorize]
 [Route("v1/[controller]")]
 [ApiController]
 public class ProductController : ControllerBase
@@ -22,26 +22,23 @@ public class ProductController : ControllerBase
     }
 
     // GET v1/product
+    [Authorize(Roles = "Admin")]
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<ProductDto>>> GetAll()
+    public async Task<ActionResult<IEnumerable<ProductDto>>> GetAll([FromQuery] int skip = 0, [FromQuery] int take = 15)
     {
-        _logger.LogInformation("{Controller}: Get all products", nameof(ProductController));
-        var list = await _productService.GetAll();
-        var dto = list.Select(MapToDto).ToList();
-        return Ok(dto);
-    }
-
-    // GET v1/product/available
-    [HttpGet("available")]
-    public async Task<ActionResult<IEnumerable<ProductDto>>> GetAllAvailable()
-    {
-        _logger.LogInformation("{Controller}: Get all available products", nameof(ProductController));
-        var list = await _productService.GetAllAvailable();
-        var dto = list.Select(MapToDto).ToList();
-        return Ok(dto);
+        _logger.LogInformation("{Controller}: Get all products skip={Skip} take={Take}", nameof(ProductController), skip, take);
+        var products = await _productService.GetAll(skip, take);
+        var totalCount = await _productService.GetCount();
+        
+        return Ok(new PaginationObject<ProductDto>()
+        {
+            Items = products.Select(MapToDto),
+            TotalCount = totalCount
+        });
     }
 
     // GET v1/product/{id}
+    [Authorize(Roles = "Admin")]
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<ProductDto>> GetById(Guid id)
     {
@@ -65,9 +62,7 @@ public class ProductController : ControllerBase
         if (dto == null) return BadRequest();
 
         _logger.LogInformation("{Controller}: Create product with name {Name}", nameof(ProductController), dto.Name);
-
-        // Let [ApiController] + FluentValidation handle most model validation, but when calling the controller directly
-        // (unit tests) we still need to return ModelState errors if present.
+        
         if (ModelState.Values.SelectMany(v => v.Errors).Any())
         {
             return BadRequest(ModelState);
@@ -100,9 +95,7 @@ public class ProductController : ControllerBase
     public async Task<IActionResult> Update(Guid id, [FromBody] ProductUpdateDto dto)
     {
         _logger.LogInformation("{Controller}: Update product {Id}", nameof(ProductController), id);
-
-        // Let [ApiController] + FluentValidation handle most model validation, but when calling the controller directly
-        // (unit tests) we still need to return ModelState errors if present.
+        
         if (ModelState.Values.SelectMany(v => v.Errors).Any())
         {
             return BadRequest(ModelState);

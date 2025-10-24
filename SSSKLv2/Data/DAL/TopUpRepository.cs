@@ -1,7 +1,4 @@
-using System.Security.Claims;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using SSSKLv2.Components.Account;
 using SSSKLv2.Data.DAL.Exceptions;
 using SSSKLv2.Data.DAL.Interfaces;
 
@@ -10,11 +7,67 @@ namespace SSSKLv2.Data.DAL;
 public class TopUpRepository(
     IDbContextFactory<ApplicationDbContext> dbContextFactory) : ITopUpRepository
 {
+    public async Task<int> GetCount()
+    {
+        await using var context = await dbContextFactory.CreateDbContextAsync();
+        return await context.TopUp.CountAsync();
+    }
+    
+    public async Task<int> GetPersonalCount(string username)
+    {
+        await using var context = await dbContextFactory.CreateDbContextAsync();
+        return await context.TopUp
+            .Where(x => x.User.UserName == username)
+            .CountAsync();
+    }
+    
+    public async Task<IList<TopUp>> GetAll()
+    {
+        await using var context = await dbContextFactory.CreateDbContextAsync();
+        return await context.TopUp
+            .Include(x => x.User)
+            .OrderByDescending(x => x.CreatedOn)
+            .ToListAsync();
+    }
+    
+    public async Task<IList<TopUp>> GetAll(int take, int skip)
+    {
+        await using var context = await dbContextFactory.CreateDbContextAsync();
+        return await context.TopUp
+            .Include(x => x.User)
+            .OrderByDescending(x => x.CreatedOn)
+            .Skip(skip)
+            .Take(take)
+            .ToListAsync();
+    }
+
     public IQueryable<TopUp> GetAllQueryable(ApplicationDbContext context)
     {
         return context.TopUp
                 .Include(x => x.User)
                 .OrderByDescending(x => x.CreatedOn);
+    }
+    
+    public async Task<IList<TopUp>> GetPersonal(string username)
+    {
+        await using var context = await dbContextFactory.CreateDbContextAsync();
+        return await context.TopUp
+            .Where(x => x.User.UserName == username)
+            .Include(x => x.User)
+            .OrderByDescending(x => x.CreatedOn)
+            .ToListAsync();
+    }
+    
+    public async Task<IList<TopUp>> GetPersonal(string username, int take, int skip)
+    {
+        await using var context = await dbContextFactory.CreateDbContextAsync();
+        return await context.TopUp
+            .Where(x => x.User.UserName == username)
+            .Include(x => x.User)
+            .OrderByDescending(x => x.CreatedOn)
+            .Skip(skip)
+            .Take(take)
+            .ToListAsync();
     }
     
     public IQueryable<TopUp> GetPersonalQueryable(string username, ApplicationDbContext context)
@@ -25,18 +78,12 @@ public class TopUpRepository(
             .OrderByDescending(x => x.CreatedOn);
     }
     
-    public async Task<IList<TopUp>> GetPersonal(string username)
-    {
-        await using var context = await dbContextFactory.CreateDbContextAsync();
-        return await GetPersonalQueryable(username, context).ToListAsync();
-    }
-    
     public async Task<TopUp> GetById(Guid id)
     {
         await using var context = await dbContextFactory.CreateDbContextAsync();
         var topup = await context.TopUp
             .Include(x => x.User)
-            .FirstOrDefaultAsync(x => x.Id == id)!;
+            .FirstOrDefaultAsync(x => x.Id == id);
         if (topup != null)
         {
             return topup;
@@ -59,7 +106,7 @@ public class TopUpRepository(
         await using var context = await dbContextFactory.CreateDbContextAsync();
         var entry = await context.TopUp
             .Include(x => x.User)
-            .FirstOrDefaultAsync(x => x.Id == id)!;
+            .FirstOrDefaultAsync(x => x.Id == id);
         if (entry != null)
         {
             entry.User.Saldo -= entry.Saldo;

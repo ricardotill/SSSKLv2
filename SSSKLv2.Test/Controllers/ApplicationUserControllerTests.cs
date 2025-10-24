@@ -38,7 +38,21 @@ public class ApplicationUserControllerTests
         var result = await _sut.GetById(id);
 
         // ActionResult<T>.Result is the IActionResult (OkObjectResult/NotFoundResult)
-        var expected = new ApplicationUserDto { Id = user.Id, UserName = user.UserName ?? string.Empty, FullName = user.FullName ?? string.Empty, Saldo = user.Saldo, LastOrdered = user.LastOrdered };
+        var expected = new ApplicationUserDetailedDto
+        {
+            Id = user.Id,
+            UserName = user.UserName ?? string.Empty,
+            Email = user.Email,
+            EmailConfirmed = user.EmailConfirmed,
+            PhoneNumber = user.PhoneNumber,
+            PhoneNumberConfirmed = user.PhoneNumberConfirmed,
+            Name = user.Name,
+            Surname = user.Surname,
+            FullName = user.FullName,
+            Saldo = user.Saldo,
+            LastOrdered = user.LastOrdered,
+            ProfilePictureBase64 = null
+        };
         result.Result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeEquivalentTo(expected);
     }
 
@@ -62,7 +76,21 @@ public class ApplicationUserControllerTests
 
         var result = await _sut.GetByUsername(username);
 
-        var expected = new ApplicationUserDto { Id = user.Id, UserName = user.UserName ?? string.Empty, FullName = user.FullName ?? string.Empty, Saldo = user.Saldo, LastOrdered = user.LastOrdered };
+        var expected = new ApplicationUserDetailedDto
+        {
+            Id = user.Id,
+            UserName = user.UserName ?? string.Empty,
+            Email = user.Email,
+            EmailConfirmed = user.EmailConfirmed,
+            PhoneNumber = user.PhoneNumber,
+            PhoneNumberConfirmed = user.PhoneNumberConfirmed,
+            Name = user.Name,
+            Surname = user.Surname,
+            FullName = user.FullName,
+            Saldo = user.Saldo,
+            LastOrdered = user.LastOrdered,
+            ProfilePictureBase64 = null
+        };
         result.Result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeEquivalentTo(expected);
     }
 
@@ -85,11 +113,28 @@ public class ApplicationUserControllerTests
             new ApplicationUser { Id = "a", UserName = "a" },
             new ApplicationUser { Id = "b", UserName = "b" }
         };
-        _mockService.GetAllUsers().Returns(Task.FromResult((IList<ApplicationUser>)list));
+        // Controller calls GetAllUsers(skip,take) and GetCount()
+        _mockService.GetAllUsers(Arg.Any<int>(), Arg.Any<int>()).Returns(Task.FromResult((IList<ApplicationUser>)list));
+        _mockService.GetCount().Returns(list.Count);
 
         var result = await _sut.GetAll();
 
-        var expected = list.Select(u => new ApplicationUserDto { Id = u.Id, UserName = u.UserName ?? string.Empty, FullName = u.FullName ?? string.Empty, Saldo = u.Saldo, LastOrdered = u.LastOrdered }).ToList();
+        var expectedList = list.Select(u => new ApplicationUserDto
+            {
+                Id = u.Id,
+                UserName = u.UserName ?? string.Empty,
+                FullName = u.FullName ?? string.Empty,
+                Saldo = u.Saldo,
+                LastOrdered = u.LastOrdered
+            })
+            .ToList();
+        
+        var expected = new PaginationObject<ApplicationUserDto>
+        {
+            Items = expectedList,
+            TotalCount = list.Count
+        };
+        
         result.Result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeEquivalentTo(expected);
     }
 
@@ -154,16 +199,59 @@ public class ApplicationUserControllerTests
         var result = await _sut.GetCurrent();
 
         // Assert
-        var expected = new ApplicationUserDto { Id = user.Id, UserName = user.UserName ?? string.Empty, FullName = user.FullName ?? string.Empty, Saldo = user.Saldo, LastOrdered = user.LastOrdered };
+        var expected = new ApplicationUserDetailedDto
+        {
+            Id = user.Id,
+            UserName = user.UserName ?? string.Empty,
+            Email = user.Email,
+            EmailConfirmed = user.EmailConfirmed,
+            PhoneNumber = user.PhoneNumber,
+            PhoneNumberConfirmed = user.PhoneNumberConfirmed,
+            Name = user.Name,
+            Surname = user.Surname,
+            FullName = user.FullName,
+            Saldo = user.Saldo,
+            LastOrdered = user.LastOrdered,
+            ProfilePictureBase64 = null
+        };
         result.Result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeEquivalentTo(expected);
     }
 
     [TestMethod]
-    public async Task GetCurrent_WhenServiceThrowsNotFound_ReturnsNotFound()
+    public async Task Update_AsAdmin_ReturnsOkWithUpdated()
     {
-        // Arrange
-        var username = "missinguser";
-        _mockService.GetUserByUsername(username).Returns(Task.FromException<ApplicationUser>(new NotFoundException("User not found")));
+        var id = "user1";
+        var dto = new ApplicationUserUpdateDto { Id = id, UserName = "newname", Email = "new@example.com" };
+        var existing = new ApplicationUser { Id = id, UserName = "oldname" };
+        var updatedUser = new ApplicationUser { Id = id, UserName = dto.UserName, Email = dto.Email };
+
+        _mockService.GetUserById(id).Returns(existing);
+        _mockService.UpdateUser(id, dto).Returns(Task.FromResult(updatedUser));
+
+        _sut.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext
+            {
+                User = new System.Security.Claims.ClaimsPrincipal(new System.Security.Claims.ClaimsIdentity(new[] { new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Name, "admin"), new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Role, "Admin") }, "TestAuth"))
+            }
+        };
+
+        var result = await _sut.Update(id, dto);
+
+        result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeEquivalentTo(new ApplicationUserDetailedDto { Id = updatedUser.Id, UserName = updatedUser.UserName ?? string.Empty, Email = updatedUser.Email, FullName = updatedUser.FullName, Saldo = updatedUser.Saldo, LastOrdered = updatedUser.LastOrdered, ProfilePictureBase64 = null, EmailConfirmed = updatedUser.EmailConfirmed, PhoneNumber = updatedUser.PhoneNumber, PhoneNumberConfirmed = updatedUser.PhoneNumberConfirmed, Name = updatedUser.Name, Surname = updatedUser.Surname });
+    }
+
+    [TestMethod]
+    public async Task Update_AsOwner_ReturnsOkWithUpdated()
+    {
+        var id = "user1";
+        var username = "owneruser";
+        var dto = new ApplicationUserUpdateDto { Id = id, UserName = "owneruser" };
+        var existing = new ApplicationUser { Id = id, UserName = username };
+        var updatedUser = new ApplicationUser { Id = id, UserName = username };
+
+        _mockService.GetUserById(id).Returns(existing);
+        _mockService.UpdateUser(id, dto).Returns(Task.FromResult(updatedUser));
 
         _sut.ControllerContext = new ControllerContext
         {
@@ -173,27 +261,82 @@ public class ApplicationUserControllerTests
             }
         };
 
-        // Act
-        var result = await _sut.GetCurrent();
+        var result = await _sut.Update(id, dto);
 
-        // Assert
-        result.Result.Should().BeOfType<NotFoundResult>();
+        result.Should().BeOfType<OkObjectResult>();
     }
 
     [TestMethod]
-    public async Task GetCurrent_WhenNotAuthenticated_ReturnsUnauthorized()
+    public async Task Update_WhenNotOwnerAndNotAdmin_ReturnsForbid()
     {
-        // Arrange - ensure no user identity
+        var id = "user1";
+        var dto = new ApplicationUserUpdateDto { Id = id, UserName = "someoneelse" };
+        var existing = new ApplicationUser { Id = id, UserName = "otheruser" };
+
+        _mockService.GetUserById(id).Returns(existing);
+
         _sut.ControllerContext = new ControllerContext
         {
-            HttpContext = new DefaultHttpContext()
+            HttpContext = new DefaultHttpContext
+            {
+                User = new System.Security.Claims.ClaimsPrincipal(new System.Security.Claims.ClaimsIdentity(new[] { new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Name, "notowner") }, "TestAuth"))
+            }
         };
 
-        // Act
-        var result = await _sut.GetCurrent();
+        var result = await _sut.Update(id, dto);
 
-        // Assert
-        result.Result.Should().BeOfType<UnauthorizedResult>();
+        result.Should().BeOfType<ForbidResult>();
+    }
+
+    [TestMethod]
+    public async Task Update_WhenDtoNull_ReturnsBadRequest()
+    {
+        var id = "user1";
+        var result = await _sut.Update(id, null);
+        result.Should().BeOfType<BadRequestResult>();
+    }
+
+    [TestMethod]
+    public async Task Update_WhenIdMismatch_ReturnsBadRequest()
+    {
+        var id = "user1";
+        var dto = new ApplicationUserUpdateDto { Id = "different" };
+        var result = await _sut.Update(id, dto);
+        result.Should().BeOfType<BadRequestObjectResult>();
+    }
+
+    [TestMethod]
+    public async Task Update_WhenUserNotFound_ReturnsNotFound()
+    {
+        var id = "missing";
+        var dto = new ApplicationUserUpdateDto { Id = id };
+        _mockService.GetUserById(id).Returns(Task.FromException<ApplicationUser>(new NotFoundException("User not found")));
+
+        var result = await _sut.Update(id, dto);
+
+        result.Should().BeOfType<NotFoundResult>();
+    }
+
+    [TestMethod]
+    public async Task Update_WhenServiceThrowsInvalidOperation_ReturnsBadRequestWithError()
+    {
+        var id = "user1";
+        var dto = new ApplicationUserUpdateDto { Id = id };
+        var existing = new ApplicationUser { Id = id, UserName = "user1" };
+        _mockService.GetUserById(id).Returns(existing);
+        _mockService.UpdateUser(id, dto).Returns(Task.FromException<ApplicationUser>(new InvalidOperationException("Bad update")));
+
+        _sut.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext
+            {
+                User = new System.Security.Claims.ClaimsPrincipal(new System.Security.Claims.ClaimsIdentity(new[] { new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Name, existing.UserName) }, "TestAuth"))
+            }
+        };
+
+        var result = await _sut.Update(id, dto);
+
+        result.Should().BeOfType<BadRequestObjectResult>();
     }
 
 }

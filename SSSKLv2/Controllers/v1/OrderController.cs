@@ -13,19 +13,16 @@ namespace SSSKLv2.Controllers.v1;
 public class OrderController : ControllerBase
 {
     private readonly IOrderService _orderService;
-    private readonly IDbContextFactory<ApplicationDbContext> _dbContextFactory;
     private readonly ILogger<OrderController> _logger;
     private readonly IProductService _productService;
     private readonly IApplicationUserService _applicationUserService;
 
     public OrderController(IOrderService orderService,
-        IDbContextFactory<ApplicationDbContext> dbContextFactory,
         ILogger<OrderController> logger,
         IProductService productService,
         IApplicationUserService applicationUserService)
     {
         _orderService = orderService;
-        _dbContextFactory = dbContextFactory;
         _logger = logger;
         _productService = productService;
         _applicationUserService = applicationUserService;
@@ -34,28 +31,40 @@ public class OrderController : ControllerBase
     // GET v1/order
     [Authorize(Roles = "Admin")]
     [HttpGet]
-    public async Task<IActionResult> GetAll()
+    public async Task<IActionResult> GetAll([FromQuery] int skip = 0, [FromQuery] int take = 15)
     {
-        _logger.LogInformation("{Controller}: Get all orders (queryable)", nameof(OrderController));
-        await using var context = await _dbContextFactory.CreateDbContextAsync();
-        var q = _orderService.GetAllQueryable(context);
-        var list = await q.ToListAsync();
-        return Ok(list);
+        _logger.LogInformation("{Controller}: Get all orders (paged) skip={Skip} take={Take}", nameof(OrderController), skip, take);
+        var list = await _orderService.GetAll(skip, take);
+        var totalCount = await _orderService.GetCount();
+
+        var dtoList = list.Select(MapToDto).ToList();
+
+        return Ok(new PaginationObject<OrderDto>()
+        {
+            Items = dtoList,
+            TotalCount = totalCount
+        });
     }
 
     // GET v1/order/personal
     [Authorize]
     [HttpGet("personal")]
-    public async Task<IActionResult> GetPersonal()
+    public async Task<IActionResult> GetPersonal([FromQuery] int skip = 0, [FromQuery] int take = 15)
     {
         var username = User.Identity!.Name; // non-nullable per auth
         if (string.IsNullOrWhiteSpace(username)) return Unauthorized();
 
-        _logger.LogInformation("{Controller}: Get personal orders for {Username}", nameof(OrderController), username);
-        await using var context = await _dbContextFactory.CreateDbContextAsync();
-        var q = _orderService.GetPersonalQueryable(username, context);
-        var list = await q.ToListAsync();
-        return Ok(list);
+        _logger.LogInformation("{Controller}: Get personal orders for {Username} (paged) skip={Skip} take={Take}", nameof(OrderController), username, skip, take);
+        var list = await _orderService.GetPersonal(username, skip, take);
+        var totalCount = await _orderService.GetPersonalCount(username);
+
+        var dtoList = list.Select(MapToDto).ToList();
+
+        return Ok(new PaginationObject<OrderDto>()
+        {
+            Items = dtoList,
+            TotalCount = totalCount
+        });
     }
 
     // GET v1/order/{id}
@@ -66,7 +75,7 @@ public class OrderController : ControllerBase
         try
         {
             var order = await _orderService.GetOrderById(id);
-            return Ok(order);
+            return Ok(MapToDto(order));
         }
         catch (NotFoundException)
         {
@@ -80,7 +89,8 @@ public class OrderController : ControllerBase
     {
         _logger.LogInformation("{Controller}: Get latest orders", nameof(OrderController));
         var list = await _orderService.GetLatestOrders();
-        return Ok(list);
+        var dtoList = list.Select(MapToDto);
+        return Ok(dtoList);
     }
     
     // GET v1/order/initialize
@@ -171,5 +181,22 @@ public class OrderController : ControllerBase
         {
             return NotFound();
         }
+    }
+
+    private static OrderDto MapToDto(Order order)
+    {
+        if (order == null) return new OrderDto();
+
+        return new OrderDto
+        {
+            Id = order.Id,
+            CreatedOn = order.CreatedOn,
+            ProductId = order.Product?.Id,
+            ProductName = order.ProductNaam ?? string.Empty,
+            UserId = order.User?.Id != null ? Guid.TryParse(order.User.Id, out var uid) ? uid : (Guid?)null : null,
+            UserFullName = order.User?.FullName ?? string.Empty,
+            Amount = order.Amount,
+            Paid = order.Paid
+        };
     }
 }

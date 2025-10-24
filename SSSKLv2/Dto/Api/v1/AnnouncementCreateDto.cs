@@ -4,8 +4,6 @@ public class AnnouncementCreateDto
 {
     public string Message { get; set; } = string.Empty;
     public string? Description { get; set; }
-    public string? FotoUrl { get; set; }
-    public string? Url { get; set; }
     public int Order { get; set; }
     public bool IsScheduled { get; set; }
     public DateTime? PlannedFrom { get; set; }

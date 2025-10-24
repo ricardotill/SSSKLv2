@@ -34,12 +34,16 @@ public class AchievementControllerTests
             new Achievement { Id = Guid.NewGuid(), Name = "A1" },
             new Achievement { Id = Guid.NewGuid(), Name = "A2" }
         };
-        _mockService.GetAchievements().Returns(items);
+        // Controller calls GetAchievements(skip, take) and GetCount()
+        _mockService.GetAchievements(Arg.Any<int>(), Arg.Any<int>()).Returns(Task.FromResult((IList<Achievement>)items));
+        _mockService.GetCount().Returns(items.Count);
 
         var result = await _sut.GetAll();
 
-        var expected = items.Select(a => new AchievementResponseDto { Id = a.Id, Name = a.Name, Description = a.Description ?? string.Empty, AutoAchieve = a.AutoAchieve, Action = a.Action, ComparisonOperator = a.ComparisonOperator, ComparisonValue = a.ComparisonValue, Image = null });
-        result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeEquivalentTo(expected);
+        var expected = items.Select(a => new AchievementResponseDto { Id = a.Id, Name = a.Name, Description = a.Description ?? string.Empty, AutoAchieve = a.AutoAchieve, Action = a.Action, ComparisonOperator = a.ComparisonOperator, ComparisonValue = a.ComparisonValue, Image = null }).ToList();
+
+        // Expect a pagination object with items and total count
+        result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeEquivalentTo(new PaginationObject<AchievementResponseDto> { Items = expected, TotalCount = items.Count });
     }
 
     [TestMethod]
@@ -84,7 +88,7 @@ public class AchievementControllerTests
             ComparisonValue = 0
         };
 
-        var result = await _sut.Update(id, dto);
+        var result = await _sut.Update(dto);
 
         result.Should().BeOfType<NoContentResult>();
         await _mockService.Received(1).UpdateAchievement(Arg.Any<Achievement>());

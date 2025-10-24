@@ -2,10 +2,12 @@ namespace SSSKLv2.Data.DAL.Interfaces;
 
 public interface IProductRepository
 {
-    public Task<IList<Product>> GetAll();
-    public Task<IList<Product>> GetAllAvailable();
-    public Task<Product> GetById(Guid id);
-    public Task Create(Product obj);
-    public Task Update(Product obj);
-    public Task Delete(Guid id);
+    Task<int> GetCount();
+    Task<IList<Product>> GetAll();
+    Task<IList<Product>> GetAll(int skip, int take);
+    Task<IList<Product>> GetAllAvailable();
+    Task<Product> GetById(Guid id);
+    Task Create(Product obj);
+    Task Update(Product obj);
+    Task Delete(Guid id);
 }

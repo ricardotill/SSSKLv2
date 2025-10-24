@@ -6,6 +6,36 @@ namespace SSSKLv2.Data.DAL;
 
 public class OrderRepository(IDbContextFactory<ApplicationDbContext> dbContextFactory) : IOrderRepository
 {
+    public async Task<int> GetCount()
+    {
+        await using var context = await dbContextFactory.CreateDbContextAsync();
+        return await context.Order.CountAsync();
+    }
+    
+    public async Task<int> GetPersonalCount(string username)
+    {
+        await using var context = await dbContextFactory.CreateDbContextAsync();
+        return await context.Order
+            .Where(x => x.User.UserName == username)
+            .CountAsync();
+    }
+
+    public async Task<IList<Order>> GetAll(int skip, int take)
+    {
+        // Ensure sensible defaults / bounds
+        if (skip < 0) skip = 0;
+        if (take <= 0) take = 15;
+
+        await using var context = await dbContextFactory.CreateDbContextAsync();
+        return await context.Order
+            .Include(x => x.User)
+            .Include(x => x.Product)
+            .OrderByDescending(x => x.CreatedOn)
+            .Skip(skip)
+            .Take(take)
+            .ToListAsync();
+    }
+    
     public async Task<IList<Order>> GetAllAsync()
     {
         await using var context = await dbContextFactory.CreateDbContextAsync();
@@ -41,6 +71,22 @@ public class OrderRepository(IDbContextFactory<ApplicationDbContext> dbContextFa
             .Include(x => x.User)
             .Where(x => x.User.UserName == username)
             .OrderByDescending(x => x.CreatedOn);
+    }
+
+    public async Task<IList<Order>> GetPersonal(string username, int skip, int take)
+    {
+        if (skip < 0) skip = 0;
+        if (take <= 0) take = 15;
+
+        await using var context = await dbContextFactory.CreateDbContextAsync();
+        return await context.Order
+            .Include(x => x.User)
+            .Include(x => x.Product)
+            .Where(x => x.User.UserName == username)
+            .OrderByDescending(x => x.CreatedOn)
+            .Skip(skip)
+            .Take(take)
+            .ToListAsync();
     }
     
     public async Task<IList<Order>> GetPersonal(string username)

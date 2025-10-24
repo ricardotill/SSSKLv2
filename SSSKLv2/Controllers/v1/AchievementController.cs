@@ -54,10 +54,15 @@ public class AchievementController : ControllerBase
     // GET v1/achievement
     [Authorize(Roles = "Admin")]
     [HttpGet]
-    public async Task<IActionResult> GetAll()
+    public async Task<IActionResult> GetAll([FromQuery] int skip = 0, [FromQuery] int take = 15)
     {
-        var list = await _achievementService.GetAchievements();
-        return Ok(list.Select(MapToDto));
+        var list = await _achievementService.GetAchievements(skip, take);
+        var totalCount = await _achievementService.GetCount();
+        return Ok(new PaginationObject<AchievementResponseDto>()
+        {
+            Items = list.Select(MapToDto),
+            TotalCount = totalCount
+        });
     }
 
     // GET v1/achievement/{id}
@@ -97,18 +102,9 @@ public class AchievementController : ControllerBase
 
     // PUT v1/achievement/{id}
     [Authorize(Roles = "Admin")]
-    [HttpPut("{id:guid}")]
-    public async Task<IActionResult> Update(Guid id, [FromBody] AchievementUpdateDto dto)
+    [HttpPut]
+    public async Task<IActionResult> Update([FromBody] AchievementUpdateDto dto)
     {
-        // Let [ApiController] + FluentValidation handle ModelState and automatic 400 responses.
-
-        // If route id and body id mismatch, report as model error so clients get consistent ModelState responses
-        if (id != dto.Id)
-        {
-            ModelState.AddModelError("Id", "Route id does not match dto id.");
-            return BadRequest(ModelState);
-        }
-
         try
         {
             // Map DTO -> Achievement domain model

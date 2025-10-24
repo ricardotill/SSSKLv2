@@ -32,7 +32,9 @@ public class AnnouncementControllerTests
             new Announcement { Id = Guid.NewGuid(), Message = "A1", CreatedOn = DateTime.Now },
             new Announcement { Id = Guid.NewGuid(), Message = "A2", CreatedOn = DateTime.Now }
         };
-        _mockService.GetAllAnnouncements().Returns(items);
+        // Stub the overload used by controller
+        _mockService.GetAllAnnouncements(Arg.Any<int>(), Arg.Any<int>()).Returns(Task.FromResult((IList<Announcement>)items));
+        _mockService.GetCount().Returns(items.Count);
 
         // Act
         var result = await _sut.GetAll();
@@ -40,7 +42,7 @@ public class AnnouncementControllerTests
         // Assert
         var ok = result.Result as OkObjectResult;
         ok.Should().NotBeNull();
-        ok!.Value.Should().BeEquivalentTo(items);
+        ok!.Value.Should().BeEquivalentTo(new PaginationObject<Announcement>() { Items = items, TotalCount = items.Count});
     }
 
     [TestMethod]
@@ -141,4 +143,3 @@ public class AnnouncementControllerTests
         result.Should().BeOfType<NotFoundResult>();
     }
 }
-

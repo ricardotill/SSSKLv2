@@ -1,11 +1,14 @@
 using FluentAssertions;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using NSubstitute;
 using SSSKLv2.Data;
 using SSSKLv2.Data.DAL.Exceptions;
 using SSSKLv2.Data.DAL.Interfaces;
 using SSSKLv2.Services;
 using SSSKLv2.Dto;
+using SSSKLv2.Dto.Api.v1;
 
 namespace SSSKLv2.Test.Services;
 
@@ -16,6 +19,7 @@ public class ApplicationUserServiceTests
     private IProductRepository _mockProductRepository = null!;
     private ILogger<ApplicationUserService> _mockLogger = null!;
     private ApplicationUserService _sut = null!;
+    private UserManager<ApplicationUser> _fakeUserManager = null!;
 
     [TestInitialize]
     public void TestInitialize()
@@ -23,7 +27,21 @@ public class ApplicationUserServiceTests
         _mockUserRepository = Substitute.For<IApplicationUserRepository>();
         _mockProductRepository = Substitute.For<IProductRepository>();
         _mockLogger = Substitute.For<ILogger<ApplicationUserService>>();
-        _sut = new ApplicationUserService(_mockUserRepository, _mockProductRepository, _mockLogger);
+
+        // Create a very lightweight fake UserManager by providing a fake store and dependencies
+        var store = Substitute.For<IUserStore<ApplicationUser>>();
+        var options = Options.Create(new IdentityOptions());
+        var pwdHasher = Substitute.For<IPasswordHasher<ApplicationUser>>();
+        var userValidators = new List<IUserValidator<ApplicationUser>>();
+        var pwdValidators = new List<IPasswordValidator<ApplicationUser>>();
+        var lookupNormalizer = Substitute.For<ILookupNormalizer>();
+        var describer = new IdentityErrorDescriber();
+        var services = Substitute.For<IServiceProvider>();
+        var umLogger = Substitute.For<ILogger<UserManager<ApplicationUser>>>();
+
+        _fakeUserManager = new FakeUserManager(store, options, pwdHasher, userValidators, pwdValidators, lookupNormalizer, describer, services, umLogger);
+
+        _sut = new ApplicationUserService(_mockUserRepository, _mockProductRepository, _fakeUserManager, _mockLogger);
     }
 
     #region GetUserById Tests
@@ -858,4 +876,85 @@ public class ApplicationUserServiceTests
     }
 
     #endregion
+
+    [TestMethod]
+    public async Task UpdateUser_WhenUserNotFound_ThrowsNotFound()
+    {
+        var id = "missing";
+        // configure fake to return null
+        ((FakeUserManager)_fakeUserManager).FindByIdFunc = (uid) => Task.FromResult<ApplicationUser?>(null);
+
+        var dto = new ApplicationUserUpdateDto { UserName = "x" };
+
+        Func<Task> act = async () => await _sut.UpdateUser(id, dto);
+
+        await act.Should().ThrowAsync<NotFoundException>();
+    }
+
+    [TestMethod]
+    public async Task UpdateUser_WhenSetUserNameFails_ThrowsInvalidOperation()
+    {
+        var id = "user1";
+        var existing = CreateApplicationUser(id, "old");
+        ((FakeUserManager)_fakeUserManager).FindByIdFunc = (uid) => Task.FromResult(existing);
+        ((FakeUserManager)_fakeUserManager).SetUserNameFunc = (user, name) => Task.FromResult(IdentityResult.Failed(new IdentityError { Description = "Invalid" }));
+
+        var dto = new ApplicationUserUpdateDto { UserName = "new" };
+
+        Func<Task> act = async () => await _sut.UpdateUser(id, dto);
+
+        await act.Should().ThrowAsync<InvalidOperationException>();
+    }
+
+    [TestMethod]
+    public async Task UpdateUser_WhenValid_UpdatesAndReturnsUser()
+    {
+        var id = "user1";
+        var existing = CreateApplicationUser(id, "old", "Test", "User", "old@example.com");
+        ((FakeUserManager)_fakeUserManager).FindByIdFunc = (uid) => Task.FromResult(existing);
+        ((FakeUserManager)_fakeUserManager).SetUserNameFunc = (user, name) => Task.FromResult(IdentityResult.Success);
+        ((FakeUserManager)_fakeUserManager).SetEmailFunc = (user, email) => Task.FromResult(IdentityResult.Success);
+        ((FakeUserManager)_fakeUserManager).SetPhoneFunc = (user, phone) => Task.FromResult(IdentityResult.Success);
+        ((FakeUserManager)_fakeUserManager).UpdateFunc = (user) => Task.FromResult(IdentityResult.Success);
+        ((FakeUserManager)_fakeUserManager).GeneratePasswordResetTokenFunc = (user) => Task.FromResult("token");
+        ((FakeUserManager)_fakeUserManager).ResetPasswordFunc = (user, token, pwd) => Task.FromResult(IdentityResult.Success);
+        ((FakeUserManager)_fakeUserManager).FindByIdFunc = (uid) => Task.FromResult(existing);
+
+        var dto = new ApplicationUserUpdateDto { UserName = "newname", Email = "new@example.com", PhoneNumber = "123", Name = "New", Surname = "Name", Password = "newpass" };
+
+        var result = await _sut.UpdateUser(id, dto);
+
+        result.Should().NotBeNull();
+        result.UserName.Should().Be("newname");
+        result.Email.Should().Be("new@example.com");
+        result.PhoneNumber.Should().Be("123");
+        result.Name.Should().Be("New");
+        result.Surname.Should().Be("Name");
+    }
+
+    // Minimal fake UserManager to allow per-test behavior via Func fields
+    private class FakeUserManager : UserManager<ApplicationUser>
+    {
+        public Func<string, Task<ApplicationUser?>> FindByIdFunc = _ => Task.FromResult<ApplicationUser?>(null);
+        public Func<ApplicationUser, string?, Task<IdentityResult>> SetUserNameFunc = (_, __) => Task.FromResult(IdentityResult.Success);
+        public Func<ApplicationUser, string?, Task<IdentityResult>> SetEmailFunc = (_, __) => Task.FromResult(IdentityResult.Success);
+        public Func<ApplicationUser, string?, Task<IdentityResult>> SetPhoneFunc = (_, __) => Task.FromResult(IdentityResult.Success);
+        public Func<ApplicationUser, Task<IdentityResult>> UpdateFunc = _ => Task.FromResult(IdentityResult.Success);
+        public Func<ApplicationUser, Task<string>> GeneratePasswordResetTokenFunc = _ => Task.FromResult(string.Empty);
+        public Func<ApplicationUser, string, string, Task<IdentityResult>> ResetPasswordFunc = (_, __, ___) => Task.FromResult(IdentityResult.Success);
+
+        public FakeUserManager(IUserStore<ApplicationUser> store, IOptions<IdentityOptions> optionsAccessor, IPasswordHasher<ApplicationUser> passwordHasher, IEnumerable<IUserValidator<ApplicationUser>> userValidators, IEnumerable<IPasswordValidator<ApplicationUser>> passwordValidators, ILookupNormalizer keyNormalizer, IdentityErrorDescriber errors, IServiceProvider services, ILogger<UserManager<ApplicationUser>> logger)
+            : base(store, optionsAccessor, passwordHasher, userValidators, passwordValidators, keyNormalizer, errors, services, logger)
+        {
+        }
+
+        public override Task<ApplicationUser?> FindByIdAsync(string userId) => FindByIdFunc(userId);
+        public override Task<IdentityResult> SetUserNameAsync(ApplicationUser user, string? userName) => SetUserNameFunc(user, userName);
+        public override Task<IdentityResult> SetEmailAsync(ApplicationUser user, string? email) => SetEmailFunc(user, email);
+        public override Task<IdentityResult> SetPhoneNumberAsync(ApplicationUser user, string? phoneNumber) => SetPhoneFunc(user, phoneNumber);
+        public override Task<IdentityResult> UpdateAsync(ApplicationUser user) => UpdateFunc(user);
+        public override Task<string> GeneratePasswordResetTokenAsync(ApplicationUser user) => GeneratePasswordResetTokenFunc(user);
+        public override Task<IdentityResult> ResetPasswordAsync(ApplicationUser user, string token, string newPassword) => ResetPasswordFunc(user, token, newPassword);
+    }
 }
+

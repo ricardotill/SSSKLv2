@@ -2,8 +2,10 @@ namespace SSSKLv2.Data.DAL.Interfaces;
 
 public interface IAchievementRepository
 {
+    Task<int> GetCount();
     Task<IEnumerable<Achievement>> GetAll();
     IQueryable<Achievement> GetAllQueryable(ApplicationDbContext context);
+    Task<IList<Achievement>> GetAll(int skip, int take);
     Task<Achievement> GetById(Guid id);
     Task<IEnumerable<AchievementEntry>> GetAllEntries(Guid achievementId);
     IQueryable<AchievementEntry> GetAllEntriesQueryable(ApplicationDbContext context);

@@ -4,7 +4,9 @@ namespace SSSKLv2.Services.Interfaces;
 
 public interface IAnnouncementService
 {
-    Task<IEnumerable<Announcement>> GetAllAnnouncements();
+    Task<int> GetCount();
+    Task<IList<Announcement>> GetAllAnnouncements();
+    Task<IList<Announcement>> GetAllAnnouncements(int skip, int take);
     IQueryable<Announcement> GetAllAnnouncementsQueryable(ApplicationDbContext context);
     Task<Announcement?> GetAnnouncementById(Guid id);
     Task CreateAnnouncement(Announcement announcement);

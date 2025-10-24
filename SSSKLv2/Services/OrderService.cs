@@ -16,10 +16,18 @@ public class OrderService(
     IApplicationUserService applicationUserService,
     ILogger<OrderService> logger) : IOrderService
 {
+    public Task<int> GetCount() => orderRepository.GetCount();
+    public Task<int> GetPersonalCount(string username) => orderRepository.GetPersonalCount(username);
     public IQueryable<Order> GetAllQueryable(ApplicationDbContext dbContext)
     {
         logger.LogInformation("{Type}: Get All Orders as Queryable", nameof(OrderService));
         return orderRepository.GetAllQueryable(dbContext);
+    }
+    
+    public async Task<IList<Order>> GetAll(int skip, int take)
+    {
+        logger.LogInformation("{Type}: Get All Orders (paged) skip={Skip} take={Take}", nameof(OrderService), skip, take);
+        return await orderRepository.GetAll(skip, take);
     }
     
     public IQueryable<Order> GetPersonalQueryable(string username, ApplicationDbContext dbContext)
@@ -27,6 +35,12 @@ public class OrderService(
         logger.LogInformation("{Type}: Get Personal Orders as Queryable for user with username {Username}", nameof(OrderService), username);
         var output = orderRepository.GetPersonalQueryable(username, dbContext);
         return output;
+    }
+    
+    public async Task<IList<Order>> GetPersonal(string username, int skip, int take)
+    {
+        logger.LogInformation("{Type}: Get Personal Orders (paged) for {Username} skip={Skip} take={Take}", nameof(OrderService), username, skip, take);
+        return await orderRepository.GetPersonal(username, skip, take);
     }
     
     public async Task<IEnumerable<Order>> GetLatestOrders()

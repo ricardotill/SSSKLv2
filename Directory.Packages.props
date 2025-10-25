@@ -26,6 +26,7 @@
     <PackageVersion Include="Microsoft.AspNetCore.SignalR.Client" Version="9.0.10" />
     <PackageVersion Include="Microsoft.Azure.AppConfiguration.AspNetCore" Version="8.4.0" />
     <PackageVersion Include="Microsoft.Azure.SignalR" Version="1.32.0" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.InMemory" Version="9.0.10" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.10" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.10" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.10" />

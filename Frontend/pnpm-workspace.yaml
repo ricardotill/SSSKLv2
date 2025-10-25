@@ -1,0 +1,3 @@
+onlyBuiltDependencies:
+  - maplibre-gl
+  - vue-demi

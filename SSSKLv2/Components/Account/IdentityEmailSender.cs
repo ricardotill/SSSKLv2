@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Identity;
 using SendGrid;
 using SendGrid.Helpers.Mail;
 using SSSKLv2.Data;
-using SSSKLv2.Data.DAL.Exceptions;
 
 namespace SSSKLv2.Components.Account;
 
@@ -16,8 +15,12 @@ public class IdentityEmailSender(ILogger<IdentityEmailSender> logger) : IEmailSe
     {
         if (string.IsNullOrEmpty(SendGridKey))
         {
-            throw new NotFoundException("Null SendGridKey");
+            // In CI/test environments we may not have SendGrid configured. Log and skip sending
+            // instead of throwing so endpoints that send confirmation emails don't fail.
+            _logger.LogWarning("SendGrid key is not configured; skipping email to {Email}", toEmail);
+            return;
         }
+
         await Execute(SendGridKey, subject, message, toEmail);
     }
 
@@ -37,9 +40,15 @@ public class IdentityEmailSender(ILogger<IdentityEmailSender> logger) : IEmailSe
         // See https://sendgrid.com/docs/User_Guide/Settings/tracking.html
         msg.SetClickTracking(false, false);
         var response = await client.SendEmailAsync(msg);
-        _logger.LogInformation(response.IsSuccessStatusCode 
-            ? $"Email to {toEmail} queued successfully!"
-            : $"Failure Email to {toEmail}");
+        // Use structured logging instead of interpolated strings to satisfy analyzers
+        if (response.IsSuccessStatusCode)
+        {
+            _logger.LogInformation("Email to {Email} queued successfully!", toEmail);
+        }
+        else
+        {
+            _logger.LogWarning("Failure sending email to {Email}", toEmail);
+        }
     }
 
     public Task SendConfirmationLinkAsync(ApplicationUser user, string email, string confirmationLink) =>

@@ -1,0 +1,1807 @@
+openapi: 3.0.1
+info:
+  title: SSSKLv2 | v1
+  contact:
+    name: Scouting Wilo
+    email: webmaster@scoutingwilo.nl
+  version: 1.0.0
+servers:
+  - url: https://localhost:7193/
+paths:
+  /Account/PerformExternalLogin:
+    post:
+      tags:
+        - SSSKLv2
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              required:
+                - provider
+                - returnUrl
+              type: object
+              allOf:
+                - type: object
+                  properties:
+                    provider:
+                      type: string
+                - type: object
+                  properties:
+                    returnUrl:
+                      type: string
+          application/x-www-form-urlencoded:
+            schema:
+              required:
+                - provider
+                - returnUrl
+              type: object
+              allOf:
+                - type: object
+                  properties:
+                    provider:
+                      type: string
+                - type: object
+                  properties:
+                    returnUrl:
+                      type: string
+        required: true
+      responses:
+        "200":
+          description: OK
+  /Account/Logout:
+    post:
+      tags:
+        - SSSKLv2
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              required:
+                - returnUrl
+              type: object
+              properties:
+                returnUrl:
+                  type: string
+          application/x-www-form-urlencoded:
+            schema:
+              required:
+                - returnUrl
+              type: object
+              properties:
+                returnUrl:
+                  type: string
+        required: true
+      responses:
+        "200":
+          description: OK
+  /Account/Manage/LinkExternalLogin:
+    post:
+      tags:
+        - SSSKLv2
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              required:
+                - provider
+              type: object
+              properties:
+                provider:
+                  type: string
+          application/x-www-form-urlencoded:
+            schema:
+              required:
+                - provider
+              type: object
+              properties:
+                provider:
+                  type: string
+        required: true
+      responses:
+        "200":
+          description: OK
+  /Account/Manage/DownloadPersonalData:
+    post:
+      tags:
+        - SSSKLv2
+      responses:
+        "200":
+          description: OK
+  /api/v1/identity/register:
+    post:
+      tags:
+        - SSSKLv2
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/HttpValidationProblemDetails"
+  /api/v1/identity/login:
+    post:
+      tags:
+        - SSSKLv2
+      parameters:
+        - name: useCookies
+          in: query
+          schema:
+            type: boolean
+        - name: useSessionCookies
+          in: query
+          schema:
+            type: boolean
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccessTokenResponse"
+  /api/v1/identity/refresh:
+    post:
+      tags:
+        - SSSKLv2
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefreshRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccessTokenResponse"
+  /api/v1/identity/confirmEmail:
+    get:
+      tags:
+        - SSSKLv2
+      operationId: MapSssklIdentityApi-/api/v1/identity/confirmEmail
+      parameters:
+        - name: userId
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: code
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: changedEmail
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+  /api/v1/identity/resendConfirmationEmail:
+    post:
+      tags:
+        - SSSKLv2
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResendConfirmationEmailRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+  /api/v1/identity/forgotPassword:
+    post:
+      tags:
+        - SSSKLv2
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ForgotPasswordRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/HttpValidationProblemDetails"
+  /api/v1/identity/resetPassword:
+    post:
+      tags:
+        - SSSKLv2
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResetPasswordRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/HttpValidationProblemDetails"
+  /api/v1/identity/manage/2fa:
+    post:
+      tags:
+        - SSSKLv2
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TwoFactorRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TwoFactorResponse"
+        "400":
+          description: Bad Request
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/HttpValidationProblemDetails"
+        "404":
+          description: Not Found
+  /api/v1/identity/manage/info:
+    get:
+      tags:
+        - SSSKLv2
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InfoResponse"
+        "400":
+          description: Bad Request
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/HttpValidationProblemDetails"
+        "404":
+          description: Not Found
+    post:
+      tags:
+        - SSSKLv2
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InfoRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InfoResponse"
+        "400":
+          description: Bad Request
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/HttpValidationProblemDetails"
+        "404":
+          description: Not Found
+  /v1/Achievement:
+    get:
+      tags:
+        - Achievement
+      parameters:
+        - name: skip
+          in: query
+          schema:
+            type: integer
+            format: int32
+            default: 0
+        - name: take
+          in: query
+          schema:
+            type: integer
+            format: int32
+            default: 15
+      responses:
+        "200":
+          description: OK
+    post:
+      tags:
+        - Achievement
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              allOf:
+                - type: object
+                  properties:
+                    Name:
+                      type: string
+                    Description:
+                      type: string
+                    ImageContent.CanRead:
+                      type: boolean
+                    ImageContent.CanWrite:
+                      type: boolean
+                    ImageContent.CanSeek:
+                      type: boolean
+                    ImageContent.CanTimeout:
+                      type: boolean
+                    ImageContent.Length:
+                      type: integer
+                      format: int64
+                    ImageContent.Position:
+                      type: integer
+                      format: int64
+                    ImageContent.ReadTimeout:
+                      type: integer
+                      format: int32
+                    ImageContent.WriteTimeout:
+                      type: integer
+                      format: int32
+                    ImageContentType.Boundary:
+                      type: string
+                    ImageContentType.CharSet:
+                      type: string
+                    ImageContentType.MediaType:
+                      type: string
+                    ImageContentType.Name:
+                      type: string
+                    ImageContentType.Parameters:
+                      type: array
+                    AutoAchieve:
+                      type: boolean
+                    Action:
+                      type: string
+                    ComparisonOperator:
+                      type: string
+                    ComparisonValue:
+                      type: integer
+                      format: int32
+                - type: object
+                  properties:
+                    ContentType:
+                      type: string
+                    ContentDisposition:
+                      type: string
+                    Headers:
+                      type: object
+                      additionalProperties:
+                        type: array
+                        items:
+                          type: string
+                    Length:
+                      type: integer
+                      format: int64
+                    Name:
+                      type: string
+                    FileName:
+                      type: string
+        required: true
+      responses:
+        "200":
+          description: OK
+    put:
+      tags:
+        - Achievement
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AchievementUpdateDto"
+          text/json:
+            schema:
+              $ref: "#/components/schemas/AchievementUpdateDto"
+          application/*+json:
+            schema:
+              $ref: "#/components/schemas/AchievementUpdateDto"
+        required: true
+      responses:
+        "200":
+          description: OK
+  /v1/Achievement/{id}:
+    get:
+      tags:
+        - Achievement
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: OK
+    delete:
+      tags:
+        - Achievement
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: OK
+  /v1/Achievement/personal:
+    get:
+      tags:
+        - Achievement
+      responses:
+        "200":
+          description: OK
+  /v1/Achievement/entries/{userId}:
+    get:
+      tags:
+        - Achievement
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+  /v1/Achievement/entries/personal:
+    get:
+      tags:
+        - Achievement
+      responses:
+        "200":
+          description: OK
+  /v1/Achievement/entries/unseen:
+    get:
+      tags:
+        - Achievement
+      responses:
+        "200":
+          description: OK
+  /v1/Achievement/entries/delete:
+    post:
+      tags:
+        - Achievement
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: string
+                format: uuid
+              nullable: true
+          text/json:
+            schema:
+              type: array
+              items:
+                type: string
+                format: uuid
+              nullable: true
+          application/*+json:
+            schema:
+              type: array
+              items:
+                type: string
+                format: uuid
+              nullable: true
+      responses:
+        "200":
+          description: OK
+  /v1/Achievement/award/{userId}/{achievementId}:
+    post:
+      tags:
+        - Achievement
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: achievementId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: OK
+  /v1/Achievement/award/all/{achievementId}:
+    post:
+      tags:
+        - Achievement
+      parameters:
+        - name: achievementId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: OK
+  /v1/Announcement:
+    get:
+      tags:
+        - Announcement
+      parameters:
+        - name: skip
+          in: query
+          schema:
+            type: integer
+            format: int32
+            default: 0
+        - name: take
+          in: query
+          schema:
+            type: integer
+            format: int32
+            default: 15
+      responses:
+        "200":
+          description: OK
+          content:
+            text/plain:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Announcement"
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Announcement"
+            text/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Announcement"
+    post:
+      tags:
+        - Announcement
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AnnouncementCreateDto"
+          text/json:
+            schema:
+              $ref: "#/components/schemas/AnnouncementCreateDto"
+          application/*+json:
+            schema:
+              $ref: "#/components/schemas/AnnouncementCreateDto"
+      responses:
+        "200":
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/Announcement"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Announcement"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/Announcement"
+  /v1/Announcement/{id}:
+    get:
+      tags:
+        - Announcement
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/Announcement"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Announcement"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/Announcement"
+    put:
+      tags:
+        - Announcement
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AnnouncementUpdateDto"
+          text/json:
+            schema:
+              $ref: "#/components/schemas/AnnouncementUpdateDto"
+          application/*+json:
+            schema:
+              $ref: "#/components/schemas/AnnouncementUpdateDto"
+      responses:
+        "200":
+          description: OK
+    delete:
+      tags:
+        - Announcement
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: OK
+  /v1/ApplicationUser:
+    get:
+      tags:
+        - ApplicationUser
+      parameters:
+        - name: skip
+          in: query
+          schema:
+            type: integer
+            format: int32
+            default: 0
+        - name: take
+          in: query
+          schema:
+            type: integer
+            format: int32
+            default: 15
+      responses:
+        "200":
+          description: OK
+          content:
+            text/plain:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApplicationUserDto"
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApplicationUserDto"
+            text/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApplicationUserDto"
+  /v1/ApplicationUser/{id}:
+    get:
+      tags:
+        - ApplicationUser
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/ApplicationUserDetailedDto"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApplicationUserDetailedDto"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/ApplicationUserDetailedDto"
+    put:
+      tags:
+        - ApplicationUser
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApplicationUserUpdateDto"
+          text/json:
+            schema:
+              $ref: "#/components/schemas/ApplicationUserUpdateDto"
+          application/*+json:
+            schema:
+              $ref: "#/components/schemas/ApplicationUserUpdateDto"
+      responses:
+        "200":
+          description: OK
+  /v1/ApplicationUser/by-username/{username}:
+    get:
+      tags:
+        - ApplicationUser
+      parameters:
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/ApplicationUserDetailedDto"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApplicationUserDetailedDto"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/ApplicationUserDetailedDto"
+  /v1/ApplicationUser/obscured:
+    get:
+      tags:
+        - ApplicationUser
+      responses:
+        "200":
+          description: OK
+          content:
+            text/plain:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApplicationUserDto"
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApplicationUserDto"
+            text/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApplicationUserDto"
+  /v1/ApplicationUser/leaderboard/{productId}:
+    get:
+      tags:
+        - ApplicationUser
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            text/plain:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LeaderboardEntryDto"
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LeaderboardEntryDto"
+            text/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LeaderboardEntryDto"
+  /v1/ApplicationUser/leaderboard/monthly/{productId}:
+    get:
+      tags:
+        - ApplicationUser
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            text/plain:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LeaderboardEntryDto"
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LeaderboardEntryDto"
+            text/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LeaderboardEntryDto"
+  /v1/ApplicationUser/leaderboard/12hour/{productId}:
+    get:
+      tags:
+        - ApplicationUser
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            text/plain:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LeaderboardEntryDto"
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LeaderboardEntryDto"
+            text/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LeaderboardEntryDto"
+  /v1/ApplicationUser/leaderboard/12hour/live/{productId}:
+    get:
+      tags:
+        - ApplicationUser
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            text/plain:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LeaderboardEntryDto"
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LeaderboardEntryDto"
+            text/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LeaderboardEntryDto"
+  /v1/ApplicationUser/me:
+    get:
+      tags:
+        - ApplicationUser
+      responses:
+        "200":
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/ApplicationUserDetailedDto"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApplicationUserDetailedDto"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/ApplicationUserDetailedDto"
+  /v1/Order:
+    get:
+      tags:
+        - Order
+      parameters:
+        - name: skip
+          in: query
+          schema:
+            type: integer
+            format: int32
+            default: 0
+        - name: take
+          in: query
+          schema:
+            type: integer
+            format: int32
+            default: 15
+      responses:
+        "200":
+          description: OK
+    post:
+      tags:
+        - Order
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OrderSubmitDto"
+          text/json:
+            schema:
+              $ref: "#/components/schemas/OrderSubmitDto"
+          application/*+json:
+            schema:
+              $ref: "#/components/schemas/OrderSubmitDto"
+      responses:
+        "200":
+          description: OK
+  /v1/Order/personal:
+    get:
+      tags:
+        - Order
+      parameters:
+        - name: skip
+          in: query
+          schema:
+            type: integer
+            format: int32
+            default: 0
+        - name: take
+          in: query
+          schema:
+            type: integer
+            format: int32
+            default: 15
+      responses:
+        "200":
+          description: OK
+  /v1/Order/{id}:
+    get:
+      tags:
+        - Order
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: OK
+    delete:
+      tags:
+        - Order
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: OK
+  /v1/Order/latest:
+    get:
+      tags:
+        - Order
+      responses:
+        "200":
+          description: OK
+  /v1/Order/initialize:
+    get:
+      tags:
+        - Order
+      responses:
+        "200":
+          description: OK
+  /v1/Order/export/csv:
+    get:
+      tags:
+        - Order
+      responses:
+        "200":
+          description: OK
+  /v1/Product:
+    get:
+      tags:
+        - Product
+      parameters:
+        - name: skip
+          in: query
+          schema:
+            type: integer
+            format: int32
+            default: 0
+        - name: take
+          in: query
+          schema:
+            type: integer
+            format: int32
+            default: 15
+      responses:
+        "200":
+          description: OK
+          content:
+            text/plain:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProductDto"
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProductDto"
+            text/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProductDto"
+    post:
+      tags:
+        - Product
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductCreateDto"
+          text/json:
+            schema:
+              $ref: "#/components/schemas/ProductCreateDto"
+          application/*+json:
+            schema:
+              $ref: "#/components/schemas/ProductCreateDto"
+      responses:
+        "200":
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/ProductDto"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductDto"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/ProductDto"
+  /v1/Product/{id}:
+    get:
+      tags:
+        - Product
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/ProductDto"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductDto"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/ProductDto"
+    put:
+      tags:
+        - Product
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductUpdateDto"
+          text/json:
+            schema:
+              $ref: "#/components/schemas/ProductUpdateDto"
+          application/*+json:
+            schema:
+              $ref: "#/components/schemas/ProductUpdateDto"
+        required: true
+      responses:
+        "200":
+          description: OK
+    delete:
+      tags:
+        - Product
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: OK
+  /v1/TopUp:
+    get:
+      tags:
+        - TopUp
+      parameters:
+        - name: skip
+          in: query
+          schema:
+            type: integer
+            format: int32
+            default: 0
+        - name: take
+          in: query
+          schema:
+            type: integer
+            format: int32
+            default: 15
+      responses:
+        "200":
+          description: OK
+          content:
+            text/plain:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TopUpDto"
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TopUpDto"
+            text/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TopUpDto"
+    post:
+      tags:
+        - TopUp
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TopUpCreateDto"
+          text/json:
+            schema:
+              $ref: "#/components/schemas/TopUpCreateDto"
+          application/*+json:
+            schema:
+              $ref: "#/components/schemas/TopUpCreateDto"
+      responses:
+        "200":
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/TopUpDto"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TopUpDto"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/TopUpDto"
+  /v1/TopUp/personal:
+    get:
+      tags:
+        - TopUp
+      parameters:
+        - name: skip
+          in: query
+          schema:
+            type: integer
+            format: int32
+            default: 0
+        - name: take
+          in: query
+          schema:
+            type: integer
+            format: int32
+            default: 15
+      responses:
+        "200":
+          description: OK
+          content:
+            text/plain:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TopUpDto"
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TopUpDto"
+            text/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TopUpDto"
+  /v1/TopUp/{id}:
+    get:
+      tags:
+        - TopUp
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/TopUpDto"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TopUpDto"
+            text/json:
+              schema:
+                $ref: "#/components/schemas/TopUpDto"
+    delete:
+      tags:
+        - TopUp
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: OK
+components:
+  schemas:
+    AccessTokenResponse:
+      required:
+        - accessToken
+        - expiresIn
+        - refreshToken
+      type: object
+      properties:
+        tokenType:
+          type: string
+          nullable: true
+        accessToken:
+          type: string
+        expiresIn:
+          type: integer
+          format: int64
+        refreshToken:
+          type: string
+    AchievementImageDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        fileName:
+          type: string
+        uri:
+          type: string
+        contentType:
+          type: string
+      nullable: true
+    AchievementUpdateDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        autoAchieve:
+          type: boolean
+        action:
+          $ref: "#/components/schemas/ActionOption"
+        comparisonOperator:
+          $ref: "#/components/schemas/ComparisonOperatorOption"
+        comparisonValue:
+          type: integer
+          format: int32
+        image:
+          $ref: "#/components/schemas/AchievementImageDto"
+    ActionOption:
+      enum:
+        - None
+        - UserOrderAmountBought
+        - UserOrderAmountPaid
+        - UserIndividualTopUp
+        - UserTotalTopUp
+        - YearsOfMembership
+        - OrdersWithinHour
+        - MinutesBetweenOrders
+        - MinutesBetweenTopUp
+    Announcement:
+      required:
+        - createdOn
+      type: object
+      properties:
+        message:
+          type: string
+        description:
+          type: string
+          nullable: true
+        fotoUrl:
+          type: string
+          nullable: true
+        url:
+          type: string
+          nullable: true
+        order:
+          type: integer
+          format: int32
+        isScheduled:
+          type: boolean
+        plannedFrom:
+          type: string
+          format: date-time
+          nullable: true
+        plannedTill:
+          type: string
+          format: date-time
+          nullable: true
+        id:
+          type: string
+          format: uuid
+        createdOn:
+          type: string
+          format: date-time
+    AnnouncementCreateDto:
+      type: object
+      properties:
+        message:
+          type: string
+        description:
+          type: string
+          nullable: true
+        order:
+          type: integer
+          format: int32
+        isScheduled:
+          type: boolean
+        plannedFrom:
+          type: string
+          format: date-time
+          nullable: true
+        plannedTill:
+          type: string
+          format: date-time
+          nullable: true
+      nullable: true
+    AnnouncementUpdateDto:
+      type: object
+      properties:
+        message:
+          type: string
+        description:
+          type: string
+          nullable: true
+        order:
+          type: integer
+          format: int32
+        isScheduled:
+          type: boolean
+        plannedFrom:
+          type: string
+          format: date-time
+          nullable: true
+        plannedTill:
+          type: string
+          format: date-time
+          nullable: true
+      nullable: true
+    ApplicationUserDetailedDto:
+      type: object
+      properties:
+        id:
+          type: string
+        userName:
+          type: string
+        email:
+          type: string
+          nullable: true
+        emailConfirmed:
+          type: boolean
+        phoneNumber:
+          type: string
+          nullable: true
+        phoneNumberConfirmed:
+          type: boolean
+        name:
+          type: string
+          nullable: true
+        surname:
+          type: string
+          nullable: true
+        fullName:
+          type: string
+        saldo:
+          type: number
+          format: double
+        lastOrdered:
+          type: string
+          format: date-time
+        profilePictureBase64:
+          type: string
+          nullable: true
+    ApplicationUserDto:
+      type: object
+      properties:
+        id:
+          type: string
+        userName:
+          type: string
+        fullName:
+          type: string
+        saldo:
+          type: number
+          format: double
+        lastOrdered:
+          type: string
+          format: date-time
+    ApplicationUserUpdateDto:
+      type: object
+      properties:
+        id:
+          type: string
+          nullable: true
+        userName:
+          type: string
+          nullable: true
+        email:
+          type: string
+          nullable: true
+        emailConfirmed:
+          type: boolean
+        phoneNumber:
+          type: string
+          nullable: true
+        phoneNumberConfirmed:
+          type: boolean
+        name:
+          type: string
+          nullable: true
+        surname:
+          type: string
+          nullable: true
+        password:
+          type: string
+          nullable: true
+      nullable: true
+    ComparisonOperatorOption:
+      enum:
+        - None
+        - LessThan
+        - GreaterThan
+        - LessThanOrEqual
+        - GreaterThanOrEqual
+    ForgotPasswordRequest:
+      required:
+        - email
+      type: object
+      properties:
+        email:
+          type: string
+    HttpValidationProblemDetails:
+      type: object
+      properties:
+        type:
+          type: string
+          nullable: true
+        title:
+          type: string
+          nullable: true
+        status:
+          type: integer
+          format: int32
+          nullable: true
+        detail:
+          type: string
+          nullable: true
+        instance:
+          type: string
+          nullable: true
+        errors:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+    InfoRequest:
+      type: object
+      properties:
+        newEmail:
+          type: string
+          nullable: true
+        newPassword:
+          type: string
+          nullable: true
+        oldPassword:
+          type: string
+          nullable: true
+    InfoResponse:
+      required:
+        - email
+        - isEmailConfirmed
+      type: object
+      properties:
+        email:
+          type: string
+        isEmailConfirmed:
+          type: boolean
+    LeaderboardEntryDto:
+      type: object
+      properties:
+        position:
+          type: integer
+          format: int32
+        fullName:
+          type: string
+        productName:
+          type: string
+        amount:
+          type: integer
+          format: int32
+    LoginRequest:
+      required:
+        - userName
+        - password
+      type: object
+      properties:
+        userName:
+          type: string
+        password:
+          type: string
+        twoFactorCode:
+          type: string
+          nullable: true
+        twoFactorRecoveryCode:
+          type: string
+          nullable: true
+    OrderSubmitDto:
+      required:
+        - amount
+      type: object
+      properties:
+        products:
+          minItems: 1
+          type: array
+          items:
+            type: string
+            format: uuid
+        users:
+          minItems: 1
+          type: array
+          items:
+            type: string
+            format: uuid
+        amount:
+          type: integer
+          format: int32
+        split:
+          type: boolean
+      nullable: true
+    ProductCreateDto:
+      required:
+        - name
+        - price
+        - stock
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        price:
+          type: number
+          format: double
+        stock:
+          type: integer
+          format: int32
+      nullable: true
+    ProductDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        price:
+          type: number
+          format: double
+        stock:
+          type: integer
+          format: int32
+    ProductUpdateDto:
+      required:
+        - id
+        - name
+        - price
+        - stock
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        price:
+          type: number
+          format: double
+        stock:
+          type: integer
+          format: int32
+    RefreshRequest:
+      required:
+        - refreshToken
+      type: object
+      properties:
+        refreshToken:
+          type: string
+    RegisterRequest:
+      required:
+        - email
+        - userName
+        - password
+      type: object
+      properties:
+        email:
+          type: string
+        userName:
+          type: string
+        password:
+          type: string
+    ResendConfirmationEmailRequest:
+      required:
+        - email
+      type: object
+      properties:
+        email:
+          type: string
+    ResetPasswordRequest:
+      required:
+        - email
+        - resetCode
+        - newPassword
+      type: object
+      properties:
+        email:
+          type: string
+        resetCode:
+          type: string
+        newPassword:
+          type: string
+    TopUpCreateDto:
+      required:
+        - userName
+      type: object
+      properties:
+        userName:
+          type: string
+        saldo:
+          minimum: 1
+          type: number
+          format: double
+      nullable: true
+    TopUpDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        userName:
+          type: string
+          nullable: true
+        saldo:
+          type: number
+          format: double
+    TwoFactorRequest:
+      type: object
+      properties:
+        enable:
+          type: boolean
+          nullable: true
+        twoFactorCode:
+          type: string
+          nullable: true
+        resetSharedKey:
+          type: boolean
+        resetRecoveryCodes:
+          type: boolean
+        forgetMachine:
+          type: boolean
+    TwoFactorResponse:
+      required:
+        - sharedKey
+        - recoveryCodesLeft
+        - isTwoFactorEnabled
+        - isMachineRemembered
+      type: object
+      properties:
+        sharedKey:
+          type: string
+        recoveryCodesLeft:
+          type: integer
+          format: int32
+        recoveryCodes:
+          type: array
+          items:
+            type: string
+          nullable: true
+        isTwoFactorEnabled:
+          type: boolean
+        isMachineRemembered:
+          type: boolean
+tags:
+  - name: SSSKLv2
+  - name: Achievement
+  - name: Announcement
+  - name: ApplicationUser
+  - name: Order
+  - name: Product
+  - name: TopUp

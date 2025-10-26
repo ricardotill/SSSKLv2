@@ -18,7 +18,8 @@ async function onSubmit() {
   try {
     await login({ userName: userName.value, password: password.value })
     navigateTo('/')
-  } catch (err) {
+  }
+  catch (err) {
     let msg = 'Inloggen mislukt'
     // attempt to read common error shapes safely
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -31,7 +32,8 @@ async function onSubmit() {
     // @ts-ignore
     else if (err?.message) msg = err.message
     error.value = msg
-  } finally {
+  }
+  finally {
     loading.value = false
   }
 }
@@ -39,7 +41,10 @@ async function onSubmit() {
 
 <template>
   <UForm @submit.prevent="onSubmit">
-    <UCard class="max-w-md mx-auto mt-12 p-4" variant="subtle">
+    <UCard
+      class="max-w-md mx-auto mt-12 p-4"
+      variant="subtle"
+    >
       <template #header>
         <div class="flex items-center gap-3">
           <UButton
@@ -51,23 +56,50 @@ async function onSubmit() {
             aria-label="Terug"
             :to="{ name: 'index' }"
           />
-          <h1 class="text-xl font-semibold">Inloggen</h1>
+          <h1 class="text-xl font-semibold">
+            Inloggen
+          </h1>
         </div>
       </template>
 
       <div class="mb-4">
-        <UFormField name="w-auto" label="Gebruikersnaam" size="xl">
-          <UInput id="userName" v-model="userName" class="w-full" type="text" placeholder="Gebruikersnaam" />
+        <UFormField
+          name="w-auto"
+          label="Gebruikersnaam"
+          size="xl"
+        >
+          <UInput
+            id="userName"
+            v-model="userName"
+            class="w-full"
+            type="text"
+            placeholder="Gebruikersnaam"
+          />
         </UFormField>
       </div>
 
       <div class="mb-4">
-        <UFormField name="password" label="Wachtwoord" size="xl">
-          <UInput id="password" v-model="password" class="w-full" type="password" placeholder="Wachtwoord" />
+        <UFormField
+          name="password"
+          label="Wachtwoord"
+          size="xl"
+        >
+          <UInput
+            id="password"
+            v-model="password"
+            class="w-full"
+            type="password"
+            placeholder="Wachtwoord"
+          />
         </UFormField>
       </div>
 
-      <div v-if="error" class="text-red-600">{{ error }}</div>
+      <div
+        v-if="error"
+        class="text-red-600"
+      >
+        {{ error }}
+      </div>
 
       <template #footer>
         <div class="flex justify-end">
@@ -79,7 +111,14 @@ async function onSubmit() {
             type="button"
             :to="{ name: 'register' }"
           />
-          <UButton class="justify-end" type="submit" :loading="loading" loading-icon="i-lucide-loader" label="Inloggen" color="primary" />
+          <UButton
+            class="justify-end"
+            type="submit"
+            :loading="loading"
+            loading-icon="i-lucide-loader"
+            label="Inloggen"
+            color="primary"
+          />
         </div>
       </template>
     </UCard>

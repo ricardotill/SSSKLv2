@@ -8,14 +8,14 @@ import { useAuth } from '~/composables/useAuth'
 const props = defineProps({
   // accept full NavigationMenuItem so callers can set `active`, `icon`, `badge`, etc.
   items: { type: Array as PropType<NavigationMenuItem[]>, default: () => [] },
-  open: { type: Boolean, default: false }
+  open: { type: Boolean, default: false },
 })
 
 const emit = defineEmits(['close', 'update:open'] as const)
 
 const localOpen = computed({
   get: () => props.open,
-  set: (v: boolean) => emit('update:open', v)
+  set: (v: boolean) => emit('update:open', v),
 })
 
 // pass-through items (UNavigationMenu expects NavigationMenuItem[])
@@ -50,14 +50,32 @@ function onLogout() {
 </script>
 
 <template>
-  <UDashboardSidebar v-model:open="localOpen" :toggle="{ color: 'neutral', variant: 'ghost' }" :ui="{ header: 'px-4 py-3', body: 'px-2 py-3', footer: 'px-4 py-3' }">
+  <UDashboardSidebar
+    v-model:open="localOpen"
+    :toggle="{ color: 'neutral', variant: 'ghost' }"
+    :ui="{ header: 'px-4 py-3', body: 'px-2 py-3', footer: 'px-4 py-3' }"
+  >
     <template #header="{ collapsed }">
-        <h2 v-if="!collapsed" class="text-lg font-semibold">SSSKL </h2>
-        <UBadge label="v2" :variant="'subtle'" color="primary" />
+      <h2
+        v-if="!collapsed"
+        class="text-lg font-semibold"
+      >
+        SSSKL
+      </h2>
+      <UBadge
+        label="v2"
+        :variant="'subtle'"
+        color="primary"
+      />
     </template>
     <template #default="{ collapsed }">
       <!-- Pass props.items directly to avoid computed/ref wrapper interfering with UNavigationMenu navigation -->
-      <UNavigationMenu class="mt-2" :items="props.items" :collapsed="collapsed" orientation="vertical" />
+      <UNavigationMenu
+        class="mt-2"
+        :items="props.items"
+        :collapsed="collapsed"
+        orientation="vertical"
+      />
     </template>
 
     <template #footer="{ collapsed }">
@@ -82,16 +100,16 @@ function onLogout() {
           />
         </template>
         <template v-else>
-            <UButton
-                label="Login"
-                color="primary"
-                variant="solid"
-                class="w-full"
-                :block="collapsed"
-                :to="{ name: 'login' }"
-            />
+          <UButton
+            label="Login"
+            color="primary"
+            variant="solid"
+            class="w-full"
+            :block="collapsed"
+            :to="{ name: 'login' }"
+          />
         </template>
-        </div>
+      </div>
     </template>
   </UDashboardSidebar>
 </template>

@@ -18,12 +18,12 @@ const baseMenu = [
   { label: 'Bestellen', to: '/bestellen', icon: 'i-lucide-shopping-cart' },
   { label: 'Geschiedenis', to: '/geschiedenis', icon: 'i-lucide-clock' },
   { label: 'Achievements', to: '/achievements', icon: 'i-lucide-award' },
-  { label: 'Gebruikers', to: '/gebruikers', icon: 'i-lucide-users' }
+  { label: 'Gebruikers', to: '/gebruikers', icon: 'i-lucide-users' },
 ]
 
 const menuItems = computed(() => baseMenu.map(i => ({
   ...i,
-  active: route.path === i.to
+  active: route.path === i.to,
 })))
 
 const activeTitle = computed(() => {
@@ -34,24 +34,35 @@ const activeTitle = computed(() => {
 
 <template>
   <UDashboardGroup>
-    <Sidebar v-model:open="open" :items="menuItems" />
+    <Sidebar
+      v-model:open="open"
+      :items="menuItems"
+    />
 
     <UDashboardPanel>
       <template #header>
-          <UDashboardNavbar :title="activeTitle">
+        <UDashboardNavbar :title="activeTitle">
           <template #right>
-            <CreditView v-if="isUserAvailable" :credit="user?.saldo ?? 0" />
-            <UButton v-else color="primary" variant="solid" :to="{ name: 'login' }" label="Inloggen" />
+            <CreditView
+              v-if="isUserAvailable"
+              :credit="user?.saldo ?? 0"
+            />
+            <UButton
+              v-else
+              color="primary"
+              variant="solid"
+              :to="{ name: 'login' }"
+              label="Inloggen"
+            />
           </template>
         </UDashboardNavbar>
       </template>
 
       <template #body>
-        <main class="p-4">
-            <slot />
+        <main class="">
+          <slot />
         </main>
       </template>
-      
     </UDashboardPanel>
   </UDashboardGroup>
 </template>

@@ -152,6 +152,18 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AccessTokenResponse"
+  /api/v1/identity/logout:
+    post:
+      tags:
+        - SSSKLv2
+      parameters:
+        - name: useCookies
+          in: query
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: OK
   /api/v1/identity/refresh:
     post:
       tags:
@@ -1707,12 +1719,18 @@ components:
       required:
         - email
         - userName
+        - name
+        - surname
         - password
       type: object
       properties:
         email:
           type: string
         userName:
+          type: string
+        name:
+          type: string
+        surname:
           type: string
         password:
           type: string

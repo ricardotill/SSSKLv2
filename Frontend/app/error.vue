@@ -7,13 +7,13 @@ defineProps<{
 
 useSeoMeta({
   title: 'Page not found',
-  description: 'We are sorry but this page could not be found.'
+  description: 'We are sorry but this page could not be found.',
 })
 
 useHead({
   htmlAttrs: {
-    lang: 'en'
-  }
+    lang: 'en',
+  },
 })
 </script>
 

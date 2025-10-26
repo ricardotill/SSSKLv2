@@ -188,7 +188,8 @@ public class ApplicationUserController : ControllerBase
         }
     }
 
-    // PUT v1/applicationuser/{id} - update user (Admin or owner)
+    // PUT v1/applicationuser/{id} - update user (Admin only)
+    [Authorize(Roles = "Admin")]
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(string id, [FromBody] ApplicationUserUpdateDto? dto)
     {
@@ -199,15 +200,6 @@ public class ApplicationUserController : ControllerBase
         {
             // Fetch existing first so NotFound from the service is returned when appropriate
             var existing = await _applicationUserService.GetUserById(id);
-
-            var username = User.Identity?.Name;
-            if (string.IsNullOrWhiteSpace(username)) return Unauthorized();
-
-            var isAdmin = User.IsInRole("Admin");
-            if (!isAdmin && existing.UserName != username)
-            {
-                return Forbid();
-            }
 
             var updated = await _applicationUserService.UpdateUser(id, dto);
             return Ok(MapToDetailedDto(updated));
@@ -220,6 +212,43 @@ public class ApplicationUserController : ControllerBase
         {
             // user manager errors surfaced as InvalidOperationException in service
             _logger.LogWarning(ex, "Failed to update user {Id}", id);
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    // PUT v1/applicationuser/me - update current user (only phone, name, surname)
+    [HttpPut("me")]
+    public async Task<IActionResult> UpdateMe([FromBody] ApplicationUserSelfUpdateDto? dto)
+    {
+        if (dto == null) return BadRequest();
+
+        var username = User.Identity?.Name;
+        if (string.IsNullOrWhiteSpace(username)) return Unauthorized();
+
+        try
+        {
+            // Resolve current user
+            var existing = await _applicationUserService.GetUserByUsername(username);
+
+            // Map allowed fields to the existing update DTO and call the same service method
+            var updateDto = new ApplicationUserUpdateDto
+            {
+                Id = existing.Id,
+                PhoneNumber = dto.PhoneNumber,
+                Name = dto.Name,
+                Surname = dto.Surname
+            };
+
+            var updated = await _applicationUserService.UpdateUser(existing.Id, updateDto);
+            return Ok(MapToDetailedDto(updated));
+        }
+        catch (NotFoundException)
+        {
+            return NotFound();
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(ex, "Failed to update current user {Username}", username);
             return BadRequest(new { error = ex.Message });
         }
     }

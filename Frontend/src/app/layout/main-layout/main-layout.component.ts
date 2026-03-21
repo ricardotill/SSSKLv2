@@ -1,0 +1,51 @@
+import { Component, ChangeDetectionStrategy, signal } from '@angular/core';
+import { RouterOutlet } from '@angular/router';
+import { SidebarComponent } from '../sidebar/sidebar.component';
+import { HeaderComponent } from '../header/header.component';
+
+@Component({
+  selector: 'app-main-layout',
+  imports: [RouterOutlet, SidebarComponent, HeaderComponent],
+  template: `
+    <div class="layout-container bg-surface-50 dark:bg-surface-950">
+      <app-sidebar [isOpen]="isSidebarOpen()" (close)="isSidebarOpen.set(false)" />
+      <div class="main-wrapper">
+        <app-header [isSidebarOpen]="isSidebarOpen()" (menuToggled)="toggleSidebar()" />
+        <main class="content-area">
+          <router-outlet />
+        </main>
+      </div>
+    </div>
+  `,
+  styles: `
+    .layout-container {
+      display: flex;
+      min-height: 100vh;
+      position: relative;
+    }
+    .main-wrapper {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0; /* Prevents flex flex-child from overflowing */
+    }
+    .content-area {
+      flex: 1;
+      padding: 2rem;
+      overflow-y: auto;
+    }
+    @media (max-width: 768px) {
+      .content-area {
+        padding: 1rem;
+      }
+    }
+  `,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export default class MainLayoutComponent {
+  isSidebarOpen = signal(false);
+
+  toggleSidebar() {
+    this.isSidebarOpen.update(open => !open);
+  }
+}

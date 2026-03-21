@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NSubstitute;
@@ -18,6 +19,7 @@ namespace SSSKLv2.Test.Controllers;
 public class ApplicationUserControllerTests
 {
     private IApplicationUserService _mockService = null!;
+    private UserManager<ApplicationUser> _userManager = null!;
     private ApplicationUserController _sut = null!;
 
     [TestInitialize]
@@ -25,7 +27,20 @@ public class ApplicationUserControllerTests
     {
         _mockService = Substitute.For<IApplicationUserService>();
         var logger = Substitute.For<ILogger<ApplicationUserController>>();
-        _sut = new ApplicationUserController(_mockService, logger);
+
+        var userStore = Substitute.For<IUserStore<ApplicationUser>>();
+        _userManager = new UserManager<ApplicationUser>(
+            userStore,
+            null,
+            new PasswordHasher<ApplicationUser>(),
+            Array.Empty<IUserValidator<ApplicationUser>>(),
+            Array.Empty<IPasswordValidator<ApplicationUser>>(),
+            new UpperInvariantLookupNormalizer(),
+            new IdentityErrorDescriber(),
+            null,
+            Substitute.For<ILogger<UserManager<ApplicationUser>>>());
+
+        _sut = new ApplicationUserController(_mockService, logger, _userManager);
     }
 
     [TestMethod]

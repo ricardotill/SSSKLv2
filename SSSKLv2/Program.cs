@@ -8,6 +8,7 @@ using System.Globalization;
 using Azure.Identity;
 using Blazored.Toast;
 using FluentValidation;
+using Microsoft.AspNetCore.Authentication.BearerToken;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Azure.SignalR.Common;
 using Microsoft.Extensions.Azure;
@@ -68,12 +69,28 @@ builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuth
 
 builder.Services.AddHealthChecks();
 
-builder.Services.AddAuthentication(options =>
+var authBuilder = builder.Services.AddAuthentication(options =>
 {
-    options.DefaultScheme = IdentityConstants.ApplicationScheme;
+    // Policy scheme as default: forwards to bearer when an Authorization header is present,
+    // otherwise falls back to the Identity cookie handler.
+    options.DefaultScheme = "BearerOrCookie";
     options.DefaultSignInScheme = IdentityConstants.ExternalScheme;
-})
-.AddIdentityCookies();
+});
+
+authBuilder.AddIdentityCookies();
+authBuilder.AddBearerToken(IdentityConstants.BearerScheme);
+
+// Inspect the Authorization header at runtime to pick the correct handler.
+authBuilder.AddPolicyScheme("BearerOrCookie", "Bearer or Cookie", options =>
+{
+    options.ForwardDefaultSelector = context =>
+    {
+        string? authorization = context.Request.Headers.Authorization;
+        if (authorization?.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase) == true)
+            return IdentityConstants.BearerScheme;
+        return IdentityConstants.ApplicationScheme;
+    };
+});
 
 // Configure application and identity-related cookies to be HttpOnly and use a secure policy.
 builder.Services.ConfigureApplicationCookie(options =>
@@ -85,6 +102,28 @@ builder.Services.ConfigureApplicationCookie(options =>
         ? CookieSecurePolicy.SameAsRequest
         : CookieSecurePolicy.Always;
     options.Cookie.SameSite = SameSiteMode.Lax;
+
+    // For API paths, return 401/403 instead of redirecting to the login page.
+    options.Events.OnRedirectToLogin = context =>
+    {
+        if (context.Request.Path.StartsWithSegments("/api"))
+        {
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            return Task.CompletedTask;
+        }
+        context.Response.Redirect(context.RedirectUri);
+        return Task.CompletedTask;
+    };
+    options.Events.OnRedirectToAccessDenied = context =>
+    {
+        if (context.Request.Path.StartsWithSegments("/api"))
+        {
+            context.Response.StatusCode = StatusCodes.Status403Forbidden;
+            return Task.CompletedTask;
+        }
+        context.Response.Redirect(context.RedirectUri);
+        return Task.CompletedTask;
+    };
 });
 
 // External and two-factor cookies should also be HttpOnly and secure.
@@ -107,7 +146,7 @@ builder.Services.AddAuthorization(options =>
 
 builder.Logging.AddFilter<ApplicationInsightsLoggerProvider>("SSSKLv2", LogLevel.Trace);
 
-// Allow local frontend dev servers to access the API (needed in dev to avoid CORS errors when calling Identity endpoints)
+// Register a CORS policy for frontend clients (applied only outside Development).
 var frontendOrigins = new[]
 {
     "http://localhost:3000",
@@ -324,8 +363,11 @@ app.UseStaticFiles();
 // Apply cookie policy before authentication so cookie flags are enforced.
 app.UseCookiePolicy();
 
-// Apply CORS policy for frontend during development so client can call APIs with credentials (cookies)
-app.UseCors("AllowLocalFrontend");
+// Disable CORS in Development.
+if (!app.Environment.IsDevelopment())
+{
+    app.UseCors("AllowLocalFrontend");
+}
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapStaticAssets();

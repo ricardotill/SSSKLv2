@@ -5,6 +5,8 @@ using SSSKLv2.Data;
 using SSSKLv2.Dto;
 using SSSKLv2.Data.DAL.Exceptions;
 using SSSKLv2.Dto.Api.v1;
+using Microsoft.AspNetCore.Identity;
+using System.Text.Json;
 
 namespace SSSKLv2.Controllers.v1;
 
@@ -15,11 +17,13 @@ public class ApplicationUserController : ControllerBase
 {
     private readonly IApplicationUserService _applicationUserService;
     private readonly ILogger<ApplicationUserController> _logger;
+    private readonly UserManager<ApplicationUser> _userManager;
 
-    public ApplicationUserController(IApplicationUserService applicationUserService, ILogger<ApplicationUserController> logger)
+    public ApplicationUserController(IApplicationUserService applicationUserService, ILogger<ApplicationUserController> logger, UserManager<ApplicationUser> userManager)
     {
         _applicationUserService = applicationUserService;
         _logger = logger;
+        _userManager = userManager;
     }
 
     private static ApplicationUserDto MapToDto(ApplicationUser u) => new ApplicationUserDto
@@ -188,6 +192,42 @@ public class ApplicationUserController : ControllerBase
         }
     }
 
+    // GET v1/applicationuser/me/personaldata - download personal data annotated with [PersonalData]
+    [HttpPost("me/personaldata")]
+    public async Task<IActionResult> DownloadPersonalData()
+    {
+        var user = await _userManager.GetUserAsync(User);
+        if (user is null)
+        {
+            return NotFound($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
+        }
+
+        var userId = await _userManager.GetUserIdAsync(user);
+        _logger.LogInformation("User with ID '{UserId}' requested personal data.", userId);
+
+        var personalData = new Dictionary<string, string>();
+        var personalDataProps = typeof(ApplicationUser).GetProperties().Where(
+            prop => Attribute.IsDefined(prop, typeof(PersonalDataAttribute)));
+
+        foreach (var p in personalDataProps)
+        {
+            personalData.Add(p.Name, p.GetValue(user)?.ToString() ?? "null");
+        }
+
+        var logins = await _userManager.GetLoginsAsync(user);
+        foreach (var l in logins)
+        {
+            personalData.Add($"{l.LoginProvider} external login provider key", l.ProviderKey);
+        }
+
+        personalData.Add("Authenticator Key", (await _userManager.GetAuthenticatorKeyAsync(user)) ?? "null");
+
+        var fileBytes = JsonSerializer.SerializeToUtf8Bytes(personalData);
+
+        Response.Headers.TryAdd("Content-Disposition", "attachment; filename=PersonalData.json");
+        return File(fileBytes, contentType: "application/json", fileDownloadName: "PersonalData.json");
+    }
+
     // PUT v1/applicationuser/{id} - update user (Admin only)
     [Authorize(Roles = "Admin")]
     [HttpPut("{id}")]
@@ -199,7 +239,7 @@ public class ApplicationUserController : ControllerBase
         try
         {
             // Fetch existing first so NotFound from the service is returned when appropriate
-            var existing = await _applicationUserService.GetUserById(id);
+            _ = await _applicationUserService.GetUserById(id);
 
             var updated = await _applicationUserService.UpdateUser(id, dto);
             return Ok(MapToDetailedDto(updated));

@@ -24,6 +24,7 @@ export interface ApplicationUserDetailedDto {
     saldo: number;
     lastOrdered: string;
     profilePictureBase64: string | null;
+    roles: string[];
 }
 
 @Injectable({
@@ -111,6 +112,12 @@ export class AuthService {
         return this.http.get<ApplicationUserDetailedDto>(`${this.USER_API_URL}/me`).pipe(
             tap(user => this.currentUserSignal.set(user))
         );
+    }
+
+    refreshCurrentUser(): void {
+        this.fetchCurrentUser().subscribe({
+            error: (err) => console.error('Failed to refresh user:', err)
+        });
     }
 
     getAccessToken(): string | null {

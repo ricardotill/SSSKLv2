@@ -243,6 +243,14 @@ public class ApplicationUserService(
         return updated ?? user;
     }
 
+    public async Task<IList<string>> GetUserRoles(string userId)
+    {
+        logger.LogInformation("{GetType}: Get roles for user with ID {UserId}", GetType(), userId);
+        var user = await userManager.FindByIdAsync(userId);
+        if (user == null) throw new Data.DAL.Exceptions.NotFoundException("ApplicationUser not found");
+        return await userManager.GetRolesAsync(user);
+    }
+
     private static IEnumerable<LeaderboardEntryDto> DeterminePositions(IEnumerable<LeaderboardEntryDto> leaderboard)
     {
         var list = leaderboard

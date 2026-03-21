@@ -1,9 +1,10 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
+using SSSKLv2.Components.Account;
 using SSSKLv2.Services.Interfaces;
 using SSSKLv2.Data;
 using SSSKLv2.Data.DAL.Exceptions;
-using Microsoft.EntityFrameworkCore;
 using SSSKLv2.Dto.Api.v1;
 
 namespace SSSKLv2.Controllers.v1;
@@ -167,11 +168,36 @@ public class OrderController : ControllerBase
     }
 
     // DELETE v1/order/{id}
-    [Authorize(Roles = "Admin")]
+    // Admins can delete any order; non-admin users can only delete their own orders.
+    [Authorize]
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id)
     {
-        _logger.LogInformation("{Controller}: Delete order {Id}", nameof(OrderController), id);
+        var userId = User.FindFirstValue(IdentityClaim.Id.ToString())
+            ?? User.FindFirstValue(ClaimTypes.NameIdentifier)
+            ?? User.FindFirstValue("sub");
+        var isAdmin = User.IsInRole("Admin");
+
+        _logger.LogInformation("{Controller}: Delete order {Id} requested by userId {UserId} (admin={IsAdmin})", nameof(OrderController), id, userId, isAdmin);
+
+        if (!isAdmin)
+        {
+            if (string.IsNullOrWhiteSpace(userId)) return Unauthorized();
+
+            try
+            {
+                var order = await _orderService.GetOrderById(id);
+                if (!string.Equals(order.User?.Id, userId, StringComparison.OrdinalIgnoreCase))
+                {
+                    return Forbid();
+                }
+            }
+            catch (NotFoundException)
+            {
+                return NotFound();
+            }
+        }
+
         try
         {
             await _orderService.DeleteOrder(id);

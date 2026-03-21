@@ -38,6 +38,20 @@ import { AuthService } from '../../core/auth/auth.service';
             </div>
             <span class="font-medium">Logout</span>
           </a>
+        } @else {
+          <a class="flex items-center gap-3 px-6 py-3 cursor-pointer hover:bg-surface-700 transition-colors" [routerLink]="['/login']" style="text-decoration: none; color: var(--p-primary-color, #3b82f6);">
+            <div class="w-8 h-8 flex items-center justify-center">
+              <i class="pi pi-sign-in text-lg"></i>
+            </div>
+            <span class="font-medium">Login</span>
+          </a>
+          
+          <a class="flex items-center gap-3 px-6 py-3 cursor-pointer text-surface-200 hover:text-white hover:bg-surface-700 transition-colors" [routerLink]="['/register']" style="text-decoration: none;">
+            <div class="w-8 h-8 flex items-center justify-center">
+              <i class="pi pi-user-plus text-lg"></i>
+            </div>
+            <span class="font-medium">Register</span>
+          </a>
         }
       </div>
     </aside>
@@ -130,7 +144,8 @@ export class SidebarComponent {
 
     if (this.authService.isAuthenticated()) {
       baseItems.push(
-        { label: 'Bestellen', icon: 'pi pi-shopping-cart', routerLink: '/orders' },
+        { label: 'Bestellen', icon: 'pi pi-shopping-cart', routerLink: '/pos' },
+        { label: 'My Orders', icon: 'pi pi-history', routerLink: '/orders/personal' },
         { label: 'Users', icon: 'pi pi-users', routerLink: '/users' },
         { label: 'Products', icon: 'pi pi-box', routerLink: '/products' },
         { label: 'Announcements', icon: 'pi pi-bullhorn', routerLink: '/announcements' },

@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { OrderInitializeDto, OrderSubmitDto } from '../models/order.model';
+import { OrderDto, OrderInitializeDto, OrderSubmitDto, PaginatedOrders } from '../models/order.model';
 
 @Injectable({
   providedIn: 'root'
@@ -16,5 +16,15 @@ export class OrderService {
 
   submit(order: OrderSubmitDto): Observable<void> {
     return this.http.post<void>(this.API_URL, order);
+  }
+
+  getPersonalOrders(skip: number = 0, take: number = 15): Observable<PaginatedOrders> {
+    return this.http.get<PaginatedOrders>(`${this.API_URL}/personal`, {
+      params: { skip, take }
+    });
+  }
+
+  deleteOrder(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.API_URL}/${id}`);
   }
 }

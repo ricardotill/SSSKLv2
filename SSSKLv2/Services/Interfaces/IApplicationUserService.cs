@@ -18,5 +18,6 @@ public interface IApplicationUserService
     public Task<IEnumerable<LeaderboardEntryDto>> Get12HourlyLiveLeaderboard(Guid productId);
     // Update an existing user with values from the DTO. Returns the updated ApplicationUser.
     public Task<ApplicationUser> UpdateUser(string id, SSSKLv2.Dto.Api.v1.ApplicationUserUpdateDto dto);
-
+    // Returns the list of roles assigned to the user with the given id.
+    public Task<IList<string>> GetUserRoles(string userId);
 }

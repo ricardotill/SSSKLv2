@@ -1,6 +1,6 @@
 import { Component, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../core/auth/auth.service';
 import { InputTextModule } from 'primeng/inputtext';
 import { PasswordModule } from 'primeng/password';
@@ -21,16 +21,26 @@ import { CheckboxModule } from 'primeng/checkbox';
     CardModule,
     MessageModule,
     TagModule,
-    CheckboxModule
+    CheckboxModule,
+    RouterModule
   ],
   template: `
     <div class="login-wrapper">
       <p-card class="login-card">
         <ng-template #header>
-          <div class="flex items-center p-5 pb-0">
-            <h2 class="text-xl font-bold m-0">SSSKL</h2> <p-tag class="ml-2" value="v2" />
+          <div class="flex items-center justify-between p-5 pb-0">
+            <div class="flex items-center">
+              <h2 class="text-xl font-bold m-0">SSSKL</h2> <p-tag class="ml-2" value="v2" />
+            </div>
+            <p-button icon="pi pi-arrow-left" label="Back" [text]="true" routerLink="/" severity="secondary" size="small"></p-button>
           </div>
         </ng-template>
+
+        <div class="mb-5">
+          <h3 class="text-xl font-medium mt-0 mb-3 text-surface-900 dark:text-surface-0">Login</h3>  
+          <p class="text-surface-500 m-0">Don't have an account? <a routerLink="/register" class="text-primary hover:underline cursor-pointer">Register</a></p>
+        </div>
+
         <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
           
           <div class="field">
@@ -143,7 +153,7 @@ export default class LoginComponent {
       userName: this.loginForm.value.userName,
       password: this.loginForm.value.password
     };
-    
+
     const rememberMe = this.loginForm.value.rememberMe ?? false;
 
     this.authService.login(credentials, rememberMe).subscribe({

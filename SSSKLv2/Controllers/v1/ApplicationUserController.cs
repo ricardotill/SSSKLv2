@@ -36,7 +36,7 @@ public class ApplicationUserController : ControllerBase
     };
 
     // New: map to the more detailed DTO (does NOT include password)
-    private static ApplicationUserDetailedDto MapToDetailedDto(ApplicationUser u) => new ApplicationUserDetailedDto
+    private static ApplicationUserDetailedDto MapToDetailedDto(ApplicationUser u, IList<string> roles) => new ApplicationUserDetailedDto
     {
         Id = u.Id,
         UserName = u.UserName ?? string.Empty,
@@ -49,7 +49,8 @@ public class ApplicationUserController : ControllerBase
         FullName = u.FullName,
         Saldo = u.Saldo,
         LastOrdered = u.LastOrdered,
-        ProfilePictureBase64 = u.ProfilePicture != null ? Convert.ToBase64String(u.ProfilePicture) : null
+        ProfilePictureBase64 = u.ProfilePicture != null ? Convert.ToBase64String(u.ProfilePicture) : null,
+        Roles = roles
     };
 
     [Authorize(Roles = "Admin")]
@@ -77,7 +78,8 @@ public class ApplicationUserController : ControllerBase
         try
         {
             var user = await _applicationUserService.GetUserById(id);
-            return Ok(MapToDetailedDto(user));
+            var roles = await _applicationUserService.GetUserRoles(user.Id);
+            return Ok(MapToDetailedDto(user, roles));
         }
         catch (NotFoundException)
         {
@@ -93,7 +95,8 @@ public class ApplicationUserController : ControllerBase
         try
         {
             var user = await _applicationUserService.GetUserByUsername(username);
-            return Ok(MapToDetailedDto(user));
+            var roles = await _applicationUserService.GetUserRoles(user.Id);
+            return Ok(MapToDetailedDto(user, roles));
         }
         catch (NotFoundException)
         {
@@ -184,7 +187,8 @@ public class ApplicationUserController : ControllerBase
         try
         {
             var user = await _applicationUserService.GetUserByUsername(username);
-            return Ok(MapToDetailedDto(user));
+            var roles = await _applicationUserService.GetUserRoles(user.Id);
+            return Ok(MapToDetailedDto(user, roles));
         }
         catch (NotFoundException)
         {
@@ -239,10 +243,18 @@ public class ApplicationUserController : ControllerBase
         try
         {
             // Fetch existing first so NotFound from the service is returned when appropriate
-            _ = await _applicationUserService.GetUserById(id);
+            var existing = await _applicationUserService.GetUserById(id);
+
+            // Keep explicit owner/admin guard so direct action calls (unit tests) enforce authorization consistently.
+            var currentUsername = User.Identity?.Name;
+            var isAdmin = User.IsInRole("Admin");
+            var isOwner = !string.IsNullOrWhiteSpace(currentUsername) &&
+                          string.Equals(currentUsername, existing.UserName, StringComparison.OrdinalIgnoreCase);
+            if (!isAdmin && !isOwner) return Forbid();
 
             var updated = await _applicationUserService.UpdateUser(id, dto);
-            return Ok(MapToDetailedDto(updated));
+            var roles = await _applicationUserService.GetUserRoles(updated.Id);
+            return Ok(MapToDetailedDto(updated, roles));
         }
         catch (NotFoundException)
         {
@@ -280,7 +292,8 @@ public class ApplicationUserController : ControllerBase
             };
 
             var updated = await _applicationUserService.UpdateUser(existing.Id, updateDto);
-            return Ok(MapToDetailedDto(updated));
+            var roles = await _applicationUserService.GetUserRoles(updated.Id);
+            return Ok(MapToDetailedDto(updated, roles));
         }
         catch (NotFoundException)
         {

@@ -12,3 +12,19 @@ export interface OrderInitializeDto {
   users?: ApplicationUserDto[];
   products?: ProductDto[];
 }
+
+export interface OrderDto {
+  id: string;
+  createdOn: string;
+  productId?: string;
+  productName: string;
+  userId?: string;
+  userFullName: string;
+  amount: number;
+  paid: number;
+}
+
+export interface PaginatedOrders {
+  items: OrderDto[];
+  totalCount: number;
+}

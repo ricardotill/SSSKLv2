@@ -1,11 +1,19 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/auth/auth.guard';
+import { unauthGuard } from './core/auth/unauth.guard'; // Assume I will create this snippet
 
 export const routes: Routes = [
   {
     path: 'login',
     loadComponent: () => import('./features/auth/login.component'),
+    canActivate: [unauthGuard],
     title: 'Login - SSSKLv2'
+  },
+  {
+    path: 'register',
+    loadComponent: () => import('./features/auth/register.component'),
+    canActivate: [unauthGuard],
+    title: 'Register - SSSKLv2'
   },
   {
     path: '',
@@ -29,10 +37,10 @@ export const routes: Routes = [
         title: 'Products - Admin Panel'
       },
       {
-        path: 'orders',
-        loadComponent: () => import('./features/orders/orders.component'),
+        path: 'pos',
+        loadComponent: () => import('./features/pos/pos.component'),
         canActivate: [authGuard],
-        title: 'Orders - Admin Panel'
+        title: 'Bestellen - Admin Panel'
       },
       {
         path: 'announcements',
@@ -57,6 +65,17 @@ export const routes: Routes = [
         loadComponent: () => import('./features/settings/settings.component'),
         canActivate: [authGuard],
         title: 'Settings - Admin Panel'
+      },
+      {
+        path: 'orders',
+        canActivate: [authGuard],
+        children: [
+          {
+            path: 'personal',
+            loadComponent: () => import('./features/orders/personal-orders.component'),
+            title: 'My Orders'
+          }
+        ]
       }
     ]
   },

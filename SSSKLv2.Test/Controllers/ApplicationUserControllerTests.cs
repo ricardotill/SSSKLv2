@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NSubstitute;
+using System.Text.Json;
 using SSSKLv2.Controllers.v1;
 using SSSKLv2.Data;
 using SSSKLv2.Dto;
@@ -230,6 +231,61 @@ public class ApplicationUserControllerTests
             ProfilePictureBase64 = null
         };
         result.Result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeEquivalentTo(expected);
+    }
+
+    [TestMethod]
+    public async Task DownloadPersonalData_DoesNotIncludeAuthenticatorKey()
+    {
+        var user = new ApplicationUser
+        {
+            Id = "u-personal",
+            UserName = "personal.user",
+            Name = "Personal",
+            Surname = "User",
+            Saldo = 12.34m
+        };
+
+        var userStore = Substitute.For<IUserStore<ApplicationUser>>();
+        var userManager = Substitute.For<UserManager<ApplicationUser>>(
+            userStore,
+            null,
+            new PasswordHasher<ApplicationUser>(),
+            Array.Empty<IUserValidator<ApplicationUser>>(),
+            Array.Empty<IPasswordValidator<ApplicationUser>>(),
+            new UpperInvariantLookupNormalizer(),
+            new IdentityErrorDescriber(),
+            null,
+            Substitute.For<ILogger<UserManager<ApplicationUser>>>());
+
+        userManager.GetUserAsync(Arg.Any<System.Security.Claims.ClaimsPrincipal>()).Returns(user);
+        userManager.GetUserIdAsync(user).Returns(user.Id);
+        var controller = new ApplicationUserController(_mockService, Substitute.For<ILogger<ApplicationUserController>>(), userManager)
+        {
+            ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext
+                {
+                    User = new System.Security.Claims.ClaimsPrincipal(new System.Security.Claims.ClaimsIdentity(new[]
+                    {
+                        new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.NameIdentifier, user.Id)
+                    }, "TestAuth"))
+                }
+            }
+        };
+
+        var result = await controller.DownloadPersonalData();
+
+        var fileResult = result.Should().BeOfType<FileContentResult>().Subject;
+        fileResult.FileDownloadName.Should().Be("PersonalData.json");
+        fileResult.ContentType.Should().Be("application/json");
+
+        var personalData = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(fileResult.FileContents);
+        personalData.Should().NotBeNull();
+        personalData!.Should().ContainKey(nameof(ApplicationUser.Name));
+        personalData.Should().ContainKey(nameof(ApplicationUser.Surname));
+        personalData.Should().NotContainKey("Authenticator Key");
+
+        _ = userManager.DidNotReceive().GetAuthenticatorKeyAsync(Arg.Any<ApplicationUser>());
     }
 
     [TestMethod]

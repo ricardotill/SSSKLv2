@@ -20,7 +20,8 @@ import { HeaderComponent } from '../header/header.component';
   styles: `
     .layout-container {
       display: flex;
-      min-height: 100vh;
+      height: 100vh;
+      overflow: hidden;
       position: relative;
     }
     .main-wrapper {

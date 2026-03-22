@@ -100,7 +100,6 @@ namespace Microsoft.AspNetCore.Routing
                     personalData.Add($"{l.LoginProvider} external login provider key", l.ProviderKey);
                 }
 
-                personalData.Add("Authenticator Key", (await userManager.GetAuthenticatorKeyAsync(user))!);
                 var fileBytes = JsonSerializer.SerializeToUtf8Bytes(personalData);
 
                 context.Response.Headers.TryAdd("Content-Disposition", "attachment; filename=PersonalData.json");

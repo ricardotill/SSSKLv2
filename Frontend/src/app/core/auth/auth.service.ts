@@ -27,6 +27,39 @@ export interface ApplicationUserDetailedDto {
     roles: string[];
 }
 
+export interface ApplicationUserSelfUpdateDto {
+    phoneNumber?: string | null;
+    name?: string | null;
+    surname?: string | null;
+}
+
+export interface InfoRequest {
+    newEmail?: string | null;
+    newPassword?: string | null;
+    oldPassword?: string | null;
+}
+
+export interface InfoResponse {
+    email: string;
+    isEmailConfirmed: boolean;
+}
+
+export interface TwoFactorRequest {
+    enable?: boolean | null;
+    twoFactorCode?: string | null;
+    resetSharedKey?: boolean;
+    resetRecoveryCodes?: boolean;
+    forgetMachine?: boolean;
+}
+
+export interface TwoFactorResponse {
+    sharedKey: string;
+    recoveryCodesLeft: number;
+    recoveryCodes: string[] | null;
+    isTwoFactorEnabled: boolean;
+    isMachineRemembered: boolean;
+}
+
 @Injectable({
     providedIn: 'root'
 })
@@ -60,7 +93,7 @@ export class AuthService {
         }
     }
 
-    login(credentials: any, rememberMe: boolean = false): Observable<AccessTokenResponse> {
+    login(credentials: { userName?: string, password?: string, twoFactorCode?: string, twoFactorRecoveryCode?: string }, rememberMe: boolean = false): Observable<AccessTokenResponse> {
         return this.http.post<AccessTokenResponse>(`${this.API_URL}/login`, credentials).pipe(
             tap(response => {
                 this.setTokens(response, rememberMe);
@@ -118,6 +151,28 @@ export class AuthService {
         this.fetchCurrentUser().subscribe({
             error: (err) => console.error('Failed to refresh user:', err)
         });
+    }
+
+    updateMe(data: ApplicationUserSelfUpdateDto): Observable<any> {
+        return this.http.put(`${this.USER_API_URL}/me`, data).pipe(
+            tap(() => this.refreshCurrentUser())
+        );
+    }
+
+    getIdentityInfo(): Observable<InfoResponse> {
+        return this.http.get<InfoResponse>(`${this.API_URL}/manage/info`);
+    }
+
+    updateIdentityInfo(data: InfoRequest): Observable<InfoResponse> {
+        return this.http.post<InfoResponse>(`${this.API_URL}/manage/info`, data);
+    }
+
+    manage2fa(data: TwoFactorRequest): Observable<TwoFactorResponse> {
+        return this.http.post<TwoFactorResponse>(`${this.API_URL}/manage/2fa`, data);
+    }
+
+    downloadPersonalData(): Observable<Blob> {
+        return this.http.post(`${this.USER_API_URL}/me/personaldata`, {}, { responseType: 'blob' });
     }
 
     getAccessToken(): string | null {

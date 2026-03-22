@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, inject, signal, OnInit } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MessageService } from 'primeng/api';
@@ -104,7 +104,7 @@ import { AuthService } from '../../core/auth/auth.service';
               icon="pi pi-credit-card" 
               styleClass="p-button-primary w-full justify-center p-3 text-xl rounded-lg"
               [style]="{'width': '100%'}"
-              [disabled]="isSubmitting() || selectedProducts().length === 0 || selectedUsers().length === 0 || amount() < 1"
+              [disabled]="isSubmitting() || selectedProducts().length === 0 || selectedUsers().length === 0 || amount() < 1 || isGuest()"
               [loading]="isSubmitting()"
               (onClick)="submitOrder()">
             </p-button>
@@ -129,6 +129,7 @@ export default class PosComponent implements OnInit {
 
   isLoading = signal(true);
   isSubmitting = signal(false);
+  isGuest = computed(() => this.authService.currentUser()?.roles?.includes('Guest') ?? false);
 
   products = signal<ProductDto[]>([]);
   users = signal<ApplicationUserDto[]>([]);
@@ -149,7 +150,7 @@ export default class PosComponent implements OnInit {
         const currentUser = this.authService.currentUser();
         const currentUserId = currentUser?.id;
 
-        if (currentUserId && userData.some(u => u.id === currentUserId)) {
+        if (currentUserId && userData.some(u => u.id === currentUserId) && !currentUser?.roles?.includes('Kiosk')) {
             this.selectedUsers.set([currentUserId]);
         }
 
@@ -186,7 +187,7 @@ export default class PosComponent implements OnInit {
         
         // Reset form
         this.selectedProducts.set([]);
-        if (currentUserId && this.users().some(u => u.id === currentUserId)) {
+        if (currentUserId && this.users().some(u => u.id === currentUserId) && !currentUser?.roles?.includes('Kiosk')) {
           this.selectedUsers.set([currentUserId]);
         } else {
           this.selectedUsers.set([]);

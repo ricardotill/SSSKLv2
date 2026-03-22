@@ -283,7 +283,7 @@
             // Is user in administrator role?
             var UserResult = await _UserManager.IsInRoleAsync(user, ADMINISTRATION_ROLE);
             var role = await _UserManager.GetRolesAsync(user);
-            CurrentUserRole = role.First();
+            CurrentUserRole = role.FirstOrDefault() ?? "Guest";
 
             if (user.EmailConfirmed)
             {

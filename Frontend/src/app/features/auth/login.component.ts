@@ -43,19 +43,21 @@ import { CheckboxModule } from 'primeng/checkbox';
 
         <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
           
-          <div class="field">
-            <label for="userName" class="block">Username</label>
-            <input 
-              id="userName" 
-              type="text" 
-              pInputText 
-              formControlName="userName" 
-              class="w-full"
-            />
-            @if (loginForm.controls['userName'].invalid && loginForm.controls['userName'].touched) {
-               <small class="p-error block mt-1">Username is required.</small>
-            }
-          </div>
+          @if (!requires2FA()) {
+            <div class="field">
+              <label for="userName" class="block">Username</label>
+              <input 
+                id="userName" 
+                type="text" 
+                pInputText 
+                formControlName="userName" 
+                class="w-full"
+              />
+              @if (loginForm.controls['userName'].invalid && loginForm.controls['userName'].touched) {
+                 <small class="p-error block mt-1">Username is required.</small>
+              }
+            </div>
+
 
           <div class="field mt-4">
             <label for="password" class="block">Password</label>
@@ -76,6 +78,21 @@ import { CheckboxModule } from 'primeng/checkbox';
             <p-checkbox formControlName="rememberMe" [binary]="true" inputId="rememberMe"></p-checkbox>
             <label for="rememberMe" class="ml-2 font-medium text-surface-900 dark:text-surface-0 cursor-pointer">Remember me</label>
           </div>
+          } @else {
+            <div class="field">
+              <label for="twoFactorCode" class="block">Two-Factor Authenticator Code</label>
+              <input 
+                id="twoFactorCode" 
+                type="text" 
+                pInputText 
+                formControlName="twoFactorCode" 
+                placeholder="6-digit code"
+                class="w-full text-lg tracking-[0.2em] font-mono text-center"
+                maxlength="6"
+              />
+              <small class="text-surface-500 block mt-2 text-center">Open your authenticator app and enter the code.</small>
+            </div>
+          }
 
           @if (errorMessage()) {
              <p-message severity="error" [text]="errorMessage()" styleClass="w-full mt-4"></p-message>
@@ -135,14 +152,21 @@ export default class LoginComponent {
   loginForm = this.fb.group({
     userName: ['', Validators.required],
     password: ['', Validators.required],
-    rememberMe: [false]
+    rememberMe: [false],
+    twoFactorCode: ['']
   });
 
   isLoading = signal(false);
   errorMessage = signal('');
+  requires2FA = signal(false);
 
   onSubmit(): void {
     if (this.loginForm.invalid) {
+      return;
+    }
+
+    if (this.requires2FA() && !this.loginForm.value.twoFactorCode) {
+      this.errorMessage.set('Please enter your 2FA code.');
       return;
     }
 
@@ -150,8 +174,9 @@ export default class LoginComponent {
     this.errorMessage.set('');
 
     const credentials = {
-      userName: this.loginForm.value.userName,
-      password: this.loginForm.value.password
+      userName: this.loginForm.value.userName!,
+      password: this.loginForm.value.password!,
+      twoFactorCode: this.loginForm.value.twoFactorCode || undefined
     };
 
     const rememberMe = this.loginForm.value.rememberMe ?? false;
@@ -163,7 +188,17 @@ export default class LoginComponent {
       },
       error: (err) => {
         this.isLoading.set(false);
-        this.errorMessage.set('Invalid username or password.');
+        if (err.status === 403) {
+           this.requires2FA.set(true);
+           this.errorMessage.set(''); // Clear any previous error
+           return;
+        }
+        
+        if (this.requires2FA()) {
+           this.errorMessage.set('Invalid 2FA code.');
+        } else {
+           this.errorMessage.set('Invalid username or password.');
+        }
         console.error('Login error', err);
       }
     });

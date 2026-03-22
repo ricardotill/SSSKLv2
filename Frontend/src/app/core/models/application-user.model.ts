@@ -4,4 +4,5 @@ export interface ApplicationUserDto {
   fullName: string;
   saldo: number;
   lastOrdered?: string;
+  roles: string[];
 }

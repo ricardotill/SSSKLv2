@@ -73,8 +73,10 @@ public static class IdentityApiEndpointRouteBuilderExtensions
             user.Name = registration.Name;
             user.Surname = registration.Surname;
             await userStore.SetUserNameAsync(user, registration.UserName, CancellationToken.None);
+
             await emailStore.SetEmailAsync(user, email, CancellationToken.None);
             var result = await userManager.CreateAsync(user, registration.Password);
+            await userManager.AddToRoleAsync(user, "Guest");
 
             if (!result.Succeeded)
             {
@@ -106,6 +108,12 @@ public static class IdentityApiEndpointRouteBuilderExtensions
                 {
                     result = await signInManager.TwoFactorRecoveryCodeSignInAsync(login.TwoFactorRecoveryCode);
                 }
+            }
+
+            if (result.RequiresTwoFactor)
+            {
+                // Distinguish a step-up auth requirement from invalid credentials.
+                return TypedResults.Problem(result.ToString(), statusCode: StatusCodes.Status403Forbidden);
             }
 
             if (!result.Succeeded)
@@ -556,4 +564,8 @@ public sealed class LoginRequest
     /// </summary>
     public string? TwoFactorRecoveryCode { get; init; }
 }
+
+
+
+
 

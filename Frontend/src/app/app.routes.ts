@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/auth/auth.guard';
+import { roleGuard } from './core/auth/role.guard';
 import { unauthGuard } from './core/auth/unauth.guard'; // Assume I will create this snippet
 
 export const routes: Routes = [
@@ -25,40 +26,16 @@ export const routes: Routes = [
         title: 'Homepage'
       },
       {
-        path: 'users',
-        loadComponent: () => import('./features/users/users.component'),
-        canActivate: [authGuard],
-        title: 'Users - Admin Panel'
-      },
-      {
-        path: 'products',
-        loadComponent: () => import('./features/products/products.component'),
-        canActivate: [authGuard],
-        title: 'Products - Admin Panel'
-      },
-      {
         path: 'pos',
         loadComponent: () => import('./features/pos/pos.component'),
         canActivate: [authGuard],
         title: 'Bestellen - Admin Panel'
       },
       {
-        path: 'announcements',
-        loadComponent: () => import('./features/announcements/announcements.component'),
-        canActivate: [authGuard],
-        title: 'Announcements - Admin Panel'
-      },
-      {
-        path: 'achievements',
-        loadComponent: () => import('./features/achievements/achievements.component'),
-        canActivate: [authGuard],
-        title: 'Achievements - Admin Panel'
-      },
-      {
-        path: 'topups',
-        loadComponent: () => import('./features/topups/topups.component'),
-        canActivate: [authGuard],
-        title: 'Top-Ups - Admin Panel'
+        path: 'admin',
+        canActivate: [authGuard, roleGuard],
+        data: { roles: ['Admin', 'Kiosk'] },
+        loadChildren: () => import('./features/admin/admin.routes')
       },
       {
         path: 'settings',

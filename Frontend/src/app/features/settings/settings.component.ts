@@ -22,7 +22,7 @@ import { CardModule } from 'primeng/card';
   imports: [ReactiveFormsModule, FormsModule, ButtonModule, InputTextModule, ToastModule, TagModule, TabsModule, ConfirmDialogModule, SelectButtonModule, CardModule],
   providers: [MessageService, ConfirmationService],
   template: `
-    <div class="max-w-3xl mx-auto mt-8">
+    <div class="max-w-3xl mx-auto">
       <h1 class="text-2xl font-bold mb-4 text-surface-900 dark:text-surface-0">{{ ls.t().user_settings }}</h1>
       <p-card>
       <p-toast></p-toast>

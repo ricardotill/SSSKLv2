@@ -1,50 +1,69 @@
-import { Component, ChangeDetectionStrategy, signal, inject } from '@angular/core';
-import { LanguageService } from '../../core/services/language.service';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { CardModule } from 'primeng/card';
+import { BrandingComponent } from '../../shared/components/branding/branding.component';
+import { NgOptimizedImage } from '@angular/common';
 
 @Component({
   selector: 'app-homepage',
   standalone: true,
-  imports: [CardModule],
+  imports: [CardModule, BrandingComponent, NgOptimizedImage],
   template: `
-    <div class="dashboard-grid">
-      <p-card [header]="ls.t().total_users" styleClass="stat-card">
-        <p class="stat-value">{{ totalUsers() }}</p>
-      </p-card>
-      <p-card [header]="ls.t().revenue" styleClass="stat-card">
-        <p class="stat-value">{{ revenue() }}</p>
-      </p-card>
-      <p-card [header]="ls.t().active_sessions" styleClass="stat-card">
-        <p class="stat-value">{{ activeSessions() }}</p>
+    <div class="flex justify-center items-center h-full sm:mt-10">
+      <p-card class="max-w-2xl w-full" styleClass="homepage-card">
+        <div class="flex flex-col sm:flex-row items-center sm:items-start gap-6">
+          <img
+            ngSrc="/logo.png"
+            alt="SSSKL Logo"
+            width="144"
+            height="144"
+            priority
+            class="rounded-xl shadow-lg"
+          />
+          <div class="flex flex-col justify-center text-center sm:text-left h-36">
+            <app-branding class="scale-150 origin-center sm:origin-left mb-4" />
+            <p class="m-0 text-muted-color">
+              Made with ❤️ by
+              <a
+                href="https://ricardotill.nl"
+                target="_blank"
+                class="font-medium hover:underline text-primary"
+                >Ricardo Tillemans</a
+              >
+            </p>
+          </div>
+        </div>
+
+        <div class="mt-12 pt-6 border-t border-surface-border">
+          <p class="text-sm leading-relaxed text-muted-color mb-0">
+            Wil je jouw account verwijderen? Log dan in, open het menu, open Accountbeheer, ga naar
+            het kopje Persoonlijke data en bevestig dat je jouw account wilt verwijderen. Kan je
+            niet meer inloggen? Stuur dan een mail naar
+            <a href="mailto:me@ricardotill.nl" class="font-medium hover:underline text-primary"
+              >me@ricardotill.nl</a
+            >
+          </p>
+        </div>
       </p-card>
     </div>
   `,
   styles: `
-    .dashboard-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 1.5rem;
+    :host {
+      display: block;
+      height: 100%;
     }
-    :host ::ng-deep .stat-card .p-card-header,
-    :host ::ng-deep .stat-card .p-card-title {
-      font-size: 1rem;
-      color: var(--p-text-muted-color, #64748b);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      margin-bottom: 0;
+
+    :host ::ng-deep .homepage-card {
+      background: var(--p-surface-900);
+      border: 1px solid var(--p-surface-800);
     }
-    .stat-value {
-      margin: 0;
-      font-size: 2rem;
-      font-weight: bold;
-      color: var(--p-text-color, #0f172a);
+
+    @media (prefers-color-scheme: light) {
+      :host ::ng-deep .homepage-card {
+        background: var(--p-surface-50);
+        border: 1px solid var(--p-surface-200);
+      }
     }
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export default class HomepageComponent {
-  ls = inject(LanguageService);
-  totalUsers = signal(1254);
-  revenue = signal('$12,450');
-  activeSessions = signal(342);
-}
+export default class HomepageComponent {}

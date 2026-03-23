@@ -7,7 +7,7 @@ import { PasswordModule } from 'primeng/password';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { MessageModule } from 'primeng/message';
-import { TagModule } from "primeng/tag";
+import { BrandingComponent } from '../../shared/components/branding/branding.component';
 
 @Component({
   selector: 'app-register',
@@ -19,8 +19,8 @@ import { TagModule } from "primeng/tag";
     ButtonModule,
     CardModule,
     MessageModule,
-    TagModule,
-    RouterModule
+    RouterModule,
+    BrandingComponent
   ],
   template: `
     <div class="register-wrapper">
@@ -28,7 +28,7 @@ import { TagModule } from "primeng/tag";
         <ng-template #header>
           <div class="flex items-center justify-between p-5 pb-0">
             <div class="flex items-center">
-              <h2 class="text-xl font-bold m-0">SSSKL</h2> <p-tag class="ml-2" value="v2" />
+              <app-branding />
             </div>
             <p-button icon="pi pi-arrow-left" label="Back" [text]="true" routerLink="/" severity="secondary" size="small"></p-button>
           </div>

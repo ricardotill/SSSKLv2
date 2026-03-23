@@ -33,4 +33,8 @@ export class OrderService {
   deleteOrder(id: string): Observable<void> {
     return this.http.delete<void>(`${this.API_URL}/${id}`);
   }
+
+  exportCsv(): Observable<Blob> {
+    return this.http.get(`${this.API_URL}/export/csv`, { responseType: 'blob' });
+  }
 }

@@ -7,8 +7,8 @@ import { PasswordModule } from 'primeng/password';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { MessageModule } from 'primeng/message';
-import { TagModule } from "primeng/tag";
 import { CheckboxModule } from 'primeng/checkbox';
+import { BrandingComponent } from '../../shared/components/branding/branding.component';
 
 @Component({
   selector: 'app-login',
@@ -20,9 +20,9 @@ import { CheckboxModule } from 'primeng/checkbox';
     ButtonModule,
     CardModule,
     MessageModule,
-    TagModule,
     CheckboxModule,
-    RouterModule
+    RouterModule,
+    BrandingComponent
   ],
   template: `
     <div class="login-wrapper">
@@ -30,7 +30,7 @@ import { CheckboxModule } from 'primeng/checkbox';
         <ng-template #header>
           <div class="flex items-center justify-between p-5 pb-0">
             <div class="flex items-center">
-              <h2 class="text-xl font-bold m-0">SSSKL</h2> <p-tag class="ml-2" value="v2" />
+              <app-branding />
             </div>
             <p-button icon="pi pi-arrow-left" label="Back" [text]="true" routerLink="/" severity="secondary" size="small"></p-button>
           </div>
@@ -184,7 +184,7 @@ export default class LoginComponent {
     this.authService.login(credentials, rememberMe).subscribe({
       next: () => {
         this.isLoading.set(false);
-        this.router.navigate(['/']); // Redirect to dashboard or returnUrl
+        this.router.navigate(['/pos']);
       },
       error: (err) => {
         this.isLoading.set(false);

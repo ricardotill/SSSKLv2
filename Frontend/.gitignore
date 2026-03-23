@@ -1,6 +1,7 @@
 # Created by https://www.toptal.com/developers/gitignore/api/angular,node,rider,visualstudiocode
 # Edit at https://www.toptal.com/developers/gitignore?templates=angular,node,rider,visualstudiocode
 
+.DS_Store
 ### Angular ###
 ## Angular ##
 # compiled output

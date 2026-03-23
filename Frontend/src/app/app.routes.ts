@@ -23,7 +23,14 @@ export const routes: Routes = [
       {
         path: '',
         loadComponent: () => import('./features/homepage/homepage.component'),
+        canActivate: [unauthGuard],
         title: 'Homepage'
+      },
+      {
+        path: 'about',
+        loadComponent: () => import('./features/homepage/homepage.component'),
+        canActivate: [authGuard],
+        title: 'About'
       },
       {
         path: 'pos',

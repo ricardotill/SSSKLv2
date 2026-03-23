@@ -1,5 +1,5 @@
 import { Component, ChangeDetectionStrategy, inject, signal, OnInit } from '@angular/core';
-import { DatePipe, CurrencyPipe } from '@angular/common';
+import { DatePipe, CurrencyPipe, DOCUMENT } from '@angular/common';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
@@ -26,7 +26,10 @@ import { LanguageService } from '../../../core/services/language.service';
   template: `
     <div class="flex justify-between items-center mb-4">
       <h1 class="text-2xl font-bold m-0 text-surface-900 dark:text-surface-0">{{ ls.t().admin_orders }}</h1>
-      <p-button icon="pi pi-refresh" [rounded]="true" (onClick)="loadOrders()" [ariaLabel]="ls.t().refresh"></p-button>
+      <div class="flex gap-2">
+        <p-button [label]="ls.t().export_csv" icon="pi pi-download" (onClick)="exportCsv()" [loading]="exporting()" severity="secondary" [rounded]="true"></p-button>
+        <p-button icon="pi pi-refresh" [rounded]="true" (onClick)="loadOrders()" [ariaLabel]="ls.t().refresh"></p-button>
+      </div>
     </div>
     <p-toast></p-toast>
     <p-confirmDialog></p-confirmDialog>
@@ -82,6 +85,7 @@ export default class OrdersComponent implements OnInit {
   private readonly orderService = inject(OrderService);
   private readonly messageService = inject(MessageService);
   private readonly confirmationService = inject(ConfirmationService);
+  private readonly document = inject(DOCUMENT);
   ls = inject(LanguageService);
 
   orders = signal<OrderDto[]>([]);
@@ -142,6 +146,50 @@ export default class OrdersComponent implements OnInit {
         },
         error: () => {
           this.messageService.add({ severity: 'error', summary: this.ls.t().error, detail: this.ls.t().delete_failed });
+        }
+      });
+  }
+
+  exporting = signal<boolean>(false);
+
+  exportCsv(): void {
+    this.confirmationService.confirm({
+      message: this.ls.t().confirm_export_csv_message,
+      header: this.ls.t().confirm_export_csv_title,
+      icon: 'pi pi-file-excel',
+      accept: () => {
+        this.executeExport();
+      }
+    });
+  }
+
+  private executeExport(): void {
+    this.exporting.set(true);
+    this.orderService.exportCsv()
+      .pipe(finalize(() => this.exporting.set(false)))
+      .subscribe({
+        next: (blob) => {
+          const url = window.URL.createObjectURL(blob);
+          const a = this.document.createElement('a');
+          a.href = url;
+          a.download = `Orders_Export_${new Date().toISOString().split('T')[0]}.csv`;
+          this.document.body.appendChild(a);
+          a.click();
+          this.document.body.removeChild(a);
+          window.URL.revokeObjectURL(url);
+
+          this.messageService.add({ 
+            severity: 'success', 
+            summary: this.ls.t().success, 
+            detail: this.ls.t().success 
+          });
+        },
+        error: () => {
+          this.messageService.add({ 
+            severity: 'error', 
+            summary: this.ls.t().error, 
+            detail: this.ls.t().error 
+          });
         }
       });
   }

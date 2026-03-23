@@ -1,16 +1,16 @@
-import { Component, ChangeDetectionStrategy, ViewEncapsulation, input, output, inject, computed } from '@angular/core';
+import { Component, ChangeDetectionStrategy, input, output, inject, computed } from '@angular/core';
 import { MenuModule } from 'primeng/menu';
 import { MenuItem } from 'primeng/api';
 import { CommonModule } from '@angular/common';
-import { TagModule } from 'primeng/tag';
 import { AvatarModule } from 'primeng/avatar';
 import { RouterModule } from '@angular/router';
 import { AuthService } from '../../core/auth/auth.service';
 import { LanguageService } from '../../core/services/language.service';
+import { BrandingComponent } from '../../shared/components/branding/branding.component';
 
 @Component({
   selector: 'app-sidebar',
-  imports: [CommonModule, MenuModule, TagModule, AvatarModule, RouterModule],
+  imports: [CommonModule, MenuModule, AvatarModule, RouterModule, BrandingComponent],
   template: `
     @if (isOpen()) {
       <div class="mobile-overlay" (click)="close.emit()"></div>
@@ -18,7 +18,7 @@ import { LanguageService } from '../../core/services/language.service';
     
     <aside class="sidebar" [class.sidebar-open]="isOpen()">
       <div class="logo">
-        <h2 class="text-xl font-bold m-0">SSSKL</h2> <p-tag class="ml-2" value="v2" />
+        <app-branding />
       </div>
       <div class="flex-1 overflow-y-auto min-h-0 custom-scrollbar">
         <p-menu [model]="items()" styleClass="w-full border-none bg-transparent" />
@@ -163,14 +163,16 @@ export class SidebarComponent {
   close = output<void>();
   items = computed<MenuItem[]>(() => {
     const t = this.ls.t();
-    const baseItems: MenuItem[] = [
-      {
+    const baseItems: MenuItem[] = [];
+
+    if (!this.authService.isAuthenticated()) {
+      baseItems.push({
         label: t.main,
         items: [
           { label: t.homepage, icon: 'pi pi-home', routerLink: '/', routerLinkActiveOptions: { exact: true } }
         ]
-      }
-    ];
+      });
+    }
 
     if (this.authService.isAuthenticated()) {
       baseItems.push(
@@ -181,7 +183,8 @@ export class SidebarComponent {
             { label: t.my_orders, icon: 'pi pi-history', routerLink: '/orders/personal' },
             { label: t.my_saldo, icon: 'pi pi-wallet', routerLink: '/orders/saldo' },
             { label: t.user_overview, icon: 'pi pi-users', routerLink: '/users' },
-            { label: t.settings, icon: 'pi pi-cog', routerLink: '/settings' }
+            { label: t.settings, icon: 'pi pi-cog', routerLink: '/settings' },
+            { label: t.about, icon: 'pi pi-info-circle', routerLink: '/about' }
           ]
         }
       );

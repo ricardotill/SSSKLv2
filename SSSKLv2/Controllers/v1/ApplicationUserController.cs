@@ -104,7 +104,7 @@ public class ApplicationUserController : ControllerBase
         }
     }
 
-    [Authorize(Roles = "Admin")]
+    [Authorize]
     [HttpGet("obscured")]
     public async Task<ActionResult<IEnumerable<ApplicationUserDto>>> GetAllObscured()
     {
@@ -232,6 +232,8 @@ public class ApplicationUserController : ControllerBase
     {
         if (dto == null) return BadRequest();
         if (!string.IsNullOrWhiteSpace(dto.Id) && dto.Id != id) return BadRequest("Id in payload does not match route id");
+        // Username cannot be changed
+        dto.UserName = null;
 
         try
         {
@@ -295,6 +297,51 @@ public class ApplicationUserController : ControllerBase
         catch (InvalidOperationException ex)
         {
             _logger.LogWarning(ex, "Failed to update current user {Username}", username);
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    // DELETE v1/applicationuser/{id} - delete user (Admin only)
+    [Authorize(Roles = "Admin")]
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Delete(string id)
+    {
+        try
+        {
+            await _applicationUserService.DeleteUser(id);
+            return NoContent();
+        }
+        catch (NotFoundException)
+        {
+            return NotFound();
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(ex, "Failed to delete user {Id}", id);
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    // DELETE v1/applicationuser/me - delete currently logged in user
+    [HttpDelete("me")]
+    public async Task<IActionResult> DeleteMe()
+    {
+        var username = User.Identity?.Name;
+        if (string.IsNullOrWhiteSpace(username)) return Unauthorized();
+
+        try
+        {
+            var existing = await _applicationUserService.GetUserByUsername(username);
+            await _applicationUserService.DeleteUser(existing.Id);
+            return NoContent();
+        }
+        catch (NotFoundException)
+        {
+            return NotFound();
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(ex, "Failed to delete current user {Username}", username);
             return BadRequest(new { error = ex.Message });
         }
     }

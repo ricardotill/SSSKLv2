@@ -51,8 +51,19 @@ export const routes: Routes = [
             path: 'personal',
             loadComponent: () => import('./features/orders/personal-orders.component'),
             title: 'My Orders'
+          },
+          {
+            path: 'saldo',
+            loadComponent: () => import('./features/top-ups/personal-top-ups.component'),
+            title: 'My Balance'
           }
         ]
+      },
+      {
+        path: 'users',
+        loadComponent: () => import('./features/users/users-overview.component'),
+        canActivate: [authGuard],
+        title: 'Users - SSSKLv2'
       }
     ]
   },

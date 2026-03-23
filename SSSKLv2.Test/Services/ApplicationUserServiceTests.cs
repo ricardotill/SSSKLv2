@@ -932,6 +932,109 @@ public class ApplicationUserServiceTests
         result.Surname.Should().Be("Name");
     }
 
+    [TestMethod]
+    public async Task DeleteUser_WhenUserNotFound_ThrowsNotFound()
+    {
+        var id = "missing";
+        ((FakeUserManager)_fakeUserManager).FindByIdFunc = _ => Task.FromResult<ApplicationUser?>(null);
+
+        Func<Task> act = async () => await _sut.DeleteUser(id);
+
+        await act.Should().ThrowAsync<NotFoundException>();
+    }
+
+    [TestMethod]
+    public async Task DeleteUser_WhenDeleteFails_ThrowsInvalidOperation()
+    {
+        var id = "user1";
+        var user = CreateApplicationUser(id);
+        ((FakeUserManager)_fakeUserManager).FindByIdFunc = _ => Task.FromResult<ApplicationUser?>(user);
+        ((FakeUserManager)_fakeUserManager).DeleteFunc = _ => Task.FromResult(IdentityResult.Failed(new IdentityError { Description = "Cannot delete" }));
+
+        Func<Task> act = async () => await _sut.DeleteUser(id);
+
+        await act.Should().ThrowAsync<InvalidOperationException>();
+    }
+
+    [TestMethod]
+    public async Task DeleteUser_WhenValid_DeletesSuccessfully()
+    {
+        var id = "user1";
+        var user = CreateApplicationUser(id);
+        var deleteInvoked = false;
+        ((FakeUserManager)_fakeUserManager).FindByIdFunc = _ => Task.FromResult<ApplicationUser?>(user);
+        ((FakeUserManager)_fakeUserManager).DeleteFunc = _ =>
+        {
+            deleteInvoked = true;
+            return Task.FromResult(IdentityResult.Success);
+        };
+
+        await _sut.DeleteUser(id);
+
+        deleteInvoked.Should().BeTrue();
+    }
+
+    [TestMethod]
+    public async Task UpdateUser_WhenRolesProvided_UpdatesRoles()
+    {
+        var id = "user1";
+        var existing = CreateApplicationUser(id, "user1", "Test", "User", "test@example.com");
+        var oldRoles = new List<string> { "OldRole" };
+        var newRoles = new List<string> { "Admin", "Moderator" };
+
+        ((FakeUserManager)_fakeUserManager).FindByIdFunc = _ => Task.FromResult<ApplicationUser?>(existing);
+        ((FakeUserManager)_fakeUserManager).GetRolesFunc = _ => Task.FromResult<IList<string>>(oldRoles);
+        ((FakeUserManager)_fakeUserManager).RemoveFromRolesFunc = (_, roles) => Task.FromResult(IdentityResult.Success);
+        ((FakeUserManager)_fakeUserManager).AddToRolesFunc = (_, roles) => Task.FromResult(IdentityResult.Success);
+        ((FakeUserManager)_fakeUserManager).UpdateFunc = _ => Task.FromResult(IdentityResult.Success);
+        ((FakeUserManager)_fakeUserManager).FindByIdFunc = _ => Task.FromResult<ApplicationUser?>(existing);
+
+        var dto = new ApplicationUserUpdateDto { Roles = newRoles };
+
+        var result = await _sut.UpdateUser(id, dto);
+
+        result.Should().NotBeNull();
+    }
+
+    [TestMethod]
+    public async Task UpdateUser_WhenRoleRemovalFails_ThrowsInvalidOperation()
+    {
+        var id = "user1";
+        var existing = CreateApplicationUser(id);
+        var oldRoles = new List<string> { "OldRole" };
+        var newRoles = new List<string> { "Admin" };
+
+        ((FakeUserManager)_fakeUserManager).FindByIdFunc = _ => Task.FromResult<ApplicationUser?>(existing);
+        ((FakeUserManager)_fakeUserManager).GetRolesFunc = _ => Task.FromResult<IList<string>>(oldRoles);
+        ((FakeUserManager)_fakeUserManager).RemoveFromRolesFunc = (_, roles) => Task.FromResult(IdentityResult.Failed(new IdentityError { Description = "Cannot remove role" }));
+
+        var dto = new ApplicationUserUpdateDto { Roles = newRoles };
+
+        Func<Task> act = async () => await _sut.UpdateUser(id, dto);
+
+        await act.Should().ThrowAsync<InvalidOperationException>();
+    }
+
+    [TestMethod]
+    public async Task UpdateUser_WhenRoleAdditionFails_ThrowsInvalidOperation()
+    {
+        var id = "user1";
+        var existing = CreateApplicationUser(id);
+        var oldRoles = new List<string> { "OldRole" };
+        var newRoles = new List<string> { "Admin" };
+
+        ((FakeUserManager)_fakeUserManager).FindByIdFunc = _ => Task.FromResult<ApplicationUser?>(existing);
+        ((FakeUserManager)_fakeUserManager).GetRolesFunc = _ => Task.FromResult<IList<string>>(oldRoles);
+        ((FakeUserManager)_fakeUserManager).RemoveFromRolesFunc = (_, roles) => Task.FromResult(IdentityResult.Success);
+        ((FakeUserManager)_fakeUserManager).AddToRolesFunc = (_, roles) => Task.FromResult(IdentityResult.Failed(new IdentityError { Description = "Cannot add role" }));
+
+        var dto = new ApplicationUserUpdateDto { Roles = newRoles };
+
+        Func<Task> act = async () => await _sut.UpdateUser(id, dto);
+
+        await act.Should().ThrowAsync<InvalidOperationException>();
+    }
+
     // Minimal fake UserManager to allow per-test behavior via Func fields
     private class FakeUserManager : UserManager<ApplicationUser>
     {
@@ -940,6 +1043,10 @@ public class ApplicationUserServiceTests
         public Func<ApplicationUser, string?, Task<IdentityResult>> SetEmailFunc = (_, __) => Task.FromResult(IdentityResult.Success);
         public Func<ApplicationUser, string?, Task<IdentityResult>> SetPhoneFunc = (_, __) => Task.FromResult(IdentityResult.Success);
         public Func<ApplicationUser, Task<IdentityResult>> UpdateFunc = _ => Task.FromResult(IdentityResult.Success);
+        public Func<ApplicationUser, Task<IdentityResult>> DeleteFunc = _ => Task.FromResult(IdentityResult.Success);
+        public Func<ApplicationUser, Task<IList<string>>> GetRolesFunc = _ => Task.FromResult<IList<string>>(new List<string>());
+        public Func<ApplicationUser, IEnumerable<string>, Task<IdentityResult>> RemoveFromRolesFunc = (_, __) => Task.FromResult(IdentityResult.Success);
+        public Func<ApplicationUser, IEnumerable<string>, Task<IdentityResult>> AddToRolesFunc = (_, __) => Task.FromResult(IdentityResult.Success);
         public Func<ApplicationUser, Task<string>> GeneratePasswordResetTokenFunc = _ => Task.FromResult(string.Empty);
         public Func<ApplicationUser, string, string, Task<IdentityResult>> ResetPasswordFunc = (_, __, ___) => Task.FromResult(IdentityResult.Success);
 
@@ -953,8 +1060,12 @@ public class ApplicationUserServiceTests
         public override Task<IdentityResult> SetEmailAsync(ApplicationUser user, string? email) => SetEmailFunc(user, email);
         public override Task<IdentityResult> SetPhoneNumberAsync(ApplicationUser user, string? phoneNumber) => SetPhoneFunc(user, phoneNumber);
         public override Task<IdentityResult> UpdateAsync(ApplicationUser user) => UpdateFunc(user);
+        public override Task<IdentityResult> DeleteAsync(ApplicationUser user) => DeleteFunc(user);
         public override Task<string> GeneratePasswordResetTokenAsync(ApplicationUser user) => GeneratePasswordResetTokenFunc(user);
         public override Task<IdentityResult> ResetPasswordAsync(ApplicationUser user, string token, string newPassword) => ResetPasswordFunc(user, token, newPassword);
+        public override Task<IList<string>> GetRolesAsync(ApplicationUser user) => GetRolesFunc(user);
+        public override Task<IdentityResult> RemoveFromRolesAsync(ApplicationUser user, IEnumerable<string> roles) => RemoveFromRolesFunc(user, roles);
+        public override Task<IdentityResult> AddToRolesAsync(ApplicationUser user, IEnumerable<string> roles) => AddToRolesFunc(user, roles);
     }
 }
 

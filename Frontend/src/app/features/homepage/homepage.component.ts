@@ -1,18 +1,20 @@
-import { Component, ChangeDetectionStrategy, signal } from '@angular/core';
+import { Component, ChangeDetectionStrategy, signal, inject } from '@angular/core';
+import { LanguageService } from '../../core/services/language.service';
 import { CardModule } from 'primeng/card';
 
 @Component({
   selector: 'app-homepage',
+  standalone: true,
   imports: [CardModule],
   template: `
     <div class="dashboard-grid">
-      <p-card header="Total Users" styleClass="stat-card">
+      <p-card [header]="ls.t().total_users" styleClass="stat-card">
         <p class="stat-value">{{ totalUsers() }}</p>
       </p-card>
-      <p-card header="Revenue" styleClass="stat-card">
+      <p-card [header]="ls.t().revenue" styleClass="stat-card">
         <p class="stat-value">{{ revenue() }}</p>
       </p-card>
-      <p-card header="Active Sessions" styleClass="stat-card">
+      <p-card [header]="ls.t().active_sessions" styleClass="stat-card">
         <p class="stat-value">{{ activeSessions() }}</p>
       </p-card>
     </div>
@@ -41,6 +43,7 @@ import { CardModule } from 'primeng/card';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export default class HomepageComponent {
+  ls = inject(LanguageService);
   totalUsers = signal(1254);
   revenue = signal('$12,450');
   activeSessions = signal(342);

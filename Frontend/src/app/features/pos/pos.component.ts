@@ -10,6 +10,9 @@ import { OrderService } from '../../core/services/order.service';
 import { ApplicationUserDto } from '../../core/models/application-user.model';
 import { ProductDto } from '../../core/models/product.model';
 import { AuthService } from '../../core/auth/auth.service';
+import { LanguageService } from '../../core/services/language.service';
+
+import { CardModule } from 'primeng/card';
 
 @Component({
   selector: 'app-pos',
@@ -20,17 +23,18 @@ import { AuthService } from '../../core/auth/auth.service';
     ToastModule,
     CheckboxModule,
     InputNumberModule,
-    ButtonModule
+    ButtonModule,
+    CardModule
   ],
   providers: [MessageService],
   template: `
-  <div class="bg-surface-0 dark:bg-surface-900 p-8 rounded-xl shadow-md text-surface-900 dark:text-surface-0">
+  <p-card>
     <div class="text-surface-900 dark:text-surface-0 h-full">
       <p-toast></p-toast>
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 w-full max-w-7xl mx-auto">
         <!-- Wat Column -->
         <div class="col-span-1 lg:col-span-3">
-          <h2 class="text-2xl font-bold mb-4 font-heading">Wat</h2>
+          <h2 class="text-2xl font-bold mb-4 font-heading">{{ ls.t().what }}</h2>
           <div class="grid grid-cols-2 lg:grid-cols-1 gap-3">
             @for (product of products(); track product.id) {
               <label 
@@ -55,7 +59,7 @@ import { AuthService } from '../../core/auth/auth.service';
 
         <!-- Wie Column -->
         <div class="col-span-1 lg:col-span-5">
-          <h2 class="text-2xl font-bold mb-4 font-heading">Wie</h2>
+          <h2 class="text-2xl font-bold mb-4 font-heading">{{ ls.t().who }}</h2>
           <div class="grid grid-cols-2 gap-3">
             @for (user of users(); track user.id) {
               <label 
@@ -79,17 +83,17 @@ import { AuthService } from '../../core/auth/auth.service';
 
         <!-- Betalen Column -->
         <div class="col-span-1 lg:col-span-4">
-          <h2 class="text-2xl font-bold mb-4 font-heading">Betalen</h2>
+          <h2 class="text-2xl font-bold mb-4 font-heading">{{ ls.t().pay }}</h2>
           
           <label for="splitCheck" class="flex items-center mb-4 cursor-pointer w-fit">
             <p-checkbox [ngModel]="split()" (ngModelChange)="split.set($event)" [binary]="true" inputId="splitCheck"></p-checkbox>
-            <div class="ml-2 font-medium font-body">Rekening splitten?</div>
+            <div class="ml-2 font-medium font-body">{{ ls.t().split_bill }}</div>
           </label>
 
           <div class="flex flex-col gap-4">
             <div class="flex items-stretch border border-surface-200 dark:border-surface-700 rounded-lg overflow-hidden bg-surface-0 dark:bg-surface-900 border-opacity-50">
               <div class="flex items-center justify-center bg-surface-100 dark:bg-surface-800 px-4 font-medium font-body border-r border-surface-200 dark:border-surface-700">
-                Aantal
+                {{ ls.t().amount }}
               </div>
               <input 
                 type="number" 
@@ -100,7 +104,7 @@ import { AuthService } from '../../core/auth/auth.service';
               />
             </div>
             <p-button 
-              label="Bestellen"
+              [label]="ls.t().order"
               icon="pi pi-credit-card" 
               styleClass="p-button-primary w-full justify-center p-3 text-xl rounded-lg"
               [style]="{'width': '100%'}"
@@ -113,7 +117,7 @@ import { AuthService } from '../../core/auth/auth.service';
 
       </div>
     </div>
-  </div>
+  </p-card>
   `,
   styles: [`
     ::ng-deep .p-checkbox .p-checkbox-box {
@@ -126,6 +130,7 @@ export default class PosComponent implements OnInit {
   private orderService = inject(OrderService);
   private messageService = inject(MessageService);
   private authService = inject(AuthService);
+  ls = inject(LanguageService);
 
   isLoading = signal(true);
   isSubmitting = signal(false);
@@ -157,7 +162,7 @@ export default class PosComponent implements OnInit {
         this.isLoading.set(false);
       },
       error: (err) => {
-        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to load order initial data' });
+        this.messageService.add({ severity: 'error', summary: this.ls.t().error, detail: this.ls.t().load_failed });
         this.isLoading.set(false);
         console.error(err);
       }
@@ -178,7 +183,7 @@ export default class PosComponent implements OnInit {
       split: this.split()
     }).subscribe({
       next: () => {
-        this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Order geplaatst!' });
+        this.messageService.add({ severity: 'success', summary: this.ls.t().success, detail: this.ls.t().order_placed });
         this.authService.refreshCurrentUser();
         this.isSubmitting.set(false);
 
@@ -197,7 +202,7 @@ export default class PosComponent implements OnInit {
         this.split.set(false);
       },
       error: (err) => {
-        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Bestelling mislukt' });
+        this.messageService.add({ severity: 'error', summary: this.ls.t().error, detail: this.ls.t().order_failed });
         this.isSubmitting.set(false);
         console.error(err);
       }

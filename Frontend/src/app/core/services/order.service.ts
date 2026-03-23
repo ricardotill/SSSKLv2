@@ -24,6 +24,12 @@ export class OrderService {
     });
   }
 
+  getOrders(skip: number = 0, take: number = 15): Observable<PaginatedOrders> {
+    return this.http.get<PaginatedOrders>(this.API_URL, {
+      params: { skip, take }
+    });
+  }
+
   deleteOrder(id: string): Observable<void> {
     return this.http.delete<void>(`${this.API_URL}/${id}`);
   }

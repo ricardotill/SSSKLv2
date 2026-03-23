@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SSSKLv2.Services.Interfaces;
 using SSSKLv2.Data;
+using SSSKLv2.Data.DAL.Exceptions;
 using SSSKLv2.Dto.Api.v1;
 
 namespace SSSKLv2.Controllers.v1;
@@ -12,11 +13,13 @@ namespace SSSKLv2.Controllers.v1;
 public class TopUpController : ControllerBase
 {
     private readonly ITopUpService _topUpService;
+    private readonly IApplicationUserService _userService;
     private readonly ILogger<TopUpController> _logger;
 
-    public TopUpController(ITopUpService topUpService, ILogger<TopUpController> logger)
+    public TopUpController(ITopUpService topUpService, IApplicationUserService userService, ILogger<TopUpController> logger)
     {
         _topUpService = topUpService;
+        _userService = userService;
         _logger = logger;
     }
 
@@ -49,8 +52,8 @@ public class TopUpController : ControllerBase
         if (string.IsNullOrWhiteSpace(username)) return Unauthorized();
         
         _logger.LogInformation("{Controller}: Get personal topups for {Username}", nameof(TopUpController), username);
-        var list = await _topUpService.GetAll(skip, take);
-        var count = await _topUpService.GetCount();
+        var list = await _topUpService.GetAllPersonal(username, skip, take);
+        var count = await _topUpService.GetPersonalCount(username);
         var dto = new PaginationObject<TopUpDto>
         {
             Items = list.Select(MapToDto).ToList(),
@@ -92,18 +95,24 @@ public class TopUpController : ControllerBase
             return BadRequest(ModelState);
         }
 
-        // Map DTO to model
-        var topup = new TopUp
-        {
-            User = new ApplicationUser { UserName = dto.UserName },
-            Saldo = dto.Saldo
-        };
-
         try
         {
+            // Load the real user so EF Core can track and update it correctly
+            var user = await _userService.GetUserByUsername(dto.UserName);
+
+            var topup = new TopUp
+            {
+                User = user,
+                Saldo = dto.Saldo
+            };
+
             await _topUpService.CreateTopUp(topup);
             var outDto = MapToDto(topup);
             return CreatedAtAction(nameof(GetById), new { id = topup.Id }, outDto);
+        }
+        catch (NotFoundException)
+        {
+            return NotFound($"User '{dto.UserName}' not found.");
         }
         catch (Exception ex)
         {
@@ -137,6 +146,7 @@ public class TopUpController : ControllerBase
     {
         Id = t.Id,
         UserName = t.User?.UserName,
-        Saldo = t.Saldo
+        Saldo = t.Saldo,
+        CreatedOn = t.CreatedOn
     };
 }

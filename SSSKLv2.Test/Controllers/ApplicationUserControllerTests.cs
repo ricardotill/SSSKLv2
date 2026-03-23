@@ -313,6 +313,61 @@ public class ApplicationUserControllerTests
     }
 
     [TestMethod]
+    public async Task Update_WhenUserNameProvided_UserNameIsIgnored()
+    {
+        var id = "user1";
+        var originalUserName = "oldname";
+        var attemptedUserName = "newname";
+        var dto = new ApplicationUserUpdateDto { Id = id, UserName = attemptedUserName, Email = "new@example.com" };
+        var existing = new ApplicationUser { Id = id, UserName = originalUserName };
+        var updatedUser = new ApplicationUser { Id = id, UserName = originalUserName, Email = dto.Email };
+
+        _mockService.GetUserById(id).Returns(existing);
+        _mockService.UpdateUser(id, Arg.Is<ApplicationUserUpdateDto>(d => d.UserName == null)).Returns(Task.FromResult(updatedUser));
+
+        _sut.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext
+            {
+                User = new System.Security.Claims.ClaimsPrincipal(new System.Security.Claims.ClaimsIdentity(new[] { new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Name, "admin"), new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Role, "Admin") }, "TestAuth"))
+            }
+        };
+
+        var result = await _sut.Update(id, dto);
+
+        result.Should().BeOfType<OkObjectResult>();
+        // Verify service was called with null UserName (controller cleared it)
+        await _mockService.Received(1).UpdateUser(id, Arg.Is<ApplicationUserUpdateDto>(d => d.UserName == null));
+    }
+
+    [TestMethod]
+    public async Task Update_WhenRolesProvided_UpdatesUserRoles()
+    {
+        var id = "user1";
+        var newRoles = new List<string> { "Admin", "Moderator" };
+        var dto = new ApplicationUserUpdateDto { Id = id, Roles = newRoles };
+        var existing = new ApplicationUser { Id = id, UserName = "user1" };
+        var updatedUser = new ApplicationUser { Id = id, UserName = existing.UserName, Email = existing.Email };
+
+        _mockService.GetUserById(id).Returns(existing);
+        _mockService.UpdateUser(id, Arg.Is<ApplicationUserUpdateDto>(d => d.Roles == newRoles)).Returns(Task.FromResult(updatedUser));
+        _mockService.GetUserRoles(id).Returns(Task.FromResult<IList<string>>(newRoles));
+
+        _sut.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext
+            {
+                User = new System.Security.Claims.ClaimsPrincipal(new System.Security.Claims.ClaimsIdentity(new[] { new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Name, "admin"), new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Role, "Admin") }, "TestAuth"))
+            }
+        };
+
+        var result = await _sut.Update(id, dto);
+
+        result.Should().BeOfType<OkObjectResult>();
+        await _mockService.Received(1).UpdateUser(id, Arg.Is<ApplicationUserUpdateDto>(d => d.Roles != null && d.Roles.Count == 2));
+    }
+
+    [TestMethod]
     public async Task Update_AsOwner_ReturnsOkWithUpdated()
     {
         var id = "user1";
@@ -406,6 +461,117 @@ public class ApplicationUserControllerTests
         };
 
         var result = await _sut.Update(id, dto);
+
+        result.Should().BeOfType<BadRequestObjectResult>();
+    }
+
+    [TestMethod]
+    public async Task Delete_WhenSuccessful_ReturnsNoContent()
+    {
+        var id = "user1";
+
+        var result = await _sut.Delete(id);
+
+        result.Should().BeOfType<NoContentResult>();
+        await _mockService.Received(1).DeleteUser(id);
+    }
+
+    [TestMethod]
+    public async Task Delete_WhenUserNotFound_ReturnsNotFound()
+    {
+        var id = "missing";
+        _mockService.DeleteUser(id).Returns(Task.FromException(new NotFoundException("User not found")));
+
+        var result = await _sut.Delete(id);
+
+        result.Should().BeOfType<NotFoundResult>();
+    }
+
+    [TestMethod]
+    public async Task Delete_WhenServiceThrowsInvalidOperation_ReturnsBadRequestWithError()
+    {
+        var id = "user1";
+        _mockService.DeleteUser(id).Returns(Task.FromException(new InvalidOperationException("Delete failed")));
+
+        var result = await _sut.Delete(id);
+
+        result.Should().BeOfType<BadRequestObjectResult>();
+    }
+
+    [TestMethod]
+    public async Task DeleteMe_WhenAuthenticated_ReturnsNoContent()
+    {
+        var username = "currentuser";
+        var user = new ApplicationUser { Id = "u-current", UserName = username };
+        _mockService.GetUserByUsername(username).Returns(Task.FromResult(user));
+
+        _sut.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext
+            {
+                User = new System.Security.Claims.ClaimsPrincipal(new System.Security.Claims.ClaimsIdentity(new[] { new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Name, username) }, "TestAuth"))
+            }
+        };
+
+        var result = await _sut.DeleteMe();
+
+        result.Should().BeOfType<NoContentResult>();
+        await _mockService.Received(1).GetUserByUsername(username);
+        await _mockService.Received(1).DeleteUser(user.Id);
+    }
+
+    [TestMethod]
+    public async Task DeleteMe_WhenUnauthenticated_ReturnsUnauthorized()
+    {
+        _sut.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext
+            {
+                User = new System.Security.Claims.ClaimsPrincipal(new System.Security.Claims.ClaimsIdentity())
+            }
+        };
+
+        var result = await _sut.DeleteMe();
+
+        result.Should().BeOfType<UnauthorizedResult>();
+    }
+
+    [TestMethod]
+    public async Task DeleteMe_WhenCurrentUserNotFound_ReturnsNotFound()
+    {
+        var username = "missinguser";
+        _mockService.GetUserByUsername(username).Returns(Task.FromException<ApplicationUser>(new NotFoundException("ApplicationUser not found")));
+
+        _sut.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext
+            {
+                User = new System.Security.Claims.ClaimsPrincipal(new System.Security.Claims.ClaimsIdentity(new[] { new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Name, username) }, "TestAuth"))
+            }
+        };
+
+        var result = await _sut.DeleteMe();
+
+        result.Should().BeOfType<NotFoundResult>();
+    }
+
+    [TestMethod]
+    public async Task DeleteMe_WhenDeleteFails_ReturnsBadRequestWithError()
+    {
+        var username = "currentuser";
+        var user = new ApplicationUser { Id = "u-current", UserName = username };
+        _mockService.GetUserByUsername(username).Returns(Task.FromResult(user));
+        _mockService.DeleteUser(user.Id).Returns(Task.FromException(new InvalidOperationException("Delete failed")));
+
+        _sut.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext
+            {
+                User = new System.Security.Claims.ClaimsPrincipal(new System.Security.Claims.ClaimsIdentity(new[] { new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Name, username) }, "TestAuth"))
+            }
+        };
+
+        var result = await _sut.DeleteMe();
 
         result.Should().BeOfType<BadRequestObjectResult>();
     }

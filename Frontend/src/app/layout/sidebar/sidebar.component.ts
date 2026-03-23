@@ -6,6 +6,7 @@ import { TagModule } from 'primeng/tag';
 import { AvatarModule } from 'primeng/avatar';
 import { RouterModule } from '@angular/router';
 import { AuthService } from '../../core/auth/auth.service';
+import { LanguageService } from '../../core/services/language.service';
 
 @Component({
   selector: 'app-sidebar',
@@ -19,9 +20,11 @@ import { AuthService } from '../../core/auth/auth.service';
       <div class="logo">
         <h2 class="text-xl font-bold m-0">SSSKL</h2> <p-tag class="ml-2" value="v2" />
       </div>
-      <p-menu [model]="items()" styleClass="w-full border-none bg-transparent flex-1" />
+      <div class="flex-1 overflow-y-auto min-h-0 custom-scrollbar">
+        <p-menu [model]="items()" styleClass="w-full border-none bg-transparent" />
+      </div>
       
-      <div class="mt-auto pb-4 flex flex-col">
+      <div class="pb-4 flex flex-col">
         @if (authService.isAuthenticated()) {
           <a class="flex items-center gap-3 px-6 py-3 cursor-pointer text-surface-200 hover:text-white hover:bg-surface-700 transition-colors" [routerLink]="['/settings']" style="text-decoration: none;">
             @if (authService.currentUser()?.profilePictureBase64) {
@@ -36,21 +39,21 @@ import { AuthService } from '../../core/auth/auth.service';
             <div class="w-8 h-8 flex items-center justify-center">
               <i class="pi pi-sign-out text-lg"></i>
             </div>
-            <span class="font-medium">Logout</span>
+            <span class="font-medium">{{ ls.t().logout }}</span>
           </a>
         } @else {
           <a class="flex items-center gap-3 px-6 py-3 cursor-pointer hover:bg-surface-700 transition-colors" [routerLink]="['/login']" style="text-decoration: none; color: var(--p-primary-color, #3b82f6);">
             <div class="w-8 h-8 flex items-center justify-center">
               <i class="pi pi-sign-in text-lg"></i>
             </div>
-            <span class="font-medium">Login</span>
+            <span class="font-medium">{{ ls.t().login }}</span>
           </a>
           
           <a class="flex items-center gap-3 px-6 py-3 cursor-pointer text-surface-200 hover:text-white hover:bg-surface-700 transition-colors" [routerLink]="['/register']" style="text-decoration: none;">
             <div class="w-8 h-8 flex items-center justify-center">
               <i class="pi pi-user-plus text-lg"></i>
             </div>
-            <span class="font-medium">Register</span>
+            <span class="font-medium">{{ ls.t().register }}</span>
           </a>
         }
       </div>
@@ -67,6 +70,7 @@ import { AuthService } from '../../core/auth/auth.service';
       flex-shrink: 0;
       transition: transform 0.3s ease;
       z-index: 1000;
+      overflow: hidden;
     }
     .logo {
       height: 64px;
@@ -90,6 +94,7 @@ import { AuthService } from '../../core/auth/auth.service';
       background: transparent !important;
       border: 0 !important;
       padding: 1rem 0;
+      height: auto !important;
     }
     ::ng-deep .p-menu .p-menu-item-link {
       background: transparent !important;
@@ -130,19 +135,39 @@ import { AuthService } from '../../core/auth/auth.service';
         display: block;
       }
     }
+    
+    .custom-scrollbar {
+      scrollbar-width: thin;
+      scrollbar-color: var(--p-surface-600) transparent;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: var(--p-surface-600, #475569);
+      border-radius: 10px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: var(--p-primary-500, #3b82f6);
+    }
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SidebarComponent {
   authService = inject(AuthService);
+  ls = inject(LanguageService);
   isOpen = input<boolean>(false);
   close = output<void>();
   items = computed<MenuItem[]>(() => {
+    const t = this.ls.t();
     const baseItems: MenuItem[] = [
       {
-        label: 'Main',
+        label: t.main,
         items: [
-          { label: 'Homepage', icon: 'pi pi-home', routerLink: '/', routerLinkActiveOptions: { exact: true } }
+          { label: t.homepage, icon: 'pi pi-home', routerLink: '/', routerLinkActiveOptions: { exact: true } }
         ]
       }
     ];
@@ -150,11 +175,13 @@ export class SidebarComponent {
     if (this.authService.isAuthenticated()) {
       baseItems.push(
         {
-          label: 'User',
+          label: t.user,
           items: [
-            { label: 'Bestellen', icon: 'pi pi-shopping-cart', routerLink: '/pos' },
-            { label: 'My Orders', icon: 'pi pi-history', routerLink: '/orders/personal' },
-            { label: 'Settings', icon: 'pi pi-cog', routerLink: '/settings' }
+            { label: t.order, icon: 'pi pi-shopping-cart', routerLink: '/pos' },
+            { label: t.my_orders, icon: 'pi pi-history', routerLink: '/orders/personal' },
+            { label: t.my_saldo, icon: 'pi pi-wallet', routerLink: '/orders/saldo' },
+            { label: t.user_overview, icon: 'pi pi-users', routerLink: '/users' },
+            { label: t.settings, icon: 'pi pi-cog', routerLink: '/settings' }
           ]
         }
       );
@@ -168,25 +195,25 @@ export class SidebarComponent {
         const adminItems: MenuItem[] = [];
 
         if (isAdmin) {
-            adminItems.push(
-              { label: 'Users', icon: 'pi pi-users', routerLink: '/admin/users' },
-              { label: 'Products', icon: 'pi pi-box', routerLink: '/admin/products' },
-              { label: 'Announcements', icon: 'pi pi-bullhorn', routerLink: '/admin/announcements' },
-              { label: 'Top-Ups', icon: 'pi pi-wallet', routerLink: '/admin/topups' }
-            );
+          adminItems.push(
+            { label: t.users, icon: 'pi pi-users', routerLink: '/admin/users' },
+            { label: t.products, icon: 'pi pi-box', routerLink: '/admin/products' },
+            { label: t.announcements, icon: 'pi pi-megaphone', routerLink: '/admin/announcements' },
+            { label: t.top_ups, icon: 'pi pi-wallet', routerLink: '/admin/topups' }
+          );
         }
 
         if (isAdmin || isKiosk) {
-            adminItems.push(
-              { label: 'Orders', icon: 'pi pi-list', routerLink: '/admin/orders' }
-            );
+          adminItems.push(
+            { label: t.orders, icon: 'pi pi-list', routerLink: '/admin/orders' }
+          );
         }
 
         if (adminItems.length > 0) {
-            baseItems.push({
-              label: 'Admin',
-              items: adminItems
-            });
+          baseItems.push({
+            label: t.admin,
+            items: adminItems
+          });
         }
       }
     }

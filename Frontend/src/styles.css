@@ -8,6 +8,8 @@ body {
 @import 'tailwindcss';
 @import "tailwindcss-primeui";
 
+@variant dark (&:where(.dark, .dark *));
+
 @theme {
   --color-primary-50: var(--p-primary-50);
   --color-primary-100: var(--p-primary-100);

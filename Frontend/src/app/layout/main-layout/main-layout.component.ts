@@ -34,6 +34,15 @@ import { HeaderComponent } from '../header/header.component';
       flex: 1;
       padding: 2rem;
       overflow-y: auto;
+
+      & ::ng-deep > * {
+        display: block;
+        animation: fadeIn 0.3s ease-out;
+      }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
     }
     @media (max-width: 768px) {
       .content-area {

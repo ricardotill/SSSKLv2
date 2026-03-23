@@ -238,9 +238,39 @@ public class ApplicationUserService(
                 throw new InvalidOperationException(string.Join(";", resetResult.Errors.Select(e => e.Description)));
         }
 
+        // Handle role changes
+        if (dto.Roles != null && dto.Roles.Count > 0)
+        {
+            // Get current roles and remove all of them
+            var currentRoles = await userManager.GetRolesAsync(user);
+            if (currentRoles.Count > 0)
+            {
+                var removeResult = await userManager.RemoveFromRolesAsync(user, currentRoles);
+                if (!removeResult.Succeeded)
+                    throw new InvalidOperationException(string.Join(";", removeResult.Errors.Select(e => e.Description)));
+            }
+
+            // Add new roles
+            var addResult = await userManager.AddToRolesAsync(user, dto.Roles);
+            if (!addResult.Succeeded)
+                throw new InvalidOperationException(string.Join(";", addResult.Errors.Select(e => e.Description)));
+        }
+
         // Return fresh user data
         var updated = await userManager.FindByIdAsync(id);
         return updated ?? user;
+    }
+
+    public async Task DeleteUser(string id)
+    {
+        logger.LogInformation("{GetType}: Delete User with ID {Id}", GetType(), id);
+
+        var user = await userManager.FindByIdAsync(id);
+        if (user == null) throw new Data.DAL.Exceptions.NotFoundException("ApplicationUser not found");
+
+        var deleteResult = await userManager.DeleteAsync(user);
+        if (!deleteResult.Succeeded)
+            throw new InvalidOperationException(string.Join(";", deleteResult.Errors.Select(e => e.Description)));
     }
 
     public async Task<IList<string>> GetUserRoles(string userId)

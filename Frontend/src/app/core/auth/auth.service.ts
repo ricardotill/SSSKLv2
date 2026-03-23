@@ -1,13 +1,17 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { catchError, map, tap } from 'rxjs/operators';
-import { Observable, of, throwError } from 'rxjs';
+import { BehaviorSubject, Observable, of, throwError } from 'rxjs';
+import { catchError, filter, map, switchMap, take, tap } from 'rxjs/operators';
 
 export interface AccessTokenResponse {
     tokenType: string | null;
     accessToken: string;
     expiresIn: number;
+    refreshToken: string;
+}
+
+export interface RefreshRequest {
     refreshToken: string;
 }
 
@@ -71,6 +75,8 @@ export class AuthService {
     private readonly USER_API_URL = `/api/v1/ApplicationUser`;
 
     private currentUserSignal = signal<ApplicationUserDetailedDto | null>(null);
+    public isRefreshing = false;
+    public refreshTokenSubject = new BehaviorSubject<string | null>(null);
 
     // Public computed signals for components to consume
     currentUser = computed(() => this.currentUserSignal());
@@ -124,22 +130,18 @@ export class AuthService {
     refreshTokens(): Observable<AccessTokenResponse> {
         const refreshToken = this.getRefreshToken();
         if (!refreshToken) {
-            this.logout();
             return throwError(() => new Error('No refresh token available'));
         }
 
         return this.http.post<AccessTokenResponse>(`${this.API_URL}/refresh`, { refreshToken }).pipe(
             tap(response => {
-                // Determine which storage currently holds the refresh token to maintain the same storage behavior
-                const rememberMe = !!localStorage.getItem('refresh_token');
-                this.setTokens(response, rememberMe);
-            }),
-            catchError(error => {
-                this.logout();
-                return throwError(() => error);
+                // Determine if we should use localStorage or sessionStorage
+                const isPersistent = !!localStorage.getItem('access_token');
+                this.setTokens(response, isPersistent);
             })
         );
     }
+
 
     private fetchCurrentUser(): Observable<ApplicationUserDetailedDto> {
         return this.http.get<ApplicationUserDetailedDto>(`${this.USER_API_URL}/me`).pipe(
@@ -173,6 +175,10 @@ export class AuthService {
 
     downloadPersonalData(): Observable<Blob> {
         return this.http.post(`${this.USER_API_URL}/me/personaldata`, {}, { responseType: 'blob' });
+    }
+
+    deleteAccount(): Observable<any> {
+        return this.http.delete(`${this.USER_API_URL}/me`);
     }
 
     getAccessToken(): string | null {

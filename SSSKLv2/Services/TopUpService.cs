@@ -21,7 +21,7 @@ public class TopUpService(
     public async Task<IEnumerable<TopUp>> GetAll(int skip, int take)
     {
         logger.LogInformation($"{GetType()}: Get All TopUps with skip {skip} and take {take}");
-        return await topUpRepository.GetAll(skip, take);
+        return await topUpRepository.GetAll(take, skip);
     }
     
     public IQueryable<TopUp> GetAllQueryable(ApplicationDbContext dbContext)
@@ -39,7 +39,7 @@ public class TopUpService(
     public async Task<IEnumerable<TopUp>> GetAllPersonal(string username, int skip, int take)
     {
         logger.LogInformation($"{GetType()}: Get All Personal TopUps with skip {skip} and take {take}");
-        return await topUpRepository.GetPersonal(username, skip, take);
+        return await topUpRepository.GetPersonal(username, take, skip);
     }
     
     public IQueryable<TopUp> GetPersonalQueryable(string username, ApplicationDbContext dbContext)

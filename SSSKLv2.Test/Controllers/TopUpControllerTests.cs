@@ -13,6 +13,7 @@ namespace SSSKLv2.Test.Controllers;
 public class TopUpControllerTests
 {
     private ITopUpService _mockService = null!;
+    private IApplicationUserService _mockUserService = null!;
     private ILogger<TopUpController> _mockLogger = null!;
     private TopUpController _sut = null!;
 
@@ -20,8 +21,9 @@ public class TopUpControllerTests
     public void Init()
     {
         _mockService = Substitute.For<ITopUpService>();
+        _mockUserService = Substitute.For<IApplicationUserService>();
         _mockLogger = Substitute.For<ILogger<TopUpController>>();
-        _sut = new TopUpController(_mockService, _mockLogger);
+        _sut = new TopUpController(_mockService, _mockUserService, _mockLogger);
     }
 
     [TestMethod]

@@ -10,35 +10,42 @@ export const routes: Routes = [
         loadComponent: () => import('./products/products.component'),
         canActivate: [roleGuard],
         data: { roles: ['Admin'] },
-        title: 'Products - Admin'
+        title: 'Producten Beheren - SSSKL'
       },
       {
         path: 'topups',
         loadComponent: () => import('./topups/topups.component'),
         canActivate: [roleGuard],
         data: { roles: ['Admin'] },
-        title: 'Top-Ups - Admin'
+        title: 'Opwaarderingen Beheren - SSSKL'
       },
       {
         path: 'orders',
         loadComponent: () => import('./orders/orders.component'),
         canActivate: [roleGuard],
         data: { roles: ['Admin', 'Kiosk'] },
-        title: 'Orders - Admin'
+        title: 'Bestellingen Beheren - SSSKL'
       },
       {
         path: 'announcements',
         loadComponent: () => import('./announcements/announcements.component'),
         canActivate: [roleGuard],
         data: { roles: ['Admin'] },
-        title: 'Announcements - Admin'
+        title: 'Mededelingen Beheren - SSSKL'
       },
       {
         path: 'users',
         loadComponent: () => import('./users/users.component'),
         canActivate: [roleGuard],
         data: { roles: ['Admin'] },
-        title: 'Users - Admin'
+        title: 'Gebruikers Beheren - SSSKL'
+      },
+      {
+        path: 'achievements',
+        loadComponent: () => import('./achievements/achievements.component'),
+        canActivate: [roleGuard],
+        data: { roles: ['Admin'] },
+        title: 'Achievements Beheren - SSSKL'
       }
     ]
   }

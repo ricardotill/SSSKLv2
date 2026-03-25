@@ -8,35 +8,40 @@ export const routes: Routes = [
     path: 'login',
     loadComponent: () => import('./features/auth/login.component'),
     canActivate: [unauthGuard],
-    title: 'Login - SSSKLv2'
+    title: 'Login - SSSKL'
   },
   {
     path: 'register',
     loadComponent: () => import('./features/auth/register.component'),
     canActivate: [unauthGuard],
-    title: 'Register - SSSKLv2'
+    title: 'Registreren - SSSKL'
   },
   {
     path: '',
     loadComponent: () => import('./layout/main-layout/main-layout.component'),
     children: [
       {
+        path: 'leaderboard',
+        loadComponent: () => import('./features/leaderboard/leaderboard.component'),
+        title: 'Leaderboard - SSSKL'
+      },
+      {
         path: '',
         loadComponent: () => import('./features/homepage/homepage.component'),
         canActivate: [unauthGuard],
-        title: 'Homepage'
+        title: 'Home - SSSKL'
       },
       {
         path: 'about',
         loadComponent: () => import('./features/homepage/homepage.component'),
         canActivate: [authGuard],
-        title: 'About'
+        title: 'Over SSSKL - SSSKL'
       },
       {
         path: 'pos',
         loadComponent: () => import('./features/pos/pos.component'),
         canActivate: [authGuard],
-        title: 'Bestellen - Admin Panel'
+        title: 'Bestellen - SSSKL'
       },
       {
         path: 'admin',
@@ -48,7 +53,7 @@ export const routes: Routes = [
         path: 'settings',
         loadComponent: () => import('./features/settings/settings.component'),
         canActivate: [authGuard],
-        title: 'Settings - Admin Panel'
+        title: 'Instellingen - SSSKL'
       },
       {
         path: 'orders',
@@ -57,12 +62,12 @@ export const routes: Routes = [
           {
             path: 'personal',
             loadComponent: () => import('./features/orders/personal-orders.component'),
-            title: 'My Orders'
+            title: 'Mijn Bestellingen - SSSKL'
           },
           {
             path: 'saldo',
             loadComponent: () => import('./features/top-ups/personal-top-ups.component'),
-            title: 'My Balance'
+            title: 'Mijn Saldo - SSSKL'
           }
         ]
       },
@@ -70,7 +75,13 @@ export const routes: Routes = [
         path: 'users',
         loadComponent: () => import('./features/users/users-overview.component'),
         canActivate: [authGuard],
-        title: 'Users - SSSKLv2'
+        title: 'Gebruikersoverzicht - SSSKL'
+      },
+      {
+        path: 'achievements',
+        loadComponent: () => import('./features/achievements/achievements.component'),
+        canActivate: [authGuard],
+        title: 'Achievements - SSSKL'
       }
     ]
   },

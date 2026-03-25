@@ -10,7 +10,7 @@ using SSSKLv2.Data.DAL.Exceptions;
 namespace SSSKLv2.Controllers.v1;
 
 [Authorize]
-[Route("v1/[controller]")]
+[Route("v1/achievement")]
 [ApiController]
 public class AchievementController : ControllerBase
 {
@@ -170,6 +170,14 @@ public class AchievementController : ControllerBase
     {
         var list = await _achievementService.GetPersonalAchievementEntries(userId);
         return Ok(list.Select(MapEntryToDto));
+    }
+
+    // GET v1/achievement/all-for-user/{userId}
+    [HttpGet("all-for-user/{userId}")]
+    public async Task<IActionResult> GetAllForUser(string userId)
+    {
+        var list = await _achievementService.GetPersonalAchievements(userId);
+        return Ok(list);
     }
 
     // GET v1/achievement/entries/personal

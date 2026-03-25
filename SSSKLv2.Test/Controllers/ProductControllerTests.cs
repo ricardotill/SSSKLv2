@@ -43,10 +43,33 @@ public class ProductControllerTests
         var result = await _sut.GetAll();
 
         // Assert
-        var ok = result.Result as OkObjectResult;
+        var ok = result as OkObjectResult;
         ok.Should().NotBeNull();
         var expectedDtos = items.Select(p => new ProductDto { Id = p.Id, Name = p.Name, Description = p.Description, Price = p.Price, Stock = p.Stock }).ToList();
         ok!.Value.Should().BeEquivalentTo(new PaginationObject<ProductDto> { Items = expectedDtos, TotalCount = items.Count });
+    }
+
+    [TestMethod]
+    public async Task GetAll_WithAllTrue_ReturnsOkWithUnpaginatedItems()
+    {
+        // Arrange
+        var items = new List<Product>
+        {
+            new Product { Id = Guid.NewGuid(), Name = "P1", Price = 1.0m, Stock = 5 },
+            new Product { Id = Guid.NewGuid(), Name = "P2", Price = 2.0m, Stock = 3 }
+        };
+        _mockService.GetAll().Returns(Task.FromResult((IList<Product>)items));
+
+        // Act
+        var result = await _sut.GetAll(all: true);
+
+        // Assert
+        var ok = result as OkObjectResult;
+        ok.Should().NotBeNull();
+        var expectedDtos = items.Select(p => new ProductDto { Id = p.Id, Name = p.Name, Description = p.Description, Price = p.Price, Stock = p.Stock }).ToList();
+        ok!.Value.Should().BeEquivalentTo(expectedDtos);
+        await _mockService.Received(1).GetAll();
+        await _mockService.DidNotReceive().GetAll(Arg.Any<int>(), Arg.Any<int>());
     }
 
     [TestMethod]

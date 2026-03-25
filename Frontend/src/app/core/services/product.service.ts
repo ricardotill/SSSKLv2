@@ -10,9 +10,9 @@ export class ProductService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = '/api/v1/product';
 
-  getProducts(skip: number = 0, take: number = 1000): Observable<PaginatedProducts> {
-    return this.http.get<PaginatedProducts>(this.baseUrl, {
-      params: { skip, take }
+  getProducts(skip: number = 0, take: number = 1000, all: boolean = false): Observable<PaginatedProducts | ProductDto[]> {
+    return this.http.get<PaginatedProducts | ProductDto[]>(this.baseUrl, {
+      params: { skip, take, all: all.toString() }
     });
   }
 

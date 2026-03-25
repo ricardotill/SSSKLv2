@@ -1,11 +1,14 @@
-import { Component, signal, inject } from '@angular/core';
+import { Component, signal, inject, effect } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { ThemeService } from './core/services/theme.service';
 import { PrimeNG } from 'primeng/config';
+import { AchievementModalComponent } from './shared/components/achievement-modal/achievement-modal.component';
+import { AuthService } from './core/auth/auth.service';
+import { AchievementPopupService } from './core/services/achievement-popup.service';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet],
+  imports: [RouterOutlet, AchievementModalComponent],
   templateUrl: './app.html',
   styleUrl: './app.css'
 })
@@ -13,10 +16,24 @@ export class App {
   protected readonly title = signal('SSSKLv2');
   private themeService = inject(ThemeService);
   private primeng = inject(PrimeNG);
+  private authService = inject(AuthService);
+  private popupService = inject(AchievementPopupService);
 
   constructor() {
     this.themeService.init();
     this.configureDutchPrimeNG();
+
+    // Check for unseen achievements whenever the current user changes (login, app init if authenticated)
+    // Use an effect to reactively check when user session establishes
+    effect(() => {
+      const user = this.authService.currentUser();
+      if (user) {
+        // Small delay to ensure any redirects (like login -> pos) finish before triggering modal
+        setTimeout(() => {
+          this.popupService.checkUnseenAchievements();
+        }, 500);
+      }
+    });
   }
 
   private configureDutchPrimeNG() {

@@ -169,7 +169,8 @@ export class SidebarComponent {
       baseItems.push({
         label: t.main,
         items: [
-          { label: t.homepage, icon: 'pi pi-home', routerLink: '/', routerLinkActiveOptions: { exact: true } }
+          { label: t.homepage, icon: 'pi pi-home', routerLink: '/', routerLinkActiveOptions: { exact: true } },
+          { label: t.leaderboard, icon: 'pi pi-chart-bar', routerLink: '/leaderboard' }
         ]
       });
     }
@@ -177,14 +178,16 @@ export class SidebarComponent {
     if (this.authService.isAuthenticated()) {
       baseItems.push(
         {
-          label: t.user,
+          label: t.general,
           items: [
             { label: t.order, icon: 'pi pi-shopping-cart', routerLink: '/pos' },
             { label: t.my_orders, icon: 'pi pi-history', routerLink: '/orders/personal' },
             { label: t.my_saldo, icon: 'pi pi-wallet', routerLink: '/orders/saldo' },
+            { label: t.achievements, icon: 'pi pi-verified', routerLink: '/achievements' },
+            { label: t.leaderboard, icon: 'pi pi-chart-bar', routerLink: '/leaderboard' },
             { label: t.user_overview, icon: 'pi pi-users', routerLink: '/users' },
-            { label: t.settings, icon: 'pi pi-cog', routerLink: '/settings' },
-            { label: t.about, icon: 'pi pi-info-circle', routerLink: '/about' }
+            { label: t.about, icon: 'pi pi-info-circle', routerLink: '/about' },
+            { label: t.settings, icon: 'pi pi-cog', routerLink: '/settings' }
           ]
         }
       );
@@ -201,6 +204,7 @@ export class SidebarComponent {
           adminItems.push(
             { label: t.users, icon: 'pi pi-users', routerLink: '/admin/users' },
             { label: t.products, icon: 'pi pi-box', routerLink: '/admin/products' },
+            { label: t.achievements, icon: 'pi pi-verified', routerLink: '/admin/achievements' },
             { label: t.announcements, icon: 'pi pi-megaphone', routerLink: '/admin/announcements' },
             { label: t.top_ups, icon: 'pi pi-wallet', routerLink: '/admin/topups' }
           );

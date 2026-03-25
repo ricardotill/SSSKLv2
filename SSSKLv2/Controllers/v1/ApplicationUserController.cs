@@ -113,66 +113,6 @@ public class ApplicationUserController : ControllerBase
         return Ok(users.Select(MapToDto).ToList());
     }
 
-    [AllowAnonymous]
-    [HttpGet("leaderboard/{productId:guid}")]
-    public async Task<ActionResult<IEnumerable<LeaderboardEntryDto>>> GetLeaderboard(Guid productId)
-    {
-        _logger.LogInformation("{Controller}: Get all leaderboard for product {ProductId}", nameof(ApplicationUserController), productId);
-        try
-        {
-            var result = await _applicationUserService.GetAllLeaderboard(productId);
-            return Ok(result);
-        }
-        catch (NotFoundException)
-        {
-            return NotFound();
-        }
-    }
-
-    [HttpGet("leaderboard/monthly/{productId:guid}")]
-    public async Task<ActionResult<IEnumerable<LeaderboardEntryDto>>> GetMonthlyLeaderboard(Guid productId)
-    {
-        _logger.LogInformation("{Controller}: Get monthly leaderboard for product {ProductId}", nameof(ApplicationUserController), productId);
-        try
-        {
-            var result = await _applicationUserService.GetMonthlyLeaderboard(productId);
-            return Ok(result);
-        }
-        catch (NotFoundException)
-        {
-            return NotFound();
-        }
-    }
-
-    [HttpGet("leaderboard/12hour/{productId:guid}")]
-    public async Task<ActionResult<IEnumerable<LeaderboardEntryDto>>> Get12HourlyLeaderboard(Guid productId)
-    {
-        _logger.LogInformation("{Controller}: Get 12-hour leaderboard for product {ProductId}", nameof(ApplicationUserController), productId);
-        try
-        {
-            var result = await _applicationUserService.Get12HourlyLeaderboard(productId);
-            return Ok(result);
-        }
-        catch (NotFoundException)
-        {
-            return NotFound();
-        }
-    }
-
-    [HttpGet("leaderboard/12hour/live/{productId:guid}")]
-    public async Task<ActionResult<IEnumerable<LeaderboardEntryDto>>> Get12HourlyLiveLeaderboard(Guid productId)
-    {
-        _logger.LogInformation("{Controller}: Get 12-hour live leaderboard for product {ProductId}", nameof(ApplicationUserController), productId);
-        try
-        {
-            var result = await _applicationUserService.Get12HourlyLiveLeaderboard(productId);
-            return Ok(result);
-        }
-        catch (NotFoundException)
-        {
-            return NotFound();
-        }
-    }
 
     // GET v1/applicationuser/me
     [HttpGet("me")]

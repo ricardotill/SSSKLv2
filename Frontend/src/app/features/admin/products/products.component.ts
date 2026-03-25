@@ -12,7 +12,7 @@ import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { CardModule } from 'primeng/card';
 import { ProductService } from '../../../core/services/product.service';
-import { ProductDto, ProductCreateDto, ProductUpdateDto } from '../../../core/models/product.model';
+import { ProductDto, ProductCreateDto, ProductUpdateDto, PaginatedProducts } from '../../../core/models/product.model';
 import { LanguageService } from '../../../core/services/language.service';
 
 @Component({
@@ -137,8 +137,9 @@ export default class ProductsComponent implements OnInit {
     this.loading.set(true);
     this.productService.getProducts().subscribe({
       next: (data) => {
-        this.products.set(data.items);
-        this.totalRecords.set(data.totalCount);
+        const paginatedData = data as PaginatedProducts;
+        this.products.set(paginatedData.items);
+        this.totalRecords.set(paginatedData.totalCount);
         this.loading.set(false);
       },
       error: () => {

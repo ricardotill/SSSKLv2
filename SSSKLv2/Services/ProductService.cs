@@ -32,7 +32,7 @@ public class ProductService : IProductService
     public async Task<IList<Product>> GetAll(int skip, int take)
     {
         _logger.LogInformation("{Type}: Get All Products skip={Skip} take={Take}", GetType(), skip, take);
-        return await productRepository.GetAll();
+        return await productRepository.GetAll(skip, take);
     }
     
     public async Task<IList<Product>> GetAllAvailable()

@@ -9,7 +9,7 @@ import { NgOptimizedImage } from '@angular/common';
   imports: [CardModule, BrandingComponent, NgOptimizedImage],
   template: `
     <div class="flex justify-center items-center h-full sm:mt-10">
-      <p-card class="max-w-2xl w-full" styleClass="homepage-card">
+      <p-card class="max-w-2xl w-full" styleClass="bg-surface-50 border border-surface-200 dark:bg-surface-900 dark:border-surface-800">
         <div class="flex flex-col sm:flex-row items-center sm:items-start gap-6">
           <img
             ngSrc="/logo.png"
@@ -30,6 +30,17 @@ import { NgOptimizedImage } from '@angular/common';
                 >Ricardo Tillemans</a
               >
             </p>
+            
+            <div class="mt-8">
+              <a 
+                href="https://github.com/ricardotill/SSSKLv2" 
+                target="_blank" 
+                class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-surface-100 dark:bg-surface-800 text-surface-700 dark:text-surface-300 rounded-full hover:bg-surface-200 dark:hover:bg-surface-700 transition-colors shadow-sm ring-1 ring-surface-200 dark:ring-surface-700 hover:ring-primary/50"
+              >
+                <i class="pi pi-github text-lg"></i>
+                View on GitHub
+              </a>
+            </div>
           </div>
         </div>
 
@@ -50,18 +61,6 @@ import { NgOptimizedImage } from '@angular/common';
     :host {
       display: block;
       height: 100%;
-    }
-
-    :host ::ng-deep .homepage-card {
-      background: var(--p-surface-900);
-      border: 1px solid var(--p-surface-800);
-    }
-
-    @media (prefers-color-scheme: light) {
-      :host ::ng-deep .homepage-card {
-        background: var(--p-surface-50);
-        border: 1px solid var(--p-surface-200);
-      }
     }
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,

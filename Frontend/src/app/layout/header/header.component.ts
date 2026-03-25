@@ -25,7 +25,10 @@ import { LanguageService } from '../../core/services/language.service';
         <ng-template pTemplate="end">
           <div class="flex items-center gap-4">
             @if (authService.isAuthenticated()) {
-              <div class="flex items-center gap-2 bg-surface-100 dark:bg-surface-800 px-3 py-1.5 rounded-full border border-surface-200 dark:border-surface-700">
+              <div 
+                routerLink="/orders/saldo"
+                class="flex items-center gap-2 bg-surface-100 dark:bg-surface-800 px-3 py-1.5 rounded-full border border-surface-200 dark:border-surface-700 cursor-pointer hover:bg-surface-200 dark:hover:bg-surface-700 transition-colors duration-200"
+              >
                 <i class="pi pi-wallet text-primary-500"></i>
                 <span class="font-semibold text-surface-900 dark:text-surface-0">{{ (authService.currentUser()?.saldo || 0) | currency:'EUR':'symbol' }}</span>
               </div>

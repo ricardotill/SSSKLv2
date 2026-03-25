@@ -11,6 +11,7 @@ import { ApplicationUserDto } from '../../core/models/application-user.model';
 import { ProductDto } from '../../core/models/product.model';
 import { AuthService } from '../../core/auth/auth.service';
 import { LanguageService } from '../../core/services/language.service';
+import { AchievementPopupService } from '../../core/services/achievement-popup.service';
 
 import { CardModule } from 'primeng/card';
 
@@ -130,6 +131,7 @@ export default class PosComponent implements OnInit {
   private orderService = inject(OrderService);
   private messageService = inject(MessageService);
   private authService = inject(AuthService);
+  private popupService = inject(AchievementPopupService);
   ls = inject(LanguageService);
 
   isLoading = signal(true);
@@ -186,6 +188,9 @@ export default class PosComponent implements OnInit {
         this.messageService.add({ severity: 'success', summary: this.ls.t().success, detail: this.ls.t().order_placed });
         this.authService.refreshCurrentUser();
         this.isSubmitting.set(false);
+
+        // Check for newly acquired achievements after placing order
+        this.popupService.checkUnseenAchievements();
 
         const currentUser = this.authService.currentUser();
         const currentUserId = currentUser?.id;

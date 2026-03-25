@@ -169,31 +169,6 @@ public class ApplicationUserControllerTests
         result.Result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeEquivalentTo(expected);
     }
 
-    [TestMethod]
-    public async Task GetLeaderboard_ReturnsOkWithItems()
-    {
-        var productId = Guid.NewGuid();
-        var entries = new List<LeaderboardEntryDto>
-        {
-            new LeaderboardEntryDto { Amount = 5, FullName = "User1", ProductName = "Product" }
-        };
-        _mockService.GetAllLeaderboard(productId).Returns(Task.FromResult((IEnumerable<LeaderboardEntryDto>)entries));
-
-        var result = await _sut.GetLeaderboard(productId);
-
-        result.Result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeEquivalentTo(entries);
-    }
-
-    [TestMethod]
-    public async Task GetLeaderboard_WhenProductNotFound_ReturnsNotFound()
-    {
-        var productId = Guid.NewGuid();
-        _mockService.GetAllLeaderboard(productId).Returns(Task.FromException<IEnumerable<LeaderboardEntryDto>>(new NotFoundException("Product not found")));
-
-        var result = await _sut.GetLeaderboard(productId);
-
-        result.Result.Should().BeOfType<NotFoundResult>();
-    }
 
     [TestMethod]
     public async Task GetCurrent_WhenAuthenticated_ReturnsOkWithUser()

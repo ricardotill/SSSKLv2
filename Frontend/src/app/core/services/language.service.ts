@@ -31,17 +31,19 @@ export class LanguageService {
     'homepage': 'Home',
     'about': 'Over',
     'user': 'Gebruiker',
+    'general': 'Algemeen',
     'my_orders': 'Mijn Bestellingen',
     'my_saldo': 'Mijn Saldo',
     'settings': 'Instellingen',
     'admin': 'Administratie',
     'users': 'Gebruikers',
-    'user_overview': 'Gebruikers',
+    'user_overview': 'Saldolijst',
     'products': 'Producten',
     'announcements': 'Mededelingen',
     'top_ups': 'Opwaarderingen',
     'orders': 'Bestellingen',
     'pos': 'Bestellen',
+    'leaderboard': 'Leaderboard',
 
     // POS
     'what': 'Wat',
@@ -186,11 +188,30 @@ export class LanguageService {
     'confirm_delete_account': 'Weet je zeker dat je je account wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.',
     'confirm_delete_account_title': 'Accountverwijdering Bevestigen',
     'account_deleted': 'Je account is verwijderd.',
+
+    // Leaderboard
+    'select_product': 'Selecteer een product',
+    'last_12_hours': 'Afgelopen 12 uur',
+    'monthly': 'Maandelijks',
+    'total': 'Totaal',
+    'rank': 'Plek',
+    'no_purchases_period': 'Er zijn deze periode geen aankopen gedaan. Dus ik zou zeggen, bestellen maar! ;)',
+    'achievements': 'Achievements',
+    'achievements_desc': 'Bekijk hier de behaalde achievements van alle gebruikers.',
+    'no_achievements': 'Geen achievements gevonden voor deze gebruiker.',
+    'achieved_on': 'Behaald op',
+    'seen': 'Gezien',
+    'not_seen': 'Nieuw',
+    'locked': 'Vergrendeld',
+    'not_achieved_yet': 'Nog niet behaald',
+    'new_achievement': '🎉 Nieuwe Achievement{s}! 🎉',
+    'new_achievement_desc': 'Je hebt zojuist nieuwe dingen ontgrendeld!',
+    'awesome': 'Geweldig!',
   };
 
   // Signal for getting translations
   t = computed(() => {
-    // For now we only have Dutch version here, but structure allows adding more
+    // Return the concrete object to maintain type safety and avoid index signature lints
     return this.dutchTranslations;
   });
 

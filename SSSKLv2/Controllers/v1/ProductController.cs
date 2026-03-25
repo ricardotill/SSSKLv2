@@ -22,10 +22,17 @@ public class ProductController : ControllerBase
     }
 
     // GET v1/product
-    [Authorize(Roles = "Admin")]
+    [AllowAnonymous]
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<ProductDto>>> GetAll([FromQuery] int skip = 0, [FromQuery] int take = 15)
+    public async Task<IActionResult> GetAll([FromQuery] int skip = 0, [FromQuery] int take = 15, [FromQuery] bool all = false)
     {
+        if (all)
+        {
+            _logger.LogInformation("{Controller}: Get all products (unpaginated)", nameof(ProductController));
+            var allProducts = await _productService.GetAll();
+            return Ok(allProducts.Select(MapToDto));
+        }
+
         _logger.LogInformation("{Controller}: Get all products skip={Skip} take={Take}", nameof(ProductController), skip, take);
         var products = await _productService.GetAll(skip, take);
         var totalCount = await _productService.GetCount();

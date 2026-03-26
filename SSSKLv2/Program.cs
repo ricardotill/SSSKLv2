@@ -144,18 +144,20 @@ if (!string.IsNullOrEmpty(builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_
     builder.Logging.AddFilter<ApplicationInsightsLoggerProvider>("SSSKLv2", LogLevel.Trace);
 }
 
-// Register a CORS policy for frontend clients (applied only outside Development).
+// Register a CORS policy for frontend clients.
 var frontendOrigins = new[]
 {
     "http://localhost:3000",
     "https://localhost:3000",
     "http://localhost:5173",
     "https://localhost:5173",
+    "https://ssskl.scoutingwilo.nl",
+    "https://icy-island-07ad9b303.azurestaticapps.net"
 };
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowLocalFrontend", policy =>
+    options.AddPolicy("AllowFrontend", policy =>
     {
         policy.WithOrigins(frontendOrigins)
               .AllowAnyHeader()
@@ -295,11 +297,8 @@ app.UseStaticFiles();
 // Apply cookie policy before authentication so cookie flags are enforced.
 app.UseCookiePolicy();
 
-// Disable CORS in Development.
-if (!app.Environment.IsDevelopment())
-{
-    app.UseCors("AllowLocalFrontend");
-}
+// Apply CORS policy.
+app.UseCors("AllowFrontend");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapStaticAssets();

@@ -4,6 +4,7 @@
 @implements IAsyncDisposable
 @inject IProductService ProductService
 @inject IApplicationUserService UserService
+@inject IOrderService OrderService
 @inject IJSRuntime JS
 @using Microsoft.AspNetCore.SignalR.Client
 @inject NavigationManager Navigation
@@ -161,7 +162,6 @@
                     @if (LatestOrders.Any())
                     {
                         <h5>Laatste Bestellingen</h5>
-                        <p>Totale aankopen: @TotalQuantity</p>
                         <div class="table-responsive text-start">
                             <table class="table table-striped">
                                 <thead>
@@ -173,15 +173,13 @@
                                 </tr>
                                 </thead>
                                 <tbody>
-                                @foreach (var o in LatestOrders
-                                              .OrderByDescending(x => x.Timestamp)
-                                              .Take(10))
+                                @foreach (var o in LatestOrders)
                                 {
                                     <tr>
-                                        <td>@o.Timestamp.ToString("HH:mm")</td>
-                                        <td>@o.UserName</td>
-                                        <td>@o.ProductName</td>
-                                        <td>@o.Quantity</td>
+                                        <td>@o.CreatedOn.ToString("HH:mm")</td>
+                                        <td>@o.User.Name @o.User.Surname.First()</td>
+                                        <td>@o.ProductNaam</td>
+                                        <td>@o.Amount</td>
                                     </tr>
                                 }
                                 </tbody>
@@ -214,7 +212,7 @@ else
     public IEnumerable<LeaderboardEntryDto> Leaderboard { get; set; } = new List<LeaderboardEntryDto>();
     public IEnumerable<LeaderboardEntryDto> AllTimeLeaderboard { get; set; } = new List<LeaderboardEntryDto>();
     
-    public IList<UserPurchaseEvent> LatestOrders { get; } = new List<UserPurchaseEvent>();
+    public IEnumerable<Order> LatestOrders { get; set; } = new List<Order>();
     public int TotalQuantity = 0;
     
     protected override async Task OnInitializedAsync()
@@ -233,7 +231,6 @@ else
         
         Hub.On<UserPurchaseEvent>("UserPurchase", async dto =>
         {
-            ToevoegenPurchaseDto(dto);
             await GetData();
             await InvokeAsync(StateHasChanged);
         });
@@ -256,12 +253,7 @@ else
             Leaderboard = await UserService.Get12HourlyLiveLeaderboard(id);
             AllTimeLeaderboard = await UserService.GetAllLeaderboard(id);
         }
-    }
-    
-    private void ToevoegenPurchaseDto(UserPurchaseEvent @event)
-    {
-        LatestOrders.Add(@event);
-        TotalQuantity += @event.Quantity;
+        LatestOrders = await OrderService.GetLatestOrders();
     }
     
     private bool ShowAchievementOverlay { get; set; } = false;
@@ -408,4 +400,5 @@ else
             Hub = null;
         }
     }
+    public record UserPurchaseDto(string UserName, string ProductName, int Quantity, DateTime Timestamp);
 }

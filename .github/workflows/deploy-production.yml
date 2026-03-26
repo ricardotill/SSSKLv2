@@ -63,7 +63,8 @@ jobs:
   deploy:
     name: Deploy to Azure
     permissions:
-      contents: none
+      id-token: write
+      contents: read
     runs-on: ubuntu-latest
     needs: build
     environment:

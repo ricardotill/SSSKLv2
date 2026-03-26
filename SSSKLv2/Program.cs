@@ -308,7 +308,6 @@ app.MapStaticAssets();
 app.UseAntiforgery();
 
 app.MapRazorComponents<App>()
-    .WithStaticAssets()
     .AddInteractiveServerRenderMode();
 
 app.MapGroup("/api")
@@ -316,6 +315,7 @@ app.MapGroup("/api")
 app.MapGroup("/api/v1/identity")
     .MapSssklIdentityApi();
 
+app.MapFallbackToFile("index.html");
 
 if (app.Environment.IsDevelopment())
 {

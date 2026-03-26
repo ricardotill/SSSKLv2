@@ -81,6 +81,7 @@ export class LanguageService {
     'edit_product': 'Product Bewerken',
     'product_name': 'Productnaam',
     'product_description': 'Omschrijving',
+    'view_livedisplay': 'Live Display Bekijken',
     'stock': 'Voorraad',
     'product_added': 'Product succesvol toegevoegd',
     'product_updated': 'Product succesvol bijgewerkt',

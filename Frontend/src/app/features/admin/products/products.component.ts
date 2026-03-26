@@ -94,6 +94,9 @@ import { LanguageService } from '../../../core/services/language.service';
       </form>
       
       <ng-template pTemplate="footer">
+        @if (isEdit()) {
+          <p-button [label]="ls.t().view_livedisplay" icon="pi pi-external-link" [text]="true" severity="info" (onClick)="openLiveDisplay()"></p-button>
+        }
         <p-button [label]="ls.t().cancel" icon="pi pi-times" [text]="true" severity="secondary" (onClick)="dialogVisible.set(false)"></p-button>
         <p-button [label]="ls.t().save" icon="pi pi-check" (onClick)="saveProduct()" [loading]="saving()" [disabled]="productForm.invalid"></p-button>
       </ng-template>
@@ -168,6 +171,13 @@ export default class ProductsComponent implements OnInit {
       stock: product.stock
     });
     this.dialogVisible.set(true);
+  }
+
+  openLiveDisplay(): void {
+    const id = this.editingProductId();
+    if (id) {
+      window.open(`/leaderboard/livedisplay/${id}`, '_blank');
+    }
   }
 
   saveProduct(): void {

@@ -33,14 +33,9 @@ jobs:
         run: npm ci
         working-directory: Frontend
 
-      - name: Build Frontend
-        run: npm run build
+      - name: Test Frontend
+        run: npm run test
         working-directory: Frontend
-
-      - name: Copy Frontend to wwwroot
-        run: |
-          mkdir -p SSSKLv2/wwwroot
-          cp -r Frontend/dist/SSSKLv2/browser/* SSSKLv2/wwwroot/
 
       - name: Set up .NET Core
         uses: actions/setup-dotnet@v4

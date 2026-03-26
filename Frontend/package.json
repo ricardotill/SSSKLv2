@@ -6,7 +6,7 @@
     "start": "NODE_TLS_REJECT_UNAUTHORIZED=0 ng serve --port $PORT",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test  --no-watch"
   },
   "private": true,
   "packageManager": "npm@11.12.0",
@@ -32,6 +32,7 @@
     "@angular/build": "^21.2.3",
     "@angular/cli": "^21.2.3",
     "@angular/compiler-cli": "^21.2.0",
+    "@azure/static-web-apps-cli": "^2.0.8",
     "@tailwindcss/postcss": "^4.1.12",
     "@types/canvas-confetti": "^1.9.0",
     "@types/qrcode": "^1.5.6",

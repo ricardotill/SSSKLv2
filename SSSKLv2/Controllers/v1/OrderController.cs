@@ -110,7 +110,8 @@ public class OrderController : ControllerBase
                 {
                     Id = p.Id,
                     Name = p.Name,
-                    Stock = p.Stock
+                    Stock = p.Stock,
+                    Price = p.Price
                 }).ToList(),
                 Users = users.Select(u => new OrderInitializeUserDto
                 {

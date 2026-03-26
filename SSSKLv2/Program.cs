@@ -70,7 +70,10 @@ var authBuilder = builder.Services.AddAuthentication(options =>
 });
 
 authBuilder.AddIdentityCookies();
-authBuilder.AddBearerToken(IdentityConstants.BearerScheme);
+authBuilder.AddBearerToken(IdentityConstants.BearerScheme, options =>
+{
+    options.RefreshTokenExpiration = TimeSpan.FromDays(180);
+});
 
 // Inspect the Authorization header at runtime to pick the correct handler.
 authBuilder.AddPolicyScheme("BearerOrCookie", "Bearer or Cookie", options =>

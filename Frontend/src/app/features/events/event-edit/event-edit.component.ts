@@ -9,9 +9,9 @@ import { InputTextModule } from 'primeng/inputtext';
 import { EditorModule } from 'primeng/editor';
 import { DatePickerModule } from 'primeng/datepicker';
 import { EventService } from '../../../core/services/event.service';
+import { AuthService } from '../../../core/auth/auth.service';
 import { LanguageService } from '../../../core/services/language.service';
 import { MessageService } from 'primeng/api';
-import { ToastModule } from 'primeng/toast';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { FileUploadModule } from 'primeng/fileupload';
 
@@ -27,14 +27,12 @@ import { FileUploadModule } from 'primeng/fileupload';
     InputTextModule,
     EditorModule,
     DatePickerModule,
-    ToastModule,
+    DatePickerModule,
     ProgressSpinnerModule,
     FileUploadModule
   ],
-  providers: [MessageService],
   template: `
     <div class="max-w-3xl mx-auto">
-      <p-toast></p-toast>
       
       <div class="flex items-center gap-3 mb-6">
         <p-button icon="pi pi-arrow-left" [text]="true" severity="secondary" [routerLink]="isEdit ? ['/events', eventId] : ['/events']" />
@@ -134,6 +132,7 @@ import { FileUploadModule } from 'primeng/fileupload';
 export default class EventEditComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly eventService = inject(EventService);
+  private readonly authService = inject(AuthService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly messageService = inject(MessageService);
@@ -167,6 +166,17 @@ export default class EventEditComponent implements OnInit {
   loadEvent(id: string): void {
     this.eventService.getEvent(id).subscribe({
       next: (event) => {
+        // Check permissions: Admin can edit anything, User can only edit their own
+        const user = this.authService.currentUser();
+        const isAdmin = user?.roles.includes('Admin');
+        const isCreator = user?.userName === event.creatorName;
+
+        if (!isAdmin && !isCreator) {
+          this.messageService.add({ severity: 'error', summary: 'Toegang geweigerd', detail: 'Je kunt alleen je eigen evenementen bewerken' });
+          setTimeout(() => this.router.navigate(['/events']), 1500);
+          return;
+        }
+
         this.currentImageUri.set(event.imageUrl || null);
         this.eventForm.patchValue({
           title: event.title,

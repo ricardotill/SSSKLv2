@@ -3,7 +3,6 @@ import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
 import { TableModule, TableLazyLoadEvent, Table } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
-import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
 import { TopUpService } from '../../core/services/top-up.service';
 import { TopUpDto } from '../../core/models/top-up.model';
@@ -13,10 +12,8 @@ import { finalize } from 'rxjs';
 @Component({
   selector: 'app-personal-top-ups',
   standalone: true,
-  imports: [CommonModule, TableModule, ButtonModule, CardModule, ToastModule, CurrencyPipe, DatePipe],
-  providers: [MessageService],
+  imports: [CommonModule, TableModule, ButtonModule, CardModule, CurrencyPipe, DatePipe],
   template: `
-    <p-toast />
     
     <div class="flex justify-between items-center mb-4">
       <h1 class="text-2xl font-bold m-0 text-surface-900 dark:text-surface-0">{{ ls.t().my_saldo }}</h1>

@@ -1,4 +1,3 @@
-using SSSKLv2.Components.Pages;
 using SSSKLv2.Data;
 using SSSKLv2.Dto.Api.v1;
 
@@ -14,7 +13,6 @@ public interface IOrderService
     public Task<IList<Order>> GetAll(int skip, int take);
     public Task<IList<Order>> GetPersonal(string username, int skip, int take);
     public Task<IEnumerable<Order>> GetLatestOrders();
-    public Task CreateOrder(POS.BestellingDto order);
     public Task CreateOrder(OrderSubmitDto order);
     public Task<string> ExportOrdersFromPastTwoYearsToCsvAsync();
     public Task DeleteOrder(Guid id);

@@ -2,6 +2,8 @@ import { Component, inject, signal, ChangeDetectionStrategy } from '@angular/cor
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../core/auth/auth.service';
+import { WebAuthnService } from '../../core/services/webauthn.service';
+import { LanguageService } from '../../core/services/language.service';
 import { InputTextModule } from 'primeng/inputtext';
 import { PasswordModule } from 'primeng/password';
 import { ButtonModule } from 'primeng/button';
@@ -98,13 +100,23 @@ import { BrandingComponent } from '../../shared/components/branding/branding.com
              <p-message severity="error" [text]="errorMessage()" styleClass="w-full mt-4"></p-message>
           }
 
-          <div class="mt-4">
+          <div class="mt-4 flex gap-2">
             <p-button 
               label="Login" 
               type="submit" 
               [disabled]="loginForm.invalid || isLoading()" 
               [loading]="isLoading()"
-              styleClass="w-full">
+              styleClass="flex-1">
+            </p-button>
+            <p-button 
+              icon="pi pi-key" 
+              [label]="lang.t().passkey" 
+              type="button"
+              (onClick)="onPasskeyLogin()"
+              [disabled]="!loginForm.get('userName')?.value || isLoading()" 
+              [loading]="isLoading()"
+              styleClass="flex-1"
+              severity="secondary">
             </p-button>
           </div>
         </form>
@@ -147,6 +159,8 @@ import { BrandingComponent } from '../../shared/components/branding/branding.com
 export default class LoginComponent {
   private fb = inject(FormBuilder);
   private authService = inject(AuthService);
+  private webAuthnService = inject(WebAuthnService);
+  public lang = inject(LanguageService);
   private router = inject(Router);
 
   loginForm = this.fb.group({
@@ -189,17 +203,40 @@ export default class LoginComponent {
       error: (err) => {
         this.isLoading.set(false);
         if (err.status === 403) {
-           this.requires2FA.set(true);
-           this.errorMessage.set(''); // Clear any previous error
-           return;
+          this.requires2FA.set(true);
+          this.errorMessage.set(''); // Clear any previous error
+          return;
         }
-        
+
         if (this.requires2FA()) {
-           this.errorMessage.set('Invalid 2FA code.');
+          this.errorMessage.set('Invalid 2FA code.');
         } else {
-           this.errorMessage.set('Invalid username or password.');
+          this.errorMessage.set('Invalid username or password.');
         }
         console.error('Login error', err);
+      }
+    });
+  }
+
+  async onPasskeyLogin(): Promise<void> {
+    const userName = this.loginForm.get('userName')?.value;
+    if (!userName) {
+      this.errorMessage.set('Please enter your username first.');
+      return;
+    }
+
+    this.isLoading.set(true);
+    this.errorMessage.set('');
+
+    this.webAuthnService.login(userName).subscribe({
+      next: () => {
+        this.isLoading.set(false);
+        this.router.navigate(['/pos']);
+      },
+      error: (err) => {
+        this.isLoading.set(false);
+        this.errorMessage.set(this.lang.translate('error') + ': ' + (err.message || 'Passkey failed'));
+        console.error('Passkey login error', err);
       }
     });
   }

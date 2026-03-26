@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, inject, signal, OnInit } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal, OnInit, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { CardModule } from 'primeng/card';
@@ -43,7 +43,7 @@ import { FormsModule } from '@angular/forms';
             offIcon="pi pi-calendar-plus" 
             (onChange)="loadEvents()"
           />
-          @if (isAdmin()) {
+          @if (canCreate()) {
             <p-button 
               [label]="ls.t().create_event" 
               icon="pi pi-plus" 
@@ -166,19 +166,18 @@ export default class EventsComponent implements OnInit {
   events = signal<EventDto[]>([]);
   totalRecords = signal<number>(0);
   loading = signal<boolean>(false);
-  isAdmin = signal<boolean>(false);
+  canCreate = computed(() => {
+    const user = this.authService.currentUser();
+    if (!user) return false;
+    return user.roles.includes('Admin') || user.roles.includes('User');
+  });
 
   rows = 12;
   first = 0;
   futureOnly = true;
 
-  constructor() {
-    const user = this.authService.currentUser();
-    if (user) {
-      this.isAdmin.set(user.roles.includes('Admin'));
-    }
-  }
-  
+  constructor() {}
+
   isPassed(date?: string): boolean {
     if (!date) return false;
     return new Date(date) < new Date();

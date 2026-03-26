@@ -1,6 +1,5 @@
 using System.Globalization;
 using System.Text;
-using SSSKLv2.Components.Pages;
 using SSSKLv2.Data;
 using SSSKLv2.Data.DAL.Interfaces;
 using SSSKLv2.Dto.Api.v1;
@@ -55,34 +54,6 @@ public class OrderService(
         return await orderRepository.GetById(id);
     }
     
-    public async Task CreateOrder(POS.BestellingDto order)
-    {
-        var products = order.Products
-            .Where(x => x.Selected)
-            .Select(x => x.Value)
-            .ToList();
-        var users = order.Users
-            .Where(x => x.Selected)
-            .Select(x => x.Value)
-            .ToList();
-        var orders = new List<Order>();
-
-        logger.LogInformation("{Type}: Create order for {ProductsCount} products and {UsersCount} users", nameof(OrderService), products.Count, users.Count);
-
-        foreach (var p in products)
-        {
-            var generated = GenerateUserOrders(users, p, order.Amount, order.Split);
-            orders.AddRange(generated);
-        }
-
-        await orderRepository.CreateRange(orders);
-        await NotifyPurchase(orders);
-        await achievementService.CheckOrdersForAchievements(orders);
-        foreach (var user in order.Users)
-        {
-            await achievementService.CheckUserForAchievements(user.Value.UserName!);
-        }
-    }
 
     // New overload: accept API DTO directly
     public async Task CreateOrder(OrderSubmitDto order)

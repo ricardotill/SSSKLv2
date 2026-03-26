@@ -6,14 +6,24 @@ using System.Diagnostics;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Encodings.Web;
+using Blazored.Toast;
 using Microsoft.AspNetCore.Authentication.BearerToken;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Http.Metadata;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.Azure.SignalR;
+using Microsoft.Azure.SignalR.Common;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using Microsoft.AspNetCore.Identity.UI;
+using Microsoft.OpenApi;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using SSSKLv2.Data;
+using SSSKLv2.Services;
 
 namespace SSSKLv2.Registrations;
 
@@ -440,7 +450,141 @@ public static class IdentityApiEndpointRouteBuilderExtensions
             await emailSender.SendConfirmationLinkAsync(user, email, HtmlEncoder.Default.Encode(confirmEmailUrl));
         }
 
-        return new IdentityEndpointsConventionBuilder(routeGroup);
+        // --- Passkey Endpoints ---
+         routeGroup.MapGet("/PasskeyCreationOptions", async Task<Results<ContentHttpResult, UnauthorizedHttpResult>>
+             (ClaimsPrincipal claimsPrincipal, [FromServices] IServiceProvider sp) =>
+         {
+             var signInManager = sp.GetRequiredService<SignInManager<ApplicationUser>>();
+             var userManager = signInManager.UserManager;
+             if (await userManager.GetUserAsync(claimsPrincipal) is not { } user)
+             {
+                 return TypedResults.Unauthorized();
+             }
+
+             var entity = new PasskeyUserEntity {
+                 Id = user.Id,
+                 Name = user.UserName ?? user.Email ?? "Unknown",
+                 DisplayName = $"{user.Name} {user.Surname}".Trim()
+             };
+             var options = await signInManager.MakePasskeyCreationOptionsAsync(entity);
+             return TypedResults.Content(options, "application/json");
+         }).RequireAuthorization();
+
+          routeGroup.MapPost("/PasskeyCreation", async Task<Results<Ok, ValidationProblem, UnauthorizedHttpResult, ProblemHttpResult>>
+              (ClaimsPrincipal claimsPrincipal, [FromBody] CreatePasskeyRequest request, [FromServices] IServiceProvider sp) =>
+          {
+              var credentialJson = request.Credential.GetRawText();
+             var signInManager = sp.GetRequiredService<SignInManager<ApplicationUser>>();
+             var userManager = signInManager.UserManager;
+             if (await userManager.GetUserAsync(claimsPrincipal) is not { } user)
+             {
+                 return TypedResults.Unauthorized();
+             }
+
+             var passkeyResult = await signInManager.PerformPasskeyAttestationAsync(credentialJson);
+             if (passkeyResult.Passkey is null)
+             {
+                 // Log for debugging (will show in terminal)
+                 Console.WriteLine($"Passkey attestation failed for user {user.UserName}. Error: {passkeyResult.Failure?.Message}. Payload: {credentialJson}");
+                 return TypedResults.Problem(passkeyResult.Failure?.Message ?? "Passkey attestation failed.", statusCode: StatusCodes.Status400BadRequest);
+             }
+
+             if (!string.IsNullOrWhiteSpace(request.Name))
+             {
+                 passkeyResult.Passkey.Name = request.Name;
+             }
+
+             var result = await userManager.AddOrUpdatePasskeyAsync(user, passkeyResult.Passkey);
+             if (!result.Succeeded)
+             {
+                 return CreateValidationProblem(result);
+             }
+
+             return TypedResults.Ok();
+         }).RequireAuthorization();
+
+         routeGroup.MapGet("/PasskeyRequestOptions", async Task<Results<ContentHttpResult, NotFound>>
+             ([FromQuery] string userName, [FromServices] IServiceProvider sp) =>
+         {
+             var signInManager = sp.GetRequiredService<SignInManager<ApplicationUser>>();
+             var userManager = signInManager.UserManager;
+             try
+             {
+                 if (await userManager.FindByNameAsync(userName) is not { } user)
+                 {
+                     return TypedResults.NotFound();
+                 }
+
+                 var options = await signInManager.MakePasskeyRequestOptionsAsync(user);
+                 return TypedResults.Content(options, "application/json");
+             }
+             catch (Exception)
+             {
+                 return TypedResults.NotFound();
+             }
+         });
+
+          routeGroup.MapPost("/PasskeyAssertion", async Task<Results<Ok<AccessTokenResponse>, EmptyHttpResult, ProblemHttpResult>>
+              ([FromBody] JsonElement assertion, [FromQuery] bool? useCookies, [FromQuery] bool? useSessionCookies, [FromServices] IServiceProvider sp) =>
+          {
+              var assertionJson = assertion.GetRawText();
+             var signInManager = sp.GetRequiredService<SignInManager<ApplicationUser>>();
+             var useCookieScheme = (useCookies == true) || (useSessionCookies == true);
+             var isPersistent = (useCookies == true) && (useSessionCookies != true);
+             signInManager.AuthenticationScheme = useCookieScheme ? IdentityConstants.ApplicationScheme : IdentityConstants.BearerScheme;
+
+             var result = await signInManager.PasskeySignInAsync(assertionJson);
+
+             if (!result.Succeeded)
+             {
+                 return TypedResults.Problem(result.ToString(), statusCode: StatusCodes.Status401Unauthorized);
+             }
+
+             return TypedResults.Empty;
+         });
+
+         accountGroup.MapGet("/Passkeys", async Task<Results<Ok<IEnumerable<PasskeyDto>>, UnauthorizedHttpResult>>
+             (ClaimsPrincipal claimsPrincipal, [FromServices] IServiceProvider sp) =>
+         {
+             var signInManager = sp.GetRequiredService<SignInManager<ApplicationUser>>();
+             var userManager = signInManager.UserManager;
+             if (await userManager.GetUserAsync(claimsPrincipal) is not { } user)
+             {
+                 return TypedResults.Unauthorized();
+             }
+
+             var passkeys = await userManager.GetPasskeysAsync(user);
+             var dtos = passkeys.Select(p => new PasskeyDto
+             {
+                 CredentialIdBase64 = WebEncoders.Base64UrlEncode(p.CredentialId),
+                 DisplayName = p.Name,
+                 CreatedAt = p.CreatedAt
+             });
+
+             return TypedResults.Ok(dtos);
+         });
+
+         accountGroup.MapPost("/DeletePasskey", async Task<Results<NoContent, NotFound, UnauthorizedHttpResult>>
+             (ClaimsPrincipal claimsPrincipal, [FromBody] DeletePasskeyRequest request, [FromServices] IServiceProvider sp) =>
+         {
+             var signInManager = sp.GetRequiredService<SignInManager<ApplicationUser>>();
+             var userManager = signInManager.UserManager;
+             if (await userManager.GetUserAsync(claimsPrincipal) is not { } user)
+             {
+                 return TypedResults.Unauthorized();
+             }
+
+             var credentialId = WebEncoders.Base64UrlDecode(request.CredentialIdBase64);
+             var result = await userManager.RemovePasskeyAsync(user, credentialId);
+             if (!result.Succeeded)
+             {
+                 return TypedResults.NotFound();
+             }
+
+             return TypedResults.NoContent();
+         });
+
+         return new IdentityEndpointsConventionBuilder(routeGroup);
     }
 
     private static ValidationProblem CreateValidationProblem(string errorCode, string errorDescription) =>
@@ -563,6 +707,27 @@ public sealed class LoginRequest
     /// This is required for users who have enabled two-factor authentication but lost access to their <see cref="TwoFactorCode"/>.
     /// </summary>
     public string? TwoFactorRecoveryCode { get; init; }
+}
+
+public sealed class PasskeyDto
+{
+    public required string CredentialIdBase64 { get; init; }
+    public string? DisplayName { get; init; }
+    public DateTimeOffset CreatedAt { get; init; }
+}
+
+public sealed class DeletePasskeyRequest
+{
+    public required string CredentialIdBase64 { get; init; }
+}
+
+public sealed class CreatePasskeyRequest
+{
+    [JsonPropertyName("credential")]
+    public required JsonElement Credential { get; init; }
+
+    [JsonPropertyName("name")]
+    public string? Name { get; init; }
 }
 
 

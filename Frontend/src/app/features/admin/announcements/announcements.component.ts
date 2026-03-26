@@ -11,7 +11,6 @@ import { InputNumberModule } from 'primeng/inputnumber';
 import { TextareaModule } from 'primeng/textarea';
 import { DatePickerModule } from 'primeng/datepicker';
 import { MessageService, ConfirmationService } from 'primeng/api';
-import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { CardModule } from 'primeng/card';
 import { AnnouncementService } from '../../../core/services/announcement.service';
@@ -32,7 +31,6 @@ import { LanguageService } from '../../../core/services/language.service';
     CheckboxModule,
     InputNumberModule,
     DatePickerModule,
-    ToastModule,
     ConfirmDialogModule,
     CardModule
   ],
@@ -45,7 +43,6 @@ import { LanguageService } from '../../../core/services/language.service';
       </div>
     </div>
 
-    <p-toast></p-toast>
     <p-confirmDialog></p-confirmDialog>
 
     <p-card>
@@ -131,7 +128,7 @@ import { LanguageService } from '../../../core/services/language.service';
   `,
   styles: ``,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  providers: [MessageService, ConfirmationService]
+  providers: [ConfirmationService]
 })
 export default class AnnouncementsComponent implements OnInit {
   private readonly announcementService = inject(AnnouncementService);

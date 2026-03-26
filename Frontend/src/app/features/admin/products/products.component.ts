@@ -8,7 +8,6 @@ import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { MessageService, ConfirmationService } from 'primeng/api';
-import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { CardModule } from 'primeng/card';
 import { ProductService } from '../../../core/services/product.service';
@@ -26,7 +25,6 @@ import { LanguageService } from '../../../core/services/language.service';
     DialogModule,
     InputTextModule,
     InputNumberModule,
-    ToastModule,
     ConfirmDialogModule,
     CardModule
   ],
@@ -38,7 +36,6 @@ import { LanguageService } from '../../../core/services/language.service';
         <p-button icon="pi pi-refresh" [rounded]="true" (onClick)="loadProducts()" [ariaLabel]="ls.t().refresh"></p-button>
       </div>
     </div>
-    <p-toast></p-toast>
     <p-confirmDialog></p-confirmDialog>
     <p-card>
       <p-table stripedRows [value]="products()" [loading]="loading()" [paginator]="true" [rows]="10" [totalRecords]="totalRecords()" responsiveLayout="scroll">
@@ -104,7 +101,7 @@ import { LanguageService } from '../../../core/services/language.service';
   `,
   styles: ``,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  providers: [MessageService, ConfirmationService]
+  providers: [ConfirmationService]
 })
 export default class ProductsComponent implements OnInit {
   private readonly productService = inject(ProductService);

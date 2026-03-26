@@ -3,13 +3,13 @@ import { DatePipe, CurrencyPipe, DOCUMENT } from '@angular/common';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
-import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { finalize } from 'rxjs';
 import { OrderService } from '../../../core/services/order.service';
 import { OrderDto } from '../../../core/models/order.model';
 import { LanguageService } from '../../../core/services/language.service';
+import { AuthService } from '../../../core/auth/auth.service';
 
 @Component({
   selector: 'app-admin-orders',
@@ -20,7 +20,6 @@ import { LanguageService } from '../../../core/services/language.service';
     TableModule,
     ButtonModule,
     CardModule,
-    ToastModule,
     ConfirmDialogModule
   ],
   template: `
@@ -31,7 +30,6 @@ import { LanguageService } from '../../../core/services/language.service';
         <p-button icon="pi pi-refresh" [rounded]="true" (onClick)="loadOrders()" [ariaLabel]="ls.t().refresh"></p-button>
       </div>
     </div>
-    <p-toast></p-toast>
     <p-confirmDialog></p-confirmDialog>
     <p-card>
       <p-table 
@@ -79,13 +77,14 @@ import { LanguageService } from '../../../core/services/language.service';
   `,
   styles: ``,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  providers: [MessageService, ConfirmationService]
+  providers: [ConfirmationService]
 })
 export default class OrdersComponent implements OnInit {
   private readonly orderService = inject(OrderService);
   private readonly messageService = inject(MessageService);
   private readonly confirmationService = inject(ConfirmationService);
   private readonly document = inject(DOCUMENT);
+  private readonly authService = inject(AuthService);
   ls = inject(LanguageService);
 
   orders = signal<OrderDto[]>([]);
@@ -142,6 +141,7 @@ export default class OrdersComponent implements OnInit {
       .subscribe({
         next: () => {
           this.messageService.add({ severity: 'success', summary: this.ls.t().success, detail: this.ls.t().order_deleted });
+          this.authService.refreshCurrentUser();
           this.loadOrders();
         },
         error: () => {

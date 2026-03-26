@@ -3,11 +3,11 @@ import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
 import { TableModule, TableLazyLoadEvent, Table } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
-import { ToastModule } from 'primeng/toast';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { OrderService } from '../../core/services/order.service';
 import { OrderDto } from '../../core/models/order.model';
 import { LanguageService } from '../../core/services/language.service';
+import { AuthService } from '../../core/auth/auth.service';
 import { finalize } from 'rxjs';
 
 import { CardModule } from 'primeng/card';
@@ -15,10 +15,9 @@ import { CardModule } from 'primeng/card';
 @Component({
   selector: 'app-personal-orders',
   standalone: true,
-  imports: [CommonModule, TableModule, ButtonModule, DatePipe, CurrencyPipe, ConfirmDialogModule, ToastModule, CardModule],
-  providers: [ConfirmationService, MessageService],
+  imports: [CommonModule, TableModule, ButtonModule, DatePipe, CurrencyPipe, ConfirmDialogModule, CardModule],
+  providers: [ConfirmationService],
   template: `
-    <p-toast />
     <p-confirmDialog />
     
     <div class="flex justify-between items-center mb-4">
@@ -85,6 +84,7 @@ export default class PersonalOrdersComponent implements OnInit {
   private orderService = inject(OrderService);
   private confirmationService = inject(ConfirmationService);
   private messageService = inject(MessageService);
+  private authService = inject(AuthService);
   ls = inject(LanguageService);
 
   dt = viewChild<Table>('dt');
@@ -135,6 +135,7 @@ export default class PersonalOrdersComponent implements OnInit {
       .subscribe({
         next: () => {
           this.messageService.add({ severity: 'success', summary: this.ls.t().confirm, detail: this.ls.t().order_deleted });
+          this.authService.refreshCurrentUser();
           this.refreshTable();
         },
         error: (err) => {

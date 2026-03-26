@@ -9,6 +9,7 @@ import { routes } from './app.routes';
 import { providePrimeNG } from 'primeng/config';
 import { definePreset } from '@primeuix/themes';
 import Aura from '@primeuix/themes/aura';
+import { MessageService } from 'primeng/api';
 
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { authInterceptor } from './core/auth/auth.interceptor';
@@ -46,6 +47,7 @@ export const appConfig: ApplicationConfig = {
         }
       }
     }),
+    MessageService,
     { provide: LOCALE_ID, useValue: 'nl-NL' }
   ]
 };

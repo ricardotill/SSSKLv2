@@ -11,7 +11,6 @@ import { AuthService } from '../../../core/auth/auth.service';
 import { EventDto, EventResponseStatus } from '../../../core/models/event.model';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { MessageService } from 'primeng/api';
-import { ToastModule } from 'primeng/toast';
 
 @Component({
   selector: 'app-event-detail',
@@ -24,12 +23,10 @@ import { ToastModule } from 'primeng/toast';
     TagModule,
     DividerModule,
     ProgressSpinnerModule,
-    ToastModule
+    ProgressSpinnerModule
   ],
-  providers: [MessageService],
   template: `
     <div class="max-w-4xl mx-auto">
-      <p-toast></p-toast>
       
       @if (loading()) {
         <div class="flex justify-center items-center p-12">

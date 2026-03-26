@@ -1,5 +1,5 @@
 {
-    "openapi": "3.0.1",
+    "openapi": "3.1.1",
     "info": {
         "title": "SSSKLv2 | v1",
         "contact": {
@@ -14,175 +14,6 @@
         }
     ],
     "paths": {
-        "/Account/PerformExternalLogin": {
-            "post": {
-                "tags": [
-                    "SSSKLv2"
-                ],
-                "requestBody": {
-                    "content": {
-                        "multipart/form-data": {
-                            "schema": {
-                                "required": [
-                                    "provider",
-                                    "returnUrl"
-                                ],
-                                "type": "object",
-                                "allOf": [
-                                    {
-                                        "type": "object",
-                                        "properties": {
-                                            "provider": {
-                                                "type": "string"
-                                            }
-                                        }
-                                    },
-                                    {
-                                        "type": "object",
-                                        "properties": {
-                                            "returnUrl": {
-                                                "type": "string"
-                                            }
-                                        }
-                                    }
-                                ]
-                            }
-                        },
-                        "application/x-www-form-urlencoded": {
-                            "schema": {
-                                "required": [
-                                    "provider",
-                                    "returnUrl"
-                                ],
-                                "type": "object",
-                                "allOf": [
-                                    {
-                                        "type": "object",
-                                        "properties": {
-                                            "provider": {
-                                                "type": "string"
-                                            }
-                                        }
-                                    },
-                                    {
-                                        "type": "object",
-                                        "properties": {
-                                            "returnUrl": {
-                                                "type": "string"
-                                            }
-                                        }
-                                    }
-                                ]
-                            }
-                        }
-                    },
-                    "required": true
-                },
-                "responses": {
-                    "200": {
-                        "description": "OK"
-                    }
-                }
-            }
-        },
-        "/Account/Logout": {
-            "post": {
-                "tags": [
-                    "SSSKLv2"
-                ],
-                "requestBody": {
-                    "content": {
-                        "multipart/form-data": {
-                            "schema": {
-                                "required": [
-                                    "returnUrl"
-                                ],
-                                "type": "object",
-                                "properties": {
-                                    "returnUrl": {
-                                        "type": "string"
-                                    }
-                                }
-                            }
-                        },
-                        "application/x-www-form-urlencoded": {
-                            "schema": {
-                                "required": [
-                                    "returnUrl"
-                                ],
-                                "type": "object",
-                                "properties": {
-                                    "returnUrl": {
-                                        "type": "string"
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "required": true
-                },
-                "responses": {
-                    "200": {
-                        "description": "OK"
-                    }
-                }
-            }
-        },
-        "/Account/Manage/LinkExternalLogin": {
-            "post": {
-                "tags": [
-                    "SSSKLv2"
-                ],
-                "requestBody": {
-                    "content": {
-                        "multipart/form-data": {
-                            "schema": {
-                                "required": [
-                                    "provider"
-                                ],
-                                "type": "object",
-                                "properties": {
-                                    "provider": {
-                                        "type": "string"
-                                    }
-                                }
-                            }
-                        },
-                        "application/x-www-form-urlencoded": {
-                            "schema": {
-                                "required": [
-                                    "provider"
-                                ],
-                                "type": "object",
-                                "properties": {
-                                    "provider": {
-                                        "type": "string"
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "required": true
-                },
-                "responses": {
-                    "200": {
-                        "description": "OK"
-                    }
-                }
-            }
-        },
-        "/Account/Manage/DownloadPersonalData": {
-            "post": {
-                "tags": [
-                    "SSSKLv2"
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK"
-                    }
-                }
-            }
-        },
         "/api/v1/identity/register": {
             "post": {
                 "tags": [
@@ -434,6 +265,117 @@
                 }
             }
         },
+        "/api/v1/identity/PasskeyCreationOptions": {
+            "get": {
+                "tags": [
+                    "SSSKLv2"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/api/v1/identity/PasskeyCreation": {
+            "post": {
+                "tags": [
+                    "SSSKLv2"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/identity/PasskeyRequestOptions": {
+            "get": {
+                "tags": [
+                    "SSSKLv2"
+                ],
+                "parameters": [
+                    {
+                        "name": "userName",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "404": {
+                        "description": "Not Found"
+                    }
+                }
+            }
+        },
+        "/api/v1/identity/PasskeyAssertion": {
+            "post": {
+                "tags": [
+                    "SSSKLv2"
+                ],
+                "parameters": [
+                    {
+                        "name": "useCookies",
+                        "in": "query",
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    },
+                    {
+                        "name": "useSessionCookies",
+                        "in": "query",
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AccessTokenResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/identity/manage/2fa": {
             "post": {
                 "tags": [
@@ -558,7 +500,11 @@
                         "name": "skip",
                         "in": "query",
                         "schema": {
-                            "type": "integer",
+                            "pattern": "^-?(?:0|[1-9]\\d*)$",
+                            "type": [
+                                "integer",
+                                "string"
+                            ],
                             "format": "int32",
                             "default": 0
                         }
@@ -567,7 +513,11 @@
                         "name": "take",
                         "in": "query",
                         "schema": {
-                            "type": "integer",
+                            "pattern": "^-?(?:0|[1-9]\\d*)$",
+                            "type": [
+                                "integer",
+                                "string"
+                            ],
                             "format": "int32",
                             "default": 15
                         }
@@ -611,19 +561,35 @@
                                                 "type": "boolean"
                                             },
                                             "ImageContent.Length": {
-                                                "type": "integer",
+                                                "pattern": "^-?(?:0|[1-9]\\d*)$",
+                                                "type": [
+                                                    "integer",
+                                                    "string"
+                                                ],
                                                 "format": "int64"
                                             },
                                             "ImageContent.Position": {
-                                                "type": "integer",
+                                                "pattern": "^-?(?:0|[1-9]\\d*)$",
+                                                "type": [
+                                                    "integer",
+                                                    "string"
+                                                ],
                                                 "format": "int64"
                                             },
                                             "ImageContent.ReadTimeout": {
-                                                "type": "integer",
+                                                "pattern": "^-?(?:0|[1-9]\\d*)$",
+                                                "type": [
+                                                    "integer",
+                                                    "string"
+                                                ],
                                                 "format": "int32"
                                             },
                                             "ImageContent.WriteTimeout": {
-                                                "type": "integer",
+                                                "pattern": "^-?(?:0|[1-9]\\d*)$",
+                                                "type": [
+                                                    "integer",
+                                                    "string"
+                                                ],
                                                 "format": "int32"
                                             },
                                             "ImageContentType.Boundary": {
@@ -645,13 +611,17 @@
                                                 "type": "boolean"
                                             },
                                             "Action": {
-                                                "type": "string"
+                                                "$ref": "#/components/schemas/ActionOption"
                                             },
                                             "ComparisonOperator": {
-                                                "type": "string"
+                                                "$ref": "#/components/schemas/ComparisonOperatorOption"
                                             },
                                             "ComparisonValue": {
-                                                "type": "integer",
+                                                "pattern": "^-?(?:0|[1-9]\\d*)$",
+                                                "type": [
+                                                    "integer",
+                                                    "string"
+                                                ],
                                                 "format": "int32"
                                             }
                                         }
@@ -675,7 +645,11 @@
                                                 }
                                             },
                                             "Length": {
-                                                "type": "integer",
+                                                "pattern": "^-?(?:0|[1-9]\\d*)$",
+                                                "type": [
+                                                    "integer",
+                                                    "string"
+                                                ],
                                                 "format": "int64"
                                             },
                                             "Name": {
@@ -862,32 +836,50 @@
                     "content": {
                         "application/json": {
                             "schema": {
-                                "type": "array",
-                                "items": {
-                                    "type": "string",
-                                    "format": "uuid"
-                                },
-                                "nullable": true
+                                "oneOf": [
+                                    {
+                                        "type": "null"
+                                    },
+                                    {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string",
+                                            "format": "uuid"
+                                        }
+                                    }
+                                ]
                             }
                         },
                         "text/json": {
                             "schema": {
-                                "type": "array",
-                                "items": {
-                                    "type": "string",
-                                    "format": "uuid"
-                                },
-                                "nullable": true
+                                "oneOf": [
+                                    {
+                                        "type": "null"
+                                    },
+                                    {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string",
+                                            "format": "uuid"
+                                        }
+                                    }
+                                ]
                             }
                         },
                         "application/*+json": {
                             "schema": {
-                                "type": "array",
-                                "items": {
-                                    "type": "string",
-                                    "format": "uuid"
-                                },
-                                "nullable": true
+                                "oneOf": [
+                                    {
+                                        "type": "null"
+                                    },
+                                    {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string",
+                                            "format": "uuid"
+                                        }
+                                    }
+                                ]
                             }
                         }
                     }
@@ -963,7 +955,11 @@
                         "name": "skip",
                         "in": "query",
                         "schema": {
-                            "type": "integer",
+                            "pattern": "^-?(?:0|[1-9]\\d*)$",
+                            "type": [
+                                "integer",
+                                "string"
+                            ],
                             "format": "int32",
                             "default": 0
                         }
@@ -972,7 +968,11 @@
                         "name": "take",
                         "in": "query",
                         "schema": {
-                            "type": "integer",
+                            "pattern": "^-?(?:0|[1-9]\\d*)$",
+                            "type": [
+                                "integer",
+                                "string"
+                            ],
                             "format": "int32",
                             "default": 15
                         }
@@ -1018,17 +1018,38 @@
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/AnnouncementCreateDto"
+                                "oneOf": [
+                                    {
+                                        "type": "null"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/AnnouncementCreateDto"
+                                    }
+                                ]
                             }
                         },
                         "text/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/AnnouncementCreateDto"
+                                "oneOf": [
+                                    {
+                                        "type": "null"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/AnnouncementCreateDto"
+                                    }
+                                ]
                             }
                         },
                         "application/*+json": {
                             "schema": {
-                                "$ref": "#/components/schemas/AnnouncementCreateDto"
+                                "oneOf": [
+                                    {
+                                        "type": "null"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/AnnouncementCreateDto"
+                                    }
+                                ]
                             }
                         }
                     }
@@ -1115,17 +1136,38 @@
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/AnnouncementUpdateDto"
+                                "oneOf": [
+                                    {
+                                        "type": "null"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/AnnouncementUpdateDto"
+                                    }
+                                ]
                             }
                         },
                         "text/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/AnnouncementUpdateDto"
+                                "oneOf": [
+                                    {
+                                        "type": "null"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/AnnouncementUpdateDto"
+                                    }
+                                ]
                             }
                         },
                         "application/*+json": {
                             "schema": {
-                                "$ref": "#/components/schemas/AnnouncementUpdateDto"
+                                "oneOf": [
+                                    {
+                                        "type": "null"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/AnnouncementUpdateDto"
+                                    }
+                                ]
                             }
                         }
                     }
@@ -1168,7 +1210,11 @@
                         "name": "skip",
                         "in": "query",
                         "schema": {
-                            "type": "integer",
+                            "pattern": "^-?(?:0|[1-9]\\d*)$",
+                            "type": [
+                                "integer",
+                                "string"
+                            ],
                             "format": "int32",
                             "default": 0
                         }
@@ -1177,7 +1223,11 @@
                         "name": "take",
                         "in": "query",
                         "schema": {
-                            "type": "integer",
+                            "pattern": "^-?(?:0|[1-9]\\d*)$",
+                            "type": [
+                                "integer",
+                                "string"
+                            ],
                             "format": "int32",
                             "default": 15
                         }
@@ -1272,17 +1322,38 @@
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/ApplicationUserUpdateDto"
+                                "oneOf": [
+                                    {
+                                        "type": "null"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/ApplicationUserUpdateDto"
+                                    }
+                                ]
                             }
                         },
                         "text/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/ApplicationUserUpdateDto"
+                                "oneOf": [
+                                    {
+                                        "type": "null"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/ApplicationUserUpdateDto"
+                                    }
+                                ]
                             }
                         },
                         "application/*+json": {
                             "schema": {
-                                "$ref": "#/components/schemas/ApplicationUserUpdateDto"
+                                "oneOf": [
+                                    {
+                                        "type": "null"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/ApplicationUserUpdateDto"
+                                    }
+                                ]
                             }
                         }
                     }
@@ -1427,17 +1498,38 @@
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/ApplicationUserSelfUpdateDto"
+                                "oneOf": [
+                                    {
+                                        "type": "null"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/ApplicationUserSelfUpdateDto"
+                                    }
+                                ]
                             }
                         },
                         "text/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/ApplicationUserSelfUpdateDto"
+                                "oneOf": [
+                                    {
+                                        "type": "null"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/ApplicationUserSelfUpdateDto"
+                                    }
+                                ]
                             }
                         },
                         "application/*+json": {
                             "schema": {
-                                "$ref": "#/components/schemas/ApplicationUserSelfUpdateDto"
+                                "oneOf": [
+                                    {
+                                        "type": "null"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/ApplicationUserSelfUpdateDto"
+                                    }
+                                ]
                             }
                         }
                     }
@@ -1476,32 +1568,59 @@
                 "tags": [
                     "Events"
                 ],
+                "parameters": [
+                    {
+                        "name": "skip",
+                        "in": "query",
+                        "schema": {
+                            "pattern": "^-?(?:0|[1-9]\\d*)$",
+                            "type": [
+                                "integer",
+                                "string"
+                            ],
+                            "format": "int32",
+                            "default": 0
+                        }
+                    },
+                    {
+                        "name": "take",
+                        "in": "query",
+                        "schema": {
+                            "pattern": "^-?(?:0|[1-9]\\d*)$",
+                            "type": [
+                                "integer",
+                                "string"
+                            ],
+                            "format": "int32",
+                            "default": 15
+                        }
+                    },
+                    {
+                        "name": "futureOnly",
+                        "in": "query",
+                        "schema": {
+                            "type": "boolean",
+                            "default": false
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "content": {
                             "text/plain": {
                                 "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/EventDto"
-                                    }
+                                    "$ref": "#/components/schemas/PaginationObjectOfEventDto"
                                 }
                             },
                             "application/json": {
                                 "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/EventDto"
-                                    }
+                                    "$ref": "#/components/schemas/PaginationObjectOfEventDto"
                                 }
                             },
                             "text/json": {
                                 "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/EventDto"
-                                    }
+                                    "$ref": "#/components/schemas/PaginationObjectOfEventDto"
                                 }
                             }
                         }
@@ -1514,19 +1633,123 @@
                 ],
                 "requestBody": {
                     "content": {
-                        "application/json": {
+                        "application/x-www-form-urlencoded": {
                             "schema": {
-                                "$ref": "#/components/schemas/EventCreateDto"
-                            }
-                        },
-                        "text/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/EventCreateDto"
-                            }
-                        },
-                        "application/*+json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/EventCreateDto"
+                                "type": "object",
+                                "allOf": [
+                                    {
+                                        "type": "object",
+                                        "properties": {
+                                            "Title": {
+                                                "type": "string"
+                                            },
+                                            "Description": {
+                                                "type": "string"
+                                            },
+                                            "ImageContent.CanRead": {
+                                                "type": "boolean"
+                                            },
+                                            "ImageContent.CanWrite": {
+                                                "type": "boolean"
+                                            },
+                                            "ImageContent.CanSeek": {
+                                                "type": "boolean"
+                                            },
+                                            "ImageContent.CanTimeout": {
+                                                "type": "boolean"
+                                            },
+                                            "ImageContent.Length": {
+                                                "pattern": "^-?(?:0|[1-9]\\d*)$",
+                                                "type": [
+                                                    "integer",
+                                                    "string"
+                                                ],
+                                                "format": "int64"
+                                            },
+                                            "ImageContent.Position": {
+                                                "pattern": "^-?(?:0|[1-9]\\d*)$",
+                                                "type": [
+                                                    "integer",
+                                                    "string"
+                                                ],
+                                                "format": "int64"
+                                            },
+                                            "ImageContent.ReadTimeout": {
+                                                "pattern": "^-?(?:0|[1-9]\\d*)$",
+                                                "type": [
+                                                    "integer",
+                                                    "string"
+                                                ],
+                                                "format": "int32"
+                                            },
+                                            "ImageContent.WriteTimeout": {
+                                                "pattern": "^-?(?:0|[1-9]\\d*)$",
+                                                "type": [
+                                                    "integer",
+                                                    "string"
+                                                ],
+                                                "format": "int32"
+                                            },
+                                            "ImageContentType.Boundary": {
+                                                "type": "string"
+                                            },
+                                            "ImageContentType.CharSet": {
+                                                "type": "string"
+                                            },
+                                            "ImageContentType.MediaType": {
+                                                "type": "string"
+                                            },
+                                            "ImageContentType.Name": {
+                                                "type": "string"
+                                            },
+                                            "ImageContentType.Parameters": {
+                                                "type": "array"
+                                            },
+                                            "StartDateTime": {
+                                                "type": "string",
+                                                "format": "date-time"
+                                            },
+                                            "EndDateTime": {
+                                                "type": "string",
+                                                "format": "date-time"
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "type": "object",
+                                        "properties": {
+                                            "ContentType": {
+                                                "type": "string"
+                                            },
+                                            "ContentDisposition": {
+                                                "type": "string"
+                                            },
+                                            "Headers": {
+                                                "type": "object",
+                                                "additionalProperties": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            },
+                                            "Length": {
+                                                "pattern": "^-?(?:0|[1-9]\\d*)$",
+                                                "type": [
+                                                    "integer",
+                                                    "string"
+                                                ],
+                                                "format": "int64"
+                                            },
+                                            "Name": {
+                                                "type": "string"
+                                            },
+                                            "FileName": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    }
+                                ]
                             }
                         }
                     },
@@ -1612,19 +1835,123 @@
                 ],
                 "requestBody": {
                     "content": {
-                        "application/json": {
+                        "application/x-www-form-urlencoded": {
                             "schema": {
-                                "$ref": "#/components/schemas/EventCreateDto"
-                            }
-                        },
-                        "text/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/EventCreateDto"
-                            }
-                        },
-                        "application/*+json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/EventCreateDto"
+                                "type": "object",
+                                "allOf": [
+                                    {
+                                        "type": "object",
+                                        "properties": {
+                                            "Title": {
+                                                "type": "string"
+                                            },
+                                            "Description": {
+                                                "type": "string"
+                                            },
+                                            "ImageContent.CanRead": {
+                                                "type": "boolean"
+                                            },
+                                            "ImageContent.CanWrite": {
+                                                "type": "boolean"
+                                            },
+                                            "ImageContent.CanSeek": {
+                                                "type": "boolean"
+                                            },
+                                            "ImageContent.CanTimeout": {
+                                                "type": "boolean"
+                                            },
+                                            "ImageContent.Length": {
+                                                "pattern": "^-?(?:0|[1-9]\\d*)$",
+                                                "type": [
+                                                    "integer",
+                                                    "string"
+                                                ],
+                                                "format": "int64"
+                                            },
+                                            "ImageContent.Position": {
+                                                "pattern": "^-?(?:0|[1-9]\\d*)$",
+                                                "type": [
+                                                    "integer",
+                                                    "string"
+                                                ],
+                                                "format": "int64"
+                                            },
+                                            "ImageContent.ReadTimeout": {
+                                                "pattern": "^-?(?:0|[1-9]\\d*)$",
+                                                "type": [
+                                                    "integer",
+                                                    "string"
+                                                ],
+                                                "format": "int32"
+                                            },
+                                            "ImageContent.WriteTimeout": {
+                                                "pattern": "^-?(?:0|[1-9]\\d*)$",
+                                                "type": [
+                                                    "integer",
+                                                    "string"
+                                                ],
+                                                "format": "int32"
+                                            },
+                                            "ImageContentType.Boundary": {
+                                                "type": "string"
+                                            },
+                                            "ImageContentType.CharSet": {
+                                                "type": "string"
+                                            },
+                                            "ImageContentType.MediaType": {
+                                                "type": "string"
+                                            },
+                                            "ImageContentType.Name": {
+                                                "type": "string"
+                                            },
+                                            "ImageContentType.Parameters": {
+                                                "type": "array"
+                                            },
+                                            "StartDateTime": {
+                                                "type": "string",
+                                                "format": "date-time"
+                                            },
+                                            "EndDateTime": {
+                                                "type": "string",
+                                                "format": "date-time"
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "type": "object",
+                                        "properties": {
+                                            "ContentType": {
+                                                "type": "string"
+                                            },
+                                            "ContentDisposition": {
+                                                "type": "string"
+                                            },
+                                            "Headers": {
+                                                "type": "object",
+                                                "additionalProperties": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            },
+                                            "Length": {
+                                                "pattern": "^-?(?:0|[1-9]\\d*)$",
+                                                "type": [
+                                                    "integer",
+                                                    "string"
+                                                ],
+                                                "format": "int64"
+                                            },
+                                            "Name": {
+                                                "type": "string"
+                                            },
+                                            "FileName": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    }
+                                ]
                             }
                         }
                     },
@@ -1907,7 +2234,11 @@
                         "name": "skip",
                         "in": "query",
                         "schema": {
-                            "type": "integer",
+                            "pattern": "^-?(?:0|[1-9]\\d*)$",
+                            "type": [
+                                "integer",
+                                "string"
+                            ],
                             "format": "int32",
                             "default": 0
                         }
@@ -1916,7 +2247,11 @@
                         "name": "take",
                         "in": "query",
                         "schema": {
-                            "type": "integer",
+                            "pattern": "^-?(?:0|[1-9]\\d*)$",
+                            "type": [
+                                "integer",
+                                "string"
+                            ],
                             "format": "int32",
                             "default": 15
                         }
@@ -1936,17 +2271,38 @@
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/OrderSubmitDto"
+                                "oneOf": [
+                                    {
+                                        "type": "null"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/OrderSubmitDto"
+                                    }
+                                ]
                             }
                         },
                         "text/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/OrderSubmitDto"
+                                "oneOf": [
+                                    {
+                                        "type": "null"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/OrderSubmitDto"
+                                    }
+                                ]
                             }
                         },
                         "application/*+json": {
                             "schema": {
-                                "$ref": "#/components/schemas/OrderSubmitDto"
+                                "oneOf": [
+                                    {
+                                        "type": "null"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/OrderSubmitDto"
+                                    }
+                                ]
                             }
                         }
                     }
@@ -1968,7 +2324,11 @@
                         "name": "skip",
                         "in": "query",
                         "schema": {
-                            "type": "integer",
+                            "pattern": "^-?(?:0|[1-9]\\d*)$",
+                            "type": [
+                                "integer",
+                                "string"
+                            ],
                             "format": "int32",
                             "default": 0
                         }
@@ -1977,7 +2337,11 @@
                         "name": "take",
                         "in": "query",
                         "schema": {
-                            "type": "integer",
+                            "pattern": "^-?(?:0|[1-9]\\d*)$",
+                            "type": [
+                                "integer",
+                                "string"
+                            ],
                             "format": "int32",
                             "default": 15
                         }
@@ -2080,7 +2444,11 @@
                         "name": "skip",
                         "in": "query",
                         "schema": {
-                            "type": "integer",
+                            "pattern": "^-?(?:0|[1-9]\\d*)$",
+                            "type": [
+                                "integer",
+                                "string"
+                            ],
                             "format": "int32",
                             "default": 0
                         }
@@ -2089,7 +2457,11 @@
                         "name": "take",
                         "in": "query",
                         "schema": {
-                            "type": "integer",
+                            "pattern": "^-?(?:0|[1-9]\\d*)$",
+                            "type": [
+                                "integer",
+                                "string"
+                            ],
                             "format": "int32",
                             "default": 15
                         }
@@ -2117,17 +2489,38 @@
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/ProductCreateDto"
+                                "oneOf": [
+                                    {
+                                        "type": "null"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/ProductCreateDto"
+                                    }
+                                ]
                             }
                         },
                         "text/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/ProductCreateDto"
+                                "oneOf": [
+                                    {
+                                        "type": "null"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/ProductCreateDto"
+                                    }
+                                ]
                             }
                         },
                         "application/*+json": {
                             "schema": {
-                                "$ref": "#/components/schemas/ProductCreateDto"
+                                "oneOf": [
+                                    {
+                                        "type": "null"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/ProductCreateDto"
+                                    }
+                                ]
                             }
                         }
                     }
@@ -2268,7 +2661,11 @@
                         "name": "skip",
                         "in": "query",
                         "schema": {
-                            "type": "integer",
+                            "pattern": "^-?(?:0|[1-9]\\d*)$",
+                            "type": [
+                                "integer",
+                                "string"
+                            ],
                             "format": "int32",
                             "default": 0
                         }
@@ -2277,7 +2674,11 @@
                         "name": "take",
                         "in": "query",
                         "schema": {
-                            "type": "integer",
+                            "pattern": "^-?(?:0|[1-9]\\d*)$",
+                            "type": [
+                                "integer",
+                                "string"
+                            ],
                             "format": "int32",
                             "default": 15
                         }
@@ -2323,17 +2724,38 @@
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/TopUpCreateDto"
+                                "oneOf": [
+                                    {
+                                        "type": "null"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/TopUpCreateDto"
+                                    }
+                                ]
                             }
                         },
                         "text/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/TopUpCreateDto"
+                                "oneOf": [
+                                    {
+                                        "type": "null"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/TopUpCreateDto"
+                                    }
+                                ]
                             }
                         },
                         "application/*+json": {
                             "schema": {
-                                "$ref": "#/components/schemas/TopUpCreateDto"
+                                "oneOf": [
+                                    {
+                                        "type": "null"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/TopUpCreateDto"
+                                    }
+                                ]
                             }
                         }
                     }
@@ -2372,7 +2794,11 @@
                         "name": "skip",
                         "in": "query",
                         "schema": {
-                            "type": "integer",
+                            "pattern": "^-?(?:0|[1-9]\\d*)$",
+                            "type": [
+                                "integer",
+                                "string"
+                            ],
                             "format": "int32",
                             "default": 0
                         }
@@ -2381,7 +2807,11 @@
                         "name": "take",
                         "in": "query",
                         "schema": {
-                            "type": "integer",
+                            "pattern": "^-?(?:0|[1-9]\\d*)$",
+                            "type": [
+                                "integer",
+                                "string"
+                            ],
                             "format": "int32",
                             "default": 15
                         }
@@ -2492,14 +2922,20 @@
                 "type": "object",
                 "properties": {
                     "tokenType": {
-                        "type": "string",
-                        "nullable": true
+                        "type": [
+                            "null",
+                            "string"
+                        ]
                     },
                     "accessToken": {
                         "type": "string"
                     },
                     "expiresIn": {
-                        "type": "integer",
+                        "pattern": "^-?(?:0|[1-9]\\d*)$",
+                        "type": [
+                            "integer",
+                            "string"
+                        ],
                         "format": "int64"
                     },
                     "refreshToken": {
@@ -2523,8 +2959,7 @@
                     "contentType": {
                         "type": "string"
                     }
-                },
-                "nullable": true
+                }
             },
             "AchievementUpdateDto": {
                 "type": "object",
@@ -2549,11 +2984,22 @@
                         "$ref": "#/components/schemas/ComparisonOperatorOption"
                     },
                     "comparisonValue": {
-                        "type": "integer",
+                        "pattern": "^-?(?:0|[1-9]\\d*)$",
+                        "type": [
+                            "integer",
+                            "string"
+                        ],
                         "format": "int32"
                     },
                     "image": {
-                        "$ref": "#/components/schemas/AchievementImageDto"
+                        "oneOf": [
+                            {
+                                "type": "null"
+                            },
+                            {
+                                "$ref": "#/components/schemas/AchievementImageDto"
+                            }
+                        ]
                     }
                 }
             },
@@ -2580,33 +3026,47 @@
                         "type": "string"
                     },
                     "description": {
-                        "type": "string",
-                        "nullable": true
+                        "type": [
+                            "null",
+                            "string"
+                        ]
                     },
                     "fotoUrl": {
-                        "type": "string",
-                        "nullable": true
+                        "type": [
+                            "null",
+                            "string"
+                        ]
                     },
                     "url": {
-                        "type": "string",
-                        "nullable": true
+                        "type": [
+                            "null",
+                            "string"
+                        ]
                     },
                     "order": {
-                        "type": "integer",
+                        "pattern": "^-?(?:0|[1-9]\\d*)$",
+                        "type": [
+                            "integer",
+                            "string"
+                        ],
                         "format": "int32"
                     },
                     "isScheduled": {
                         "type": "boolean"
                     },
                     "plannedFrom": {
-                        "type": "string",
-                        "format": "date-time",
-                        "nullable": true
+                        "type": [
+                            "null",
+                            "string"
+                        ],
+                        "format": "date-time"
                     },
                     "plannedTill": {
-                        "type": "string",
-                        "format": "date-time",
-                        "nullable": true
+                        "type": [
+                            "null",
+                            "string"
+                        ],
+                        "format": "date-time"
                     },
                     "id": {
                         "type": "string",
@@ -2625,28 +3085,37 @@
                         "type": "string"
                     },
                     "description": {
-                        "type": "string",
-                        "nullable": true
+                        "type": [
+                            "null",
+                            "string"
+                        ]
                     },
                     "order": {
-                        "type": "integer",
+                        "pattern": "^-?(?:0|[1-9]\\d*)$",
+                        "type": [
+                            "integer",
+                            "string"
+                        ],
                         "format": "int32"
                     },
                     "isScheduled": {
                         "type": "boolean"
                     },
                     "plannedFrom": {
-                        "type": "string",
-                        "format": "date-time",
-                        "nullable": true
+                        "type": [
+                            "null",
+                            "string"
+                        ],
+                        "format": "date-time"
                     },
                     "plannedTill": {
-                        "type": "string",
-                        "format": "date-time",
-                        "nullable": true
+                        "type": [
+                            "null",
+                            "string"
+                        ],
+                        "format": "date-time"
                     }
-                },
-                "nullable": true
+                }
             },
             "AnnouncementUpdateDto": {
                 "type": "object",
@@ -2655,28 +3124,37 @@
                         "type": "string"
                     },
                     "description": {
-                        "type": "string",
-                        "nullable": true
+                        "type": [
+                            "null",
+                            "string"
+                        ]
                     },
                     "order": {
-                        "type": "integer",
+                        "pattern": "^-?(?:0|[1-9]\\d*)$",
+                        "type": [
+                            "integer",
+                            "string"
+                        ],
                         "format": "int32"
                     },
                     "isScheduled": {
                         "type": "boolean"
                     },
                     "plannedFrom": {
-                        "type": "string",
-                        "format": "date-time",
-                        "nullable": true
+                        "type": [
+                            "null",
+                            "string"
+                        ],
+                        "format": "date-time"
                     },
                     "plannedTill": {
-                        "type": "string",
-                        "format": "date-time",
-                        "nullable": true
+                        "type": [
+                            "null",
+                            "string"
+                        ],
+                        "format": "date-time"
                     }
-                },
-                "nullable": true
+                }
             },
             "ApplicationUserDetailedDto": {
                 "type": "object",
@@ -2688,32 +3166,44 @@
                         "type": "string"
                     },
                     "email": {
-                        "type": "string",
-                        "nullable": true
+                        "type": [
+                            "null",
+                            "string"
+                        ]
                     },
                     "emailConfirmed": {
                         "type": "boolean"
                     },
                     "phoneNumber": {
-                        "type": "string",
-                        "nullable": true
+                        "type": [
+                            "null",
+                            "string"
+                        ]
                     },
                     "phoneNumberConfirmed": {
                         "type": "boolean"
                     },
                     "name": {
-                        "type": "string",
-                        "nullable": true
+                        "type": [
+                            "null",
+                            "string"
+                        ]
                     },
                     "surname": {
-                        "type": "string",
-                        "nullable": true
+                        "type": [
+                            "null",
+                            "string"
+                        ]
                     },
                     "fullName": {
                         "type": "string"
                     },
                     "saldo": {
-                        "type": "number",
+                        "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+                        "type": [
+                            "number",
+                            "string"
+                        ],
                         "format": "double"
                     },
                     "lastOrdered": {
@@ -2721,8 +3211,10 @@
                         "format": "date-time"
                     },
                     "profilePictureBase64": {
-                        "type": "string",
-                        "nullable": true
+                        "type": [
+                            "null",
+                            "string"
+                        ]
                     },
                     "roles": {
                         "type": "array",
@@ -2745,7 +3237,11 @@
                         "type": "string"
                     },
                     "saldo": {
-                        "type": "number",
+                        "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+                        "type": [
+                            "number",
+                            "string"
+                        ],
                         "format": "double"
                     },
                     "lastOrdered": {
@@ -2758,66 +3254,86 @@
                 "type": "object",
                 "properties": {
                     "phoneNumber": {
-                        "type": "string",
-                        "nullable": true
+                        "type": [
+                            "null",
+                            "string"
+                        ]
                     },
                     "name": {
-                        "type": "string",
-                        "nullable": true
+                        "type": [
+                            "null",
+                            "string"
+                        ]
                     },
                     "surname": {
-                        "type": "string",
-                        "nullable": true
+                        "type": [
+                            "null",
+                            "string"
+                        ]
                     }
-                },
-                "nullable": true
+                }
             },
             "ApplicationUserUpdateDto": {
                 "type": "object",
                 "properties": {
                     "id": {
-                        "type": "string",
-                        "nullable": true
+                        "type": [
+                            "null",
+                            "string"
+                        ]
                     },
                     "userName": {
-                        "type": "string",
-                        "nullable": true
+                        "type": [
+                            "null",
+                            "string"
+                        ]
                     },
                     "email": {
-                        "type": "string",
-                        "nullable": true
+                        "type": [
+                            "null",
+                            "string"
+                        ]
                     },
                     "emailConfirmed": {
                         "type": "boolean"
                     },
                     "phoneNumber": {
-                        "type": "string",
-                        "nullable": true
+                        "type": [
+                            "null",
+                            "string"
+                        ]
                     },
                     "phoneNumberConfirmed": {
                         "type": "boolean"
                     },
                     "name": {
-                        "type": "string",
-                        "nullable": true
+                        "type": [
+                            "null",
+                            "string"
+                        ]
                     },
                     "surname": {
-                        "type": "string",
-                        "nullable": true
+                        "type": [
+                            "null",
+                            "string"
+                        ]
                     },
                     "password": {
-                        "type": "string",
-                        "nullable": true
+                        "type": [
+                            "null",
+                            "string"
+                        ]
                     },
                     "roles": {
-                        "type": "array",
+                        "type": [
+                            "null",
+                            "array"
+                        ],
                         "items": {
                             "type": "string"
-                        },
-                        "nullable": true
+                        }
                     }
-                },
-                "nullable": true
+                }
             },
             "ComparisonOperatorOption": {
                 "enum": [
@@ -2827,29 +3343,6 @@
                     "LessThanOrEqual",
                     "GreaterThanOrEqual"
                 ]
-            },
-            "EventCreateDto": {
-                "type": "object",
-                "properties": {
-                    "title": {
-                        "type": "string"
-                    },
-                    "description": {
-                        "type": "string"
-                    },
-                    "imageUrl": {
-                        "type": "string",
-                        "nullable": true
-                    },
-                    "startDateTime": {
-                        "type": "string",
-                        "format": "date-time"
-                    },
-                    "endDateTime": {
-                        "type": "string",
-                        "format": "date-time"
-                    }
-                }
             },
             "EventDto": {
                 "type": "object",
@@ -2865,8 +3358,10 @@
                         "type": "string"
                     },
                     "imageUrl": {
-                        "type": "string",
-                        "nullable": true
+                        "type": [
+                            "null",
+                            "string"
+                        ]
                     },
                     "startDateTime": {
                         "type": "string",
@@ -2891,10 +3386,19 @@
                     },
                     "declinedUsers": {
                         "type": "array",
-                        "items": {}
+                        "items": {
+                            "$ref": "#/components/schemas/EventResponseUserDto"
+                        }
                     },
                     "userResponse": {
-                        "$ref": "#/components/schemas/NullableOfEventResponseStatus"
+                        "oneOf": [
+                            {
+                                "type": "null"
+                            },
+                            {
+                                "$ref": "#/components/schemas/EventResponseStatus"
+                            }
+                        ]
                     }
                 }
             },
@@ -2909,7 +3413,8 @@
             "EventResponseStatus": {
                 "enum": [
                     "Accepted",
-                    "Declined"
+                    "Declined",
+                    null
                 ]
             },
             "EventResponseUserDto": {
@@ -2938,25 +3443,37 @@
                 "type": "object",
                 "properties": {
                     "type": {
-                        "type": "string",
-                        "nullable": true
+                        "type": [
+                            "null",
+                            "string"
+                        ]
                     },
                     "title": {
-                        "type": "string",
-                        "nullable": true
+                        "type": [
+                            "null",
+                            "string"
+                        ]
                     },
                     "status": {
-                        "type": "integer",
-                        "format": "int32",
-                        "nullable": true
+                        "pattern": "^-?(?:0|[1-9]\\d*)$",
+                        "type": [
+                            "null",
+                            "integer",
+                            "string"
+                        ],
+                        "format": "int32"
                     },
                     "detail": {
-                        "type": "string",
-                        "nullable": true
+                        "type": [
+                            "null",
+                            "string"
+                        ]
                     },
                     "instance": {
-                        "type": "string",
-                        "nullable": true
+                        "type": [
+                            "null",
+                            "string"
+                        ]
                     },
                     "errors": {
                         "type": "object",
@@ -2973,16 +3490,22 @@
                 "type": "object",
                 "properties": {
                     "newEmail": {
-                        "type": "string",
-                        "nullable": true
+                        "type": [
+                            "null",
+                            "string"
+                        ]
                     },
                     "newPassword": {
-                        "type": "string",
-                        "nullable": true
+                        "type": [
+                            "null",
+                            "string"
+                        ]
                     },
                     "oldPassword": {
-                        "type": "string",
-                        "nullable": true
+                        "type": [
+                            "null",
+                            "string"
+                        ]
                     }
                 }
             },
@@ -3005,7 +3528,11 @@
                 "type": "object",
                 "properties": {
                     "position": {
-                        "type": "integer",
+                        "pattern": "^-?(?:0|[1-9]\\d*)$",
+                        "type": [
+                            "integer",
+                            "string"
+                        ],
                         "format": "int32"
                     },
                     "fullName": {
@@ -3015,7 +3542,11 @@
                         "type": "string"
                     },
                     "amount": {
-                        "type": "integer",
+                        "pattern": "^-?(?:0|[1-9]\\d*)$",
+                        "type": [
+                            "integer",
+                            "string"
+                        ],
                         "format": "int32"
                     }
                 }
@@ -3034,22 +3565,18 @@
                         "type": "string"
                     },
                     "twoFactorCode": {
-                        "type": "string",
-                        "nullable": true
+                        "type": [
+                            "null",
+                            "string"
+                        ]
                     },
                     "twoFactorRecoveryCode": {
-                        "type": "string",
-                        "nullable": true
+                        "type": [
+                            "null",
+                            "string"
+                        ]
                     }
                 }
-            },
-            "NullableOfEventResponseStatus": {
-                "enum": [
-                    "Accepted",
-                    "Declined",
-                    null
-                ],
-                "nullable": true
             },
             "OrderSubmitDto": {
                 "required": [
@@ -3074,14 +3601,36 @@
                         }
                     },
                     "amount": {
-                        "type": "integer",
+                        "pattern": "^-?(?:0|[1-9]\\d*)$",
+                        "type": [
+                            "integer",
+                            "string"
+                        ],
                         "format": "int32"
                     },
                     "split": {
                         "type": "boolean"
                     }
-                },
-                "nullable": true
+                }
+            },
+            "PaginationObjectOfEventDto": {
+                "type": "object",
+                "properties": {
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/EventDto"
+                        }
+                    },
+                    "totalCount": {
+                        "pattern": "^-?(?:0|[1-9]\\d*)$",
+                        "type": [
+                            "integer",
+                            "string"
+                        ],
+                        "format": "int32"
+                    }
+                }
             },
             "ProductCreateDto": {
                 "required": [
@@ -3095,19 +3644,28 @@
                         "type": "string"
                     },
                     "description": {
-                        "type": "string",
-                        "nullable": true
+                        "type": [
+                            "null",
+                            "string"
+                        ]
                     },
                     "price": {
-                        "type": "number",
+                        "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+                        "type": [
+                            "number",
+                            "string"
+                        ],
                         "format": "double"
                     },
                     "stock": {
-                        "type": "integer",
+                        "pattern": "^-?(?:0|[1-9]\\d*)$",
+                        "type": [
+                            "integer",
+                            "string"
+                        ],
                         "format": "int32"
                     }
-                },
-                "nullable": true
+                }
             },
             "ProductDto": {
                 "type": "object",
@@ -3120,15 +3678,25 @@
                         "type": "string"
                     },
                     "description": {
-                        "type": "string",
-                        "nullable": true
+                        "type": [
+                            "null",
+                            "string"
+                        ]
                     },
                     "price": {
-                        "type": "number",
+                        "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+                        "type": [
+                            "number",
+                            "string"
+                        ],
                         "format": "double"
                     },
                     "stock": {
-                        "type": "integer",
+                        "pattern": "^-?(?:0|[1-9]\\d*)$",
+                        "type": [
+                            "integer",
+                            "string"
+                        ],
                         "format": "int32"
                     }
                 }
@@ -3150,15 +3718,25 @@
                         "type": "string"
                     },
                     "description": {
-                        "type": "string",
-                        "nullable": true
+                        "type": [
+                            "null",
+                            "string"
+                        ]
                     },
                     "price": {
-                        "type": "number",
+                        "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+                        "type": [
+                            "number",
+                            "string"
+                        ],
                         "format": "double"
                     },
                     "stock": {
-                        "type": "integer",
+                        "pattern": "^-?(?:0|[1-9]\\d*)$",
+                        "type": [
+                            "integer",
+                            "string"
+                        ],
                         "format": "int32"
                     }
                 }
@@ -3241,12 +3819,15 @@
                         "type": "string"
                     },
                     "saldo": {
-                        "minimum": 1,
-                        "type": "number",
+                        "minimum": 0.01,
+                        "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+                        "type": [
+                            "number",
+                            "string"
+                        ],
                         "format": "double"
                     }
-                },
-                "nullable": true
+                }
             },
             "TopUpDto": {
                 "type": "object",
@@ -3256,11 +3837,17 @@
                         "format": "uuid"
                     },
                     "userName": {
-                        "type": "string",
-                        "nullable": true
+                        "type": [
+                            "null",
+                            "string"
+                        ]
                     },
                     "saldo": {
-                        "type": "number",
+                        "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+                        "type": [
+                            "number",
+                            "string"
+                        ],
                         "format": "double"
                     },
                     "createdOn": {
@@ -3273,12 +3860,16 @@
                 "type": "object",
                 "properties": {
                     "enable": {
-                        "type": "boolean",
-                        "nullable": true
+                        "type": [
+                            "null",
+                            "boolean"
+                        ]
                     },
                     "twoFactorCode": {
-                        "type": "string",
-                        "nullable": true
+                        "type": [
+                            "null",
+                            "string"
+                        ]
                     },
                     "resetSharedKey": {
                         "type": "boolean"
@@ -3304,15 +3895,21 @@
                         "type": "string"
                     },
                     "recoveryCodesLeft": {
-                        "type": "integer",
+                        "pattern": "^-?(?:0|[1-9]\\d*)$",
+                        "type": [
+                            "integer",
+                            "string"
+                        ],
                         "format": "int32"
                     },
                     "recoveryCodes": {
-                        "type": "array",
+                        "type": [
+                            "null",
+                            "array"
+                        ],
                         "items": {
                             "type": "string"
-                        },
-                        "nullable": true
+                        }
                     },
                     "isTwoFactorEnabled": {
                         "type": "boolean"

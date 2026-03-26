@@ -2,12 +2,14 @@ import { Component, ChangeDetectionStrategy, signal } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { SidebarComponent } from '../sidebar/sidebar.component';
 import { HeaderComponent } from '../header/header.component';
+import { ToastModule } from 'primeng/toast';
 
 @Component({
   selector: 'app-main-layout',
-  imports: [RouterOutlet, SidebarComponent, HeaderComponent],
+  imports: [RouterOutlet, SidebarComponent, HeaderComponent, ToastModule],
   template: `
     <div class="layout-container bg-surface-50 dark:bg-surface-950">
+      <p-toast position="bottom-left" />
       <app-sidebar [isOpen]="isSidebarOpen()" (close)="isSidebarOpen.set(false)" />
       <div class="main-wrapper">
         <app-header [isSidebarOpen]="isSidebarOpen()" (menuToggled)="toggleSidebar()" />

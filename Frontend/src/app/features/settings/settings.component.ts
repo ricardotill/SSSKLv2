@@ -1,14 +1,17 @@
 import { Component, ChangeDetectionStrategy, inject, OnInit, effect, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators, FormGroup } from '@angular/forms';
 import { AuthService, InfoResponse, TwoFactorResponse } from '../../core/auth/auth.service';
+import { PasskeyDto } from '../../core/models/passkey.model';
+import { WebAuthnService } from '../../core/services/webauthn.service';
+import { CommonModule } from '@angular/common';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
-import { ToastModule } from 'primeng/toast';
 import { TagModule } from 'primeng/tag';
 import { TabsModule } from 'primeng/tabs';
 import { SelectButtonModule } from 'primeng/selectbutton';
+import { DialogModule } from 'primeng/dialog';
 import { FormsModule } from '@angular/forms';
 import { ThemeService, ThemeMode } from '../../core/services/theme.service';
 import { LanguageService } from '../../core/services/language.service';
@@ -19,13 +22,12 @@ import { CardModule } from 'primeng/card';
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [ReactiveFormsModule, FormsModule, ButtonModule, InputTextModule, ToastModule, TagModule, TabsModule, ConfirmDialogModule, SelectButtonModule, CardModule],
-  providers: [MessageService, ConfirmationService],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, ButtonModule, InputTextModule, TagModule, TabsModule, ConfirmDialogModule, SelectButtonModule, CardModule, DialogModule],
+  providers: [ConfirmationService],
   template: `
     <div class="max-w-3xl mx-auto">
       <h1 class="text-2xl font-bold mb-4 text-surface-900 dark:text-surface-0">{{ ls.t().user_settings }}</h1>
       <p-card>
-      <p-toast></p-toast>
 
       <p-tabs value="profile">
         <p-tablist>
@@ -38,10 +40,13 @@ import { CardModule } from 'primeng/card';
         <p-tabpanels>
             <!-- Profile Tab -->
             <p-tabpanel value="profile">
-              <div class="mt-4">
+              <div class="mt-4 flex flex-col gap-6">
                 @if (authService.currentUser(); as user) {
-                  <div class="mb-8">
-                    <h3 class="text-xl font-semibold mb-3">{{ ls.t().roles }}</h3>
+                  <div class="p-4 bg-surface-50 dark:bg-surface-800/50 rounded-lg border border-surface-200 dark:border-surface-700">
+                    <h3 class="text-xl font-semibold mb-4 flex items-center gap-2">
+                      <i class="pi pi-shield text-primary"></i>
+                      {{ ls.t().roles }}
+                    </h3>
                     <div class="flex gap-2 flex-wrap">
                       @for (role of user.roles; track role) {
                         <p-tag [value]="role" [severity]="getRoleSeverity(role)"></p-tag>
@@ -53,7 +58,7 @@ import { CardModule } from 'primeng/card';
                   </div>
                 }
                 
-                <div class="mb-8 p-4 bg-surface-50 dark:bg-surface-800/50 rounded-lg border border-surface-200 dark:border-surface-700">
+                <div class="p-4 bg-surface-50 dark:bg-surface-800/50 rounded-lg border border-surface-200 dark:border-surface-700">
                   <h3 class="text-xl font-semibold mb-4 flex items-center gap-2">
                     <i class="pi pi-palette text-primary"></i>
                     {{ ls.t().color_mode }}
@@ -75,32 +80,38 @@ import { CardModule } from 'primeng/card';
                   </p>
                 </div>
 
-                <form [formGroup]="form" (ngSubmit)="onSubmit()" class="flex flex-col gap-5">
-                  <div class="flex flex-col gap-2">
-                    <label for="name" class="font-semibold cursor-pointer">{{ ls.t().first_name }}</label>
-                    <input pInputText id="name" formControlName="name" class="w-full text-lg p-3" />
-                  </div>
+                <div class="p-4 bg-surface-50 dark:bg-surface-800/50 rounded-lg border border-surface-200 dark:border-surface-700">
+                  <h3 class="text-xl font-semibold mb-4 flex items-center gap-2">
+                    <i class="pi pi-user-edit text-primary"></i>
+                    {{ ls.t().profile }}
+                  </h3>
+                  <form [formGroup]="form" (ngSubmit)="onSubmit()" class="flex flex-col gap-5">
+                    <div class="flex flex-col gap-2">
+                      <label for="name" class="font-semibold cursor-pointer">{{ ls.t().first_name }}</label>
+                      <input pInputText id="name" formControlName="name" class="w-full text-lg p-3" />
+                    </div>
 
-                  <div class="flex flex-col gap-2">
-                    <label for="surname" class="font-semibold cursor-pointer">{{ ls.t().last_name }}</label>
-                    <input pInputText id="surname" formControlName="surname" class="w-full text-lg p-3" />
-                  </div>
+                    <div class="flex flex-col gap-2">
+                      <label for="surname" class="font-semibold cursor-pointer">{{ ls.t().last_name }}</label>
+                      <input pInputText id="surname" formControlName="surname" class="w-full text-lg p-3" />
+                    </div>
 
-                  <div class="flex flex-col gap-2">
-                    <label for="phoneNumber" class="font-semibold cursor-pointer">{{ ls.t().phone_number }}</label>
-                    <input pInputText id="phoneNumber" formControlName="phoneNumber" class="w-full text-lg p-3" />
-                  </div>
+                    <div class="flex flex-col gap-2">
+                      <label for="phoneNumber" class="font-semibold cursor-pointer">{{ ls.t().phone_number }}</label>
+                      <input pInputText id="phoneNumber" formControlName="phoneNumber" class="w-full text-lg p-3" />
+                    </div>
 
-                  <div class="flex justify-end mt-4">
-                    <p-button 
-                      type="submit" 
-                      [label]="ls.t().save_changes" 
-                      [loading]="isLoading()" 
-                      [disabled]="form.invalid || form.pristine || isLoading()"
-                      icon="pi pi-check"
-                    ></p-button>
-                  </div>
-                </form>
+                    <div class="flex justify-end mt-4">
+                      <p-button 
+                        type="submit" 
+                        [label]="ls.t().save_changes" 
+                        [loading]="isLoading()" 
+                        [disabled]="form.invalid || form.pristine || isLoading()"
+                        icon="pi pi-check"
+                      ></p-button>
+                    </div>
+                  </form>
+                </div>
               </div>
             </p-tabpanel>
 
@@ -108,8 +119,11 @@ import { CardModule } from 'primeng/card';
             <p-tabpanel value="security">
                <div class="flex flex-col gap-6 mt-4">
                  @if (identityInfo(); as info) {
-                    <div class="flex flex-col gap-2 p-4 bg-surface-100 dark:bg-surface-800 rounded-lg">
-                       <h3 class="font-semibold text-lg hover:text-primary transition-colors cursor-pointer">{{ ls.t().email_status }}</h3>
+                    <div class="p-4 bg-surface-50 dark:bg-surface-800/50 rounded-lg border border-surface-200 dark:border-surface-700">
+                       <h3 class="text-xl font-semibold mb-4 flex items-center gap-2">
+                         <i class="pi pi-envelope text-primary"></i>
+                         {{ ls.t().email_status }}
+                       </h3>
                        <div class="flex items-center gap-3">
                          <span class="text-surface-700 dark:text-surface-300 font-medium">{{ info.email }}</span>
                          @if (info.isEmailConfirmed) {
@@ -125,32 +139,80 @@ import { CardModule } from 'primeng/card';
                     </div>
                  }
 
-                 <form [formGroup]="securityForm" (ngSubmit)="onSecuritySubmit()" class="flex flex-col gap-5">
-                   <div class="flex flex-col gap-2">
-                     <label for="newEmail" class="font-semibold cursor-pointer">{{ ls.t().new_email }}</label>
-                     <input pInputText id="newEmail" type="email" formControlName="newEmail" class="w-full text-lg p-3" [placeholder]="ls.t().email_placeholder" />
-                   </div>
-                   
-                   <div class="flex flex-col gap-2 mt-4">
-                     <label for="oldPassword" class="font-semibold cursor-pointer">{{ ls.t().current_password }}</label>
-                     <input pInputText id="oldPassword" type="password" formControlName="oldPassword" class="w-full text-lg p-3" [placeholder]="ls.t().password_placeholder" />
-                   </div>
-                   
-                   <div class="flex flex-col gap-2">
-                     <label for="newPassword" class="font-semibold cursor-pointer">{{ ls.t().new_password }}</label>
-                     <input pInputText id="newPassword" type="password" formControlName="newPassword" class="w-full text-lg p-3" [placeholder]="ls.t().new_password_placeholder" />
-                   </div>
-                   
-                   <div class="flex justify-end mt-4">
-                     <p-button 
-                       type="submit" 
-                       [label]="ls.t().update_security" 
-                       [loading]="isSecurityLoading()" 
-                       [disabled]="securityForm.invalid || isSecurityLoading() || !isSecurityFormValid()"
-                       icon="pi pi-lock"
-                     ></p-button>
-                   </div>
-                  </form>
+                 <div class="p-4 bg-surface-50 dark:bg-surface-800/50 rounded-lg border border-surface-200 dark:border-surface-700">
+                   <h3 class="text-xl font-semibold mb-4 flex items-center gap-2">
+                     <i class="pi pi-lock text-primary"></i>
+                     {{ ls.t().security }}
+                   </h3>
+                   <form [formGroup]="securityForm" (ngSubmit)="onSecuritySubmit()" class="flex flex-col gap-5">
+                     <div class="flex flex-col gap-2">
+                       <label for="newEmail" class="font-semibold cursor-pointer">{{ ls.t().new_email }}</label>
+                       <input pInputText id="newEmail" type="email" formControlName="newEmail" class="w-full text-lg p-3" [placeholder]="ls.t().email_placeholder" />
+                     </div>
+                     
+                     <div class="flex flex-col gap-2 mt-4">
+                       <label for="oldPassword" class="font-semibold cursor-pointer">{{ ls.t().current_password }}</label>
+                       <input pInputText id="oldPassword" type="password" formControlName="oldPassword" class="w-full text-lg p-3" [placeholder]="ls.t().password_placeholder" />
+                     </div>
+                     
+                     <div class="flex flex-col gap-2">
+                       <label for="newPassword" class="font-semibold cursor-pointer">{{ ls.t().new_password }}</label>
+                       <input pInputText id="newPassword" type="password" formControlName="newPassword" class="w-full text-lg p-3" [placeholder]="ls.t().new_password_placeholder" />
+                     </div>
+                     
+                     <div class="flex justify-end mt-4">
+                       <p-button 
+                         type="submit" 
+                         [label]="ls.t().update_security" 
+                         [loading]="isSecurityLoading()" 
+                         [disabled]="securityForm.invalid || isSecurityLoading() || !isSecurityFormValid()"
+                         icon="pi pi-lock"
+                       ></p-button>
+                     </div>
+                    </form>
+                  </div>
+
+                 <div class="p-4 bg-surface-50 dark:bg-surface-800/50 rounded-lg border border-surface-200 dark:border-surface-700">
+                    <h3 class="text-xl font-semibold mb-4 flex items-center gap-2">
+                      <i class="pi pi-key text-primary"></i>
+                      {{ ls.t().passkeys_title }}
+                    </h3>
+                    <p class="text-sm text-surface-500 mb-4">
+                      {{ ls.t().passkeys_description }}
+                    </p>
+                    
+                    <div class="flex flex-col gap-3 mb-4">
+                      @for (passkey of passkeys(); track passkey.credentialIdBase64) {
+                        <div class="flex items-center justify-between p-3 bg-surface-0 dark:bg-surface-900 rounded border border-surface-200 dark:border-surface-700">
+                          <div class="flex flex-col gap-1">
+                            <span class="font-medium">{{ passkey.displayName || ('Passkey ' + ($index + 1)) }}</span>
+                            <span class="text-xs text-surface-500">{{ passkey.createdAt | date:'dd/MM/yyyy HH:mm' }}</span>
+                          </div>
+                          <p-button 
+                            icon="pi pi-trash" 
+                            severity="danger" 
+                            [text]="true" 
+                            (onClick)="onDeletePasskey(passkey.credentialIdBase64)"
+                          ></p-button>
+                        </div>
+                      }
+                      @if (passkeys().length === 0) {
+                        <div class="text-center py-4 text-surface-500 italic">
+                          {{ ls.t().no_passkeys }}
+                        </div>
+                      }
+                    </div>
+
+                    <div class="flex justify-start">
+                      <p-button 
+                        [label]="ls.t().add_passkey" 
+                        icon="pi pi-plus" 
+                        (onClick)="onRegisterPasskey()" 
+                        [loading]="isPasskeyRegistering()"
+                        severity="secondary"
+                      ></p-button>
+                    </div>
+                 </div>
                </div>
             </p-tabpanel>
 
@@ -164,9 +226,12 @@ import { CardModule } from 'primeng/card';
                  } @else if (twoFactorInfo(); as tfa) {
                     
                     @if (!tfa.isTwoFactorEnabled) {
-                       <div class="p-6 bg-surface-100 dark:bg-surface-800 rounded-lg flex flex-col gap-4">
-                         <h3 class="text-xl font-bold m-0 text-surface-900 dark:text-surface-0">{{ ls.t().enable_tfa }}</h3>
-                         <p class="text-surface-600 dark:text-surface-400 m-0 leading-relaxed">
+                       <div class="p-4 bg-surface-50 dark:bg-surface-800/50 rounded-lg border border-surface-200 dark:border-surface-700">
+                         <h3 class="text-xl font-semibold mb-4 flex items-center gap-2">
+                            <i class="pi pi-shield text-primary"></i>
+                            {{ ls.t().enable_tfa }}
+                         </h3>
+                         <p class="text-surface-600 dark:text-surface-400 mb-4 leading-relaxed">
                             {{ ls.t().tfa_desc }}
                          </p>
 
@@ -182,7 +247,7 @@ import { CardModule } from 'primeng/card';
                             </div>
                          </div>
 
-                         <form [formGroup]="twoFactorForm" (ngSubmit)="onEnable2FA()" class="flex flex-col gap-3 mt-2">
+                         <form [formGroup]="twoFactorForm" (ngSubmit)="onEnable2FA()" class="flex flex-col gap-3 mt-4">
                            <label for="code" class="font-semibold text-surface-900 dark:text-surface-0">{{ ls.t().verify_code }}</label>
                            <input 
                               pInputText 
@@ -201,12 +266,12 @@ import { CardModule } from 'primeng/card';
                          </form>
                        </div>
                     } @else {
-                       <div class="p-6 bg-surface-100 dark:bg-surface-800 rounded-lg flex flex-col gap-4 border-l-4 border-success">
-                         <div class="flex items-center gap-3">
-                            <i class="pi pi-shield text-2xl text-green-500"></i>
-                            <h3 class="text-xl font-bold m-0 text-surface-900 dark:text-surface-0">{{ ls.t().tfa_enabled_title }}</h3>
-                         </div>
-                         <p class="text-surface-600 dark:text-surface-400 m-0" [innerHTML]="ls.translate('tfa_enabled_desc', { count: tfa.recoveryCodesLeft })"></p>
+                       <div class="p-4 bg-surface-50 dark:bg-surface-800/50 rounded-lg border border-surface-200 dark:border-surface-700 border-l-primary border-l-4">
+                         <h3 class="text-xl font-semibold mb-4 flex items-center gap-2">
+                            <i class="pi pi-shield text-primary"></i>
+                            {{ ls.t().tfa_enabled_title }}
+                         </h3>
+                         <p class="text-surface-600 dark:text-surface-400 mb-4" [innerHTML]="ls.translate('tfa_enabled_desc', { count: tfa.recoveryCodesLeft })"></p>
                          
                          @if (tfa.recoveryCodes && tfa.recoveryCodes.length > 0) {
                             <div class="bg-surface-0 dark:bg-surface-900 p-4 rounded border border-surface-200 dark:border-surface-700 mt-2">
@@ -243,12 +308,15 @@ import { CardModule } from 'primeng/card';
             <!-- Personal Data Tab -->
             <p-tabpanel value="personaldata">
                <div class="mt-4 flex flex-col gap-6">
-                 <div class="p-6 bg-surface-100 dark:bg-surface-800 rounded-lg flex flex-col gap-4">
-                   <h3 class="text-xl font-bold m-0 text-surface-900 dark:text-surface-0">{{ ls.t().download_data_title }}</h3>
-                   <p class="text-surface-600 dark:text-surface-400 m-0 leading-relaxed">
+                 <div class="p-4 bg-surface-50 dark:bg-surface-800/50 rounded-lg border border-surface-200 dark:border-surface-700">
+                   <h3 class="text-xl font-semibold mb-4 flex items-center gap-2">
+                     <i class="pi pi-download text-primary"></i>
+                     {{ ls.t().download_data_title }}
+                   </h3>
+                   <p class="text-surface-600 dark:text-surface-400 mb-4 leading-relaxed">
                       {{ ls.t().download_data_desc }}
                    </p>
-                   <div class="mt-2 text-left">
+                   <div class="text-left">
                      <p-button 
                        [label]="ls.t().download_btn" 
                        (onClick)="onDownloadPersonalData()"
@@ -258,12 +326,15 @@ import { CardModule } from 'primeng/card';
                    </div>
                  </div>
 
-                 <div class="p-6 bg-red-50 dark:bg-red-950/20 rounded-lg flex flex-col gap-4 border border-red-200 dark:border-red-800">
-                   <h3 class="text-xl font-bold m-0 text-red-700 dark:text-red-400">{{ ls.t().delete_account_title }}</h3>
-                   <p class="text-red-600 dark:text-red-300 m-0 leading-relaxed">
+                 <div class="p-4 bg-red-50 dark:bg-red-950/20 rounded-lg border border-red-200 dark:border-red-800">
+                   <h3 class="text-xl font-semibold mb-4 flex items-center gap-2 text-red-700 dark:text-red-400">
+                     <i class="pi pi-trash"></i>
+                     {{ ls.t().delete_account_title }}
+                   </h3>
+                   <p class="text-red-600 dark:text-red-300 mb-4 leading-relaxed">
                       {{ ls.t().delete_account_desc }}
                    </p>
-                   <div class="mt-2 text-left">
+                   <div class="text-left">
                      <p-button 
                        [label]="ls.t().delete_account_btn" 
                        severity="danger"
@@ -278,6 +349,22 @@ import { CardModule } from 'primeng/card';
         </p-tabpanels>
       </p-tabs>
       <p-confirmDialog />
+      
+      <p-dialog [(visible)]="showPasskeyDialog" [header]="ls.t().passkey_name" [modal]="true" [style]="{width: '450px'}">
+        <div class="flex flex-col gap-4 mt-2">
+          <p>{{ ls.t().enter_passkey_name }}</p>
+          <div class="flex flex-col gap-2">
+            <label for="passkeyNameInput" class="font-semibold">{{ ls.t().passkey_name }}</label>
+            <input pInputText id="passkeyNameInput" [(ngModel)]="passkeyName" [placeholder]="ls.t().passkey_name_placeholder" class="w-full text-lg p-3" (keydown.enter)="confirmPasskeyRegistration()"/>
+          </div>
+        </div>
+        <ng-template #footer>
+          <div class="flex justify-end gap-2">
+            <p-button [label]="ls.t().cancel" severity="secondary" [text]="true" (onClick)="showPasskeyDialog.set(false)"></p-button>
+            <p-button [label]="ls.t().confirm" (onClick)="confirmPasskeyRegistration()"></p-button>
+          </div>
+        </ng-template>
+      </p-dialog>
       </p-card>
     </div>
   `,
@@ -286,6 +373,7 @@ import { CardModule } from 'primeng/card';
 })
 export default class SettingsComponent {
   authService = inject(AuthService);
+  webAuthnService = inject(WebAuthnService);
   themeService = inject(ThemeService);
   ls = inject(LanguageService);
   private fb = inject(FormBuilder);
@@ -313,9 +401,13 @@ export default class SettingsComponent {
   isTwoFactorLoading = signal(false);
   isDownloadingPersonalData = signal(false);
   isDeletingAccount = signal(false);
+  isPasskeyRegistering = signal(false);
   identityInfo = signal<InfoResponse | null>(null);
   twoFactorInfo = signal<TwoFactorResponse | null>(null);
+  passkeys = signal<PasskeyDto[]>([]);
   qrCodeDataUrl = signal<string | null>(null);
+  showPasskeyDialog = signal(false);
+  passkeyName = signal('');
 
   themeOptions = [
     { label: 'Auto', value: 'auto', icon: 'pi pi-desktop' },
@@ -337,6 +429,7 @@ export default class SettingsComponent {
 
     this.fetchIdentityInfo();
     this.fetchTwoFactorInfo();
+    this.fetchPasskeys();
   }
 
   fetchIdentityInfo() {
@@ -603,6 +696,71 @@ export default class SettingsComponent {
               detail: this.ls.t().error
             });
             console.error('Failed to delete account:', err);
+          }
+        });
+      }
+    });
+  }
+
+  fetchPasskeys() {
+    this.authService.getPasskeys().subscribe({
+      next: (keys) => this.passkeys.set(keys),
+      error: (err) => console.error('Failed to fetch passkeys:', err)
+    });
+  }
+
+  onRegisterPasskey() {
+    this.passkeyName.set('');
+    this.showPasskeyDialog.set(true);
+  }
+
+  confirmPasskeyRegistration() {
+    this.showPasskeyDialog.set(false);
+    this.isPasskeyRegistering.set(true);
+    this.webAuthnService.register(this.passkeyName()).subscribe({
+      next: () => {
+        this.isPasskeyRegistering.set(false);
+        this.messageService.add({
+          severity: 'success',
+          summary: this.ls.t().success,
+          detail: this.ls.t().passkey_registered
+        });
+        this.fetchPasskeys();
+      },
+      error: (err) => {
+        this.isPasskeyRegistering.set(false);
+        this.messageService.add({
+          severity: 'error',
+          summary: this.ls.t().error,
+          detail: err.message || 'Error occurred during passkey registration.'
+        });
+        console.error('Passkey registration error', err);
+      }
+    });
+  }
+
+  onDeletePasskey(credentialIdBase64: string) {
+    this.confirmationService.confirm({
+      message: this.ls.t().confirm_delete_passkey,
+      header: this.ls.t().confirm_delete_title,
+      icon: 'pi pi-exclamation-triangle',
+      accept: () => {
+        this.authService.deletePasskey(credentialIdBase64).subscribe({
+          next: () => {
+            this.messageService.add({
+              severity: 'success',
+              summary: this.ls.t().success,
+              detail: this.ls.t().passkey_deleted
+            });
+            this.fetchPasskeys();
+          },
+          error: (err) => {
+            this.messageService.add({
+              severity: 'error',
+              summary: this.ls.t().error,
+              detail: this.ls.t().error
+            });
+            console.error('Failed to delete passkey:', err);
           }
         });
       }

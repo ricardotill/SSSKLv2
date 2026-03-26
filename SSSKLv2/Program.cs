@@ -1,19 +1,9 @@
-﻿using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using SSSKLv2.Components;
-using SSSKLv2.Components.Account;
 using SSSKLv2.Data;
 using System.Globalization;
-using Azure.Identity;
-using Blazored.Toast;
-using FluentValidation;
-using Microsoft.AspNetCore.Authentication.BearerToken;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.Azure.SignalR.Common;
-using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Logging.ApplicationInsights;
-using Microsoft.OpenApi.Models;
 using Polly;
 using Polly.Contrib.WaitAndRetry;
 using Scalar.AspNetCore;
@@ -21,9 +11,13 @@ using SSSKLv2.Agents;
 using SSSKLv2.Data.DAL;
 using SSSKLv2.Registrations;
 using SSSKLv2.Services;
-using Microsoft.AspNetCore.Http;
+using Microsoft.OpenApi;
+using Microsoft.Azure.SignalR.Common;
+using Blazored.Toast;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.AddServiceDefaults();
 
 // Treat the IntegrationTest environment like Development for dev-friendly behaviors
 // such as using SameAsRequest for cookie SecurePolicy. This prevents antiforgery
@@ -31,7 +25,10 @@ var builder = WebApplication.CreateBuilder(args);
 // under TestServer.
 var isIntegrationLikeEnvironment = builder.Environment.IsDevelopment() || builder.Environment.IsEnvironment("IntegrationTest");
 
-builder.Services.AddApplicationInsightsTelemetry();
+if (!string.IsNullOrEmpty(builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"]))
+{
+    builder.Services.AddApplicationInsightsTelemetry();
+}
 
 builder.Services.AddControllers();
 
@@ -61,11 +58,6 @@ builder.Services.AddRazorComponents()
         options.ClientTimeoutInterval = TimeSpan.FromSeconds(60);
         options.HandshakeTimeout = TimeSpan.FromSeconds(30);
     });
-
-builder.Services.AddCascadingAuthenticationState();
-builder.Services.AddScoped<IdentityUserAccessor>();
-builder.Services.AddScoped<IdentityRedirectManager>();
-builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();
 
 builder.Services.AddHealthChecks();
 
@@ -144,7 +136,10 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("Guest", policy => policy.RequireRole("Guest"));
 });
 
-builder.Logging.AddFilter<ApplicationInsightsLoggerProvider>("SSSKLv2", LogLevel.Trace);
+if (!string.IsNullOrEmpty(builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"]))
+{
+    builder.Logging.AddFilter<ApplicationInsightsLoggerProvider>("SSSKLv2", LogLevel.Trace);
+}
 
 // Register a CORS policy for frontend clients (applied only outside Development).
 var frontendOrigins = new[]
@@ -173,47 +168,11 @@ if (builder.Environment.IsDevelopment())
     builder.Configuration.AddEnvironmentVariables().AddJsonFile("appsettings.Development.json");
 }
 
-builder.Services.AddDbContextFactory<ApplicationDbContext>(
-    options =>
-    {
-        // If running under the IntegrationTest environment, use InMemory database to keep tests isolated.
-        if (builder.Environment.IsEnvironment("IntegrationTest"))
-        {
-            // // Register the InMemory provider with its own internal service provider so its EF services
-            // // are not mixed into the application's root service provider. This avoids the "multiple
-            // // database providers registered" error when tests exercise the host with a different
-            // // provider than production.
-            // var localServices = new ServiceCollection();
-            // localServices.AddEntityFrameworkInMemoryDatabase();
-            // var localProvider = localServices.BuildServiceProvider();
-
-            options.UseInMemoryDatabase("IntegrationTestDb");
-            // .UseInternalServiceProvider(localProvider);
-        }
-        else
-        {
-            string connection;
-            if (builder.Environment.IsDevelopment())
-            {
-                // Development-time services/config already registered above; just read the connection string.
-                connection = builder.Configuration.GetConnectionString("DefaultConnection") 
-                             ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
-            }
-            else
-            {
-                connection = builder.Configuration.GetConnectionString("AZURE_SQL_CONNECTIONSTRING")
-                             ?? throw new InvalidOperationException("Azure SQL Server Connection string not found.");
-            }
-            options.UseSqlServer(connection,
-                sqlServerOptionsAction: sqlOptions =>
-                {
-                    sqlOptions.EnableRetryOnFailure(
-                        maxRetryCount: 15,
-                        maxRetryDelay: TimeSpan.FromSeconds(10),
-                        errorNumbersToAdd: null);
-                });
-        }
-    });
+builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>
+{
+    options.UseSqlServer(builder.Configuration.GetConnectionString("db"));
+});
+builder.EnrichSqlServerDbContext<ApplicationDbContext>();
 
 if (builder.Environment.IsProduction())
 {
@@ -238,53 +197,21 @@ if (builder.Environment.IsDevelopment())
     builder.Services.AddSignalR();
 }
 
-builder.Services.AddAzureClients(clientBuilder =>
-{
-    // Register BlobServiceClient with a dev-friendly configuration.
-    // For local development (Azurite) prefer a connection string or the emulator alias.
-    var storageSection = builder.Configuration.GetSection("Storage");
-    var connectionString = storageSection["ConnectionString"];
-    var serviceUri = storageSection["ServiceUri"];
-
-    if (builder.Environment.IsDevelopment())
-    {
-        // Prefer an explicit connection string set in appsettings.Development.json.
-        // If none is provided, fall back to the Storage Emulator alias which works with Azurite/Storage Emulator.
-        var devConn = !string.IsNullOrWhiteSpace(connectionString) ? connectionString : "UseDevelopmentStorage=true";
-        clientBuilder.AddBlobServiceClient(devConn);
-    }
-    else
-    {
-        // In production, prefer a ServiceUri with DefaultAzureCredential or an explicit connection string.
-        if (!string.IsNullOrWhiteSpace(connectionString))
-        {
-            clientBuilder.AddBlobServiceClient(connectionString);
-        }
-        else if (!string.IsNullOrWhiteSpace(serviceUri))
-        {
-            clientBuilder.AddBlobServiceClient(new Uri(serviceUri));
-            clientBuilder.UseCredential(new DefaultAzureCredential());
-        }
-    }
-});
+builder.AddAzureBlobServiceClient("blobs");
 
 builder.Services.AddIdentityCore<ApplicationUser>(options =>
     {
-        // During integration tests we create users via the API and don't want to require
-        // email confirmation flows. Use the isIntegrationLikeEnvironment flag to disable
-        // RequireConfirmedAccount for IntegrationTest and Development while keeping it enabled
-        // in Production.
-        options.SignIn.RequireConfirmedAccount = !isIntegrationLikeEnvironment;
+        options.SignIn.RequireConfirmedAccount = false;
+        options.Stores.SchemaVersion = IdentitySchemaVersions.Version3;
     })
     .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddSignInManager()
     .AddDefaultTokenProviders()
-    .AddClaimsPrincipalFactory<IdentityClaimsPrincipalFactory>()
     .AddApiEndpoints();
 
-if (isIntegrationLikeEnvironment) builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
-else builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityEmailSender>();
+// TODO: Implement a proper IEmailSender if needed for the API
+builder.Services.AddSingleton<IEmailSender<ApplicationUser>, NoOpEmailSender>();
 
 builder.Services.AddBlazoredToast();
 
@@ -314,6 +241,8 @@ builder.Services.Configure<CookiePolicyOptions>(options =>
 });
 
 var app = builder.Build();
+
+app.MapDefaultEndpoints();
 
 // Diagnostic: when running integration tests, log the concrete IEmailSender implementation to help debug which
 // email sender implementation was registered.
@@ -376,8 +305,6 @@ app.UseAntiforgery();
 app.MapRazorComponents<App>()
     .WithStaticAssets()
     .AddInteractiveServerRenderMode();
-
-app.MapAdditionalIdentityEndpoints();
 
 app.MapGroup("/api")
     .MapControllers();

@@ -7,7 +7,6 @@ import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { MessageService, ConfirmationService } from 'primeng/api';
-import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { CardModule } from 'primeng/card';
 import { SelectModule } from 'primeng/select';
@@ -40,7 +39,6 @@ interface PickListAchievement {
     DialogModule,
     InputTextModule,
     InputNumberModule,
-    ToastModule,
     ConfirmDialogModule,
     CardModule,
     SelectModule,
@@ -60,7 +58,6 @@ interface PickListAchievement {
         <p-button icon="pi pi-refresh" [rounded]="true" (onClick)="loadAchievements()" ariaLabel="Vernieuwen"></p-button>
       </div>
     </div>
-    <p-toast></p-toast>
     <p-confirmDialog></p-confirmDialog>
     
     <p-card>
@@ -182,7 +179,7 @@ interface PickListAchievement {
       </div>
     </p-dialog>
   `,
-  providers: [MessageService, ConfirmationService]
+  providers: [ConfirmationService]
 })
 export default class AchievementsComponent implements OnInit {
   private readonly achievementService = inject(AchievementService);

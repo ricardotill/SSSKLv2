@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { BehaviorSubject, Observable, of, throwError } from 'rxjs';
 import { catchError, filter, map, switchMap, take, tap } from 'rxjs/operators';
+import { PasskeyDto } from '../models/passkey.model';
 
 export interface AccessTokenResponse {
     tokenType: string | null;
@@ -63,6 +64,8 @@ export interface TwoFactorResponse {
     isTwoFactorEnabled: boolean;
     isMachineRemembered: boolean;
 }
+
+// PasskeyDto moved to ../models/passkey.model
 
 @Injectable({
     providedIn: 'root'
@@ -179,6 +182,33 @@ export class AuthService {
 
     deleteAccount(): Observable<any> {
         return this.http.delete(`${this.USER_API_URL}/me`);
+    }
+
+    getPasskeyRequestOptions(userName: string): Observable<any> {
+        return this.http.get(`${this.API_URL}/PasskeyRequestOptions`, { params: { userName } });
+    }
+
+    loginWithPasskey(assertion: any): Observable<AccessTokenResponse> {
+        return this.http.post<AccessTokenResponse>(`${this.API_URL}/PasskeyAssertion`, assertion).pipe(
+            tap(response => this.setTokens(response, true)),
+            tap(() => this.fetchCurrentUser().subscribe())
+        );
+    }
+
+    getPasskeyCreationOptions(): Observable<any> {
+        return this.http.get(`${this.API_URL}/PasskeyCreationOptions`);
+    }
+
+    registerPasskey(credential: any, name?: string): Observable<any> {
+        return this.http.post(`${this.API_URL}/PasskeyCreation`, { credential, name });
+    }
+
+    getPasskeys(): Observable<PasskeyDto[]> {
+        return this.http.get<PasskeyDto[]>(`${this.API_URL}/manage/Passkeys`);
+    }
+
+    deletePasskey(credentialIdBase64: string): Observable<any> {
+        return this.http.post(`${this.API_URL}/manage/DeletePasskey`, { credentialIdBase64 });
     }
 
     getAccessToken(): string | null {

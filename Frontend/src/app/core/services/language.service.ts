@@ -44,6 +44,7 @@ export class LanguageService {
     'orders': 'Bestellingen',
     'pos': 'Bestellen',
     'leaderboard': 'Leaderboard',
+    'passkey': 'Passkey',
 
     // POS
     'what': 'Wat',
@@ -159,6 +160,16 @@ export class LanguageService {
     'update_security': 'Beveiliging Bijwerken',
     'security_updated': 'Je beveiligingsinstellingen zijn bijgewerkt.',
     'security_update_failed': 'Bijwerken van beveiligingsinstellingen mislukt. Controleer je invoer.',
+    'passkeys_title': 'Passkeys',
+    'passkeys_description': 'Beheer je passkeys om sneller en veiliger in te loggen.',
+    'add_passkey': 'Passkey Toevoegen',
+    'no_passkeys': 'Geen passkeys geregistreerd.',
+    'passkey_registered': 'Passkey succesvol geregistreerd.',
+    'passkey_deleted': 'Passkey succesvol verwijderd.',
+    'confirm_delete_passkey': 'Weet je zeker dat je deze passkey wilt verwijderen?',
+    'passkey_name': 'Passkey Naam',
+    'passkey_name_placeholder': 'Bijv. Mijn iPhone, Werk Laptop',
+    'enter_passkey_name': 'Voer een naam in voor je nieuwe passkey',
 
     // Settings - 2FA
     'enable_tfa': 'Tweestapsverificatie Inschakelen',

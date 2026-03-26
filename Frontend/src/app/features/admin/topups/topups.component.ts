@@ -8,7 +8,6 @@ import { DialogModule } from 'primeng/dialog';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { AutoCompleteModule } from 'primeng/autocomplete';
 import { MessageService, ConfirmationService } from 'primeng/api';
-import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { CardModule } from 'primeng/card';
 import { TopUpService } from '../../../core/services/top-up.service';
@@ -16,6 +15,7 @@ import { ApplicationUserService } from '../../../core/services/application-user.
 import { TopUpDto, TopUpCreateDto } from '../../../core/models/top-up.model';
 import { ApplicationUserDto } from '../../../core/models/application-user.model';
 import { LanguageService } from '../../../core/services/language.service';
+import { AuthService } from '../../../core/auth/auth.service';
 
 @Component({
   selector: 'app-topups',
@@ -28,7 +28,6 @@ import { LanguageService } from '../../../core/services/language.service';
     DialogModule,
     InputNumberModule,
     AutoCompleteModule,
-    ToastModule,
     ConfirmDialogModule,
     CardModule
   ],
@@ -40,7 +39,6 @@ import { LanguageService } from '../../../core/services/language.service';
         <p-button icon="pi pi-refresh" [rounded]="true" (onClick)="loadTopUps()" [ariaLabel]="ls.t().refresh"></p-button>
       </div>
     </div>
-    <p-toast></p-toast>
     <p-confirmDialog></p-confirmDialog>
     <p-card>
       <p-table 
@@ -118,7 +116,7 @@ import { LanguageService } from '../../../core/services/language.service';
   `,
   styles: ``,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  providers: [MessageService, ConfirmationService]
+  providers: [ConfirmationService]
 })
 export default class TopUpsComponent implements OnInit {
   private readonly topUpService = inject(TopUpService);
@@ -126,6 +124,7 @@ export default class TopUpsComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly messageService = inject(MessageService);
   private readonly confirmationService = inject(ConfirmationService);
+  private readonly authService = inject(AuthService);
   ls = inject(LanguageService);
 
   topUps = signal<TopUpDto[]>([]);
@@ -207,6 +206,7 @@ export default class TopUpsComponent implements OnInit {
     this.topUpService.createTopUp(createDto).subscribe({
       next: () => {
         this.messageService.add({ severity: 'success', summary: this.ls.t().success, detail: this.ls.t().top_up_added });
+        this.authService.refreshCurrentUser();
         this.dialogVisible.set(false);
         this.saving.set(false);
         this.loadTopUps();
@@ -237,6 +237,7 @@ export default class TopUpsComponent implements OnInit {
       .subscribe({
         next: () => {
           this.messageService.add({ severity: 'success', summary: this.ls.t().success, detail: this.ls.t().top_up_deleted });
+          this.authService.refreshCurrentUser();
           this.loadTopUps();
         },
         error: () => {

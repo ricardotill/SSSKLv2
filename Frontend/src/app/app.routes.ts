@@ -96,7 +96,7 @@ export const routes: Routes = [
             path: 'new',
             loadComponent: () => import('./features/events/event-edit/event-edit.component'),
             canActivate: [roleGuard],
-            data: { roles: ['Admin'] },
+            data: { roles: ['Admin', 'User'] },
             title: 'Evenement Toevoegen - SSSKL'
           },
           {
@@ -108,7 +108,7 @@ export const routes: Routes = [
             path: ':id/edit',
             loadComponent: () => import('./features/events/event-edit/event-edit.component'),
             canActivate: [roleGuard],
-            data: { roles: ['Admin'] },
+            data: { roles: ['Admin', 'User'] },
             title: 'Evenement Bewerken - SSSKL'
           }
         ]

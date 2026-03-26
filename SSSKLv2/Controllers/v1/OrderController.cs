@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
-using SSSKLv2.Components.Account;
 using SSSKLv2.Services.Interfaces;
 using SSSKLv2.Data;
 using SSSKLv2.Data.DAL.Exceptions;
@@ -130,7 +129,6 @@ public class OrderController : ControllerBase
     }
 
     // POST v1/order
-    [Authorize]
     [Authorize(Roles = "User,Admin")]
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] OrderSubmitDto? bestelling)
@@ -173,8 +171,7 @@ public class OrderController : ControllerBase
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id)
     {
-        var userId = User.FindFirstValue(IdentityClaim.Id.ToString())
-            ?? User.FindFirstValue(ClaimTypes.NameIdentifier)
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)
             ?? User.FindFirstValue("sub");
         var isAdmin = User.IsInRole("Admin");
 

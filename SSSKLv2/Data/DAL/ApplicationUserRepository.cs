@@ -42,7 +42,7 @@ public class ApplicationUserRepository(
     public async Task<IList<ApplicationUser>> GetAllForAdmin()
     {
         await using var context = await dbContextFactory.CreateDbContextAsync();
-        var list = await context.Users
+        var list = await GetConsumerUsersQuery(context)
             .AsNoTracking()
             .OrderBy(x => x.Name)
             .ToListAsync();

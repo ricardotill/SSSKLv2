@@ -19,6 +19,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Bestanden", "Bestanden", "{
 		Directory.Packages.props = Directory.Packages.props
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SSSKLv2.AppHost", "SSSKLv2.AppHost\SSSKLv2.AppHost.csproj", "{D2FB989F-EC07-4A51-83AA-931878AA2D9B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SSSKLv2.ServiceDefaults", "SSSKLv2.ServiceDefaults\SSSKLv2.ServiceDefaults.csproj", "{26FE641B-D282-4C8B-BE10-DBCA485EC2ED}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +37,14 @@ Global
 		{27564579-A1C1-466E-B186-C838EBB3DC36}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{27564579-A1C1-466E-B186-C838EBB3DC36}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{27564579-A1C1-466E-B186-C838EBB3DC36}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D2FB989F-EC07-4A51-83AA-931878AA2D9B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D2FB989F-EC07-4A51-83AA-931878AA2D9B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D2FB989F-EC07-4A51-83AA-931878AA2D9B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D2FB989F-EC07-4A51-83AA-931878AA2D9B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{26FE641B-D282-4C8B-BE10-DBCA485EC2ED}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{26FE641B-D282-4C8B-BE10-DBCA485EC2ED}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{26FE641B-D282-4C8B-BE10-DBCA485EC2ED}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{26FE641B-D282-4C8B-BE10-DBCA485EC2ED}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

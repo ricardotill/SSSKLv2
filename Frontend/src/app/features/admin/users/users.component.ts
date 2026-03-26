@@ -8,7 +8,6 @@ import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
 import { CheckboxModule } from 'primeng/checkbox';
 import { MessageService, ConfirmationService } from 'primeng/api';
-import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ApplicationUserService } from '../../../core/services/application-user.service';
 import { ApplicationUserDto, ApplicationUserUpdateDto } from '../../../core/models/application-user.model';
@@ -29,7 +28,6 @@ import { MultiSelectModule } from 'primeng/multiselect';
     DialogModule,
     InputTextModule,
     CheckboxModule,
-    ToastModule,
     ConfirmDialogModule,
     CardModule,
     MultiSelectModule
@@ -39,7 +37,6 @@ import { MultiSelectModule } from 'primeng/multiselect';
       <h1 class="text-2xl font-bold m-0 text-surface-900 dark:text-surface-0">{{ ls.t().users }}</h1>
       <p-button icon="pi pi-refresh" [rounded]="true" (onClick)="loadUsers()" [ariaLabel]="ls.t().refresh"></p-button>
     </div>
-    <p-toast></p-toast>
     <p-confirmDialog></p-confirmDialog>
     <p-card>
       
@@ -131,7 +128,7 @@ import { MultiSelectModule } from 'primeng/multiselect';
   `,
   styles: ``,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  providers: [MessageService, ConfirmationService]
+  providers: [ConfirmationService]
 })
 export default class UsersComponent implements OnInit {
   private readonly userService = inject(ApplicationUserService);

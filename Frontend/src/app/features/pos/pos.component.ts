@@ -2,7 +2,6 @@ import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit } 
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MessageService } from 'primeng/api';
-import { ToastModule } from 'primeng/toast';
 import { CheckboxModule } from 'primeng/checkbox';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { ButtonModule } from 'primeng/button';
@@ -22,18 +21,15 @@ import { ProgressSpinnerModule } from 'primeng/progressspinner';
   imports: [
     CommonModule,
     FormsModule,
-    ToastModule,
     CheckboxModule,
     InputNumberModule,
     ButtonModule,
     CardModule,
     ProgressSpinnerModule
   ],
-  providers: [MessageService],
   template: `
   <p-card>
     <div class="text-surface-900 dark:text-surface-0 h-full">
-      <p-toast></p-toast>
       @if (isLoading()) {
         <div class="flex justify-center items-center p-12">
           <p-progressSpinner ariaLabel="loading"></p-progressSpinner>

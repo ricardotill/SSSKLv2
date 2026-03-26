@@ -53,6 +53,7 @@ public class EventsController : ControllerBase
         }
     }
 
+    [Authorize(Roles = "User,Admin")]
     [HttpPost]
     [Consumes("multipart/form-data")]
     public async Task<ActionResult<EventDto>> Create([FromForm] EventCreateDto dto, [FromForm] IFormFile? image)
@@ -71,6 +72,7 @@ public class EventsController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = eventId }, createdEvent);
     }
 
+    [Authorize(Roles = "User,Admin")]
     [HttpPut("{id:guid}")]
     [Consumes("multipart/form-data")]
     public async Task<IActionResult> Update(Guid id, [FromForm] EventCreateDto dto, [FromForm] IFormFile? image)
@@ -101,6 +103,7 @@ public class EventsController : ControllerBase
         }
     }
 
+    [Authorize(Roles = "User,Admin")]
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id)
     {
@@ -124,6 +127,7 @@ public class EventsController : ControllerBase
         }
     }
 
+    [Authorize(Roles = "User,Admin")]
     [HttpPost("{id:guid}/rsvp")]
     public async Task<IActionResult> Respond(Guid id, [FromBody] EventResponseDto dto)
     {

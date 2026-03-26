@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
-using SSSKLv2.Components.Account;
 using SSSKLv2.Controllers.v1;
 using SSSKLv2.Data;
 using SSSKLv2.Data.DAL.Exceptions;
@@ -136,7 +135,7 @@ public class OrderControllerTests
         var claims = new List<Claim>();
         if (!string.IsNullOrWhiteSpace(userId))
         {
-            claims.Add(new Claim(IdentityClaim.Id.ToString(), userId));
+            claims.Add(new Claim("sub", userId));
         }
 
         if (!string.IsNullOrWhiteSpace(username))

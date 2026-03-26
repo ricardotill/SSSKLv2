@@ -65,7 +65,7 @@ public class AnnouncementServiceTests
     {
         // Arrange
         var expectedException = new InvalidOperationException("Test exception");
-        _mockRepository.GetAll().Returns(Task.FromException<IEnumerable<Announcement>>(expectedException));
+        _mockRepository.GetAll().Returns(Task.FromException<IList<Announcement>>(expectedException));
 
         // Act
         Func<Task> action = async () => await _sut.GetAllAnnouncements();

@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>aspnet-SSSKLv2-3b416739-57c6-4151-a2e5-8cfca6f4185b</UserSecretsId>
@@ -15,19 +15,6 @@
     <Content Remove="compilerconfig.json" />
   </ItemGroup>
 
-  <ItemGroup>
-    <_ContentIncludedByDefault Remove="compilerconfig.json" />
-    <_ContentIncludedByDefault Remove="Components\Pages\ProductPages\Create.razor" />
-    <_ContentIncludedByDefault Remove="Components\Pages\ProductPages\Delete.razor" />
-    <_ContentIncludedByDefault Remove="Components\Pages\ProductPages\Details.razor" />
-    <_ContentIncludedByDefault Remove="Components\Pages\ProductPages\Edit.razor" />
-    <_ContentIncludedByDefault Remove="Components\Pages\ProductPages\Index.razor" />
-    <_ContentIncludedByDefault Remove="Components\Pages\TopUpPages\Create.razor" />
-    <_ContentIncludedByDefault Remove="Components\Pages\TopUpPages\Delete.razor" />
-    <_ContentIncludedByDefault Remove="Components\Pages\TopUpPages\Index.razor" />
-    <_ContentIncludedByDefault Remove="Components\Pages\OrderPages\Delete.razor" />
-    <_ContentIncludedByDefault Remove="Components\Pages\OrderPages\Index.razor" />
-  </ItemGroup>
 
   <ItemGroup>
     <None Include="compilerconfig.json" />
@@ -38,6 +25,7 @@
     <PackageReference Include="BlazorComponentUtilities" />
     <PackageReference Include="Blazored.Toast" />
     <PackageReference Include="FluentValidation" />
+    <PackageReference Include="FluentValidation.AspNetCore" />
     <PackageReference Include="Microsoft.ApplicationInsights" />
     <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" />
     <PackageReference Include="Microsoft.ApplicationInsights.DependencyCollector" />
@@ -45,9 +33,11 @@
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" />
     <PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" />
     <PackageReference Include="Microsoft.Azure.AppConfiguration.AspNetCore" />
     <PackageReference Include="Microsoft.Azure.SignalR" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Tools">
@@ -59,35 +49,35 @@
     <PackageReference Include="Polly" />
     <PackageReference Include="Polly.Contrib.WaitAndRetry" />
     <PackageReference Include="QRCoder" />
+    <PackageReference Include="Scalar.AspNetCore" />
+    <PackageReference Include="Scalar.AspNetCore.Microsoft" />
     <PackageReference Include="SendGrid" />
     <PackageReference Include="System.ServiceModel.Syndication" />
+    <PackageReference Include="Aspire.Microsoft.EntityFrameworkCore.SqlServer" />
+    <PackageReference Include="Aspire.Azure.Storage.Blobs" />
   </ItemGroup>
 
   <ItemGroup>
     <Folder Include="Migrations\" />
   </ItemGroup>
 
-  <ItemGroup>
-    <AdditionalFiles Include="Components\Pages\Admin\AchievementPages\Create.razor" />
-    <AdditionalFiles Include="Components\Pages\Admin\AchievementPages\Delete.razor" />
-    <AdditionalFiles Include="Components\Pages\Admin\AchievementPages\Edit.razor" />
-    <AdditionalFiles Include="Components\Pages\Admin\AchievementPages\Index.razor" />
-    <AdditionalFiles Include="Components\Pages\Admin\OldUserMigrationPages\Create.razor" />
-    <AdditionalFiles Include="Components\Pages\Admin\OldUserMigrationPages\Delete.razor" />
-    <AdditionalFiles Include="Components\Pages\Admin\OldUserMigrationPages\Index.razor" />
-    <AdditionalFiles Include="Components\Pages\Admin\OrderPages\Delete.razor" />
-    <AdditionalFiles Include="Components\Pages\Admin\OrderPages\Index.razor" />
-    <AdditionalFiles Include="Components\Pages\Admin\ProductPages\Create.razor" />
-    <AdditionalFiles Include="Components\Pages\Admin\ProductPages\Delete.razor" />
-    <AdditionalFiles Include="Components\Pages\Admin\ProductPages\Edit.razor" />
-    <AdditionalFiles Include="Components\Pages\Admin\ProductPages\Index.razor" />
-    <AdditionalFiles Include="Components\Pages\Admin\TopUpPages\Create.razor" />
-    <AdditionalFiles Include="Components\Pages\Admin\TopUpPages\Delete.razor" />
-    <AdditionalFiles Include="Components\Pages\Admin\TopUpPages\Index.razor" />
-  </ItemGroup>
 
   <ItemGroup>
     <Compile Remove="Services\Interfaces\IOrderEventBus.cs" />
   </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SSSKLv2.ServiceDefaults\SSSKLv2.ServiceDefaults.csproj" />
+  </ItemGroup>
+
+  <Target Name="BuildFrontend" BeforeTargets="Build">
+    <Message Importance="high" Text="Building Frontend..." />
+    <Exec Command="npm install" WorkingDirectory="../Frontend" />
+    <Exec Command="npm run build" WorkingDirectory="../Frontend" />
+    <ItemGroup>
+      <FrontendFiles Include="../Frontend/dist/SSSKLv2/browser/**" />
+    </ItemGroup>
+    <Copy SourceFiles="@(FrontendFiles)" DestinationFolder="wwwroot/%(RecursiveDir)" SkipUnchangedFiles="true" />
+  </Target>
 
 </Project>

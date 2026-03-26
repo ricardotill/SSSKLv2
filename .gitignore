@@ -764,3 +764,21 @@ FodyWeavers.xsd
 # Additional files built by Visual Studio
 
 # End of https://www.toptal.com/developers/gitignore/api/visualstudio,visualstudiocode,rider,aspnetcore,dotnetcore,node
+
+# Frontend build outputs in backend wwwroot
+SSSKLv2/wwwroot/*
+!SSSKLv2/wwwroot/app.css
+!SSSKLv2/wwwroot/favicon.ico
+!SSSKLv2/wwwroot/favicon-16x16.png
+!SSSKLv2/wwwroot/favicon-32x32.png
+!SSSKLv2/wwwroot/icon.png
+!SSSKLv2/wwwroot/icon_x128.png
+!SSSKLv2/wwwroot/icon_x192.png
+!SSSKLv2/wwwroot/icon_x48.png
+!SSSKLv2/wwwroot/icon_x72.png
+!SSSKLv2/wwwroot/icon_x96.png
+!SSSKLv2/wwwroot/maskable_icon.png
+!SSSKLv2/wwwroot/sssklv2.webmanifest
+!SSSKLv2/wwwroot/.well-known/
+!SSSKLv2/wwwroot/js/
+!SSSKLv2/wwwroot/.gitkeep

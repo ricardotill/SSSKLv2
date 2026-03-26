@@ -6,16 +6,23 @@ namespace SSSKLv2.Services;
 
 public class AnnouncementService(IAnnouncementRepository announcementRepository) : IAnnouncementService
 {
-    public Task<IEnumerable<Announcement>> GetAllAnnouncements()
+    public Task<int> GetCount() => announcementRepository.GetCount();
+    public Task<IList<Announcement>> GetAllAnnouncements()
     {
         return announcementRepository.GetAll();
     }
+
+    public async Task<IList<Announcement>> GetAllAnnouncements(int skip, int take)
+    {
+        return await announcementRepository.GetAllPaged(skip, take);
+    }
+
     public IQueryable<Announcement> GetAllAnnouncementsQueryable(ApplicationDbContext context)
     {
         return announcementRepository.GetAllQueryable(context);
     }
 
-    public Task<Announcement> GetAnnouncementById(Guid id)
+    public Task<Announcement?> GetAnnouncementById(Guid id)
     {
         return announcementRepository.GetById(id);
     }

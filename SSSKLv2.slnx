@@ -1,0 +1,16 @@
+<Solution>
+  <Folder Name="/Bestanden/">
+    <File Path=".github/workflows/deploy-acceptation.yml" />
+    <File Path=".github/workflows/deploy-production.yml" />
+    <File Path=".github/workflows/dotnet.yml" />
+    <File Path=".gitignore" />
+    <File Path="Directory.Packages.props" />
+    <File Path="docker-compose.yml" />
+    <File Path="LICENSE.txt" />
+    <File Path="README.md" />
+  </Folder>
+  <Project Path="SSSKLv2.AppHost/SSSKLv2.AppHost.csproj" />
+  <Project Path="SSSKLv2.ServiceDefaults/SSSKLv2.ServiceDefaults.csproj" />
+  <Project Path="SSSKLv2.Test/SSSKLv2.Test.csproj" />
+  <Project Path="SSSKLv2/SSSKLv2.csproj" />
+</Solution>

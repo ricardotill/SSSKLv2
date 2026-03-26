@@ -14,7 +14,29 @@ public class AchievementRepository(IDbContextFactory<ApplicationDbContext> dbCon
             .OrderBy(x => x.CreatedOn)
             .ToListAsync();
     }
+
+    public async Task<IList<Achievement>> GetAll(int skip, int take)
+    {
+        // Ensure sensible bounds for skip/take
+        if (skip < 0) skip = 0;
+        if (take <= 0) take = 50; // default page size when invalid
+
+        await using var context = await dbContextFactory.CreateDbContextAsync();
+        return await context.Achievement
+            .Include(x => x.Image)
+            .OrderBy(x => x.CreatedOn)
+            .Skip(skip)
+            .Take(take)
+            .ToListAsync();
+    }
     
+    public async Task<int> GetCount()
+    {
+        await using var context = await dbContextFactory.CreateDbContextAsync();
+        return await context.Achievement
+            .CountAsync();
+    }
+
     public IQueryable<Achievement> GetAllQueryable(ApplicationDbContext context)
     {
         return context.Achievement

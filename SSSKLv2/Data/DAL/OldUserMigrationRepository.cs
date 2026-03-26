@@ -4,11 +4,17 @@ using SSSKLv2.Data.DAL.Interfaces;
 
 namespace SSSKLv2.Data.DAL;
 
-public class OldUserMigrationRepository(IDbContextFactory<ApplicationDbContext> _dbContextFactory) : IOldUserMigrationRepository
+public class OldUserMigrationRepository(IDbContextFactory<ApplicationDbContext> dbContextFactory) : IOldUserMigrationRepository
 {
+    public async Task<int> GetCount()
+    {
+        await using var context = await dbContextFactory.CreateDbContextAsync();
+        return await context.OldUserMigration.CountAsync();
+    }
+
     public async Task<OldUserMigration> GetById(Guid id)
     {
-        await using var context = await _dbContextFactory.CreateDbContextAsync();
+        await using var context = await dbContextFactory.CreateDbContextAsync();
         var entry = await context.OldUserMigration.FindAsync(id);
         if (entry != null)
         {
@@ -20,7 +26,7 @@ public class OldUserMigrationRepository(IDbContextFactory<ApplicationDbContext> 
     
     public async Task<OldUserMigration> GetByUsername(string username)
     {
-        await using var context = await _dbContextFactory.CreateDbContextAsync();
+        await using var context = await dbContextFactory.CreateDbContextAsync();
         var entry = await context.OldUserMigration
             .SingleOrDefaultAsync(x =>
                 x.Username.Equals(username));
@@ -34,21 +40,21 @@ public class OldUserMigrationRepository(IDbContextFactory<ApplicationDbContext> 
 
     public async Task<IEnumerable<OldUserMigration>> GetAll()
     {
-        await using var context = await _dbContextFactory.CreateDbContextAsync();
+        await using var context = await dbContextFactory.CreateDbContextAsync();
         var list = await context.OldUserMigration.ToListAsync();
         return list;
     }
 
     public async Task Create(OldUserMigration obj)
     {
-        await using var context = await _dbContextFactory.CreateDbContextAsync();
+        await using var context = await dbContextFactory.CreateDbContextAsync();
         context.OldUserMigration.Add(obj);
         await context.SaveChangesAsync();
     }
 
     public async Task Delete(Guid id)
     {
-        await using var context = await _dbContextFactory.CreateDbContextAsync();
+        await using var context = await dbContextFactory.CreateDbContextAsync();
         var entry = await context.OldUserMigration.FindAsync(id);
         if (entry != null)
         {

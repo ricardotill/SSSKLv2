@@ -1,26 +1,54 @@
-﻿using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using SSSKLv2.Components;
-using SSSKLv2.Components.Account;
 using SSSKLv2.Data;
 using System.Globalization;
-using Azure.Identity;
-using Blazored.Toast;
-using Microsoft.Azure.SignalR.Common;
-using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Logging.ApplicationInsights;
 using Polly;
 using Polly.Contrib.WaitAndRetry;
+using Scalar.AspNetCore;
 using SSSKLv2.Agents;
 using SSSKLv2.Data.DAL;
+using SSSKLv2.Registrations;
 using SSSKLv2.Services;
+using Microsoft.OpenApi;
+using Microsoft.Azure.SignalR.Common;
+using Blazored.Toast;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddApplicationInsightsTelemetry();
+builder.AddServiceDefaults();
+
+// Treat the IntegrationTest environment like Development for dev-friendly behaviors
+// such as using SameAsRequest for cookie SecurePolicy. This prevents antiforgery
+// and cookie codepaths from requiring an actual SSL request when running tests
+// under TestServer.
+var isIntegrationLikeEnvironment = builder.Environment.IsDevelopment() || builder.Environment.IsEnvironment("IntegrationTest");
+
+if (!string.IsNullOrEmpty(builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"]))
+{
+    builder.Services.AddApplicationInsightsTelemetry();
+}
 
 builder.Services.AddControllers();
+
+// Register all FluentValidation validators from this assembly
+builder.Services.AddFluentAssertionsRegistrations();
+
+builder.Services.AddOpenApi(opt =>
+{
+    opt.AddDocumentTransformer<BearerSecuritySchemeTransformer>();
+    opt.AddDocumentTransformer((document, _, _) =>
+    {
+        document.Info.Contact = new OpenApiContact
+        {
+            Name = "Scouting Wilo",
+            Email = "webmaster@scoutingwilo.nl"
+        };
+        return Task.CompletedTask;
+    });
+});
+
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
@@ -31,23 +59,76 @@ builder.Services.AddRazorComponents()
         options.HandshakeTimeout = TimeSpan.FromSeconds(30);
     });
 
-builder.Services.AddCascadingAuthenticationState();
-builder.Services.AddScoped<IdentityUserAccessor>();
-builder.Services.AddScoped<IdentityRedirectManager>();
-builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();
-
 builder.Services.AddHealthChecks();
 
-builder.Services.AddAuthentication(options =>
+var authBuilder = builder.Services.AddAuthentication(options =>
 {
-    options.DefaultScheme = IdentityConstants.ApplicationScheme;
+    // Policy scheme as default: forwards to bearer when an Authorization header is present,
+    // otherwise falls back to the Identity cookie handler.
+    options.DefaultScheme = "BearerOrCookie";
     options.DefaultSignInScheme = IdentityConstants.ExternalScheme;
-})
-.AddIdentityCookies();
+});
+
+authBuilder.AddIdentityCookies();
+authBuilder.AddBearerToken(IdentityConstants.BearerScheme, options =>
+{
+    options.RefreshTokenExpiration = TimeSpan.FromDays(180);
+});
+
+// Inspect the Authorization header at runtime to pick the correct handler.
+authBuilder.AddPolicyScheme("BearerOrCookie", "Bearer or Cookie", options =>
+{
+    options.ForwardDefaultSelector = context =>
+    {
+        string? authorization = context.Request.Headers.Authorization;
+        if (authorization?.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase) == true)
+            return IdentityConstants.BearerScheme;
+        return IdentityConstants.ApplicationScheme;
+    };
+});
+
+// Configure application and identity-related cookies to be HttpOnly and use a secure policy.
 builder.Services.ConfigureApplicationCookie(options =>
 {
     options.ExpireTimeSpan = TimeSpan.FromDays(180);
     options.SlidingExpiration = false;
+    options.Cookie.HttpOnly = true;
+    options.Cookie.SecurePolicy = isIntegrationLikeEnvironment
+        ? CookieSecurePolicy.SameAsRequest
+        : CookieSecurePolicy.Always;
+    options.Cookie.SameSite = SameSiteMode.Lax;
+
+    // For API paths, return 401/403 instead of redirecting to the login page.
+    options.Events.OnRedirectToLogin = context =>
+    {
+        if (context.Request.Path.StartsWithSegments("/api"))
+        {
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            return Task.CompletedTask;
+        }
+        context.Response.Redirect(context.RedirectUri);
+        return Task.CompletedTask;
+    };
+    options.Events.OnRedirectToAccessDenied = context =>
+    {
+        if (context.Request.Path.StartsWithSegments("/api"))
+        {
+            context.Response.StatusCode = StatusCodes.Status403Forbidden;
+            return Task.CompletedTask;
+        }
+        context.Response.Redirect(context.RedirectUri);
+        return Task.CompletedTask;
+    };
+});
+
+// External and two-factor cookies should also be HttpOnly and secure.
+builder.Services.ConfigureExternalCookie(options =>
+{
+    options.Cookie.HttpOnly = true;
+    options.Cookie.SecurePolicy = isIntegrationLikeEnvironment
+        ? CookieSecurePolicy.SameAsRequest
+        : CookieSecurePolicy.Always;
+    options.Cookie.SameSite = SameSiteMode.Lax;
 });
 
 builder.Services.AddAuthorization(options =>
@@ -58,35 +139,48 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("Guest", policy => policy.RequireRole("Guest"));
 });
 
-string connection;
+if (!string.IsNullOrEmpty(builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"]))
+{
+    builder.Logging.AddFilter<ApplicationInsightsLoggerProvider>("SSSKLv2", LogLevel.Trace);
+}
+
+// Register a CORS policy for frontend clients.
+var frontendOrigins = new[]
+{
+    "http://localhost:3000",
+    "https://localhost:3000",
+    "http://localhost:5173",
+    "https://localhost:5173",
+    "https://ssskl.scoutingwilo.nl",
+    "https://icy-island-07ad9b303.azurestaticapps.net"
+};
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy.WithOrigins(frontendOrigins)
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
+});
+
+// If running in Development, register the Database Developer Page exception filter and load Development config
 if (builder.Environment.IsDevelopment())
 {
     builder.Services.AddDatabaseDeveloperPageExceptionFilter();
-
     builder.Configuration.AddEnvironmentVariables().AddJsonFile("appsettings.Development.json");
-    connection = builder.Configuration.GetConnectionString("DefaultConnection") 
-                 ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 }
-else
+
+if (!builder.Environment.IsEnvironment("IntegrationTest"))
 {
-    connection = builder.Configuration.GetConnectionString("AZURE_SQL_CONNECTIONSTRING")
-                 ?? throw new InvalidOperationException("Azure SQL Server Connection string not found.");
-}
-
-builder.Logging.AddFilter<ApplicationInsightsLoggerProvider>("SSSKLv2", LogLevel.Trace);
-
-builder.Services.AddDbContextFactory<ApplicationDbContext>(
-    options =>
+    builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>
     {
-        options.UseSqlServer(connection,
-            sqlServerOptionsAction: sqlOptions =>
-            {
-                sqlOptions.EnableRetryOnFailure(
-                    maxRetryCount: 15,
-                    maxRetryDelay: TimeSpan.FromSeconds(10),
-                    errorNumbersToAdd: null);
-            });
+        options.UseSqlServer(builder.Configuration.GetConnectionString("db"));
     });
+    builder.EnrichSqlServerDbContext<ApplicationDbContext>();
+}
 
 if (builder.Environment.IsProduction())
 {
@@ -111,48 +205,21 @@ if (builder.Environment.IsDevelopment())
     builder.Services.AddSignalR();
 }
 
-builder.Services.AddAzureClients(clientBuilder =>
-{
-    // Register BlobServiceClient with a dev-friendly configuration.
-    // For local development (Azurite) prefer a connection string or the emulator alias.
-    var storageSection = builder.Configuration.GetSection("Storage");
-    var connectionString = storageSection["ConnectionString"];
-    var serviceUri = storageSection["ServiceUri"];
-
-    if (builder.Environment.IsDevelopment())
-    {
-        // Prefer an explicit connection string set in appsettings.Development.json.
-        // If none is provided, fall back to the Storage Emulator alias which works with Azurite/Storage Emulator.
-        var devConn = !string.IsNullOrWhiteSpace(connectionString) ? connectionString : "UseDevelopmentStorage=true";
-        clientBuilder.AddBlobServiceClient(devConn);
-    }
-    else
-    {
-        // In production, prefer a ServiceUri with DefaultAzureCredential or an explicit connection string.
-        if (!string.IsNullOrWhiteSpace(connectionString))
-        {
-            clientBuilder.AddBlobServiceClient(connectionString);
-        }
-        else if (!string.IsNullOrWhiteSpace(serviceUri))
-        {
-            clientBuilder.AddBlobServiceClient(new Uri(serviceUri));
-            clientBuilder.UseCredential(new DefaultAzureCredential());
-        }
-    }
-});
+builder.AddAzureBlobServiceClient("blobs");
 
 builder.Services.AddIdentityCore<ApplicationUser>(options =>
     {
-        options.SignIn.RequireConfirmedAccount = true;
+        options.SignIn.RequireConfirmedAccount = false;
+        options.Stores.SchemaVersion = IdentitySchemaVersions.Version3;
     })
     .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddSignInManager()
     .AddDefaultTokenProviders()
-    .AddClaimsPrincipalFactory<IdentityClaimsPrincipalFactory>();
+    .AddApiEndpoints();
 
-if (builder.Environment.IsDevelopment()) builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
-else builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityEmailSender>();
+// TODO: Implement a proper IEmailSender if needed for the API
+builder.Services.AddSingleton<IEmailSender<ApplicationUser>, NoOpEmailSender>();
 
 builder.Services.AddBlazoredToast();
 
@@ -160,17 +227,61 @@ builder.Services.AddServicesDI();
 builder.Services.AddDataDI();
 builder.Services.AddAgentsDI();
 
-builder.Services.AddAntiforgery(o => o.SuppressXFrameOptionsHeader = true);
+builder.Services.AddAntiforgery(o =>
+{
+    o.SuppressXFrameOptionsHeader = true;
+    // Make antiforgery cookie HttpOnly and secure.
+    o.Cookie.HttpOnly = true;
+    o.Cookie.SecurePolicy = isIntegrationLikeEnvironment
+        ? CookieSecurePolicy.SameAsRequest
+        : CookieSecurePolicy.Always;
+    o.Cookie.SameSite = SameSiteMode.Lax;
+});
+
+// Configure a global cookie policy to enforce HttpOnly and secure cookies where possible.
+builder.Services.Configure<CookiePolicyOptions>(options =>
+{
+    options.HttpOnly = Microsoft.AspNetCore.CookiePolicy.HttpOnlyPolicy.Always;
+    options.Secure = isIntegrationLikeEnvironment
+        ? CookieSecurePolicy.SameAsRequest
+        : CookieSecurePolicy.Always;
+    options.MinimumSameSitePolicy = SameSiteMode.Lax;
+});
 
 var app = builder.Build();
+
+app.MapDefaultEndpoints();
+
+// Diagnostic: when running integration tests, log the concrete IEmailSender implementation to help debug which
+// email sender implementation was registered.
+if (isIntegrationLikeEnvironment)
+{
+    using var _diagScope = app.Services.CreateScope();
+    try
+    {
+        var _emailSender = _diagScope.ServiceProvider.GetService<IEmailSender<ApplicationUser>>();
+        Console.WriteLine($"DI Diagnostic: IEmailSender<ApplicationUser> = {(_emailSender?.GetType().FullName ?? "<none>")}");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"DI Diagnostic: failed to resolve IEmailSender<ApplicationUser>: {ex.GetType().FullName}: {ex.Message}");
+    }
+}
 
 app.UsePathBase("/");
 
 await using (var scope = app.Services.CreateAsyncScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    await db.Database.MigrateAsync();
-    await db.Database.EnsureCreatedAsync();
+    if (!app.Environment.IsEnvironment("IntegrationTest"))
+    {
+        await db.Database.MigrateAsync();
+    }
+    else
+    {
+        // In-memory provider used for integration tests does not support migrations; ensure DB is created instead.
+        await db.Database.EnsureCreatedAsync();
+    }
 }
 
 // Configure the HTTP request pipeline.
@@ -186,17 +297,31 @@ else
 app.UseHttpsRedirection();
 app.UseBlazorFrameworkFiles();
 app.UseStaticFiles();
+// Apply cookie policy before authentication so cookie flags are enforced.
+app.UseCookiePolicy();
+
+// Apply CORS policy.
+app.UseCors("AllowFrontend");
+app.UseAuthentication();
+app.UseAuthorization();
 app.MapStaticAssets();
 app.UseAntiforgery();
 
 app.MapRazorComponents<App>()
-    .WithStaticAssets()
     .AddInteractiveServerRenderMode();
 
-app.MapControllers();
+app.MapGroup("/api")
+    .MapControllers();
+app.MapGroup("/api/v1/identity")
+    .MapSssklIdentityApi();
 
-// Add additional endpoints required by the Identity /Account Razor components.
-app.MapAdditionalIdentityEndpoints();
+app.MapFallbackToFile("index.html");
+
+if (app.Environment.IsDevelopment())
+{
+    app.MapOpenApi();
+    app.MapScalarApiReference();
+}
 
 // Map our SignalR hub for user purchases
 app.MapHub<SSSKLv2.Services.Hubs.LiveMetricsHub>("/hubs/livemetrics");
@@ -223,7 +348,13 @@ CultureInfo.DefaultThreadCurrentCulture = CultureInfo.GetCultureInfo("nl-NL");
 
 using (var scope = app.Services.GetService<IServiceScopeFactory>()!.CreateScope())
 {
-    await scope.ServiceProvider.GetRequiredService<ApplicationDbContext>().Database.MigrateAsync();
+    if (!app.Environment.IsEnvironment("IntegrationTest"))
+    {
+        await scope.ServiceProvider.GetRequiredService<ApplicationDbContext>().Database.MigrateAsync();
+    }
 }
 
 await app.RunAsync();
+
+// Expose the Program type for WebApplicationFactory in tests
+public partial class Program { }

@@ -876,120 +876,78 @@ public class AchievementServiceTests
 
     #endregion
 
-    #region CheckComparison Tests
-    
-    [TestMethod]
-    public void CheckComparison_LessThan_ReturnsCorrectResult()
-    {
-        // Act & Assert
-        CheckComparisonMethod(5, Achievement.ComparisonOperatorOption.LessThan, 10, true);
-        CheckComparisonMethod(10, Achievement.ComparisonOperatorOption.LessThan, 10, false);
-        CheckComparisonMethod(15, Achievement.ComparisonOperatorOption.LessThan, 10, false);
-    }
-    
-    [TestMethod]
-    public void CheckComparison_GreaterThan_ReturnsCorrectResult()
-    {
-        // Act & Assert
-        CheckComparisonMethod(15, Achievement.ComparisonOperatorOption.GreaterThan, 10, true);
-        CheckComparisonMethod(10, Achievement.ComparisonOperatorOption.GreaterThan, 10, false);
-        CheckComparisonMethod(5, Achievement.ComparisonOperatorOption.GreaterThan, 10, false);
-    }
-    
-    [TestMethod]
-    public void CheckComparison_LessThanOrEqual_ReturnsCorrectResult()
-    {
-        // Act & Assert
-        CheckComparisonMethod(5, Achievement.ComparisonOperatorOption.LessThanOrEqual, 10, true);
-        CheckComparisonMethod(10, Achievement.ComparisonOperatorOption.LessThanOrEqual, 10, true);
-        CheckComparisonMethod(15, Achievement.ComparisonOperatorOption.LessThanOrEqual, 10, false);
-    }
-    
-    [TestMethod]
-    public void CheckComparison_GreaterThanOrEqual_ReturnsCorrectResult()
-    {
-        // Act & Assert
-        CheckComparisonMethod(15, Achievement.ComparisonOperatorOption.GreaterThanOrEqual, 10, true);
-        CheckComparisonMethod(10, Achievement.ComparisonOperatorOption.GreaterThanOrEqual, 10, true);
-        CheckComparisonMethod(5, Achievement.ComparisonOperatorOption.GreaterThanOrEqual, 10, false);
-    }
-    
-    [TestMethod]
-    public void CheckComparison_InvalidOperator_ReturnsFalse()
-    {
-        // Act & Assert
-        CheckComparisonMethod(10, (Achievement.ComparisonOperatorOption)999, 10, false);
-    }
-    
-    private static void CheckComparisonMethod(int actual, Achievement.ComparisonOperatorOption op, int target, bool expected)
-    {
-        // Using reflection to access private static method
-        var methodInfo = typeof(AchievementService).GetMethod("CheckComparison", 
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
-            
-        var result = methodInfo?.Invoke(null, new object[] { actual, op, target });
-        result.Should().Be(expected);
-    }
-    
-    #endregion
-
-    #region GetPersonalAchievements Tests
+    #region GetPersonalAchievementsByUsername & GetPersonalAchievementEntriesByUsername Tests
 
     [TestMethod]
-    public async Task GetPersonalAchievements_NoAchievements_ReturnsEmptyList()
+    public async Task GetPersonalAchievementsByUsername_UserExists_ReturnsListWithCorrectCompletedFlags()
     {
-        _achievementRepository.GetAll().Returns(new List<Achievement>());
-        _achievementRepository.GetAllEntriesOfUser(_testUser.Id).Returns(new List<AchievementEntry>());
-        var result = await _sut.GetPersonalAchievements(_testUser.Id);
-        result.Should().BeEmpty();
-    }
-
-    [TestMethod]
-    public async Task GetPersonalAchievements_UserHasNoAchievements_ReturnsAllWithCompletedFalse()
-    {
-        var achievements = new List<Achievement> {
-            new Achievement { Id = Guid.NewGuid(), Name = "A1" },
-            new Achievement { Id = Guid.NewGuid(), Name = "A2" }
-        };
-        _achievementRepository.GetAll().Returns(achievements);
-        _achievementRepository.GetAllEntriesOfUser(_testUser.Id).Returns(new List<AchievementEntry>());
-        var result = await _sut.GetPersonalAchievements(_testUser.Id);
-        result.Should().HaveCount(2);
-        result.All(a => !a.Completed).Should().BeTrue();
-    }
-
-    [TestMethod]
-    public async Task GetPersonalAchievements_UserHasSomeAchievements_ReturnsCorrectCompleted()
-    {
+        // Arrange
+        var username = _testUser.UserName;
         var a1 = new Achievement { Id = Guid.NewGuid(), Name = "A1" };
         var a2 = new Achievement { Id = Guid.NewGuid(), Name = "A2" };
         var achievements = new List<Achievement> { a1, a2 };
-        var entries = new List<AchievementEntry> {
+        var entries = new List<AchievementEntry>
+        {
             new AchievementEntry { Achievement = a1, User = _testUser }
         };
+
+        _applicationUserRepository.GetByUsername(username).Returns(_testUser);
         _achievementRepository.GetAll().Returns(achievements);
         _achievementRepository.GetAllEntriesOfUser(_testUser.Id).Returns(entries);
-        var result = await _sut.GetPersonalAchievements(_testUser.Id);
+
+        // Act
+        var result = await _sut.GetPersonalAchievementsByUsername(username);
+
+        // Assert
         result.Should().HaveCount(2);
         result.Single(a => a.Name == "A1").Completed.Should().BeTrue();
         result.Single(a => a.Name == "A2").Completed.Should().BeFalse();
     }
 
     [TestMethod]
-    public async Task GetPersonalAchievements_UserHasAllAchievements_ReturnsAllCompletedTrue()
+    public async Task GetPersonalAchievementsByUsername_UserNotFound_ReturnsEmptyList()
     {
-        var a1 = new Achievement { Id = Guid.NewGuid(), Name = "A1" };
-        var a2 = new Achievement { Id = Guid.NewGuid(), Name = "A2" };
-        var achievements = new List<Achievement> { a1, a2 };
-        var entries = new List<AchievementEntry> {
-            new AchievementEntry { Achievement = a1, User = _testUser },
-            new AchievementEntry { Achievement = a2, User = _testUser }
-        };
-        _achievementRepository.GetAll().Returns(achievements);
-        _achievementRepository.GetAllEntriesOfUser(_testUser.Id).Returns(entries);
-        var result = await _sut.GetPersonalAchievements(_testUser.Id);
-        result.All(a => a.Completed).Should().BeTrue();
+        // Arrange
+        var username = "nonexistent";
+        _applicationUserRepository.GetByUsername(username).Returns(Task.FromResult<ApplicationUser>(null!));
+
+        // Act
+        var result = await _sut.GetPersonalAchievementsByUsername(username);
+
+        // Assert
+        result.Should().BeEmpty();
     }
+
+    [TestMethod]
+    public async Task GetPersonalAchievementEntriesByUsername_UserExists_ReturnsEntries()
+    {
+        // Arrange
+        var username = _testUser.UserName;
+        var entries = new List<AchievementEntry> { new AchievementEntry { Id = Guid.NewGuid(), User = _testUser } };
+        _applicationUserRepository.GetByUsername(username).Returns(_testUser);
+        _achievementRepository.GetAllEntriesOfUser(_testUser.Id).Returns(entries);
+
+        // Act
+        var result = await _sut.GetPersonalAchievementEntriesByUsername(username);
+
+        // Assert
+        result.Should().BeEquivalentTo(entries);
+    }
+
+    [TestMethod]
+    public async Task GetPersonalAchievementEntriesByUsername_UserNotFound_ReturnsEmptyList()
+    {
+        // Arrange
+        var username = "no-user";
+        _applicationUserRepository.GetByUsername(username).Returns(Task.FromResult<ApplicationUser>(null!));
+
+        // Act
+        var result = await _sut.GetPersonalAchievementEntriesByUsername(username);
+
+        // Assert
+        result.Should().BeEmpty();
+    }
+
     #endregion
 
     #region GetAchievements Tests

@@ -15,6 +15,8 @@ public class AchievementService(
     IPurchaseNotifier purchaseNotifier,
     IBlobStorageAgent blobStorageAgent) : IAchievementService
 {
+    public Task<int> GetCount() => achievementRepository.GetCount();
+    
     public async Task<IList<AchievementListingDto>> GetPersonalAchievements(string userId)
     {
         var allAchievements = await achievementRepository.GetAll();
@@ -33,6 +35,37 @@ public class AchievementService(
         }
             
         ).ToList();
+    }
+
+    // New overload: accept username, resolve to userId and reuse existing logic
+    public async Task<IList<AchievementListingDto>> GetPersonalAchievementsByUsername(string username)
+    {
+        if (string.IsNullOrWhiteSpace(username))
+            return new List<AchievementListingDto>();
+
+        var user = await applicationUserRepository.GetByUsername(username);
+        if (user == null)
+        {
+            // If user not found, return an empty list
+            return new List<AchievementListingDto>();
+        }
+
+        return await GetPersonalAchievements(user.Id);
+    }
+
+    // New overload: accept username, resolve to userId and reuse existing logic for entries
+    public async Task<IList<AchievementEntry>> GetPersonalAchievementEntriesByUsername(string username)
+    {
+        if (string.IsNullOrWhiteSpace(username))
+            return new List<AchievementEntry>();
+
+        var user = await applicationUserRepository.GetByUsername(username);
+        if (user == null)
+        {
+            return new List<AchievementEntry>();
+        }
+
+        return await GetPersonalAchievementEntries(user.Id);
     }
 
     public async Task<IList<AchievementEntry>> GetPersonalUnseenAchievementEntries(string username)
@@ -60,6 +93,11 @@ public class AchievementService(
     public async Task<IEnumerable<Achievement>> GetAchievements()
     {
         return await achievementRepository.GetAll();
+    }
+    
+    public async Task<IList<Achievement>> GetAchievements(int skip, int take)
+    {
+        return await achievementRepository.GetAll(skip, take);
     }
     
     public async Task<Achievement> GetAchievementById(Guid id)
@@ -367,10 +405,4 @@ public class AchievementService(
          }
      }
     
-    // Private static helper kept for backward compatibility with tests that use reflection
-    // to invoke CheckComparison on the service type directly.
-    private static bool CheckComparison(int actualValue, Achievement.ComparisonOperatorOption comparisonOperator, int targetValue)
-    {
-        return AchievementRulesUtil.CheckComparison(actualValue, comparisonOperator, targetValue);
-    }
 }

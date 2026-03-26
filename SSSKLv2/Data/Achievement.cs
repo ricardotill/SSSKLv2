@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace SSSKLv2.Data;
 
 public class Achievement : BaseModel
@@ -11,6 +13,7 @@ public class Achievement : BaseModel
     public int ComparisonValue { get; set; }
     public IEnumerable<AchievementEntry> CompletedEntries { get; set; }
     
+    [JsonConverter(typeof(JsonStringEnumConverter<ActionOption>))]
     public enum ActionOption
     {
         None = 0,
@@ -23,6 +26,8 @@ public class Achievement : BaseModel
         MinutesBetweenOrders = 7,
         MinutesBetweenTopUp = 8
     }
+    
+    [JsonConverter(typeof(JsonStringEnumConverter<ComparisonOperatorOption>))]
     public enum ComparisonOperatorOption
     {
         None = 0,

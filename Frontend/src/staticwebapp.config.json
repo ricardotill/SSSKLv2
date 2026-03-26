@@ -1,4 +1,10 @@
 {
+  "navigationFallback": {
+    "rewrite": "/index.html",
+    "exclude": [
+      "/api/*"
+    ]
+  },
   "routes": [
     {
       "route": "/api/*",

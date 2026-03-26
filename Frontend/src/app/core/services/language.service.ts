@@ -207,6 +207,25 @@ export class LanguageService {
     'new_achievement': '🎉 Nieuwe Achievement{s}! 🎉',
     'new_achievement_desc': 'Je hebt zojuist nieuwe dingen ontgrendeld!',
     'awesome': 'Geweldig!',
+
+    // Events
+    'events': 'Evenementen',
+    'event_details': 'Evenement Details',
+    'create_event': 'Evenement Toevoegen',
+    'edit_event': 'Evenement Bewerken',
+    'title': 'Titel',
+    'description': 'Omschrijving',
+    'start_date': 'Startdatum',
+    'end_date': 'Einddatum',
+    'rsvp': 'Aanmelden',
+    'accept': 'Aanwezig',
+    'decline': 'Afwezig',
+    'attendees': 'Deelnemers',
+    'declined': 'Afgemeld',
+    'no_events': 'Geen evenementen gevonden.',
+    'no_events_desc': 'Blijf op de hoogte van alle geplande activiteiten!',
+    'confirm_delete_event': 'Weet je zeker dat je dit evenement wilt verwijderen?',
+    'past': 'Verstreken',
   };
 
   // Signal for getting translations

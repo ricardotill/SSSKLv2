@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SSSKLv2.Data;
 
@@ -11,9 +12,11 @@ using SSSKLv2.Data;
 namespace SSSKLv2.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260326101253_AddEvents")]
+    partial class AddEvents
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -420,8 +423,8 @@ namespace SSSKLv2.Migrations
                     b.Property<DateTime>("EndDateTime")
                         .HasColumnType("datetime2");
 
-                    b.Property<Guid?>("ImageId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<string>("ImageUrl")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("StartDateTime")
                         .HasColumnType("datetime2");
@@ -433,10 +436,6 @@ namespace SSSKLv2.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("CreatorId");
-
-                    b.HasIndex("ImageId")
-                        .IsUnique()
-                        .HasFilter("[ImageId] IS NOT NULL");
 
                     b.ToTable("Event");
                 });
@@ -602,16 +601,6 @@ namespace SSSKLv2.Migrations
                     b.HasDiscriminator().HasValue("AchievementImage");
                 });
 
-            modelBuilder.Entity("SSSKLv2.Data.EventImage", b =>
-                {
-                    b.HasBaseType("SSSKLv2.Data.BlobStorageItem");
-
-                    b.HasIndex("Id")
-                        .IsUnique();
-
-                    b.HasDiscriminator().HasValue("EventImage");
-                });
-
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
@@ -700,14 +689,7 @@ namespace SSSKLv2.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("SSSKLv2.Data.EventImage", "Image")
-                        .WithOne("Event")
-                        .HasForeignKey("SSSKLv2.Data.Event", "ImageId")
-                        .OnDelete(DeleteBehavior.Cascade);
-
                     b.Navigation("Creator");
-
-                    b.Navigation("Image");
                 });
 
             modelBuilder.Entity("SSSKLv2.Data.EventResponse", b =>
@@ -785,12 +767,6 @@ namespace SSSKLv2.Migrations
             modelBuilder.Entity("SSSKLv2.Data.AchievementImage", b =>
                 {
                     b.Navigation("Achievement")
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("SSSKLv2.Data.EventImage", b =>
-                {
-                    b.Navigation("Event")
                         .IsRequired();
                 });
 #pragma warning restore 612, 618

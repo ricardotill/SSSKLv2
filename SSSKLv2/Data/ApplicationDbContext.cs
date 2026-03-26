@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using SSSKLv2.Data;
 
@@ -15,6 +15,9 @@ namespace SSSKLv2.Data
         public DbSet<SSSKLv2.Data.AchievementImage> AchievementImage { get; set; } = default!;
         public DbSet<SSSKLv2.Data.Achievement> Achievement { get; set; } = default!;
         public DbSet<SSSKLv2.Data.AchievementEntry> AchievementEntry { get; set; } = default!;
+        public DbSet<SSSKLv2.Data.Event> Event { get; set; } = default!;
+        public DbSet<SSSKLv2.Data.EventResponse> EventResponse { get; set; } = default!;
+        public DbSet<SSSKLv2.Data.EventImage> EventImage { get; set; } = default!;
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -102,6 +105,45 @@ namespace SSSKLv2.Data
             builder.Entity<AchievementEntry>()
                 .Property(s => s.HasSeen )
                 .HasDefaultValue(false);
+
+            builder.Entity<Event>()
+                .Property(s => s.CreatedOn)
+                .HasDefaultValueSql("GETDATE()");
+            builder.Entity<Event>()
+                .HasOne(e => e.Creator)
+                .WithMany()
+                .HasForeignKey(e => e.CreatorId)
+                .OnDelete(DeleteBehavior.Restrict);
+            builder.Entity<Event>()
+                .HasOne(e => e.Image)
+                .WithOne(e => e.Event)
+                .IsRequired(false)
+                .HasForeignKey<Event>("ImageId")
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<EventResponse>()
+                .Property(s => s.CreatedOn)
+                .HasDefaultValueSql("GETDATE()");
+            builder.Entity<EventResponse>()
+                .HasOne(e => e.Event)
+                .WithMany(e => e.Responses)
+                .HasForeignKey(e => e.EventId)
+                .OnDelete(DeleteBehavior.Cascade);
+            builder.Entity<EventResponse>()
+                .HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+            builder.Entity<EventResponse>()
+                .Property(e => e.Status)
+                .HasConversion<int>();
+
+            builder.Entity<EventImage>()
+                .HasIndex(p => p.Id)
+                .IsUnique();
+            builder.Entity<EventImage>()
+                .Property(s => s.CreatedOn)
+                .HasDefaultValueSql("GETDATE()");
         }
     }
 }

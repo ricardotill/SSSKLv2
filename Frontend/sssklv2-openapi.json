@@ -548,7 +548,7 @@
                 }
             }
         },
-        "/v1/Achievement": {
+        "/v1/achievement": {
             "get": {
                 "tags": [
                     "Achievement"
@@ -729,7 +729,7 @@
                 }
             }
         },
-        "/v1/Achievement/{id}": {
+        "/v1/achievement/{id}": {
             "get": {
                 "tags": [
                     "Achievement"
@@ -773,7 +773,7 @@
                 }
             }
         },
-        "/v1/Achievement/personal": {
+        "/v1/achievement/personal": {
             "get": {
                 "tags": [
                     "Achievement"
@@ -785,7 +785,7 @@
                 }
             }
         },
-        "/v1/Achievement/entries/{userId}": {
+        "/v1/achievement/entries/{userId}": {
             "get": {
                 "tags": [
                     "Achievement"
@@ -807,7 +807,29 @@
                 }
             }
         },
-        "/v1/Achievement/entries/personal": {
+        "/v1/achievement/all-for-user/{userId}": {
+            "get": {
+                "tags": [
+                    "Achievement"
+                ],
+                "parameters": [
+                    {
+                        "name": "userId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/v1/achievement/entries/personal": {
             "get": {
                 "tags": [
                     "Achievement"
@@ -819,7 +841,7 @@
                 }
             }
         },
-        "/v1/Achievement/entries/unseen": {
+        "/v1/achievement/entries/unseen": {
             "get": {
                 "tags": [
                     "Achievement"
@@ -831,7 +853,7 @@
                 }
             }
         },
-        "/v1/Achievement/entries/delete": {
+        "/v1/achievement/entries/delete": {
             "post": {
                 "tags": [
                     "Achievement"
@@ -877,7 +899,7 @@
                 }
             }
         },
-        "/v1/Achievement/award/{userId}/{achievementId}": {
+        "/v1/achievement/award/{userId}/{achievementId}": {
             "post": {
                 "tags": [
                     "Achievement"
@@ -908,7 +930,7 @@
                 }
             }
         },
-        "/v1/Achievement/award/all/{achievementId}": {
+        "/v1/achievement/award/all/{achievementId}": {
             "post": {
                 "tags": [
                     "Achievement"
@@ -1442,6 +1464,236 @@
                 "tags": [
                     "ApplicationUser"
                 ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/v1/Events": {
+            "get": {
+                "tags": [
+                    "Events"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/EventDto"
+                                    }
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/EventDto"
+                                    }
+                                }
+                            },
+                            "text/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/EventDto"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Events"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/EventCreateDto"
+                            }
+                        },
+                        "text/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/EventCreateDto"
+                            }
+                        },
+                        "application/*+json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/EventCreateDto"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/EventDto"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/EventDto"
+                                }
+                            },
+                            "text/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/EventDto"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/Events/{id}": {
+            "get": {
+                "tags": [
+                    "Events"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/EventDto"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/EventDto"
+                                }
+                            },
+                            "text/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/EventDto"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Events"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/EventCreateDto"
+                            }
+                        },
+                        "text/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/EventCreateDto"
+                            }
+                        },
+                        "application/*+json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/EventCreateDto"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Events"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/v1/Events/{id}/rsvp": {
+            "post": {
+                "tags": [
+                    "Events"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/EventResponseDto"
+                            }
+                        },
+                        "text/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/EventResponseDto"
+                            }
+                        },
+                        "application/*+json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/EventResponseDto"
+                            }
+                        }
+                    },
+                    "required": true
+                },
                 "responses": {
                     "200": {
                         "description": "OK"
@@ -2576,6 +2828,101 @@
                     "GreaterThanOrEqual"
                 ]
             },
+            "EventCreateDto": {
+                "type": "object",
+                "properties": {
+                    "title": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "imageUrl": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "startDateTime": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "endDateTime": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                }
+            },
+            "EventDto": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "title": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "imageUrl": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "startDateTime": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "endDateTime": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "creatorName": {
+                        "type": "string"
+                    },
+                    "createdOn": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "acceptedUsers": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/EventResponseUserDto"
+                        }
+                    },
+                    "declinedUsers": {
+                        "type": "array",
+                        "items": {}
+                    },
+                    "userResponse": {
+                        "$ref": "#/components/schemas/NullableOfEventResponseStatus"
+                    }
+                }
+            },
+            "EventResponseDto": {
+                "type": "object",
+                "properties": {
+                    "status": {
+                        "$ref": "#/components/schemas/EventResponseStatus"
+                    }
+                }
+            },
+            "EventResponseStatus": {
+                "enum": [
+                    "Accepted",
+                    "Declined"
+                ]
+            },
+            "EventResponseUserDto": {
+                "type": "object",
+                "properties": {
+                    "userId": {
+                        "type": "string"
+                    },
+                    "userName": {
+                        "type": "string"
+                    }
+                }
+            },
             "ForgotPasswordRequest": {
                 "required": [
                     "email"
@@ -2695,6 +3042,14 @@
                         "nullable": true
                     }
                 }
+            },
+            "NullableOfEventResponseStatus": {
+                "enum": [
+                    "Accepted",
+                    "Declined",
+                    null
+                ],
+                "nullable": true
             },
             "OrderSubmitDto": {
                 "required": [
@@ -2981,6 +3336,9 @@
         },
         {
             "name": "ApplicationUser"
+        },
+        {
+            "name": "Events"
         },
         {
             "name": "Leaderboard"

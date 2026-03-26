@@ -82,6 +82,36 @@ export const routes: Routes = [
         loadComponent: () => import('./features/achievements/achievements.component'),
         canActivate: [authGuard],
         title: 'Achievements - SSSKL'
+      },
+      {
+        path: 'events',
+        canActivate: [authGuard],
+        children: [
+          {
+            path: '',
+            loadComponent: () => import('./features/events/events.component'),
+            title: 'Evenementen - SSSKL'
+          },
+          {
+            path: 'new',
+            loadComponent: () => import('./features/events/event-edit/event-edit.component'),
+            canActivate: [roleGuard],
+            data: { roles: ['Admin'] },
+            title: 'Evenement Toevoegen - SSSKL'
+          },
+          {
+            path: ':id',
+            loadComponent: () => import('./features/events/event-detail/event-detail.component'),
+            title: 'Evenement Details - SSSKL'
+          },
+          {
+            path: ':id/edit',
+            loadComponent: () => import('./features/events/event-edit/event-edit.component'),
+            canActivate: [roleGuard],
+            data: { roles: ['Admin'] },
+            title: 'Evenement Bewerken - SSSKL'
+          }
+        ]
       }
     ]
   },

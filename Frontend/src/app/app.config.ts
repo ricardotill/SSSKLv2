@@ -1,4 +1,8 @@
-import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
+import { ApplicationConfig, provideBrowserGlobalErrorListeners, LOCALE_ID } from '@angular/core';
+import { registerLocaleData } from '@angular/common';
+import localeNl from '@angular/common/locales/nl';
+
+registerLocaleData(localeNl);
 import { provideRouter } from '@angular/router';
 
 import { routes } from './app.routes';
@@ -41,6 +45,7 @@ export const appConfig: ApplicationConfig = {
           darkModeSelector: '.dark'
         }
       }
-    })
+    }),
+    { provide: LOCALE_ID, useValue: 'nl-NL' }
   ]
 };

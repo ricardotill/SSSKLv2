@@ -181,6 +181,7 @@ export class SidebarComponent {
           label: t.general,
           items: [
             { label: t.order, icon: 'pi pi-shopping-cart', routerLink: '/pos' },
+            { label: t.events, icon: 'pi pi-calendar', routerLink: '/events' },
             { label: t.my_orders, icon: 'pi pi-history', routerLink: '/orders/personal' },
             { label: t.my_saldo, icon: 'pi pi-wallet', routerLink: '/orders/saldo' },
             { label: t.achievements, icon: 'pi pi-verified', routerLink: '/achievements' },

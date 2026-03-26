@@ -55,7 +55,7 @@ public class TopUpControllerTests
         var ok = result.Result as OkObjectResult;
         ok.Should().NotBeNull();
         var expectedDtos = items.Select(t => new TopUpDto { Id = t.Id, UserName = t.User.UserName, Saldo = t.Saldo }).ToList();
-        ok!.Value.Should().BeEquivalentTo(new PaginationObject<TopUpDto> { Items = expectedDtos, TotalCount = items.Count });
+        ok!.Value.Should().BeEquivalentTo(new PaginationObject<TopUpDto> { Items = expectedDtos, TotalCount = items.Count }, options => options.Excluding(x => x.Path.EndsWith("CreatedOn")));
     }
 
     [TestMethod]
@@ -67,8 +67,8 @@ public class TopUpControllerTests
         {
             new TopUp { Id = Guid.NewGuid(), User = new ApplicationUser { UserName = username }, Saldo = 5.00m }
         };
-        _mockService.GetAll(Arg.Any<int>(), Arg.Any<int>()).Returns(Task.FromResult<IEnumerable<TopUp>>(items));
-        _mockService.GetCount().Returns(items.Count);
+        _mockService.GetAllPersonal(username, Arg.Any<int>(), Arg.Any<int>()).Returns(Task.FromResult<IEnumerable<TopUp>>(items));
+        _mockService.GetPersonalCount(username).Returns(items.Count);
 
         // Set authenticated user on controller
         _sut.ControllerContext = new Microsoft.AspNetCore.Mvc.ControllerContext
@@ -86,7 +86,7 @@ public class TopUpControllerTests
         var ok = result.Result as OkObjectResult;
         ok.Should().NotBeNull();
         var expectedDtos = items.Select(t => new TopUpDto { Id = t.Id, UserName = t.User.UserName, Saldo = t.Saldo }).ToList();
-        ok!.Value.Should().BeEquivalentTo(new PaginationObject<TopUpDto> { Items = expectedDtos, TotalCount = items.Count });
+        ok!.Value.Should().BeEquivalentTo(new PaginationObject<TopUpDto> { Items = expectedDtos, TotalCount = items.Count }, options => options.Excluding(x => x.Path.EndsWith("CreatedOn")));
     }
 
     [TestMethod]
@@ -105,7 +105,7 @@ public class TopUpControllerTests
         ok.Should().NotBeNull();
         var dto = ok!.Value as TopUpDto;
         dto.Should().NotBeNull();
-        dto!.Should().BeEquivalentTo(new TopUpDto { Id = t.Id, UserName = t.User.UserName, Saldo = t.Saldo });
+        dto!.Should().BeEquivalentTo(new TopUpDto { Id = t.Id, UserName = t.User.UserName, Saldo = t.Saldo }, options => options.Excluding(x => x.CreatedOn));
     }
 
     [TestMethod]

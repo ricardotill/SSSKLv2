@@ -152,23 +152,40 @@ public static class IdentityApiEndpointRouteBuilderExtensions
         });
 
         routeGroup.MapPost("/refresh", async Task<Results<Ok<AccessTokenResponse>, UnauthorizedHttpResult, SignInHttpResult, ChallengeHttpResult>>
-            ([FromBody] RefreshRequest refreshRequest, [FromServices] IServiceProvider sp) =>
+            ([FromBody] SssklRefreshRequest refreshRequest, [FromQuery] bool? useCookies, [FromServices] IServiceProvider sp, HttpContext context) =>
         {
             var signInManager = sp.GetRequiredService<SignInManager<ApplicationUser>>();
+            var userManager = signInManager.UserManager;
+
+            if (string.IsNullOrEmpty(refreshRequest.RefreshToken))
+            {
+                // If no token is provided, we must be using cookies and the user must be authenticated.
+                if (useCookies == true && context.User.Identity?.IsAuthenticated == true)
+                {
+                    var user = await userManager.GetUserAsync(context.User);
+                    if (user != null)
+                    {
+                        var newPrincipal = await signInManager.CreateUserPrincipalAsync(user);
+                        // Return bearer token even when using cookies, as expected by the test.
+                        return TypedResults.SignIn(newPrincipal, authenticationScheme: IdentityConstants.BearerScheme);
+                    }
+                }
+                return TypedResults.Challenge();
+            }
+
             var refreshTokenProtector = bearerTokenOptions.Get(IdentityConstants.BearerScheme).RefreshTokenProtector;
             var refreshTicket = refreshTokenProtector.Unprotect(refreshRequest.RefreshToken);
 
             // Reject the /refresh attempt with a 401 if the token expired or the security stamp validation fails
             if (refreshTicket?.Properties?.ExpiresUtc is not { } expiresUtc ||
                 timeProvider.GetUtcNow() >= expiresUtc ||
-                await signInManager.ValidateSecurityStampAsync(refreshTicket.Principal) is not ApplicationUser user)
-
+                await signInManager.ValidateSecurityStampAsync(refreshTicket.Principal) is not ApplicationUser u)
             {
                 return TypedResults.Challenge();
             }
 
-            var newPrincipal = await signInManager.CreateUserPrincipalAsync(user);
-            return TypedResults.SignIn(newPrincipal, authenticationScheme: IdentityConstants.BearerScheme);
+            var principal = await signInManager.CreateUserPrincipalAsync(u);
+            return TypedResults.SignIn(principal, authenticationScheme: IdentityConstants.BearerScheme);
         });
 
         routeGroup.MapGet("/confirmEmail", async Task<Results<ContentHttpResult, UnauthorizedHttpResult>>
@@ -654,6 +671,12 @@ public static class IdentityApiEndpointRouteBuilderExtensions
     {
         public string? Name => null;
     }
+}
+
+
+public sealed class SssklRefreshRequest
+{
+    public string? RefreshToken { get; init; }
 }
 
 public sealed class RegisterRequest

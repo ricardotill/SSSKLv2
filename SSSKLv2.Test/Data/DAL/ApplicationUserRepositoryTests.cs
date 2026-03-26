@@ -127,7 +127,14 @@ public class ApplicationUserRepositoryTests : RepositoryTest
         
         await SaveUsers(additionalUsers);
         
-        // Act
+        // Ensure roles are set up in the database
+        await SetupRolesAndUserRoles();
+        
+        // Assign roles to ensure they are captured by the repository's join query
+        foreach (var user in additionalUsers.Concat(new[] { TestUser }))
+        {
+            await AddUserToRole(user, "Consumer");
+        }
         var result = await _sut.GetAllForAdmin();
         
         // Assert

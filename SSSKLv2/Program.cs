@@ -173,11 +173,14 @@ if (builder.Environment.IsDevelopment())
     builder.Configuration.AddEnvironmentVariables().AddJsonFile("appsettings.Development.json");
 }
 
-builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>
+if (!builder.Environment.IsEnvironment("IntegrationTest"))
 {
-    options.UseSqlServer(builder.Configuration.GetConnectionString("db"));
-});
-builder.EnrichSqlServerDbContext<ApplicationDbContext>();
+    builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>
+    {
+        options.UseSqlServer(builder.Configuration.GetConnectionString("db"));
+    });
+    builder.EnrichSqlServerDbContext<ApplicationDbContext>();
+}
 
 if (builder.Environment.IsProduction())
 {

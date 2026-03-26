@@ -1,10 +1,14 @@
-using System.Text;
-using System.Text.Json;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Data.Sqlite;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using SSSKLv2.Data;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Configuration;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Text.Json;
 
 namespace SSSKLv2.Test.Integration
 {
@@ -23,15 +27,36 @@ namespace SSSKLv2.Test.Integration
                 // Run Program in Development and provide DefaultConnection so Program uses the dev code path.
                 builder.UseEnvironment("IntegrationTest");
 
-                // Provide an AZURE_SQL_CONNECTIONSTRING value so Program's non-development config lookup does not throw.
                 builder.ConfigureAppConfiguration((context, configBuilder) =>
                 {
-                    var dict = new[] { new KeyValuePair<string, string?>("ConnectionStrings:AZURE_SQL_CONNECTIONSTRING", "FakeConnectionStringForTests") };
+                    // Map "db" connection string to match Program.cs expectations
+                    var dict = new[] { new KeyValuePair<string, string?>("ConnectionStrings:db", "Filename=:memory:") };
                     configBuilder.AddInMemoryCollection(dict);
                 });
 
                 builder.ConfigureServices(services =>
                 {
+                    // Use a separate SQLite connection for the in-memory database to keep it alive
+                    var connection = new SqliteConnection("Filename=:memory:");
+                    connection.Open();
+
+                    // Remove existing DbContext registration
+                    var descriptor = services.SingleOrDefault(d => d.ServiceType == typeof(DbContextOptions<ApplicationDbContext>));
+                    if (descriptor != null) services.Remove(descriptor);
+                    
+                    var factoryDescriptor = services.SingleOrDefault(d => d.ServiceType == typeof(IDbContextFactory<ApplicationDbContext>));
+                    if (factoryDescriptor != null) services.Remove(factoryDescriptor);
+
+                    // Add SQLite in-memory DbContext
+                    services.AddDbContext<ApplicationDbContext>(options =>
+                    {
+                        options.UseSqlite(connection);
+                    });
+                    services.AddDbContextFactory<ApplicationDbContext>(options =>
+                    {
+                        options.UseSqlite(connection);
+                    });
+
                     // Only override cookie metadata in the test host so TestServer will emit Secure/HttpOnly flags.
                     services.PostConfigure<Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationOptions>(
                         Microsoft.AspNetCore.Identity.IdentityConstants.ApplicationScheme,
@@ -59,13 +84,13 @@ namespace SSSKLv2.Test.Integration
                 AllowAutoRedirect = false
             });
 
-            var registerPayload = new { email = TestEmail, password = TestPassword, displayName = "Integration Test" };
+            var registerPayload = new { email = TestEmail, userName = TestEmail, password = TestPassword, name = "Integration", surname = "Flag" };
             var regContent = new StringContent(JsonSerializer.Serialize(registerPayload), Encoding.UTF8, "application/json");
             var regResponse = await client.PostAsync("/api/v1/identity/register", regContent);
             regResponse.EnsureSuccessStatusCode();
 
             // Act: login with useCookies=true to get identity cookies
-            var loginPayload = new { email = TestEmail, password = TestPassword };
+            var loginPayload = new { userName = TestEmail, password = TestPassword };
             var content = new StringContent(JsonSerializer.Serialize(loginPayload), Encoding.UTF8, "application/json");
 
             var response = await client.PostAsync("/api/v1/identity/login?useCookies=true", content);

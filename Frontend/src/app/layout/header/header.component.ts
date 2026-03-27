@@ -33,7 +33,7 @@ import { LanguageService } from '../../core/services/language.service';
                 <span class="font-semibold text-surface-900 dark:text-surface-0">{{ (authService.currentUser()?.saldo || 0) | currency:'EUR':'symbol' }}</span>
               </div>
             } @else {
-              <p-button [label]="ls.t().login" icon="pi pi-sign-in" severity="primary" routerLink="/login" />
+              <p-button [label]="ls.t().login" icon="pi pi-sign-in" severity="primary" [routerLink]="['/login']" [queryParams]="{ returnUrl: router.url }" />
             }
           </div>
         </ng-template>
@@ -59,7 +59,7 @@ import { LanguageService } from '../../core/services/language.service';
 export class HeaderComponent {
   authService = inject(AuthService);
   ls = inject(LanguageService);
-  private router = inject(Router);
+  public router = inject(Router);
 
 
   isSidebarOpen = input<boolean>(false);

@@ -38,6 +38,7 @@ public class EventsController : ControllerBase
         });
     }
 
+    [AllowAnonymous]
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<EventDto>> GetById(Guid id)
     {

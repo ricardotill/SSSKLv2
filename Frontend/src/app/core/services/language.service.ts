@@ -238,6 +238,7 @@ export class LanguageService {
     'no_events_desc': 'Blijf op de hoogte van alle geplande activiteiten!',
     'confirm_delete_event': 'Weet je zeker dat je dit evenement wilt verwijderen?',
     'past': 'Verstreken',
+    'share': 'Delen',
   };
 
   // Signal for getting translations

@@ -15,7 +15,7 @@ public class EventRepository(ApplicationDbContext context) : IEventRepository
                 .ThenInclude(r => r.User)
             .AsQueryable();
 
-        var now = DateTime.Now;
+        var now = DateTime.UtcNow;
         if (futureOnly)
         {
             query = query.Where(e => e.EndDateTime >= now);
@@ -34,7 +34,7 @@ public class EventRepository(ApplicationDbContext context) : IEventRepository
         var query = context.Event.AsQueryable();
         if (futureOnly)
         {
-            query = query.Where(e => e.EndDateTime >= DateTime.Now);
+            query = query.Where(e => e.EndDateTime >= DateTime.UtcNow);
         }
         return await query.CountAsync();
     }

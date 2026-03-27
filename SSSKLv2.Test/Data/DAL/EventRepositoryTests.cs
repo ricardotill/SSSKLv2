@@ -31,7 +31,7 @@ public class EventRepositoryTests
     public async Task GetAll_OrdersFutureBeforePast_AndChronological()
     {
         // Arrange
-        var now = DateTime.Now;
+        var now = DateTime.UtcNow;
         var creator = new ApplicationUser 
         { 
             Id = Guid.NewGuid().ToString(), 

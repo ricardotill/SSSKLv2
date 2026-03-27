@@ -15,6 +15,7 @@ using Microsoft.OpenApi;
 using Microsoft.Azure.SignalR.Common;
 using Blazored.Toast;
 using Azure.Identity;
+using Microsoft.Extensions.Azure;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -215,11 +216,15 @@ var storageServiceUri = storageSection["ServiceUri"];
 
 if (!string.IsNullOrWhiteSpace(storageConnectionString))
 {
-    builder.AddAzureBlobServiceClient(storageConnectionString);
+    builder.Services.AddAzureClients(clientBuilder => clientBuilder.AddBlobServiceClient(storageConnectionString));
 }
 else if (!string.IsNullOrWhiteSpace(storageServiceUri))
 {
-    builder.AddAzureBlobServiceClient(new Uri(storageServiceUri));
+    builder.Services.AddAzureClients(clientBuilder =>
+    {
+        clientBuilder.AddBlobServiceClient(new Uri(storageServiceUri));
+        clientBuilder.UseCredential(new DefaultAzureCredential());
+    });
 }
 else
 {

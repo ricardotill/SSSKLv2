@@ -6,4 +6,5 @@ public class LeaderboardEntryDto
     public string FullName { get; set; }
     public string ProductName { get; set; }
     public int Amount { get; set; }
+    public string? ProfilePictureUrl { get; set; }
 }

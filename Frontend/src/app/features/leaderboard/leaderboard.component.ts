@@ -5,6 +5,7 @@ import { SelectModule } from 'primeng/select';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { FormsModule } from '@angular/forms';
+import { AvatarModule } from 'primeng/avatar';
 import { LeaderboardService } from '../../core/services/leaderboard.service';
 import { ProductService } from '../../core/services/product.service';
 import { LeaderboardEntryDto } from '../../core/models/leaderboard.model';
@@ -21,7 +22,8 @@ import { forkJoin, finalize } from 'rxjs';
     SelectModule,
     ButtonModule,
     CardModule,
-    FormsModule
+    FormsModule,
+    AvatarModule
   ],
   template: `
     <div class="flex justify-between items-center mb-6 px-4">
@@ -60,7 +62,16 @@ import { forkJoin, finalize } from 'rxjs';
                 <ng-template pTemplate="body" let-entry>
                     <tr>
                         <td class="font-bold">#{{ entry.position }}</td>
-                        <td>{{ entry.fullName }}</td>
+                        <td>
+                            <div class="flex items-center gap-3">
+                                <p-avatar 
+                                    [image]="entry.profilePictureUrl" 
+                                    [label]="!entry.profilePictureUrl ? entry.fullName.substring(0,1) : undefined" 
+                                    shape="circle">
+                                </p-avatar>
+                                <span>{{ entry.fullName }}</span>
+                            </div>
+                        </td>
                         <td>{{ entry.amount }}</td>
                     </tr>
                 </ng-template>
@@ -82,7 +93,16 @@ import { forkJoin, finalize } from 'rxjs';
             <ng-template pTemplate="body" let-entry>
                 <tr>
                     <td class="font-bold">#{{ entry.position }}</td>
-                    <td>{{ entry.fullName }}</td>
+                    <td>
+                        <div class="flex items-center gap-3">
+                            <p-avatar 
+                                [image]="entry.profilePictureUrl" 
+                                [label]="!entry.profilePictureUrl ? entry.fullName.substring(0,1) : undefined" 
+                                shape="circle">
+                            </p-avatar>
+                            <span>{{ entry.fullName }}</span>
+                        </div>
+                    </td>
                     <td>{{ entry.amount }}</td>
                 </tr>
             </ng-template>
@@ -108,7 +128,16 @@ import { forkJoin, finalize } from 'rxjs';
             <ng-template pTemplate="body" let-entry>
                 <tr>
                     <td class="font-bold">#{{ entry.position }}</td>
-                    <td>{{ entry.fullName }}</td>
+                    <td>
+                        <div class="flex items-center gap-3">
+                            <p-avatar 
+                                [image]="entry.profilePictureUrl" 
+                                [label]="!entry.profilePictureUrl ? entry.fullName.substring(0,1) : undefined" 
+                                shape="circle">
+                            </p-avatar>
+                            <span>{{ entry.fullName }}</span>
+                        </div>
+                    </td>
                     <td>{{ entry.amount }}</td>
                 </tr>
             </ng-template>

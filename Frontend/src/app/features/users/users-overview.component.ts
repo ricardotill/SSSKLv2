@@ -6,11 +6,12 @@ import { ButtonModule } from 'primeng/button';
 import { ApplicationUserService } from '../../core/services/application-user.service';
 import { ApplicationUserDto } from '../../core/models/application-user.model';
 import { LanguageService } from '../../core/services/language.service';
+import { AvatarModule } from 'primeng/avatar';
 
 @Component({
   selector: 'app-users-overview',
   standalone: true,
-  imports: [CurrencyPipe, TableModule, CardModule, ButtonModule],
+  imports: [CurrencyPipe, TableModule, CardModule, ButtonModule, AvatarModule],
   template: `
     <div class="flex justify-between items-center mb-4">
       <h1 class="text-2xl font-bold m-0 text-surface-900 dark:text-surface-0">{{ ls.t().user_overview }}</h1>
@@ -27,7 +28,17 @@ import { LanguageService } from '../../core/services/language.service';
         </ng-template>
         <ng-template pTemplate="body" let-user>
           <tr>
-            <td>{{ user.fullName }}</td>
+            <td>
+              <div class="flex items-center gap-3">
+                <p-avatar 
+                  [image]="user.profilePictureUrl || undefined" 
+                  [label]="!user.profilePictureUrl ? user.fullName?.substring(0,1) : undefined"
+                  shape="circle" 
+                  size="normal"
+                ></p-avatar>
+                <span>{{ user.fullName }}</span>
+              </div>
+            </td>
             <td>{{ user.saldo | currency:'EUR' }}</td>
           </tr>
         </ng-template>

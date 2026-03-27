@@ -67,7 +67,7 @@ public class ApplicationUserControllerTests
             FullName = user.FullName,
             Saldo = user.Saldo,
             LastOrdered = user.LastOrdered,
-            ProfilePictureBase64 = null
+            ProfilePictureUrl = null
         };
         result.Result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeEquivalentTo(expected);
     }
@@ -105,7 +105,7 @@ public class ApplicationUserControllerTests
             FullName = user.FullName,
             Saldo = user.Saldo,
             LastOrdered = user.LastOrdered,
-            ProfilePictureBase64 = null
+            ProfilePictureUrl = null
         };
         result.Result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeEquivalentTo(expected);
     }
@@ -203,7 +203,7 @@ public class ApplicationUserControllerTests
             FullName = user.FullName,
             Saldo = user.Saldo,
             LastOrdered = user.LastOrdered,
-            ProfilePictureBase64 = null
+            ProfilePictureUrl = null
         };
         result.Result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeEquivalentTo(expected);
     }
@@ -284,7 +284,7 @@ public class ApplicationUserControllerTests
 
         var result = await _sut.Update(id, dto);
 
-        result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeEquivalentTo(new ApplicationUserDetailedDto { Id = updatedUser.Id, UserName = updatedUser.UserName ?? string.Empty, Email = updatedUser.Email, FullName = updatedUser.FullName, Saldo = updatedUser.Saldo, LastOrdered = updatedUser.LastOrdered, ProfilePictureBase64 = null, EmailConfirmed = updatedUser.EmailConfirmed, PhoneNumber = updatedUser.PhoneNumber, PhoneNumberConfirmed = updatedUser.PhoneNumberConfirmed, Name = updatedUser.Name, Surname = updatedUser.Surname });
+        result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeEquivalentTo(new ApplicationUserDetailedDto { Id = updatedUser.Id, UserName = updatedUser.UserName ?? string.Empty, Email = updatedUser.Email, FullName = updatedUser.FullName, Saldo = updatedUser.Saldo, LastOrdered = updatedUser.LastOrdered, ProfilePictureUrl = null, EmailConfirmed = updatedUser.EmailConfirmed, PhoneNumber = updatedUser.PhoneNumber, PhoneNumberConfirmed = updatedUser.PhoneNumberConfirmed, Name = updatedUser.Name, Surname = updatedUser.Surname });
     }
 
     [TestMethod]

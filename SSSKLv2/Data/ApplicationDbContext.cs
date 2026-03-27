@@ -18,6 +18,7 @@ namespace SSSKLv2.Data
         public DbSet<SSSKLv2.Data.Event> Event { get; set; } = default!;
         public DbSet<SSSKLv2.Data.EventResponse> EventResponse { get; set; } = default!;
         public DbSet<SSSKLv2.Data.EventImage> EventImage { get; set; } = default!;
+        public DbSet<SSSKLv2.Data.UserImage> UserImage { get; set; } = default!;
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -147,12 +148,22 @@ namespace SSSKLv2.Data
                 .HasConversion<int>();
 
             builder.Entity<EventImage>()
-                .HasIndex(p => p.Id)
-                .IsUnique();
-            builder.Entity<EventImage>()
                 .Property(s => s.CreatedOn)
                 .HasDefaultValueSql("GETUTCDATE()")
                 .HasConversion(v => v, v => DateTime.SpecifyKind(v, DateTimeKind.Utc));
+
+            builder.Entity<UserImage>()
+                .HasIndex(p => p.Id)
+                .IsUnique();
+            builder.Entity<UserImage>()
+                .Property(s => s.CreatedOn)
+                .HasDefaultValueSql("GETUTCDATE()")
+                .HasConversion(v => v, v => DateTime.SpecifyKind(v, DateTimeKind.Utc));
+            builder.Entity<UserImage>()
+                .HasOne(e => e.User)
+                .WithOne(e => e.ProfileImage)
+                .HasForeignKey<ApplicationUser>(e => e.ProfileImageId)
+                .OnDelete(DeleteBehavior.NoAction);
         }
     }
 }

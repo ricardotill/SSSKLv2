@@ -7,5 +7,6 @@ public class ApplicationUserDto
     public string FullName { get; set; } = string.Empty;
     public decimal Saldo { get; set; }
     public DateTime LastOrdered { get; set; }
+    public string? ProfilePictureUrl { get; set; }
 }
 

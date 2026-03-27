@@ -34,35 +34,36 @@ import { BrandingComponent } from '../../shared/components/branding/branding.com
             <div class="flex items-center">
               <app-branding />
             </div>
-            <p-button icon="pi pi-arrow-left" label="Back" [text]="true" routerLink="/" severity="secondary" size="small"></p-button>
+            <p-button icon="pi pi-arrow-left" [label]="lang.t().back" [text]="true" routerLink="/" severity="secondary" size="small"></p-button>
           </div>
         </ng-template>
 
         <div class="mb-5">
-          <h3 class="text-xl font-medium mt-0 mb-3 text-surface-900 dark:text-surface-0">Login</h3>  
-          <p class="text-surface-500 m-0">Don't have an account? <a routerLink="/register" class="text-primary hover:underline cursor-pointer">Register</a></p>
+          <h3 class="text-xl font-medium mt-0 mb-3 text-surface-900 dark:text-surface-0">{{ lang.t().login }}</h3>  
+          <p class="text-surface-500 m-0">{{ lang.t().dont_have_account }} <a routerLink="/register" class="text-primary hover:underline cursor-pointer">{{ lang.t().register }}</a></p>
         </div>
 
         <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
           
           @if (!requires2FA()) {
             <div class="field">
-              <label for="userName" class="block">Username</label>
+              <label for="userName" class="block">{{ lang.t().username }}</label>
               <input 
                 id="userName" 
+                autocomplete="username webauthn"
                 type="text" 
                 pInputText 
                 formControlName="userName" 
                 class="w-full"
               />
               @if (loginForm.controls['userName'].invalid && loginForm.controls['userName'].touched) {
-                 <small class="p-error block mt-1">Username is required.</small>
+                 <small class="p-error block mt-1">{{ lang.t().username_required }}</small>
               }
             </div>
 
 
           <div class="field mt-4">
-            <label for="password" class="block">Password</label>
+            <label for="password" class="block">{{ lang.t().password }}</label>
             <p-password 
               id="password" 
               formControlName="password" 
@@ -72,17 +73,17 @@ import { BrandingComponent } from '../../shared/components/branding/branding.com
               inputStyleClass="w-full"
             ></p-password>
             @if (loginForm.controls['password'].invalid && loginForm.controls['password'].touched) {
-               <small class="p-error block mt-1">Password is required.</small>
+               <small class="p-error block mt-1">{{ lang.t().password_required }}</small>
             }
           </div>
 
           <div class="field-checkbox mt-4 flex items-center">
             <p-checkbox formControlName="rememberMe" [binary]="true" inputId="rememberMe"></p-checkbox>
-            <label for="rememberMe" class="ml-2 font-medium text-surface-900 dark:text-surface-0 cursor-pointer">Remember me</label>
+            <label for="rememberMe" class="ml-2 font-medium text-surface-900 dark:text-surface-0 cursor-pointer">{{ lang.t().remember_me }}</label>
           </div>
           } @else {
             <div class="field">
-              <label for="twoFactorCode" class="block">Two-Factor Authenticator Code</label>
+              <label for="twoFactorCode" class="block">{{ lang.t().tfa_code }}</label>
               <input 
                 id="twoFactorCode" 
                 type="text" 
@@ -92,7 +93,7 @@ import { BrandingComponent } from '../../shared/components/branding/branding.com
                 class="w-full text-lg tracking-[0.2em] font-mono text-center"
                 maxlength="6"
               />
-              <small class="text-surface-500 block mt-2 text-center">Open your authenticator app and enter the code.</small>
+              <small class="text-surface-500 block mt-2 text-center">{{ lang.t().tfa_help }}</small>
             </div>
           }
 
@@ -102,7 +103,7 @@ import { BrandingComponent } from '../../shared/components/branding/branding.com
 
           <div class="mt-4 flex gap-2">
             <p-button 
-              label="Login" 
+              [label]="lang.t().login" 
               type="submit" 
               [disabled]="loginForm.invalid || isLoading()" 
               [loading]="isLoading()"
@@ -181,7 +182,7 @@ export default class LoginComponent {
     }
 
     if (this.requires2FA() && !this.loginForm.value.twoFactorCode) {
-      this.errorMessage.set('Please enter your 2FA code.');
+      this.errorMessage.set(this.lang.t().enter_tfa);
       return;
     }
 
@@ -214,9 +215,9 @@ export default class LoginComponent {
         }
 
         if (this.requires2FA()) {
-          this.errorMessage.set('Invalid 2FA code.');
+          this.errorMessage.set(this.lang.t().invalid_tfa);
         } else {
-          this.errorMessage.set('Invalid username or password.');
+          this.errorMessage.set(this.lang.t().invalid_login);
         }
         console.error('Login error', err);
       }
@@ -226,7 +227,7 @@ export default class LoginComponent {
   async onPasskeyLogin(): Promise<void> {
     const userName = this.loginForm.get('userName')?.value;
     if (!userName) {
-      this.errorMessage.set('Please enter your username first.');
+      this.errorMessage.set(this.lang.t().enter_username_first);
       return;
     }
 

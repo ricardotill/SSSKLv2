@@ -122,18 +122,29 @@ public class EventService(IEventRepository eventRepository, IBlobStorageAgent bl
             Id = e.Id,
             Title = e.Title,
             Description = e.Description,
-            ImageUrl = e.Image?.Uri,
+            ImageUrl = e.Image != null ? $"/api/v1/blob/event/image/{e.Image.Id}" : null,
             StartDateTime = e.StartDateTime,
             EndDateTime = e.EndDateTime,
             CreatorName = e.Creator?.FullName ?? "Unknown",
+            CreatorProfilePictureUrl = e.Creator?.ProfileImageId != null ? $"/api/v1/blob/profilepicture/image/{e.Creator.ProfileImageId}" : null,
             CreatedOn = e.CreatedOn,
             AcceptedUsers = e.Responses
                 .Where(r => r.Status == EventResponseStatus.Accepted)
-                .Select(r => new EventResponseUserDto { UserId = r.UserId, UserName = r.User?.FullName ?? "Unknown" })
+                .Select(r => new EventResponseUserDto 
+                { 
+                    UserId = r.UserId, 
+                    UserName = r.User?.FullName ?? "Unknown",
+                    ProfilePictureUrl = r.User?.ProfileImageId != null ? $"/api/v1/blob/profilepicture/image/{r.User.ProfileImageId}" : null
+                })
                 .ToList(),
             DeclinedUsers = e.Responses
                 .Where(r => r.Status == EventResponseStatus.Declined)
-                .Select(r => new EventResponseUserDto { UserId = r.UserId, UserName = r.User?.FullName ?? "Unknown" })
+                .Select(r => new EventResponseUserDto 
+                { 
+                    UserId = r.UserId, 
+                    UserName = r.User?.FullName ?? "Unknown",
+                    ProfilePictureUrl = r.User?.ProfileImageId != null ? $"/api/v1/blob/profilepicture/image/{r.User.ProfileImageId}" : null
+                })
                 .ToList()
         };
 

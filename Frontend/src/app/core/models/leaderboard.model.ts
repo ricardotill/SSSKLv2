@@ -3,4 +3,5 @@ export interface LeaderboardEntryDto {
   fullName: string;
   productName: string;
   amount: number;
+  profilePictureUrl?: string;
 }

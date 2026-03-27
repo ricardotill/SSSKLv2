@@ -14,6 +14,7 @@ import { ApplicationUserDto, ApplicationUserUpdateDto } from '../../../core/mode
 import { LanguageService } from '../../../core/services/language.service';
 import { CardModule } from 'primeng/card';
 import { MultiSelectModule } from 'primeng/multiselect';
+import { AvatarModule } from 'primeng/avatar';
 
 
 @Component({
@@ -30,7 +31,8 @@ import { MultiSelectModule } from 'primeng/multiselect';
     CheckboxModule,
     ConfirmDialogModule,
     CardModule,
-    MultiSelectModule
+    MultiSelectModule,
+    AvatarModule
   ],
   template: `
     <div class="flex justify-between items-center mb-4">
@@ -73,6 +75,20 @@ import { MultiSelectModule } from 'primeng/multiselect';
     </p-card>
 
     <p-dialog [header]="ls.t().edit_user" [(visible)]="editDialogVisible" [modal]="true" [style]="{width: '500px'}" [breakpoints]="{'768px': '90vw'}">
+      @if (editingUserProfilePictureUrl()) {
+        <div class="flex flex-col items-center gap-3 mb-6 p-4 bg-surface-50 dark:bg-surface-900 rounded-xl border border-surface-200 dark:border-surface-700">
+          <p-avatar [image]="editingUserProfilePictureUrl()!" size="xlarge" shape="circle" class="shadow-md border-2 border-white dark:border-surface-800"></p-avatar>
+          <p-button 
+            [label]="ls.t().remove_profile_picture" 
+            icon="pi pi-trash" 
+            [text]="true" 
+            severity="danger" 
+            size="small"
+            (onClick)="confirmRemoveProfilePicture()"
+          ></p-button>
+        </div>
+      }
+
       <form [formGroup]="editForm" (ngSubmit)="saveEdit()" class="flex flex-col gap-4 mt-2">
         <div class="flex flex-col gap-2">
           <label for="userName">{{ ls.t().username }}</label>
@@ -143,6 +159,7 @@ export default class UsersComponent implements OnInit {
 
   editDialogVisible = signal<boolean>(false);
   editingUserId = signal<string | null>(null);
+  editingUserProfilePictureUrl = signal<string | null>(null);
   saving = signal<boolean>(false);
   deletingUserId = signal<string | null>(null);
 
@@ -205,6 +222,7 @@ export default class UsersComponent implements OnInit {
           password: '',
           roles: details.roles ?? []
         });
+        this.editingUserProfilePictureUrl.set(details.profilePictureUrl ?? null);
       },
       error: () => {
         this.messageService.add({ severity: 'error', summary: this.ls.t().error, detail: this.ls.t().load_failed });
@@ -262,7 +280,6 @@ export default class UsersComponent implements OnInit {
       }
     });
   }
-
   deleteUser(id: string): void {
     this.deletingUserId.set(id);
     this.userService.deleteUser(id)
@@ -276,6 +293,34 @@ export default class UsersComponent implements OnInit {
           this.messageService.add({ severity: 'error', summary: this.ls.t().error, detail: this.ls.t().delete_failed });
         }
       });
+  }
+
+  confirmRemoveProfilePicture(): void {
+    this.confirmationService.confirm({
+      message: this.ls.t().confirm_remove_profile_picture,
+      header: this.ls.t().confirm_delete_title,
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonStyleClass: 'p-button-danger',
+      accept: () => {
+        this.removeProfilePicture();
+      }
+    });
+  }
+
+  removeProfilePicture(): void {
+    const id = this.editingUserId();
+    if (!id) return;
+
+    this.userService.deleteProfilePicture(id).subscribe({
+      next: () => {
+        this.messageService.add({ severity: 'success', summary: this.ls.t().success, detail: this.ls.t().profile_picture_removed });
+        this.editingUserProfilePictureUrl.set(null);
+        this.loadUsers(); // Refresh the main list too
+      },
+      error: () => {
+        this.messageService.add({ severity: 'error', summary: this.ls.t().error, detail: this.ls.t().delete_failed });
+      }
+    });
   }
 }
 

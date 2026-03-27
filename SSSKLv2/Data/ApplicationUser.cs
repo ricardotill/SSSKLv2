@@ -20,7 +20,8 @@ namespace SSSKLv2.Data
         public IEnumerable<AchievementEntry> CompletedAchievements { get; set; } = new List<AchievementEntry>();
         [Microsoft.Build.Framework.Required]
         public DateTime LastOrdered { get; set; } = DateTime.Now;
-        public byte[]? ProfilePicture { get; set; }
+        public Guid? ProfileImageId { get; set; }
+        public UserImage? ProfileImage { get; set; }
         
         public string FullName
         {

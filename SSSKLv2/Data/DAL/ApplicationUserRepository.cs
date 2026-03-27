@@ -83,6 +83,7 @@ public class ApplicationUserRepository(
         
         var list = await GetConsumerUsersQuery(context)
             .Where(s => s.Orders.Any())
+            .Include(x => x.ProfileImage)
             .Include(x => x.Orders)
             .ThenInclude(x => x.Product)
             .OrderByDescending(e => e.LastOrdered)
@@ -97,6 +98,7 @@ public class ApplicationUserRepository(
         
         var list = await GetConsumerUsersQuery(context)
             .Where(s => s.Orders.Any())
+            .Include(x => x.ProfileImage)
             .Include(x => x.Orders)
             .ThenInclude(x => x.Product)
             .OrderByDescending(e => e.LastOrdered)

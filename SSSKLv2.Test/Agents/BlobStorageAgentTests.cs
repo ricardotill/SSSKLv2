@@ -121,7 +121,7 @@ public class BlobStorageAgentTests
         result.ContentType.Should().Be(contentType);
         result.Uri.Should().Be(expectedUri.ToString());
 
-        await _mockContainerClient.Received(1).SetAccessPolicyAsync(PublicAccessType.Blob);
+        await _mockContainerClient.Received(1).SetAccessPolicyAsync(PublicAccessType.None);
     }
 
     [TestMethod]
@@ -228,7 +228,7 @@ public class BlobStorageAgentTests
 
         // Assert
         result.Should().BeTrue();
-        await _mockContainerClient.Received(1).SetAccessPolicyAsync(PublicAccessType.Blob);
+        await _mockContainerClient.Received(1).SetAccessPolicyAsync(PublicAccessType.None);
         await _mockBlobClient.Received(1).DeleteIfExistsAsync(DeleteSnapshotsOption.IncludeSnapshots);
     }
 

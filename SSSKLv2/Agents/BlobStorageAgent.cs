@@ -27,7 +27,7 @@ public class BlobStorageAgent : IBlobStorageAgent
         var container = _storage.GetBlobContainerClient(_blobContainerName);
         var createResponse = await container.CreateIfNotExistsAsync();
         if (createResponse != null && createResponse.GetRawResponse().Status == 201)
-            await container.SetAccessPolicyAsync(PublicAccessType.Blob);
+            await container.SetAccessPolicyAsync(PublicAccessType.None);
         var blob = container.GetBlobClient(strFileName);
         await blob.DeleteIfExistsAsync(DeleteSnapshotsOption.IncludeSnapshots);
         await blob.UploadAsync(fileStream, new BlobHttpHeaders { ContentType = contentType });
@@ -41,10 +41,17 @@ public class BlobStorageAgent : IBlobStorageAgent
         var container = _storage.GetBlobContainerClient(_blobContainerName);
         var createResponse = await container.CreateIfNotExistsAsync();
         if (createResponse != null && createResponse.GetRawResponse().Status == 201)
-            await container.SetAccessPolicyAsync(PublicAccessType.Blob);
+            await container.SetAccessPolicyAsync(PublicAccessType.None);
         var blob = container.GetBlobClient(strFileName);
         await blob.DeleteIfExistsAsync(DeleteSnapshotsOption.IncludeSnapshots);
         _logger.LogInformation("File deleted from Blob Storage: {FileName}", strFileName);
         return true;
+    }
+
+    public async Task<Stream> OpenDownloadStreamAsync(string strFileName)
+    {
+        var container = _storage.GetBlobContainerClient(_blobContainerName);
+        var blob = container.GetBlobClient(strFileName);
+        return await blob.OpenReadAsync();
     }
 }

@@ -29,7 +29,7 @@ public class AchievementService(
                 a.Name,
                 a.Description,
                 entry?.CreatedOn,
-                a.Image?.Uri,
+                a.Image != null ? $"/api/v1/blob/achievement/image/{a.Image.Id}" : null,
                 entry != null
             );
         }
@@ -400,7 +400,7 @@ public class AchievementService(
              await purchaseNotifier.NotifyAchievementAsync(new AchievementEvent(
                  achievement.Achievement.Name,
                  achievement.User.FullName,
-                 achievement.Achievement.Image?.Uri
+                 achievement.Achievement.Image != null ? $"/api/v1/blob/achievement/image/{achievement.Achievement.Image.Id}" : null
              ));
          }
      }

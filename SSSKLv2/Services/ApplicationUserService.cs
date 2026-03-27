@@ -1,8 +1,12 @@
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using SSSKLv2.Data;
 using SSSKLv2.Data.DAL.Interfaces;
 using SSSKLv2.Dto;
 using SSSKLv2.Services.Interfaces;
+using SSSKLv2.Agents;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Processing;
 
 namespace SSSKLv2.Services;
 
@@ -10,6 +14,8 @@ public class ApplicationUserService(
     IApplicationUserRepository applicationUserRepository,
     IProductRepository productRepository,
     UserManager<ApplicationUser> userManager,
+    IBlobStorageAgent blobAgent,
+    ApplicationDbContext context,
     ILogger<ApplicationUserService> logger) : IApplicationUserService
 {
     public Task<int> GetCount() => applicationUserRepository.GetCount();
@@ -52,6 +58,7 @@ public class ApplicationUserService(
             objApplicationUser.Surname = item.Surname;
             objApplicationUser.EmailConfirmed = item.EmailConfirmed;
             objApplicationUser.PhoneNumber = item.PhoneNumber;
+            objApplicationUser.ProfileImageId = item.ProfileImageId;
             objApplicationUser.PasswordHash = "*****";
 
             result.Add(objApplicationUser);
@@ -79,7 +86,16 @@ public class ApplicationUserService(
             {
                 count = Int32.MaxValue;
             }
-            if (count > 0) leaderboard.Add(new LeaderboardEntryDto() { Amount = count, FullName = $"{u.Name} {u.Surname.First()}", ProductName = product.Name});
+            if (count > 0)
+            {
+                leaderboard.Add(new LeaderboardEntryDto()
+                {
+                    Amount = count,
+                    FullName = $"{u.Name} {u.Surname.First()}",
+                    ProductName = product.Name,
+                    ProfilePictureUrl = u.ProfileImageId != null ? $"/api/v1/blob/profilepicture/image/{u.ProfileImageId}" : null
+                });
+            }
         }
         return DeterminePositions(leaderboard);
     }
@@ -110,7 +126,16 @@ public class ApplicationUserService(
                 count = Int32.MaxValue;
             }
             
-            if (count > 0) leaderboard.Add(new LeaderboardEntryDto() { Amount = count, FullName = $"{u.Name} {u.Surname.First()}", ProductName = product.Name});
+            if (count > 0)
+            {
+                leaderboard.Add(new LeaderboardEntryDto()
+                {
+                    Amount = count,
+                    FullName = $"{u.Name} {u.Surname.First()}",
+                    ProductName = product.Name,
+                    ProfilePictureUrl = u.ProfileImageId != null ? $"/api/v1/blob/profilepicture/image/{u.ProfileImageId}" : null
+                });
+            }
         }
         return DeterminePositions(leaderboard);
     }
@@ -137,7 +162,16 @@ public class ApplicationUserService(
             {
                 count = Int32.MaxValue;
             }
-            if (count > 0) leaderboard.Add(new LeaderboardEntryDto() { Amount = count, FullName = $"{u.Name} {u.Surname.First()}", ProductName = product.Name});
+            if (count > 0)
+            {
+                leaderboard.Add(new LeaderboardEntryDto()
+                {
+                    Amount = count,
+                    FullName = $"{u.Name} {u.Surname.First()}",
+                    ProductName = product.Name,
+                    ProfilePictureUrl = u.ProfileImageId != null ? $"/api/v1/blob/profilepicture/image/{u.ProfileImageId}" : null
+                });
+            }
         }
         
         return DeterminePositions(leaderboard);
@@ -165,7 +199,16 @@ public class ApplicationUserService(
             {
                 count = Int32.MaxValue;
             }
-            if (count > 0) leaderboard.Add(new LeaderboardEntryDto() { Amount = count, FullName = $"{u.Name} {u.Surname.First()}", ProductName = product.Name});
+            if (count > 0)
+            {
+                leaderboard.Add(new LeaderboardEntryDto()
+                {
+                    Amount = count,
+                    FullName = $"{u.Name} {u.Surname.First()}",
+                    ProductName = product.Name,
+                    ProfilePictureUrl = u.ProfileImageId != null ? $"/api/v1/blob/profilepicture/image/{u.ProfileImageId}" : null
+                });
+            }
         }
         
         return DeterminePositions(leaderboard);
@@ -301,5 +344,58 @@ public class ApplicationUserService(
         }
 
         return list;
+    }
+
+    public async Task UpdateProfilePictureAsync(string userId, Stream imageStream, string contentType)
+    {
+        var user = await userManager.FindByIdAsync(userId);
+        if (user == null) throw new Data.DAL.Exceptions.NotFoundException("User not found");
+
+        // Resize and crop to 400x400 using ImageSharp
+        using var image = await Image.LoadAsync(imageStream);
+        image.Mutate(x => x.Resize(new ResizeOptions
+        {
+            Size = new Size(400, 400),
+            Mode = ResizeMode.Crop
+        }));
+
+        using var outStream = new MemoryStream();
+        // Save as PNG for consistency, or keep original if preferred. Let's stick to PNG for 400x400 avatars.
+        await image.SaveAsPngAsync(outStream);
+        outStream.Position = 0;
+
+        var fileName = $"profile-{userId}-{Guid.NewGuid()}.png";
+        var blobItem = await blobAgent.UploadFileToBlobAsync(fileName, "image/png", outStream);
+
+        // Delete old image if exists
+        if (user.ProfileImageId != null)
+        {
+            await DeleteProfilePictureAsync(userId);
+        }
+
+        var userImage = UserImage.ToUserImage(blobItem);
+        userImage.User = user;
+        
+        context.UserImage.Add(userImage);
+        user.ProfileImageId = userImage.Id;
+        
+        await context.SaveChangesAsync();
+        await userManager.UpdateAsync(user);
+    }
+
+    public async Task DeleteProfilePictureAsync(string userId)
+    {
+        var user = await context.Users
+            .Include(u => u.ProfileImage)
+            .FirstOrDefaultAsync(u => u.Id == userId);
+            
+        if (user?.ProfileImage != null)
+        {
+            await blobAgent.DeleteFileToBlobAsync(user.ProfileImage.FileName);
+            context.UserImage.Remove(user.ProfileImage);
+            user.ProfileImageId = null;
+            await context.SaveChangesAsync();
+            await userManager.UpdateAsync(user);
+        }
     }
 }

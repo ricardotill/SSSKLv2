@@ -6,6 +6,7 @@ export enum EventResponseStatus {
 export interface EventResponseUserDto {
   userId: string;
   userName: string;
+  profilePictureUrl?: string;
 }
 
 export interface EventCreateDto {
@@ -23,6 +24,7 @@ export interface EventDto {
   startDateTime: string;
   endDateTime: string;
   creatorName: string;
+  creatorProfilePictureUrl?: string;
   createdOn: string;
   acceptedUsers: EventResponseUserDto[];
   declinedUsers: EventResponseUserDto[];

@@ -18,8 +18,8 @@ public class ApplicationUserDetailedDto
     public decimal Saldo { get; set; }
     public DateTime LastOrdered { get; set; }
 
-    // Profile picture encoded as base64 (nullable)
-    public string? ProfilePictureBase64 { get; set; }
+    // Profile picture URL (nullable)
+    public string? ProfilePictureUrl { get; set; }
 
     // Roles assigned to the user
     public IList<string> Roles { get; set; } = new List<string>();

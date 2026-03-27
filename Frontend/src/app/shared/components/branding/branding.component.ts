@@ -8,7 +8,7 @@ import { AuthService } from '../../../core/auth/auth.service';
   imports: [TagModule],
   template: `
     <div 
-      class="flex items-center"
+      class="flex items-center justify-center"
       [class.cursor-pointer]="authService.isAuthenticated()"
       (click)="onClick()"
       (keydown.enter)="onClick()"

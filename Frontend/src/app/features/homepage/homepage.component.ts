@@ -10,7 +10,7 @@ import { NgOptimizedImage } from '@angular/common';
   template: `
     <div class="flex justify-center items-center h-full sm:mt-10">
       <p-card class="max-w-2xl w-full" styleClass="bg-surface-50 border border-surface-200 dark:bg-surface-900 dark:border-surface-800">
-        <div class="flex flex-col sm:flex-row items-center sm:items-start gap-6">
+        <div class="flex flex-col items-center gap-6">
           <img
             ngSrc="/logo.png"
             alt="SSSKL Logo"
@@ -19,8 +19,8 @@ import { NgOptimizedImage } from '@angular/common';
             priority
             class="rounded-xl shadow-lg"
           />
-          <div class="flex flex-col justify-center text-center sm:text-left h-36">
-            <app-branding class="scale-150 origin-center sm:origin-left mb-4" />
+          <div class="flex flex-col items-center justify-center text-center h-36">
+            <app-branding class="scale-150 origin-center mb-4" />
             <p class="m-0 text-muted-color">
               Made with ❤️ by
               <a

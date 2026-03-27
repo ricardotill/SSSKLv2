@@ -1,6 +1,6 @@
 import { Component, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router, RouterModule } from '@angular/router';
+import { Router, RouterModule, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../core/auth/auth.service';
 import { InputTextModule } from 'primeng/inputtext';
 import { PasswordModule } from 'primeng/password';
@@ -36,7 +36,7 @@ import { BrandingComponent } from '../../shared/components/branding/branding.com
         
         <div class="mb-5">
             <h3 class="text-xl font-medium mt-0 mb-3 text-surface-900 dark:text-surface-0">Create an Account</h3>
-            <p class="text-surface-500 m-0">Already have an account? <a routerLink="/login" class="text-primary hover:underline cursor-pointer">Login</a></p>
+            <p class="text-surface-500 m-0">Already have an account? <a [routerLink]="['/login']" [queryParams]="{ returnUrl: route.snapshot.queryParams['returnUrl'] }" class="text-primary hover:underline cursor-pointer">Login</a></p>
         </div>
 
         <form [formGroup]="registerForm" (ngSubmit)="onSubmit()">
@@ -179,6 +179,7 @@ export default class RegisterComponent {
   private fb = inject(FormBuilder);
   private authService = inject(AuthService);
   private router = inject(Router);
+  public route = inject(ActivatedRoute);
 
   registerForm = this.fb.nonNullable.group({
     userName: ['', Validators.required],
@@ -208,7 +209,7 @@ export default class RegisterComponent {
       next: () => {
         this.isLoading.set(false);
         this.successMessage.set('Registration successful! Redirecting to login...');
-        setTimeout(() => this.router.navigate(['/login']), 2000);
+        setTimeout(() => this.router.navigate(['/login'], { queryParams: { returnUrl: this.route.snapshot.queryParams['returnUrl'] } }), 2000);
       },
       error: (err) => {
         this.isLoading.set(false);

@@ -3,7 +3,7 @@ import { MenuModule } from 'primeng/menu';
 import { MenuItem } from 'primeng/api';
 import { CommonModule } from '@angular/common';
 import { AvatarModule } from 'primeng/avatar';
-import { RouterModule } from '@angular/router';
+import { RouterModule, Router } from '@angular/router';
 import { AuthService } from '../../core/auth/auth.service';
 import { LanguageService } from '../../core/services/language.service';
 import { BrandingComponent } from '../../shared/components/branding/branding.component';
@@ -42,7 +42,7 @@ import { BrandingComponent } from '../../shared/components/branding/branding.com
             <span class="font-medium">{{ ls.t().logout }}</span>
           </a>
         } @else {
-          <a class="flex items-center gap-3 px-6 py-3 cursor-pointer hover:bg-surface-700 transition-colors" [routerLink]="['/login']" style="text-decoration: none; color: var(--p-primary-color, #3b82f6);" (click)="close.emit()">
+          <a class="flex items-center gap-3 px-6 py-3 cursor-pointer hover:bg-surface-700 transition-colors" [routerLink]="['/login']" [queryParams]="{ returnUrl: router.url }" style="text-decoration: none; color: var(--p-primary-color, #3b82f6);" (click)="close.emit()">
             <div class="w-8 h-8 flex items-center justify-center">
               <i class="pi pi-sign-in text-lg"></i>
             </div>
@@ -159,6 +159,7 @@ import { BrandingComponent } from '../../shared/components/branding/branding.com
 export class SidebarComponent {
   authService = inject(AuthService);
   ls = inject(LanguageService);
+  public router = inject(Router);
   isOpen = input<boolean>(false);
   close = output<void>();
   items = computed<MenuItem[]>(() => {

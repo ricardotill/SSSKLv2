@@ -85,17 +85,17 @@ export const routes: Routes = [
       },
       {
         path: 'events',
-        canActivate: [authGuard],
         children: [
           {
             path: '',
             loadComponent: () => import('./features/events/events.component'),
+            canActivate: [authGuard],
             title: 'Evenementen - SSSKL'
           },
           {
             path: 'new',
             loadComponent: () => import('./features/events/event-edit/event-edit.component'),
-            canActivate: [roleGuard],
+            canActivate: [authGuard, roleGuard],
             data: { roles: ['Admin', 'User'] },
             title: 'Evenement Toevoegen - SSSKL'
           },
@@ -107,7 +107,7 @@ export const routes: Routes = [
           {
             path: ':id/edit',
             loadComponent: () => import('./features/events/event-edit/event-edit.component'),
-            canActivate: [roleGuard],
+            canActivate: [authGuard, roleGuard],
             data: { roles: ['Admin', 'User'] },
             title: 'Evenement Bewerken - SSSKL'
           }

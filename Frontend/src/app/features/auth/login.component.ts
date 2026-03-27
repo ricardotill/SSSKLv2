@@ -1,6 +1,6 @@
 import { Component, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router, RouterModule } from '@angular/router';
+import { Router, RouterModule, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../core/auth/auth.service';
 import { WebAuthnService } from '../../core/services/webauthn.service';
 import { LanguageService } from '../../core/services/language.service';
@@ -160,8 +160,9 @@ export default class LoginComponent {
   private fb = inject(FormBuilder);
   private authService = inject(AuthService);
   private webAuthnService = inject(WebAuthnService);
-  public lang = inject(LanguageService);
-  private router = inject(Router);
+  public readonly lang = inject(LanguageService);
+  private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
 
   loginForm = this.fb.group({
     userName: ['', Validators.required],
@@ -198,7 +199,11 @@ export default class LoginComponent {
     this.authService.login(credentials, rememberMe).subscribe({
       next: () => {
         this.isLoading.set(false);
-        this.router.navigate(['/pos']);
+        let returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/pos';
+        if (returnUrl === '/') {
+          returnUrl = '/pos';
+        }
+        this.router.navigateByUrl(returnUrl);
       },
       error: (err) => {
         this.isLoading.set(false);
@@ -231,7 +236,11 @@ export default class LoginComponent {
     this.webAuthnService.login(userName).subscribe({
       next: () => {
         this.isLoading.set(false);
-        this.router.navigate(['/pos']);
+        let returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/pos';
+        if (returnUrl === '/') {
+          returnUrl = '/pos';
+        }
+        this.router.navigateByUrl(returnUrl);
       },
       error: (err) => {
         this.isLoading.set(false);

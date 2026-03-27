@@ -207,7 +207,14 @@ var storageSection = builder.Configuration.GetSection("Storage");
 var storageConnectionString = storageSection["ConnectionString"];
 var storageServiceUri = storageSection["ServiceUri"];
 
-if (!string.IsNullOrWhiteSpace(storageConnectionString))
+var connectionStringBlobs = builder.Configuration.GetConnectionString("blobs");
+
+if (!string.IsNullOrWhiteSpace(connectionStringBlobs))
+{
+    // Default Aspire-compatible behavior, looking for a connection named "blobs"
+    builder.AddAzureBlobServiceClient("blobs");
+}
+else if (!string.IsNullOrWhiteSpace(storageConnectionString))
 {
     builder.Services.AddAzureClients(clientBuilder => clientBuilder.AddBlobServiceClient(storageConnectionString));
 }
@@ -218,11 +225,6 @@ else if (!string.IsNullOrWhiteSpace(storageServiceUri))
         clientBuilder.AddBlobServiceClient(new Uri(storageServiceUri));
         clientBuilder.UseCredential(new DefaultAzureCredential());
     });
-}
-else
-{
-    // Default Aspire-compatible behavior, looking for a connection named "blobs"
-    builder.AddAzureBlobServiceClient("blobs");
 }
 
 builder.Services.AddIdentityCore<ApplicationUser>(options =>

@@ -11,6 +11,8 @@ import { AuthService } from '../../../core/auth/auth.service';
 import { EventDto, EventResponseStatus } from '../../../core/models/event.model';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { MessageService } from 'primeng/api';
+import { Meta, Title } from '@angular/platform-browser';
+import { DOCUMENT } from '@angular/common';
 
 @Component({
   selector: 'app-event-detail',
@@ -41,6 +43,7 @@ import { MessageService } from 'primeng/api';
             </div>
             
             <div class="flex gap-2">
+              <p-button [label]="ls.t().share" icon="pi pi-share-alt" [outlined]="true" severity="secondary" (onClick)="share()" />
               @if (canEdit()) {
                 <p-button [label]="ls.t().edit" icon="pi pi-pencil" severity="secondary" [routerLink]="['/events', event()?.id, 'edit']" />
                 <p-button [label]="ls.t().delete" icon="pi pi-trash" severity="danger" (onClick)="deleteEvent()" />
@@ -91,22 +94,26 @@ import { MessageService } from 'primeng/api';
                   </div>
                   
                   <div class="flex gap-3">
-                    <p-button 
-                      [label]="ls.t().accept" 
-                      icon="pi pi-check" 
-                      [severity]="event()?.userResponse === 'Accepted' ? 'success' : 'secondary'"
-                      [outlined]="event()?.userResponse !== 'Accepted'"
-                      (onClick)="rsvp('Accepted')"
-                      [loading]="rsvpLoading()"
-                    />
-                    <p-button 
-                      [label]="ls.t().decline" 
-                      icon="pi pi-times" 
-                      [severity]="event()?.userResponse === 'Declined' ? 'danger' : 'secondary'"
-                      [outlined]="event()?.userResponse !== 'Declined'"
-                      (onClick)="rsvp('Declined')"
-                      [loading]="rsvpLoading()"
-                    />
+                    @if (authService.isAuthenticated()) {
+                      <p-button 
+                        [label]="ls.t().accept" 
+                        icon="pi pi-check" 
+                        [severity]="event()?.userResponse === 'Accepted' ? 'success' : 'secondary'"
+                        [outlined]="event()?.userResponse !== 'Accepted'"
+                        (onClick)="rsvp('Accepted')"
+                        [loading]="rsvpLoading()"
+                      />
+                      <p-button 
+                        [label]="ls.t().decline" 
+                        icon="pi pi-times" 
+                        [severity]="event()?.userResponse === 'Declined' ? 'danger' : 'secondary'"
+                        [outlined]="event()?.userResponse !== 'Declined'"
+                        (onClick)="rsvp('Declined')"
+                        [loading]="rsvpLoading()"
+                      />
+                    } @else {
+                      <p-button [label]="ls.t().login" icon="pi pi-sign-in" [routerLink]="['/login']" [queryParams]="{ returnUrl: router.url }" />
+                    }
                   </div>
                 </div>
               </p-card>
@@ -181,10 +188,13 @@ import { MessageService } from 'primeng/api';
 })
 export default class EventDetailComponent implements OnInit {
   private readonly eventService = inject(EventService);
-  private readonly authService = inject(AuthService);
-  private readonly route = inject(ActivatedRoute);
-  private readonly router = inject(Router);
+  public readonly authService = inject(AuthService);
+  private readonly activatedRoute = inject(ActivatedRoute);
+  public readonly router = inject(Router);
   private readonly messageService = inject(MessageService);
+  private readonly meta = inject(Meta);
+  private readonly titleService = inject(Title);
+  private readonly document = inject(DOCUMENT);
   ls = inject(LanguageService);
 
   event = signal<EventDto | null>(null);
@@ -195,12 +205,12 @@ export default class EventDetailComponent implements OnInit {
     const user = this.authService.currentUser();
     const currentEvent = this.event();
     if (!user || !currentEvent) return false;
-    
+
     return user.roles.includes('Admin') || user.userName === currentEvent.creatorName;
   });
 
   ngOnInit(): void {
-    const id = this.route.snapshot.paramMap.get('id');
+    const id = this.activatedRoute.snapshot.paramMap.get('id');
     if (id) {
       this.loadEvent(id);
     }
@@ -212,12 +222,54 @@ export default class EventDetailComponent implements OnInit {
       next: (event) => {
         this.event.set(event);
         this.loading.set(false);
+        this.updateMetaTags(event);
       },
       error: () => {
         this.loading.set(false);
         this.messageService.add({ severity: 'error', summary: 'Fout', detail: 'Kan evenement niet laden' });
       }
     });
+  }
+
+  updateMetaTags(event: EventDto): void {
+    const title = `${event.title} - SSSKL`;
+    const description = this.stripHtml(event.description).substring(0, 160);
+    const url = this.document.location.href;
+    const image = event.imageUrl || '';
+
+    this.titleService.setTitle(title);
+
+    // OG Tags for WhatsApp/Facebook
+    this.meta.updateTag({ property: 'og:title', content: title });
+    this.meta.updateTag({ property: 'og:description', content: description });
+    this.meta.updateTag({ property: 'og:url', content: url });
+    this.meta.updateTag({ property: 'og:type', content: 'website' });
+    if (image) {
+      this.meta.updateTag({ property: 'og:image', content: image });
+    }
+  }
+
+  share(): void {
+    const currentEvent = this.event();
+    if (!currentEvent) return;
+
+    if (navigator.share) {
+      navigator.share({
+        title: currentEvent.title,
+        text: this.stripHtml(currentEvent.description).substring(0, 100),
+        url: window.location.href
+      }).catch(err => console.error('Share failed', err));
+    } else {
+      // Fallback to clipboard
+      navigator.clipboard.writeText(window.location.href).then(() => {
+        this.messageService.add({ severity: 'success', summary: 'Gekopieerd', detail: 'Link gekopieerd naar klembord' });
+      });
+    }
+  }
+
+  private stripHtml(html: string | undefined): string {
+    if (!html) return '';
+    return html.replace(/<[^>]*>?/gm, '');
   }
 
   rsvp(status: 'Accepted' | 'Declined'): void {
@@ -229,10 +281,10 @@ export default class EventDetailComponent implements OnInit {
       next: () => {
         this.rsvpLoading.set(false);
         this.loadEvent(currentEvent.id);
-        this.messageService.add({ 
-            severity: 'success', 
-            summary: 'Gedaan!', 
-            detail: status === 'Accepted' ? 'Je bent aangemeld!' : 'Je bent afgemeld.' 
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Gedaan!',
+          detail: status === 'Accepted' ? 'Je bent aangemeld!' : 'Je bent afgemeld.'
         });
       },
       error: () => {

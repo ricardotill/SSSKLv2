@@ -14,6 +14,7 @@ using SSSKLv2.Services;
 using Microsoft.OpenApi;
 using Microsoft.Azure.SignalR.Common;
 using Blazored.Toast;
+using Azure.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -175,9 +176,12 @@ if (builder.Environment.IsDevelopment())
 
 if (!builder.Environment.IsEnvironment("IntegrationTest"))
 {
+    var connectionString = (builder.Environment.IsProduction() ? builder.Configuration["AZURE_SQL_CONNECTIONSTRING"] : null)
+                          ?? builder.Configuration.GetConnectionString("db");
+
     builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>
     {
-        options.UseSqlServer(builder.Configuration.GetConnectionString("db"));
+        options.UseSqlServer(connectionString);
     });
     builder.EnrichSqlServerDbContext<ApplicationDbContext>();
 }
@@ -205,7 +209,23 @@ if (builder.Environment.IsDevelopment())
     builder.Services.AddSignalR();
 }
 
-builder.AddAzureBlobServiceClient("blobs");
+var storageSection = builder.Configuration.GetSection("Storage");
+var storageConnectionString = storageSection["ConnectionString"];
+var storageServiceUri = storageSection["ServiceUri"];
+
+if (!string.IsNullOrWhiteSpace(storageConnectionString))
+{
+    builder.AddAzureBlobServiceClient(storageConnectionString);
+}
+else if (!string.IsNullOrWhiteSpace(storageServiceUri))
+{
+    builder.AddAzureBlobServiceClient(new Uri(storageServiceUri));
+}
+else
+{
+    // Default Aspire-compatible behavior, looking for a connection named "blobs"
+    builder.AddAzureBlobServiceClient("blobs");
+}
 
 builder.Services.AddIdentityCore<ApplicationUser>(options =>
     {

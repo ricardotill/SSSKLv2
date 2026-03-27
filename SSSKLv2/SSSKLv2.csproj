@@ -55,6 +55,7 @@
     <PackageReference Include="System.ServiceModel.Syndication" />
     <PackageReference Include="Aspire.Microsoft.EntityFrameworkCore.SqlServer" />
     <PackageReference Include="Aspire.Azure.Storage.Blobs" />
+    <PackageReference Include="Microsoft.Extensions.Azure" />
   </ItemGroup>
 
   <ItemGroup>

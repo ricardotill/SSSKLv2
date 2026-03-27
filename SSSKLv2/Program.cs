@@ -312,6 +312,25 @@ else
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
 }
 
+// Redirect all domains to the main domain specified in WEBSITE_DOMAIN environment variable
+var mainDomain = builder.Configuration["WEBSITE_DOMAIN"];
+if (!string.IsNullOrWhiteSpace(mainDomain))
+{
+    app.Use(async (context, next) =>
+    {
+        var host = context.Request.Host.Host;
+        if (!string.Equals(host, mainDomain, StringComparison.OrdinalIgnoreCase) && 
+            !string.Equals(host, "localhost", StringComparison.OrdinalIgnoreCase))
+        {
+            var request = context.Request;
+            var destination = $"https://{mainDomain}{request.Path}{request.QueryString}";
+            context.Response.Redirect(destination, permanent: true);
+            return;
+        }
+        await next();
+    });
+}
+
 app.UseHttpsRedirection();
 app.UseBlazorFrameworkFiles();
 app.UseStaticFiles();

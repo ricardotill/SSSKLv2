@@ -108,7 +108,14 @@ namespace SSSKLv2.Data
 
             builder.Entity<Event>()
                 .Property(s => s.CreatedOn)
-                .HasDefaultValueSql("GETDATE()");
+                .HasDefaultValueSql("GETUTCDATE()")
+                .HasConversion(v => v, v => DateTime.SpecifyKind(v, DateTimeKind.Utc));
+            builder.Entity<Event>()
+                .Property(e => e.StartDateTime)
+                .HasConversion(v => v, v => DateTime.SpecifyKind(v, DateTimeKind.Utc));
+            builder.Entity<Event>()
+                .Property(e => e.EndDateTime)
+                .HasConversion(v => v, v => DateTime.SpecifyKind(v, DateTimeKind.Utc));
             builder.Entity<Event>()
                 .HasOne(e => e.Creator)
                 .WithMany()
@@ -123,7 +130,8 @@ namespace SSSKLv2.Data
 
             builder.Entity<EventResponse>()
                 .Property(s => s.CreatedOn)
-                .HasDefaultValueSql("GETDATE()");
+                .HasDefaultValueSql("GETUTCDATE()")
+                .HasConversion(v => v, v => DateTime.SpecifyKind(v, DateTimeKind.Utc));
             builder.Entity<EventResponse>()
                 .HasOne(e => e.Event)
                 .WithMany(e => e.Responses)
@@ -143,7 +151,8 @@ namespace SSSKLv2.Data
                 .IsUnique();
             builder.Entity<EventImage>()
                 .Property(s => s.CreatedOn)
-                .HasDefaultValueSql("GETDATE()");
+                .HasDefaultValueSql("GETUTCDATE()")
+                .HasConversion(v => v, v => DateTime.SpecifyKind(v, DateTimeKind.Utc));
         }
     }
 }

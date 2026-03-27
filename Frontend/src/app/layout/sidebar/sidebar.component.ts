@@ -21,12 +21,12 @@ import { BrandingComponent } from '../../shared/components/branding/branding.com
         <app-branding />
       </div>
       <div class="flex-1 overflow-y-auto min-h-0 custom-scrollbar">
-        <p-menu [model]="items()" styleClass="w-full border-none bg-transparent" />
+        <p-menu [model]="items()" styleClass="w-full border-none bg-transparent" (click)="close.emit()" />
       </div>
       
       <div class="pb-4 flex flex-col">
         @if (authService.isAuthenticated()) {
-          <a class="flex items-center gap-3 px-6 py-3 cursor-pointer text-surface-200 hover:text-white hover:bg-surface-700 transition-colors" [routerLink]="['/settings']" style="text-decoration: none;">
+          <a class="flex items-center gap-3 px-6 py-3 cursor-pointer text-surface-200 hover:text-white hover:bg-surface-700 transition-colors" [routerLink]="['/settings']" style="text-decoration: none;" (click)="close.emit()">
             @if (authService.currentUser()?.profilePictureBase64) {
               <p-avatar [image]="'data:image/jpeg;base64,' + authService.currentUser()?.profilePictureBase64" shape="circle" styleClass="w-8 h-8" />
             } @else {
@@ -35,21 +35,21 @@ import { BrandingComponent } from '../../shared/components/branding/branding.com
             <span class="font-medium truncate">{{ authService.currentUser()?.fullName ?? authService.currentUser()?.userName }}</span>
           </a>
           
-          <a class="flex items-center gap-3 px-6 py-3 cursor-pointer text-red-500 hover:text-red-400 hover:bg-surface-700 transition-colors" (click)="authService.logout()" style="text-decoration: none;">
+          <a class="flex items-center gap-3 px-6 py-3 cursor-pointer text-red-500 hover:text-red-400 hover:bg-surface-700 transition-colors" (click)="authService.logout(); close.emit()" style="text-decoration: none;">
             <div class="w-8 h-8 flex items-center justify-center">
               <i class="pi pi-sign-out text-lg"></i>
             </div>
             <span class="font-medium">{{ ls.t().logout }}</span>
           </a>
         } @else {
-          <a class="flex items-center gap-3 px-6 py-3 cursor-pointer hover:bg-surface-700 transition-colors" [routerLink]="['/login']" style="text-decoration: none; color: var(--p-primary-color, #3b82f6);">
+          <a class="flex items-center gap-3 px-6 py-3 cursor-pointer hover:bg-surface-700 transition-colors" [routerLink]="['/login']" style="text-decoration: none; color: var(--p-primary-color, #3b82f6);" (click)="close.emit()">
             <div class="w-8 h-8 flex items-center justify-center">
               <i class="pi pi-sign-in text-lg"></i>
             </div>
             <span class="font-medium">{{ ls.t().login }}</span>
           </a>
           
-          <a class="flex items-center gap-3 px-6 py-3 cursor-pointer text-surface-200 hover:text-white hover:bg-surface-700 transition-colors" [routerLink]="['/register']" style="text-decoration: none;">
+          <a class="flex items-center gap-3 px-6 py-3 cursor-pointer text-surface-200 hover:text-white hover:bg-surface-700 transition-colors" [routerLink]="['/register']" style="text-decoration: none;" (click)="close.emit()">
             <div class="w-8 h-8 flex items-center justify-center">
               <i class="pi pi-user-plus text-lg"></i>
             </div>

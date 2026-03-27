@@ -67,7 +67,8 @@ import { CardModule } from 'primeng/card';
                     [options]="themeOptions" 
                     [ngModel]="themeService.mode()" 
                     (ngModelChange)="themeService.setMode($event)" 
-                    [allowEmpty]="false">
+                    [allowEmpty]="false"
+                    size="small">
                     <ng-template #item let-item>
                         <div class="flex items-center gap-2 px-2">
                             <i [class]="item.icon"></i>

@@ -31,6 +31,10 @@ export class ApplicationUserService {
   deleteUser(id: string): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/${id}`);
   }
+  
+  deleteProfilePicture(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/${id}/profile-picture`);
+  }
 
   getObscuredUsers(): Observable<ApplicationUserDto[]> {
     return this.http.get<ApplicationUserDto[]>(`/api/v1/applicationuser/obscured`);

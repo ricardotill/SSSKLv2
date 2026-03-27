@@ -13,6 +13,7 @@ import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { MessageService } from 'primeng/api';
 import { Meta, Title } from '@angular/platform-browser';
 import { DOCUMENT } from '@angular/common';
+import { AvatarModule } from 'primeng/avatar';
 
 @Component({
   selector: 'app-event-detail',
@@ -25,7 +26,7 @@ import { DOCUMENT } from '@angular/common';
     TagModule,
     DividerModule,
     ProgressSpinnerModule,
-    ProgressSpinnerModule
+    AvatarModule
   ],
   template: `
     <div class="max-w-4xl mx-auto">
@@ -126,12 +127,33 @@ import { DOCUMENT } from '@angular/common';
                     <span class="text-surface-600">{{ ls.t().accept }}</span>
                     <p-tag severity="success" [value]="event()?.acceptedUsers?.length?.toString()"></p-tag>
                   </div>
+                  <div class="flex flex-col gap-2 mb-2 px-2">
+                    <div class="flex -space-x-2">
+                      @for (user of event()?.acceptedUsers?.slice(0, 5); track user.userId) {
+                        <p-avatar 
+                          [image]="user.profilePictureUrl || undefined" 
+                          [label]="!user.profilePictureUrl ? user.userName.substring(0,1) : undefined"
+                          shape="circle" 
+                          size="normal"
+                          styleClass="ring-2 ring-surface-0 dark:ring-surface-900 shadow-sm"
+                        ></p-avatar>
+                      }
+                      @if ((event()?.acceptedUsers?.length ?? 0) > 5) {
+                        <div class="flex h-8 w-8 rounded-full ring-2 ring-surface-0 dark:ring-surface-900 bg-surface-200 dark:bg-surface-700 items-center justify-center text-xs font-bold text-surface-600 dark:text-surface-300 shadow-sm">
+                          +{{ (event()?.acceptedUsers?.length ?? 0) - 5 }}
+                        </div>
+                      }
+                    </div>
+                  </div>
                   <div class="flex flex-col gap-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
                     @for (user of event()?.acceptedUsers; track user.userId) {
                       <div class="flex items-center gap-2 p-2 bg-surface-50 dark:bg-surface-800 rounded-lg">
-                        <div class="flex h-8 w-8 shrink-0 rounded-full bg-primary-500 text-white items-center justify-center text-xs font-bold">
-                          {{ user.userName.substring(0, 1).toUpperCase() }}
-                        </div>
+                        <p-avatar 
+                          [image]="user.profilePictureUrl || undefined" 
+                          [label]="!user.profilePictureUrl ? user.userName.substring(0,1) : undefined"
+                          shape="circle" 
+                          size="normal"
+                        ></p-avatar>
                         <span class="text-sm font-medium">{{ user.userName }}</span>
                       </div>
                     } @empty {
@@ -148,9 +170,12 @@ import { DOCUMENT } from '@angular/common';
                   <div class="flex flex-col gap-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
                     @for (user of event()?.declinedUsers; track user.userId) {
                       <div class="flex items-center gap-2 p-2 bg-surface-50 dark:bg-surface-800 rounded-lg opacity-60">
-                        <div class="flex h-8 w-8 shrink-0 rounded-full bg-surface-300 dark:bg-surface-600 text-surface-600 items-center justify-center text-xs font-bold">
-                          {{ user.userName.substring(0, 1).toUpperCase() }}
-                        </div>
+                        <p-avatar 
+                          [image]="user.profilePictureUrl || undefined" 
+                          [label]="!user.profilePictureUrl ? user.userName.substring(0,1) : undefined"
+                          shape="circle" 
+                          size="normal"
+                        ></p-avatar>
                         <span class="text-sm">{{ user.userName }}</span>
                       </div>
                     } @empty {
@@ -162,9 +187,18 @@ import { DOCUMENT } from '@angular/common';
 
               <p-card header="Informatie">
                 <div class="flex flex-col gap-3 text-sm">
-                  <div class="flex justify-between">
+                  <div class="flex justify-between items-center">
                     <span class="text-surface-500">Gemaakt door</span>
-                    <span class="font-medium">{{ event()?.creatorName }}</span>
+                    <div class="flex items-center gap-2">
+                      <p-avatar 
+                        [image]="event()?.creatorProfilePictureUrl || undefined" 
+                        [label]="!event()?.creatorProfilePictureUrl ? event()?.creatorName?.substring(0,1) : undefined"
+                        shape="circle" 
+                        size="normal"
+                        styleClass="w-6 h-6 text-[10px]"
+                      ></p-avatar>
+                      <span class="font-medium">{{ event()?.creatorName }}</span>
+                    </div>
                   </div>
                   <div class="flex justify-between">
                     <span class="text-surface-500">Gemaakt op</span>

@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SSSKLv2.Data;
 
@@ -11,9 +12,11 @@ using SSSKLv2.Data;
 namespace SSSKLv2.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260327133325_AddUserProfilePicture")]
+    partial class AddUserProfilePicture
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -781,7 +784,7 @@ namespace SSSKLv2.Migrations
                     b.HasOne("SSSKLv2.Data.UserImage", "ProfileImage")
                         .WithOne("User")
                         .HasForeignKey("SSSKLv2.Data.ApplicationUser", "ProfileImageId")
-                        .OnDelete(DeleteBehavior.NoAction);
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.Navigation("ProfileImage");
                 });

@@ -28,7 +28,7 @@ export interface ApplicationUserDetailedDto {
     fullName: string;
     saldo: number;
     lastOrdered: string;
-    profilePictureBase64: string | null;
+    profilePictureUrl: string | null;
     roles: string[];
 }
 
@@ -182,6 +182,20 @@ export class AuthService {
 
     deleteAccount(): Observable<any> {
         return this.http.delete(`${this.USER_API_URL}/me`);
+    }
+
+    uploadProfilePicture(projectId: string, file: File): Observable<any> {
+        const formData = new FormData();
+        formData.append('file', file);
+        return this.http.post(`${this.USER_API_URL}/me/profile-picture`, formData).pipe(
+            tap(() => this.refreshCurrentUser())
+        );
+    }
+
+    deleteProfilePicture(): Observable<any> {
+        return this.http.delete(`${this.USER_API_URL}/me/profile-picture`).pipe(
+            tap(() => this.refreshCurrentUser())
+        );
     }
 
     getPasskeyRequestOptions(userName: string): Observable<any> {

@@ -16,6 +16,7 @@ using Microsoft.Azure.SignalR.Common;
 using Blazored.Toast;
 using Azure.Identity;
 using Microsoft.Extensions.Azure;
+using SSSKLv2.Util;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -334,6 +335,7 @@ if (!string.IsNullOrWhiteSpace(mainDomain))
 }
 
 app.UseHttpsRedirection();
+app.UseMiddleware<SocialPreviewMiddleware>();
 app.UseBlazorFrameworkFiles();
 app.UseStaticFiles();
 // Apply cookie policy before authentication so cookie flags are enforced.

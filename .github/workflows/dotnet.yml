@@ -78,7 +78,6 @@ jobs:
         run: |
           .\.sonar\scanner\dotnet-sonarscanner begin /k:"ricardotill_SSSKLv2" /o:"ricardotill" /d:sonar.login="${{ secrets.SONAR_TOKEN }}" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.cs.opencover.reportsPaths="SSSKLv2.Test/coverage.opencover.xml"
           dotnet build SSSKLv2.slnx
-          dotnet test --no-build --verbosity normal
-          dotnet test SSSKLv2.slnx /p:CollectCoverage=true /p:CoverletOutput=coverage /p:CoverletOutputFormat=opencover /p:ExcludeByFile="**/Migrations/**/*.cs%2c**/Components/**/*.cs%2c**/Controllers/**/*.cs%2c**/Pages/**/*.cs%2c**/ServiceExtensions.cs%2c**/Program.cs"
+          dotnet test SSSKLv2.slnx --no-build --verbosity normal /p:CollectCoverage=true /p:CoverletOutputFormat=opencover /p:ExcludeByFile="**/Migrations/**/*.cs%2c**/Components/**/*.cs%2c**/Controllers/**/*.cs%2c**/Pages/**/*.cs%2c**/ServiceExtensions.cs%2c**/Program.cs"
           .\.sonar\scanner\dotnet-sonarscanner end /d:sonar.login=${{ secrets.SONAR_TOKEN }}
       - run: dotnet --version

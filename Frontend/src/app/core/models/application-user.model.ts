@@ -5,6 +5,7 @@ export interface ApplicationUserDto {
   saldo: number;
   lastOrdered?: string;
   roles: string[];
+  profilePictureUrl?: string;
 }
 
 export interface ApplicationUserDetailedDto {
@@ -19,7 +20,7 @@ export interface ApplicationUserDetailedDto {
   fullName: string;
   saldo: number;
   lastOrdered?: string;
-  profilePictureBase64?: string;
+  profilePictureUrl?: string;
   roles: string[];
 }
 

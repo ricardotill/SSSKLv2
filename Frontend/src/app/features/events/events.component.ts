@@ -12,6 +12,7 @@ import { AuthService } from '../../core/auth/auth.service';
 import { EventDto } from '../../core/models/event.model';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { FormsModule } from '@angular/forms';
+import { AvatarModule } from 'primeng/avatar';
 
 @Component({
   selector: 'app-events',
@@ -25,7 +26,8 @@ import { FormsModule } from '@angular/forms';
     TagModule,
     ProgressSpinnerModule,
     ToggleButtonModule,
-    FormsModule
+    FormsModule,
+    AvatarModule
   ],
   template: `
     <div class="flex flex-col gap-6">
@@ -121,13 +123,18 @@ import { FormsModule } from '@angular/forms';
                       >
                         <div class="flex -space-x-2">
                            @for (user of event.acceptedUsers.slice(0, 3); track user.userId) {
-                             <div class="flex h-8 w-8 rounded-full ring-2 ring-surface-0 dark:ring-surface-900 bg-primary-500 text-white items-center justify-center text-xs font-bold" [title]="user.userName">
-                               {{ user.userName.substring(0, 1).toUpperCase() }}
-                             </div>
+                             <p-avatar 
+                                [image]="user.profilePictureUrl || undefined" 
+                                [label]="!user.profilePictureUrl ? user.userName?.substring(0,1) : undefined"
+                                shape="circle" 
+                                size="normal"
+                                styleClass="ring-2 ring-surface-0 dark:ring-surface-900"
+                                [title]="user.userName"
+                             ></p-avatar>
                            }
                            @if (event.acceptedUsers.length > 3) {
                              <div class="flex h-8 w-8 rounded-full ring-2 ring-surface-0 dark:ring-surface-900 bg-surface-200 dark:bg-surface-700 items-center justify-center text-xs font-bold text-surface-600 dark:text-surface-300">
-                               +{{ event.acceptedUsers.length - 3 }}
+                                +{{ event.acceptedUsers.length - 3 }}
                              </div>
                            }
                         </div>

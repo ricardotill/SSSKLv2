@@ -27,11 +27,12 @@ import { BrandingComponent } from '../../shared/components/branding/branding.com
       <div class="pb-4 flex flex-col">
         @if (authService.isAuthenticated()) {
           <a class="flex items-center gap-3 px-6 py-3 cursor-pointer text-surface-200 hover:text-white hover:bg-surface-700 transition-colors" [routerLink]="['/settings']" style="text-decoration: none;" (click)="close.emit()">
-            @if (authService.currentUser()?.profilePictureBase64) {
-              <p-avatar [image]="'data:image/jpeg;base64,' + authService.currentUser()?.profilePictureBase64" shape="circle" styleClass="w-8 h-8" />
-            } @else {
-              <p-avatar icon="pi pi-user" shape="circle" styleClass="w-8 h-8 bg-surface-700 text-surface-200" />
-            }
+            <p-avatar 
+              [image]="authService.currentUser()?.profilePictureUrl || undefined" 
+              [label]="!authService.currentUser()?.profilePictureUrl ? authService.currentUser()?.fullName?.substring(0,1) : undefined"
+              shape="circle" 
+              styleClass="w-8 h-8 flex-shrink-0"
+            ></p-avatar>
             <span class="font-medium truncate">{{ authService.currentUser()?.fullName ?? authService.currentUser()?.userName }}</span>
           </a>
           

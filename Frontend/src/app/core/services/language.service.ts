@@ -147,6 +147,10 @@ export class LanguageService {
     'save_changes': 'Wijzigingen Opslaan',
     'settings_updated': 'Je instellingen zijn bijgewerkt.',
     'settings_update_failed': 'Bijwerken van instellingen mislukt. Probeer het opnieuw.',
+    'profile_picture': 'Profielfoto',
+    'profile_picture_desc': 'Upload een foto om je profiel te personaliseren. We raden een vierkante afbeelding aan.',
+    'change_picture': 'Foto Wijzigen',
+    'crop_image': 'Foto Bijsnijden',
 
     // Settings - Security
     'email_status': 'Huidige Email Status',
@@ -239,6 +243,31 @@ export class LanguageService {
     'confirm_delete_event': 'Weet je zeker dat je dit evenement wilt verwijderen?',
     'past': 'Verstreken',
     'share': 'Delen',
+
+    // Auth
+    'back': 'Terug',
+    'create_account': 'Account Aanmaken',
+    'already_have_account': 'Heb je al een account?',
+    'dont_have_account': 'Nog geen account?',
+    'username_required': 'Gebruikersnaam is verplicht.',
+    'password_required': 'Wachtwoord is verplicht.',
+    'email_required': 'E-mail is verplicht.',
+    'invalid_email': 'Voer een geldig e-mailadres in.',
+    'first_name_required': 'Voornaam is verplicht.',
+    'last_name_required': 'Achternaam is verplicht.',
+    'remember_me': 'Onthoud mij',
+    'tfa_code': 'Twee-factor authenticatiecode',
+    'tfa_help': 'Open je authenticator-app en voer de code in.',
+    'enter_tfa': 'Voer je 2FA-code in.',
+    'invalid_tfa': 'Ongeldige 2FA-code.',
+    'invalid_login': 'Ongeldige gebruikersnaam of wachtwoord.',
+    'enter_username_first': 'Voer eerst je gebruikersnaam in.',
+    'registration_successful': 'Registratie succesvol! Je wordt doorgestuurd naar de login...',
+    'registration_failed': 'Registratie mislukt. Probeer het opnieuw.',
+    'remove_profile_picture': 'Profielfoto Verwijderen',
+    'confirm_remove_profile_picture': 'Weet je zeker dat je de profielfoto van deze gebruiker wilt verwijderen?',
+    'profile_picture_removed': 'Profielfoto succesvol verwijderd',
+    'password': 'Wachtwoord',
   };
 
   // Signal for getting translations

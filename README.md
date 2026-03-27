@@ -1,4 +1,4 @@
-# SSSKLv2 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=ricardotill_SSSKLv2&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=ricardotill_SSSKLv2)
+# SSSKLv2 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=ricardotill_SSSKLv2&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=ricardotill_SSSKLv2) [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=ricardotill_SSSKLv2&metric=coverage)](https://sonarcloud.io/summary/new_code?id=ricardotill_SSSKLv2)
 
 SSSKLv2 is a modern, full-stack management and Point of Sale (POS) system designed for clubs and organizations. It provides a seamless interface for managing products, users, events, and financial transactions, with a focus on ease of use and visual excellence.
 

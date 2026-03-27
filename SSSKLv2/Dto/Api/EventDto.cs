@@ -12,6 +12,7 @@ public class EventDto
     public DateTime StartDateTime { get; set; }
     public DateTime EndDateTime { get; set; }
     public string CreatorName { get; set; } = string.Empty;
+    public string? CreatorProfilePictureUrl { get; set; }
     public DateTime CreatedOn { get; set; }
     public List<EventResponseUserDto> AcceptedUsers { get; set; } = new();
     public List<EventResponseUserDto> DeclinedUsers { get; set; } = new();
@@ -37,4 +38,5 @@ public class EventResponseUserDto
 {
     public string UserId { get; set; } = string.Empty;
     public string UserName { get; set; } = string.Empty;
+    public string? ProfilePictureUrl { get; set; }
 }

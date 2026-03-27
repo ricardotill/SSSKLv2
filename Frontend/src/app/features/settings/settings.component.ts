@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, inject, OnInit, effect, signal } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, OnInit, effect, signal, ViewChild } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators, FormGroup } from '@angular/forms';
 import { AuthService, InfoResponse, TwoFactorResponse } from '../../core/auth/auth.service';
 import { PasskeyDto } from '../../core/models/passkey.model';
@@ -13,6 +13,7 @@ import { TabsModule } from 'primeng/tabs';
 import { SelectButtonModule } from 'primeng/selectbutton';
 import { DialogModule } from 'primeng/dialog';
 import { FormsModule } from '@angular/forms';
+import { FileUploadModule } from 'primeng/fileupload';
 import { ThemeService, ThemeMode } from '../../core/services/theme.service';
 import { LanguageService } from '../../core/services/language.service';
 import * as QRCode from 'qrcode';
@@ -22,7 +23,7 @@ import { CardModule } from 'primeng/card';
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, ButtonModule, InputTextModule, TagModule, TabsModule, ConfirmDialogModule, SelectButtonModule, CardModule, DialogModule],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, ButtonModule, InputTextModule, TagModule, TabsModule, ConfirmDialogModule, SelectButtonModule, CardModule, DialogModule, FileUploadModule],
   providers: [ConfirmationService],
   template: `
     <div class="max-w-3xl mx-auto">
@@ -83,9 +84,50 @@ import { CardModule } from 'primeng/card';
 
                 <div class="p-4 bg-surface-50 dark:bg-surface-800/50 rounded-lg border border-surface-200 dark:border-surface-700">
                   <h3 class="text-xl font-semibold mb-4 flex items-center gap-2">
-                    <i class="pi pi-user-edit text-primary"></i>
+                    <i class="pi pi-user text-primary"></i>
                     {{ ls.t().profile }}
                   </h3>
+
+                  <!-- Profile Picture Section -->
+                  <div class="flex flex-col md:flex-row items-center gap-6 p-4 mb-4 bg-surface-100 dark:bg-surface-800/30 rounded-xl">
+                    <div class="relative group">
+                      <div class="w-48 h-48 border-4 border-primary shadow-lg rounded-full overflow-hidden flex items-center justify-center bg-surface-100 dark:bg-surface-800">
+                        @if (authService.currentUser()?.profilePictureUrl; as url) {
+                          <img [src]="url" class="w-full h-full object-cover" alt="Profile picture" />
+                        } @else {
+                          <span class="text-6xl font-bold uppercase text-surface-500 dark:text-surface-400">
+                            {{ authService.currentUser()?.fullName?.substring(0,1) }}
+                          </span>
+                        }
+                      </div>
+                      
+                      @if (authService.currentUser()?.profilePictureUrl) {
+                        <button 
+                          (click)="onDeleteProfilePicture()"
+                          class="absolute -top-3 -right-3 bg-red-500 text-white rounded-full p-2.5 shadow-md hover:bg-red-600 transition-colors"
+                          [title]="ls.t().delete"
+                        >
+                          <i class="pi pi-trash text-xs"></i>
+                        </button>
+                      }
+                    </div>
+
+                    <div class="flex flex-col gap-3 flex-1">
+                      <h4 class="font-semibold text-lg m-0">{{ ls.t().profile_picture }}</h4>
+                      <p class="text-sm text-surface-500 m-0">{{ ls.t().profile_picture_desc }}</p>
+                      <div class="flex gap-2">
+                        <input type="file" #fileInput (change)="fileChangeEvent($event)" accept="image/*" class="hidden" />
+                        <p-button 
+                          [label]="ls.t().change_picture" 
+                          icon="pi pi-camera" 
+                          size="small"
+                          (onClick)="fileInput.click()"
+                        ></p-button>
+                      </div>
+                    </div>
+                  </div>
+
+
                   <form [formGroup]="form" (ngSubmit)="onSubmit()" class="flex flex-col gap-5">
                     <div class="flex flex-col gap-2">
                       <label for="name" class="font-semibold cursor-pointer">{{ ls.t().first_name }}</label>
@@ -409,6 +451,10 @@ export default class SettingsComponent {
   qrCodeDataUrl = signal<string | null>(null);
   showPasskeyDialog = signal(false);
   passkeyName = signal('');
+
+  isUploadingPicture = signal(false);
+
+  @ViewChild('fileInput') fileInput!: any;
 
   themeOptions = [
     { label: 'Auto', value: 'auto', icon: 'pi pi-desktop' },
@@ -762,6 +808,68 @@ export default class SettingsComponent {
               detail: this.ls.t().error
             });
             console.error('Failed to delete passkey:', err);
+          }
+        });
+      }
+    });
+  }
+
+  // Profile Picture Methods
+  fileChangeEvent(event: any): void {
+    if (event.target.files && event.target.files.length > 0) {
+      const file = event.target.files[0];
+      this.uploadProfilePicture(file);
+    }
+  }
+
+  private uploadProfilePicture(file: File) {
+    this.isUploadingPicture.set(true);
+
+    this.authService.uploadProfilePicture('', file).subscribe({
+      next: () => {
+        this.isUploadingPicture.set(false);
+        if (this.fileInput) {
+          this.fileInput.nativeElement.value = '';
+        }
+        this.messageService.add({
+          severity: 'success',
+          summary: this.ls.t().success,
+          detail: 'Profile picture updated successfully.'
+        });
+      },
+      error: (err) => {
+        this.isUploadingPicture.set(false);
+        this.messageService.add({
+          severity: 'error',
+          summary: this.ls.t().error,
+          detail: 'Failed to upload profile picture.'
+        });
+        console.error('Upload failed', err);
+      }
+    });
+  }
+
+  onDeleteProfilePicture() {
+    this.confirmationService.confirm({
+      message: 'Are you sure you want to delete your profile picture?',
+      header: 'Delete Profile Picture',
+      icon: 'pi pi-exclamation-triangle',
+      accept: () => {
+        this.authService.deleteProfilePicture().subscribe({
+          next: () => {
+            this.messageService.add({
+              severity: 'success',
+              summary: this.ls.t().success,
+              detail: 'Profile picture deleted.'
+            });
+          },
+          error: (err) => {
+            this.messageService.add({
+              severity: 'error',
+              summary: this.ls.t().error,
+              detail: 'Failed to delete profile picture.'
+            });
+            console.error('Delete failed', err);
           }
         });
       }

@@ -9,6 +9,8 @@ using SSSKLv2.Data.DAL.Interfaces;
 using SSSKLv2.Services;
 using SSSKLv2.Dto;
 using SSSKLv2.Dto.Api.v1;
+using Microsoft.EntityFrameworkCore;
+using SSSKLv2.Agents;
 
 namespace SSSKLv2.Test.Services;
 
@@ -20,6 +22,8 @@ public class ApplicationUserServiceTests
     private ILogger<ApplicationUserService> _mockLogger = null!;
     private ApplicationUserService _sut = null!;
     private UserManager<ApplicationUser> _fakeUserManager = null!;
+    private IBlobStorageAgent _mockBlobAgent = null!;
+    private ApplicationDbContext _mockContext = null!;
 
     [TestInitialize]
     public void TestInitialize()
@@ -40,8 +44,14 @@ public class ApplicationUserServiceTests
         var umLogger = Substitute.For<ILogger<UserManager<ApplicationUser>>>();
 
         _fakeUserManager = new FakeUserManager(store, options, pwdHasher, userValidators, pwdValidators, lookupNormalizer, describer, services, umLogger);
+        _mockBlobAgent = Substitute.For<IBlobStorageAgent>();
+        
+        var dbContextOptions = new DbContextOptionsBuilder<ApplicationDbContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .Options;
+        _mockContext = Substitute.For<ApplicationDbContext>(dbContextOptions);
 
-        _sut = new ApplicationUserService(_mockUserRepository, _mockProductRepository, _fakeUserManager, _mockLogger);
+        _sut = new ApplicationUserService(_mockUserRepository, _mockProductRepository, _fakeUserManager, _mockBlobAgent, _mockContext, _mockLogger);
     }
 
     #region GetUserById Tests

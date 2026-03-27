@@ -52,6 +52,7 @@
     <PackageReference Include="Scalar.AspNetCore" />
     <PackageReference Include="Scalar.AspNetCore.Microsoft" />
     <PackageReference Include="SendGrid" />
+    <PackageReference Include="SixLabors.ImageSharp" />
     <PackageReference Include="System.ServiceModel.Syndication" />
     <PackageReference Include="Aspire.Microsoft.EntityFrameworkCore.SqlServer" />
     <PackageReference Include="Aspire.Azure.Storage.Blobs" />

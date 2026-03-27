@@ -8,6 +8,7 @@ import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { MessageModule } from 'primeng/message';
 import { BrandingComponent } from '../../shared/components/branding/branding.component';
+import { LanguageService } from '../../core/services/language.service';
 
 @Component({
   selector: 'app-register',
@@ -30,19 +31,19 @@ import { BrandingComponent } from '../../shared/components/branding/branding.com
             <div class="flex items-center">
               <app-branding />
             </div>
-            <p-button icon="pi pi-arrow-left" label="Back" [text]="true" routerLink="/" severity="secondary" size="small"></p-button>
+            <p-button icon="pi pi-arrow-left" [label]="route.snapshot.queryParams['returnUrl'] ? lang.t().back : lang.t().back" [text]="true" routerLink="/" severity="secondary" size="small"></p-button>
           </div>
         </ng-template>
         
         <div class="mb-5">
-            <h3 class="text-xl font-medium mt-0 mb-3 text-surface-900 dark:text-surface-0">Create an Account</h3>
-            <p class="text-surface-500 m-0">Already have an account? <a [routerLink]="['/login']" [queryParams]="{ returnUrl: route.snapshot.queryParams['returnUrl'] }" class="text-primary hover:underline cursor-pointer">Login</a></p>
+            <h3 class="text-xl font-medium mt-0 mb-3 text-surface-900 dark:text-surface-0">{{ lang.t().create_account }}</h3>
+            <p class="text-surface-500 m-0">{{ lang.t().already_have_account }} <a [routerLink]="['/login']" [queryParams]="{ returnUrl: route.snapshot.queryParams['returnUrl'] }" class="text-primary hover:underline cursor-pointer">{{ lang.t().login }}</a></p>
         </div>
 
         <form [formGroup]="registerForm" (ngSubmit)="onSubmit()">
           
           <div class="field">
-            <label for="userName" class="block">Username</label>
+            <label for="userName" class="block">{{ lang.t().username }}</label>
             <input 
               id="userName" 
               type="text" 
@@ -51,12 +52,12 @@ import { BrandingComponent } from '../../shared/components/branding/branding.com
               class="w-full"
             />
             @if (registerForm.controls['userName'].invalid && registerForm.controls['userName'].touched) {
-               <small class="p-error block mt-1">Username is required.</small>
+               <small class="p-error block mt-1">{{ lang.t().username_required }}</small>
             }
           </div>
           
           <div class="field mt-4">
-            <label for="email" class="block">Email</label>
+            <label for="email" class="block">{{ lang.t().email }}</label>
             <input 
               id="email" 
               type="email" 
@@ -65,13 +66,13 @@ import { BrandingComponent } from '../../shared/components/branding/branding.com
               class="w-full"
             />
             @if (registerForm.controls['email'].invalid && registerForm.controls['email'].touched) {
-               <small class="p-error block mt-1">A valid email is required.</small>
+               <small class="p-error block mt-1">{{ lang.t().invalid_email }}</small>
             }
           </div>
           
           <div class="flex gap-4 mt-4">
               <div class="field w-full mb-0">
-                <label for="name" class="block">First Name</label>
+                <label for="name" class="block">{{ lang.t().first_name }}</label>
                 <input 
                   id="name" 
                   type="text" 
@@ -80,12 +81,12 @@ import { BrandingComponent } from '../../shared/components/branding/branding.com
                   class="w-full"
                 />
                 @if (registerForm.controls['name'].invalid && registerForm.controls['name'].touched) {
-                   <small class="p-error block mt-1">First name is required.</small>
+                   <small class="p-error block mt-1">{{ lang.t().first_name_required }}</small>
                 }
               </div>
               
               <div class="field w-full mb-0">
-                <label for="surname" class="block">Last Name</label>
+                <label for="surname" class="block">{{ lang.t().last_name }}</label>
                 <input 
                   id="surname" 
                   type="text" 
@@ -94,13 +95,13 @@ import { BrandingComponent } from '../../shared/components/branding/branding.com
                   class="w-full"
                 />
                 @if (registerForm.controls['surname'].invalid && registerForm.controls['surname'].touched) {
-                   <small class="p-error block mt-1">Last name is required.</small>
+                   <small class="p-error block mt-1">{{ lang.t().last_name_required }}</small>
                 }
               </div>
           </div>
 
           <div class="field mt-4">
-            <label for="password" class="block">Password</label>
+            <label for="password" class="block">{{ lang.t().password }}</label>
             <p-password 
               id="password" 
               formControlName="password" 
@@ -110,7 +111,7 @@ import { BrandingComponent } from '../../shared/components/branding/branding.com
               inputStyleClass="w-full"
             ></p-password>
             @if (registerForm.controls['password'].invalid && registerForm.controls['password'].touched) {
-               <small class="p-error block mt-1">Password is required.</small>
+               <small class="p-error block mt-1">{{ lang.t().password_required }}</small>
             }
           </div>
 
@@ -124,7 +125,7 @@ import { BrandingComponent } from '../../shared/components/branding/branding.com
 
           <div class="mt-4">
             <p-button 
-              label="Register" 
+              [label]="lang.t().register" 
               type="submit" 
               [disabled]="registerForm.invalid || isLoading()" 
               [loading]="isLoading()"
@@ -180,6 +181,7 @@ export default class RegisterComponent {
   private authService = inject(AuthService);
   private router = inject(Router);
   public route = inject(ActivatedRoute);
+  public lang = inject(LanguageService);
 
   registerForm = this.fb.nonNullable.group({
     userName: ['', Validators.required],
@@ -208,7 +210,7 @@ export default class RegisterComponent {
     this.authService.register(userData).subscribe({
       next: () => {
         this.isLoading.set(false);
-        this.successMessage.set('Registration successful! Redirecting to login...');
+        this.successMessage.set(this.lang.t().registration_successful);
         setTimeout(() => this.router.navigate(['/login'], { queryParams: { returnUrl: this.route.snapshot.queryParams['returnUrl'] } }), 2000);
       },
       error: (err) => {
@@ -220,7 +222,7 @@ export default class RegisterComponent {
         } else if (err.error?.title) {
             this.errorMessage.set(err.error.title);
         } else {
-            this.errorMessage.set('Registration failed. Please try again.');
+            this.errorMessage.set(this.lang.t().registration_failed);
         }
         console.error('Register error', err);
       }

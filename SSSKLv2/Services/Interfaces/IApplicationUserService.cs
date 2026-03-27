@@ -22,5 +22,8 @@ public interface IApplicationUserService
     public Task DeleteUser(string id);
     // Returns the list of roles assigned to the user with the given id.
     public Task<IList<string>> GetUserRoles(string userId);
+
+    public Task UpdateProfilePictureAsync(string userId, Stream imageStream, string contentType);
+    public Task DeleteProfilePictureAsync(string userId);
 }
 

@@ -32,7 +32,8 @@ public class ApplicationUserController : ControllerBase
         UserName = u.UserName ?? string.Empty,
         FullName = u.FullName,
         Saldo = u.Saldo,
-        LastOrdered = u.LastOrdered
+        LastOrdered = u.LastOrdered,
+        ProfilePictureUrl = u.ProfileImageId != null ? $"/api/v1/blob/profilepicture/image/{u.ProfileImageId}" : null
     };
 
     // New: map to the more detailed DTO (does NOT include password)
@@ -49,7 +50,7 @@ public class ApplicationUserController : ControllerBase
         FullName = u.FullName,
         Saldo = u.Saldo,
         LastOrdered = u.LastOrdered,
-        ProfilePictureBase64 = u.ProfilePicture != null ? Convert.ToBase64String(u.ProfilePicture) : null,
+        ProfilePictureUrl = u.ProfileImageId != null ? $"/api/v1/blob/profilepicture/image/{u.ProfileImageId}" : null,
         Roles = roles
     };
 
@@ -286,4 +287,75 @@ public class ApplicationUserController : ControllerBase
         }
     }
 
- }
+    // POST v1/applicationuser/me/profile-picture - upload profile picture
+    [HttpPost("me/profile-picture")]
+    public async Task<IActionResult> UploadProfilePicture([FromForm] IFormFile file)
+    {
+        var username = User.Identity?.Name;
+        if (string.IsNullOrWhiteSpace(username)) return Unauthorized();
+
+        if (file == null || file.Length == 0) return BadRequest("File is empty");
+
+        try
+        {
+            var user = await _applicationUserService.GetUserByUsername(username);
+            using var stream = file.OpenReadStream();
+            await _applicationUserService.UpdateProfilePictureAsync(user.Id, stream, file.ContentType);
+            return Ok();
+        }
+        catch (NotFoundException)
+        {
+            return NotFound();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to upload profile picture for user {Username}", username);
+            return BadRequest(new { error = "Failed to upload profile picture" });
+        }
+    }
+
+    // DELETE v1/applicationuser/me/profile-picture - delete profile picture
+    [HttpDelete("me/profile-picture")]
+    public async Task<IActionResult> DeleteProfilePicture()
+    {
+        var username = User.Identity?.Name;
+        if (string.IsNullOrWhiteSpace(username)) return Unauthorized();
+
+        try
+        {
+            var user = await _applicationUserService.GetUserByUsername(username);
+            await _applicationUserService.DeleteProfilePictureAsync(user.Id);
+            return NoContent();
+        }
+        catch (NotFoundException)
+        {
+            return NotFound();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to delete profile picture for user {Username}", username);
+            return BadRequest(new { error = "Failed to delete profile picture" });
+        }
+    }
+
+    // DELETE v1/applicationuser/{id}/profile-picture - delete profile picture (Admin only)
+    [Authorize(Roles = "Admin")]
+    [HttpDelete("{id}/profile-picture")]
+    public async Task<IActionResult> DeleteUserProfilePicture(string id)
+    {
+        try
+        {
+            await _applicationUserService.DeleteProfilePictureAsync(id);
+            return NoContent();
+        }
+        catch (NotFoundException)
+        {
+            return NotFound();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to delete profile picture for user {Id}", id);
+            return BadRequest(new { error = "Failed to delete profile picture" });
+        }
+    }
+}

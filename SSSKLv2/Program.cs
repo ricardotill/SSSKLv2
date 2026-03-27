@@ -27,10 +27,6 @@ builder.AddServiceDefaults();
 // under TestServer.
 var isIntegrationLikeEnvironment = builder.Environment.IsDevelopment() || builder.Environment.IsEnvironment("IntegrationTest");
 
-if (!string.IsNullOrEmpty(builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"]))
-{
-    builder.Services.AddApplicationInsightsTelemetry();
-}
 
 builder.Services.AddControllers();
 
@@ -141,10 +137,7 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("Guest", policy => policy.RequireRole("Guest"));
 });
 
-if (!string.IsNullOrEmpty(builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"]))
-{
-    builder.Logging.AddFilter<ApplicationInsightsLoggerProvider>("SSSKLv2", LogLevel.Trace);
-}
+// Telemetry logging is handled via OpenTelemetry in AddServiceDefaults.
 
 // Register a CORS policy for frontend clients.
 var frontendOrigins = new[]

@@ -615,6 +615,7 @@ export class LiveDisplayComponent implements OnInit, OnDestroy {
   publicEvents = signal<EventDto[]>([]);
   domain = signal<string>('ssskl.scoutingwilo.nl');
   isCycling = signal<boolean>(false);
+  currentRole = signal<string | undefined>(undefined);
 
   loading = signal<boolean>(false);
 
@@ -655,7 +656,14 @@ export class LiveDisplayComponent implements OnInit, OnDestroy {
       this.loadData();
     } else {
       this.isCycling.set(true);
-      this.loadCyclingData();
+      
+      // Subscribe to role query parameter for reactivity
+      this.route.queryParamMap.subscribe(params => {
+        const role = params.get('role') || undefined;
+        this.currentRole.set(role);
+        this.loadCyclingData();
+      });
+
       this.startManualCycle();
     }
     this.initSignalR();
@@ -732,7 +740,7 @@ export class LiveDisplayComponent implements OnInit, OnDestroy {
 
   loadCyclingData() {
     this.loading.set(true);
-    const role = this.route.snapshot.queryParamMap.get('role') || undefined;
+    const role = this.currentRole();
 
     forkJoin({
       products: this.productService.getProducts(0, 100, true),

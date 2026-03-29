@@ -24,8 +24,11 @@ public class EventRepository(ApplicationDbContext context) : IEventRepository
 
         if (!isAdmin)
         {
-            query = query.Where(e => !e.RequiredRoles.Any() || 
-                                     (userRoles != null && e.RequiredRoles.Any(r => userRoles.Contains(r.Name!))));
+            if (string.IsNullOrEmpty(requiredRole))
+            {
+                query = query.Where(e => !e.RequiredRoles.Any() || 
+                                         (userRoles != null && e.RequiredRoles.Any(r => userRoles.Contains(r.Name!))));
+            }
         }
 
         if (!string.IsNullOrEmpty(requiredRole))
@@ -52,8 +55,11 @@ public class EventRepository(ApplicationDbContext context) : IEventRepository
         
         if (!isAdmin)
         {
-            query = query.Where(e => !e.RequiredRoles.Any() || 
-                                     (userRoles != null && e.RequiredRoles.Any(r => userRoles.Contains(r.Name!))));
+            if (string.IsNullOrEmpty(requiredRole))
+            {
+                query = query.Where(e => !e.RequiredRoles.Any() || 
+                                         (userRoles != null && e.RequiredRoles.Any(r => userRoles.Contains(r.Name!))));
+            }
         }
 
         if (!string.IsNullOrEmpty(requiredRole))

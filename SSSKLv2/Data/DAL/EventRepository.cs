@@ -25,7 +25,7 @@ public class EventRepository(ApplicationDbContext context) : IEventRepository
         if (!isAdmin)
         {
             query = query.Where(e => !e.RequiredRoles.Any() || 
-                                     (userRoles != null && e.RequiredRoles.Any(r => userRoles.Contains(r.Name))));
+                                     (userRoles != null && e.RequiredRoles.Any(r => userRoles.Contains(r.Name!))));
         }
 
         return await query
@@ -48,7 +48,7 @@ public class EventRepository(ApplicationDbContext context) : IEventRepository
         if (!isAdmin)
         {
             query = query.Where(e => !e.RequiredRoles.Any() || 
-                                     (userRoles != null && e.RequiredRoles.Any(r => userRoles.Contains(r.Name))));
+                                     (userRoles != null && e.RequiredRoles.Any(r => userRoles.Contains(r.Name!))));
         }
         return await query.CountAsync();
     }

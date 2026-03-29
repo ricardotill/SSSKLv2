@@ -1,4 +1,4 @@
-﻿using System.ComponentModel;
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
@@ -10,7 +10,7 @@ namespace SSSKLv2.Data
     {
         [Microsoft.Build.Framework.Required]
         [DisplayName("Gebruikersnaam")]
-        public string Username { get; set; }
+        public string Username { get; set; } = string.Empty;
         [Microsoft.Build.Framework.Required]
         [Column(TypeName = "decimal(18,2)")]
         public decimal Saldo { get; set; }

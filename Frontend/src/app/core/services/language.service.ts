@@ -239,7 +239,7 @@ export class LanguageService {
     'locked': 'Vergrendeld',
     'not_achieved_yet': 'Nog niet behaald',
     'new_achievement': '🎉 Nieuwe Achievement{s}! 🎉',
-    'new_achievement_desc': 'Je hebt zojuist nieuwe dingen ontgrendeld!',
+    'new_achievement_desc': 'Je hebt zojuist nieuwe achievement(s) ontgrendeld!',
     'awesome': 'Geweldig!',
 
     // Events

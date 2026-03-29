@@ -1,4 +1,4 @@
-﻿using System.ComponentModel;
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
@@ -9,10 +9,10 @@ namespace SSSKLv2.Data
     {
         [Required]
         [DisplayName("Naam")]
-        public string Name { get; set; }
+        public string Name { get; set; } = string.Empty;
         
         [DisplayName("Beschrijving")]
-        public string Description { get; set; }
+        public string Description { get; set; } = string.Empty;
         
         [Required]
         [DisplayName("Prijs")]

@@ -111,7 +111,7 @@ namespace SSSKLv2.Test.Integration
             var hasSecure = setCookie.Any(c => c.Contains("Secure", System.StringComparison.OrdinalIgnoreCase));
 
             Assert.IsTrue(hasHttpOnly, "No cookie with HttpOnly attribute found after login.");
-            if (client.BaseAddress.Scheme == "https")
+            if (client.BaseAddress?.Scheme == "https")
             {
                 Assert.IsTrue(hasSecure, "No cookie with Secure attribute found after login.");
             }

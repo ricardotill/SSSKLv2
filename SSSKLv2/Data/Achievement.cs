@@ -4,14 +4,14 @@ namespace SSSKLv2.Data;
 
 public class Achievement : BaseModel
 {
-    public string Name { get; set; }
-    public string Description { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
     public bool AutoAchieve { get; set; }
     public AchievementImage? Image { get; set; }
     public ActionOption Action { get; set; }
     public ComparisonOperatorOption ComparisonOperator { get; set; }
     public int ComparisonValue { get; set; }
-    public IEnumerable<AchievementEntry> CompletedEntries { get; set; }
+    public IEnumerable<AchievementEntry> CompletedEntries { get; set; } = null!;
     
     [JsonConverter(typeof(JsonStringEnumConverter<ActionOption>))]
     public enum ActionOption

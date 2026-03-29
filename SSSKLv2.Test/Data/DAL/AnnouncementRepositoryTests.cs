@@ -12,7 +12,7 @@ namespace SSSKLv2.Test.Data.DAL;
 public class AnnouncementRepositoryTests : RepositoryTest
 {
     private MockDbContextFactory _dbContextFactory = null!;
-    private AnnouncementRepository _sut;
+    private AnnouncementRepository _sut = null!;
 
     [TestInitialize]
     public void TestInitialize()
@@ -83,7 +83,7 @@ public class AnnouncementRepositoryTests : RepositoryTest
     public async Task GetById_WhenNotInDb_ReturnNotFoundException()
     {
         // Act
-        Func<Task<Announcement>> function = () => _sut.GetById(Guid.NewGuid());
+        Func<Task<Announcement?>> function = () => _sut.GetById(Guid.NewGuid());
 
         // Assert
         await function.Should().ThrowAsync<NotFoundException>();
@@ -202,7 +202,7 @@ public class AnnouncementRepositoryTests : RepositoryTest
             Url = "https://url1/"
         };
         await SaveAnnouncements(a1);
-        var a1_update = (await GetAnnouncements()).FirstOrDefault(e => e.Id == a1.Id);
+        var a1_update = (await GetAnnouncements()).FirstOrDefault(e => e.Id == a1.Id)!;
         a1_update.Description = "desctest2";
 
         // Act

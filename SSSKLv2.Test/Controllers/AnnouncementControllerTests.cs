@@ -33,8 +33,8 @@ public class AnnouncementControllerTests
             new Announcement { Id = Guid.NewGuid(), Message = "A2", CreatedOn = DateTime.Now }
         };
         // Stub the overload used by controller
-        _mockService.GetAllAnnouncements(Arg.Any<int>(), Arg.Any<int>()).Returns(Task.FromResult((IList<Announcement>)items));
-        _mockService.GetCount().Returns(items.Count);
+        _mockService.GetAllAnnouncements(Arg.Any<int>(), Arg.Any<int>()).Returns(Task.FromResult<IList<Announcement>>(items));
+        _mockService.GetCount().Returns(Task.FromResult(items.Count));
 
         // Act
         var result = await _sut.GetAll();

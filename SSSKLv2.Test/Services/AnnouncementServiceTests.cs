@@ -154,7 +154,7 @@ public class AnnouncementServiceTests
     {
         // Arrange
         var id = Guid.NewGuid();
-        _mockRepository.GetById(id).Returns(Task.FromException<Announcement>(new NotFoundException("Announcement not found")));
+        _mockRepository.GetById(id).Returns(Task.FromException<Announcement?>(new NotFoundException("Announcement not found")));
 
         // Act
         Func<Task> action = async () => await _sut.GetAnnouncementById(id);
@@ -169,7 +169,7 @@ public class AnnouncementServiceTests
     {
         // Arrange
         var id = Guid.Empty;
-        _mockRepository.GetById(id).Returns(Task.FromException<Announcement>(new ArgumentException("Invalid ID")));
+        _mockRepository.GetById(id).Returns(Task.FromException<Announcement?>(new ArgumentException("Invalid ID")));
 
         // Act
         Func<Task> action = async () => await _sut.GetAnnouncementById(id);

@@ -362,6 +362,11 @@ public class AchievementService(
     
     public async Task AddAchievement(AchievementDto dto)
     {
+        if (dto.ImageContentType == null || dto.ImageContent == null)
+        {
+            throw new ArgumentException("Image content and type are required.");
+        }
+
         var extension = ContentTypeToExtensionMapper.GetExtension(dto.ImageContentType.MediaType);
         var name = $"{dto.Name}-{Guid.NewGuid()}.{extension}";
         

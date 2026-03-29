@@ -32,13 +32,13 @@ public class ApplicationUserControllerTests
         var userStore = Substitute.For<IUserStore<ApplicationUser>>();
         _userManager = new UserManager<ApplicationUser>(
             userStore,
-            null,
+            Substitute.For<Microsoft.Extensions.Options.IOptions<IdentityOptions>>(),
             new PasswordHasher<ApplicationUser>(),
             Array.Empty<IUserValidator<ApplicationUser>>(),
             Array.Empty<IPasswordValidator<ApplicationUser>>(),
             new UpperInvariantLookupNormalizer(),
             new IdentityErrorDescriber(),
-            null,
+            Substitute.For<IServiceProvider>(),
             Substitute.For<ILogger<UserManager<ApplicationUser>>>());
 
         _sut = new ApplicationUserController(_mockService, logger, _userManager);

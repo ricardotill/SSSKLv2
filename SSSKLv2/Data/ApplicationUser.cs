@@ -7,9 +7,9 @@ namespace SSSKLv2.Data
     public class ApplicationUser : IdentityUser
     {
         [PersonalData]
-        public string Name { get; set; }
+        public string Name { get; set; } = string.Empty;
         [PersonalData]
-        public string Surname {  get; set; }
+        public string Surname { get; set; } = string.Empty;
         [PersonalData]
         [Column(TypeName = "decimal(18,2)")]
         public decimal Saldo { get; set; }

@@ -8,7 +8,7 @@ public class TopUp : BaseModel
 {
     [Required]
     [DisplayName("Gebruiker")]
-    public ApplicationUser User { get; set; }
+    public ApplicationUser User { get; set; } = null!;
     [Required]
     [DisplayName("Saldo")]
     [RegularExpression(@"^\d+.\d{0,2}$",ErrorMessage = "Saldo moet 2 cijfers achter de komma hebben")]

@@ -37,7 +37,7 @@ public class TopUpControllerTests
         };
         // Controller expects an authenticated user and calls GetAll(skip,take) and GetCount()
         _mockService.GetAll(Arg.Any<int>(), Arg.Any<int>()).Returns(Task.FromResult<IEnumerable<TopUp>>(items));
-        _mockService.GetCount().Returns(items.Count);
+        _mockService.GetCount().Returns(Task.FromResult(items.Count));
 
         // Set authenticated user on controller (controller checks User.Identity.Name)
         _sut.ControllerContext = new Microsoft.AspNetCore.Mvc.ControllerContext
@@ -54,7 +54,7 @@ public class TopUpControllerTests
         // Assert
         var ok = result.Result as OkObjectResult;
         ok.Should().NotBeNull();
-        var expectedDtos = items.Select(t => new TopUpDto { Id = t.Id, UserName = t.User.UserName, Saldo = t.Saldo }).ToList();
+        var expectedDtos = items.Select(t => new TopUpDto { Id = t.Id, UserName = t.User!.UserName!, Saldo = t.Saldo }).ToList();
         ok!.Value.Should().BeEquivalentTo(new PaginationObject<TopUpDto> { Items = expectedDtos, TotalCount = items.Count }, options => options.Excluding(x => x.Path.EndsWith("CreatedOn")));
     }
 
@@ -68,7 +68,7 @@ public class TopUpControllerTests
             new TopUp { Id = Guid.NewGuid(), User = new ApplicationUser { UserName = username }, Saldo = 5.00m }
         };
         _mockService.GetAllPersonal(username, Arg.Any<int>(), Arg.Any<int>()).Returns(Task.FromResult<IEnumerable<TopUp>>(items));
-        _mockService.GetPersonalCount(username).Returns(items.Count);
+        _mockService.GetPersonalCount(username).Returns(Task.FromResult(items.Count));
 
         // Set authenticated user on controller
         _sut.ControllerContext = new Microsoft.AspNetCore.Mvc.ControllerContext
@@ -85,7 +85,7 @@ public class TopUpControllerTests
         // Assert
         var ok = result.Result as OkObjectResult;
         ok.Should().NotBeNull();
-        var expectedDtos = items.Select(t => new TopUpDto { Id = t.Id, UserName = t.User.UserName, Saldo = t.Saldo }).ToList();
+        var expectedDtos = items.Select(t => new TopUpDto { Id = t.Id, UserName = t.User!.UserName!, Saldo = t.Saldo }).ToList();
         ok!.Value.Should().BeEquivalentTo(new PaginationObject<TopUpDto> { Items = expectedDtos, TotalCount = items.Count }, options => options.Excluding(x => x.Path.EndsWith("CreatedOn")));
     }
 
@@ -95,7 +95,7 @@ public class TopUpControllerTests
         // Arrange
         var id = Guid.NewGuid();
         var t = new TopUp { Id = id, User = new ApplicationUser { UserName = "u1" }, Saldo = 3.25m };
-        _mockService.GetById(id.ToString()).Returns(Task.FromResult<TopUp?>(t));
+        _mockService.GetById(id.ToString()).Returns(Task.FromResult<TopUp>(t));
 
         // Act
         var result = await _sut.GetById(id.ToString());
@@ -105,14 +105,14 @@ public class TopUpControllerTests
         ok.Should().NotBeNull();
         var dto = ok!.Value as TopUpDto;
         dto.Should().NotBeNull();
-        dto!.Should().BeEquivalentTo(new TopUpDto { Id = t.Id, UserName = t.User.UserName, Saldo = t.Saldo }, options => options.Excluding(x => x.CreatedOn));
+        dto!.Should().BeEquivalentTo(new TopUpDto { Id = t.Id, UserName = t.User!.UserName!, Saldo = t.Saldo }, options => options.Excluding(x => x.CreatedOn));
     }
 
     [TestMethod]
     public async Task GetById_WhenNotFound_ReturnsNotFound()
     {
         // Arrange
-        _mockService.GetById(Arg.Any<string>()).Returns(Task.FromException<TopUp?>(new Exception("not found")));
+        _mockService.GetById(Arg.Any<string>()).Returns(Task.FromException<TopUp>(new Exception("not found")));
 
         // Act
         var result = await _sut.GetById(Guid.NewGuid().ToString());
@@ -170,7 +170,7 @@ public class TopUpControllerTests
         // Arrange
         var id = Guid.NewGuid();
         var t = new TopUp { Id = id, User = new ApplicationUser { UserName = "u1" }, Saldo = 1m };
-        _mockService.GetById(id.ToString()).Returns(Task.FromResult<TopUp?>(t));
+        _mockService.GetById(id.ToString()).Returns(Task.FromResult<TopUp>(t));
 
         // Act
         var result = await _sut.Delete(id);
@@ -184,7 +184,7 @@ public class TopUpControllerTests
     public async Task Delete_WhenNotFound_ReturnsNotFound()
     {
         // Arrange
-        _mockService.GetById(Arg.Any<string>()).Returns(Task.FromException<TopUp?>(new Exception("not found")));
+        _mockService.GetById(Arg.Any<string>()).Returns(Task.FromException<TopUp>(new Exception("not found")));
 
         // Act
         var result = await _sut.Delete(Guid.NewGuid());

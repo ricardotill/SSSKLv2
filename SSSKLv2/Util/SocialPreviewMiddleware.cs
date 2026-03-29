@@ -55,7 +55,10 @@ public class SocialPreviewMiddleware(RequestDelegate next)
         var descriptionRaw = StripHtml(@event.Description);
         var description = descriptionRaw.Length > 160 ? descriptionRaw.Substring(0, 157) + "..." : descriptionRaw;
         var url = $"{context.Request.Scheme}://{context.Request.Host}{context.Request.Path}";
-        var imageUrl = @event.Image?.Uri != null ? @event.Image.Uri : "";
+        
+        var imageUrl = @event.Image != null 
+            ? $"{context.Request.Scheme}://{context.Request.Host}/api/v1/blob/event/image/{@event.Image.Id}/social-preview" 
+            : "";
 
         var html = ConstructHtml(title, description, url, imageUrl);
         

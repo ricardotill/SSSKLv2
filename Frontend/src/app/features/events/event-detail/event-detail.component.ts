@@ -314,7 +314,7 @@ export default class EventDetailComponent implements OnInit {
     this.meta.updateTag({ property: 'og:url', content: url });
     this.meta.updateTag({ property: 'og:type', content: 'website' });
     if (image) {
-      this.meta.updateTag({ property: 'og:image', content: image });
+      this.meta.updateTag({ property: 'og:image', content: `${image}/social-preview` });
     }
   }
 

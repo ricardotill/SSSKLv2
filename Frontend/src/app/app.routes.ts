@@ -12,6 +12,11 @@ export const routes: Routes = [
     title: 'Login - SSSKL'
   },
   {
+    path: 'error',
+    loadComponent: () => import('./features/error/error.component'),
+    title: 'Fout - SSSKL'
+  },
+  {
     path: 'register',
     loadComponent: () => import('./features/auth/register.component'),
     canActivate: [unauthGuard],
@@ -127,5 +132,6 @@ export const routes: Routes = [
       }
     ]
   },
-  { path: '**', redirectTo: '' }
+  { path: '404', loadComponent: () => import('./features/error/error.component'), data: { code: '404' }, title: 'Pagina niet gevonden - SSSKL' },
+  { path: '**', redirectTo: '404' }
 ];

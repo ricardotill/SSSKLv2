@@ -24,6 +24,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using SSSKLv2.Data;
 using SSSKLv2.Services;
+using SSSKLv2.Data.Constants;
 
 namespace SSSKLv2.Registrations;
 
@@ -86,7 +87,7 @@ public static class IdentityApiEndpointRouteBuilderExtensions
 
             await emailStore.SetEmailAsync(user, email, CancellationToken.None);
             var result = await userManager.CreateAsync(user, registration.Password);
-            await userManager.AddToRoleAsync(user, "Guest");
+            await userManager.AddToRoleAsync(user, Roles.Guest);
 
             if (!result.Succeeded)
             {

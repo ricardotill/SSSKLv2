@@ -6,11 +6,12 @@ namespace SSSKLv2.Data.DAL;
 
 public class EventRepository(ApplicationDbContext context) : IEventRepository
 {
-    public async Task<IList<Event>> GetAll(int skip = 0, int take = 15, bool futureOnly = false)
+    public async Task<IList<Event>> GetAll(int skip = 0, int take = 15, bool futureOnly = false, IList<string>? userRoles = null, bool isAdmin = false)
     {
         var query = context.Event
             .Include(e => e.Creator)
             .Include(e => e.Image)
+            .Include(e => e.RequiredRoles)
             .Include(e => e.Responses)
                 .ThenInclude(r => r.User)
             .AsQueryable();
@@ -21,20 +22,33 @@ public class EventRepository(ApplicationDbContext context) : IEventRepository
             query = query.Where(e => e.EndDateTime >= now);
         }
 
+        if (!isAdmin)
+        {
+            query = query.Where(e => !e.RequiredRoles.Any() || 
+                                     (userRoles != null && e.RequiredRoles.Any(r => userRoles.Contains(r.Name))));
+        }
+
         return await query
-            .OrderBy(e => e.EndDateTime < now)
-            .ThenBy(e => e.StartDateTime)
+            .OrderBy(e => e.EndDateTime < now ? 1 : 0) // Groups: Active (0) first
+            .ThenBy(e => e.EndDateTime < now ? DateTime.MinValue : e.StartDateTime) // Active: ASC, Past: pinned to Min
+            .ThenByDescending(e => e.StartDateTime) // Past: DESC
             .Skip(skip)
             .Take(take)
             .ToListAsync();
     }
 
-    public async Task<int> GetCount(bool futureOnly = false)
+    public async Task<int> GetCount(bool futureOnly = false, IList<string>? userRoles = null, bool isAdmin = false)
     {
         var query = context.Event.AsQueryable();
         if (futureOnly)
         {
             query = query.Where(e => e.EndDateTime >= DateTime.UtcNow);
+        }
+        
+        if (!isAdmin)
+        {
+            query = query.Where(e => !e.RequiredRoles.Any() || 
+                                     (userRoles != null && e.RequiredRoles.Any(r => userRoles.Contains(r.Name))));
         }
         return await query.CountAsync();
     }
@@ -44,6 +58,7 @@ public class EventRepository(ApplicationDbContext context) : IEventRepository
         return await context.Event
             .Include(e => e.Creator)
             .Include(e => e.Image)
+            .Include(e => e.RequiredRoles)
             .Include(e => e.Responses)
                 .ThenInclude(r => r.User)
             .FirstOrDefaultAsync(e => e.Id == id);

@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.AspNetCore.Identity;
 
 namespace SSSKLv2.Data;
 
@@ -26,4 +27,6 @@ public class Event : BaseModel
     public ApplicationUser Creator { get; set; } = default!;
 
     public ICollection<EventResponse> Responses { get; set; } = new List<EventResponse>();
+    
+    public ICollection<IdentityRole> RequiredRoles { get; set; } = new List<IdentityRole>();
 }

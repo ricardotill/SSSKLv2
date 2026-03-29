@@ -154,20 +154,6 @@ public class ApplicationUserControllerTests
         result.Result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeEquivalentTo(expected);
     }
 
-    [TestMethod]
-    public async Task GetAllObscured_ReturnsOk()
-    {
-        var list = new List<ApplicationUser>
-        {
-            new ApplicationUser { Id = "a", UserName = "a", PasswordHash = "*****" }
-        };
-        _mockService.GetAllUsersObscured().Returns(Task.FromResult(list.AsQueryable()));
-
-        var result = await _sut.GetAllObscured();
-
-        var expected = list.Select(u => new ApplicationUserDto { Id = u.Id, UserName = u.UserName ?? string.Empty, FullName = u.FullName ?? string.Empty, Saldo = u.Saldo, LastOrdered = u.LastOrdered }).ToList();
-        result.Result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeEquivalentTo(expected);
-    }
 
 
     [TestMethod]

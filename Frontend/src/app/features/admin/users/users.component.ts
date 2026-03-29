@@ -1,6 +1,6 @@
 import { Component, ChangeDetectionStrategy, inject, signal, OnInit } from '@angular/core';
 import { finalize } from 'rxjs';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { DatePipe, CurrencyPipe } from '@angular/common';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
@@ -13,14 +13,16 @@ import { ApplicationUserService } from '../../../core/services/application-user.
 import { ApplicationUserDto, ApplicationUserUpdateDto } from '../../../core/models/application-user.model';
 import { LanguageService } from '../../../core/services/language.service';
 import { CardModule } from 'primeng/card';
-import { MultiSelectModule } from 'primeng/multiselect';
+import { MultiSelect } from 'primeng/multiselect';
 import { AvatarModule } from 'primeng/avatar';
+import { RoleService } from '../../../core/services/role.service';
 
 
 @Component({
   selector: 'app-users',
   standalone: true,
   imports: [
+    FormsModule,
     ReactiveFormsModule,
     DatePipe,
     CurrencyPipe,
@@ -31,7 +33,7 @@ import { AvatarModule } from 'primeng/avatar';
     CheckboxModule,
     ConfirmDialogModule,
     CardModule,
-    MultiSelectModule,
+    MultiSelect,
     AvatarModule
   ],
   template: `
@@ -132,7 +134,7 @@ import { AvatarModule } from 'primeng/avatar';
 
         <div class="flex flex-col gap-2">
           <label for="roles">{{ ls.t().roles }}</label>
-          <p-multiSelect id="roles" formControlName="roles" [options]="availableRoles" optionLabel="label" optionValue="value" [placeholder]="ls.t().select_roles" class="w-full" display="chip"></p-multiSelect>
+          <p-multiselect id="roles" formControlName="roles" [options]="availableRoles()" optionLabel="label" optionValue="value" [placeholder]="ls.t().select_roles" class="w-full" display="chip"></p-multiselect>
         </div>
       </form>
       
@@ -148,6 +150,7 @@ import { AvatarModule } from 'primeng/avatar';
 })
 export default class UsersComponent implements OnInit {
   private readonly userService = inject(ApplicationUserService);
+  private readonly roleService = inject(RoleService);
   private readonly fb = inject(FormBuilder);
   private readonly messageService = inject(MessageService);
   private readonly confirmationService = inject(ConfirmationService);
@@ -162,6 +165,7 @@ export default class UsersComponent implements OnInit {
   editingUserProfilePictureUrl = signal<string | null>(null);
   saving = signal<boolean>(false);
   deletingUserId = signal<string | null>(null);
+  availableRoles = signal<{ label: string, value: string }[]>([]);
 
   editForm = this.fb.nonNullable.group({
     userName: [{ value: '', disabled: true }, Validators.required],
@@ -175,20 +179,15 @@ export default class UsersComponent implements OnInit {
     roles: [[] as string[]]
   });
 
-  availableRoles = [
-    { label: 'Guest', value: 'Guest' },
-    { label: 'User', value: 'User' },
-    { label: 'Kiosk', value: 'Kiosk' },
-    { label: 'Admin', value: 'Admin' }
-  ];
 
   ngOnInit(): void {
     this.loadUsers();
+    this.loadRoles();
   }
 
   loadUsers(): void {
     this.loading.set(true);
-    this.userService.getUsers().subscribe({
+    this.userService.getAdminUsers().subscribe({
       next: (data) => {
         this.users.set(data.items);
         this.totalRecords.set(data.totalCount);
@@ -198,6 +197,17 @@ export default class UsersComponent implements OnInit {
         this.messageService.add({ severity: 'error', summary: this.ls.t().error, detail: this.ls.t().load_failed });
         this.loading.set(false);
       }
+    });
+  }
+
+  loadRoles(): void {
+    this.roleService.getAdminRoles().subscribe({
+        next: (roles) => {
+            this.availableRoles.set(roles.map(r => ({ label: r.name, value: r.name })));
+        },
+        error: () => {
+            console.error('Failed to load roles for multiselect');
+        }
     });
   }
 

@@ -206,6 +206,7 @@ export class SidebarComponent {
         if (isAdmin) {
           adminItems.push(
             { label: t.users, icon: 'pi pi-users', routerLink: '/admin/users' },
+            { label: t.roles, icon: 'pi pi-id-card', routerLink: '/admin/roles' },
             { label: t.products, icon: 'pi pi-box', routerLink: '/admin/products' },
             { label: t.achievements, icon: 'pi pi-verified', routerLink: '/admin/achievements' },
             { label: t.announcements, icon: 'pi pi-megaphone', routerLink: '/admin/announcements' },

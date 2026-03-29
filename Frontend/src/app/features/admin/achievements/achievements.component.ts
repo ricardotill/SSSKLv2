@@ -399,7 +399,7 @@ export default class AchievementsComponent implements OnInit {
   openUserDialog(): void {
     this.userDialogVisible.set(true);
     if (this.users().length === 0) {
-      this.userService.getObscuredUsers().subscribe(u => this.users.set(u));
+      this.userService.getUsers().subscribe(u => this.users.set(u.items));
     }
   }
 

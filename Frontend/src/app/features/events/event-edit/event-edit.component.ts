@@ -1,7 +1,7 @@
 import { Component, ChangeDetectionStrategy, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Observable } from 'rxjs';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
@@ -14,6 +14,9 @@ import { LanguageService } from '../../../core/services/language.service';
 import { MessageService } from 'primeng/api';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { FileUploadModule } from 'primeng/fileupload';
+import { MultiSelect } from 'primeng/multiselect';
+import { RoleService } from '../../../core/services/role.service';
+import { Role } from '../../../core/models/role.model';
 
 @Component({
   selector: 'app-event-edit',
@@ -21,15 +24,16 @@ import { FileUploadModule } from 'primeng/fileupload';
   imports: [
     CommonModule,
     RouterModule,
+    FormsModule,
     ReactiveFormsModule,
     ButtonModule,
     CardModule,
     InputTextModule,
     EditorModule,
     DatePickerModule,
-    DatePickerModule,
     ProgressSpinnerModule,
-    FileUploadModule
+    FileUploadModule,
+    MultiSelect
   ],
   template: `
     <div class="max-w-3xl mx-auto">
@@ -74,6 +78,21 @@ import { FileUploadModule } from 'primeng/fileupload';
                 class="w-full"
               ></p-datepicker>
             </div>
+          </div>
+
+          <div class="flex flex-col gap-2">
+            <label for="requiredRoles" class="font-bold">Toegestane Rollen</label>
+            <p-multiselect 
+              id="requiredRoles" 
+              formControlName="requiredRoles" 
+              [options]="availableRoles()" 
+              optionLabel="name" 
+              optionValue="name" 
+              [placeholder]="'Selecteer rollen'" 
+              display="chip"
+              class="w-full">
+            </p-multiselect>
+            <small class="text-surface-500">Laat leeg om het evenement voor iedereen toegankelijk te maken.</small>
           </div>
 
           <div class="flex flex-col gap-2">
@@ -144,13 +163,17 @@ export default class EventEditComponent implements OnInit {
   submitting = signal<boolean>(false);
   currentImageUri = signal<string | null>(null);
   selectedFile: File | null = null;
+  availableRoles = signal<Role[]>([]);
+
+  private readonly roleService = inject(RoleService);
 
   constructor() {
     this.eventForm = this.fb.group({
       title: ['', Validators.required],
       description: ['', Validators.required],
       startDateTime: [null, Validators.required],
-      endDateTime: [null, Validators.required]
+      endDateTime: [null, Validators.required],
+      requiredRoles: [[]]
     });
   }
 
@@ -161,6 +184,14 @@ export default class EventEditComponent implements OnInit {
       this.isEdit = true;
       this.loadEvent(id);
     }
+    this.loadRoles();
+  }
+
+  loadRoles(): void {
+    this.roleService.getAllRoles().subscribe({
+      next: (roles) => this.availableRoles.set(roles),
+      error: () => console.error('Failed to load roles')
+    });
   }
 
   loadEvent(id: string): void {
@@ -182,7 +213,8 @@ export default class EventEditComponent implements OnInit {
           title: event.title,
           description: event.description,
           startDateTime: new Date(event.startDateTime),
-          endDateTime: new Date(event.endDateTime)
+          endDateTime: new Date(event.endDateTime),
+          requiredRoles: event.requiredRoles || []
         });
       },
       error: () => this.messageService.add({ severity: 'error', summary: 'Fout', detail: 'Kan evenement niet laden' })
@@ -207,6 +239,12 @@ export default class EventEditComponent implements OnInit {
     formData.append('Description', formValue.description);
     formData.append('StartDateTime', formValue.startDateTime.toISOString());
     formData.append('EndDateTime', formValue.endDateTime.toISOString());
+
+    if (formValue.requiredRoles && formValue.requiredRoles.length > 0) {
+      formValue.requiredRoles.forEach((role: string, index: number) => {
+        formData.append(`RequiredRoles[${index}]`, role);
+      });
+    }
 
     if (this.selectedFile) {
       formData.append('image', this.selectedFile);

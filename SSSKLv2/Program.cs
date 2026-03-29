@@ -17,6 +17,7 @@ using Blazored.Toast;
 using Azure.Identity;
 using Microsoft.Extensions.Azure;
 using SSSKLv2.Util;
+using SSSKLv2.Data.Constants;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -132,10 +133,10 @@ builder.Services.ConfigureExternalCookie(options =>
 
 builder.Services.AddAuthorization(options =>
 {
-    options.AddPolicy("Admin", policy => policy.RequireRole("Admin"));
-    options.AddPolicy("Kiosk", policy => policy.RequireRole("Kiosk"));
-    options.AddPolicy("User", policy => policy.RequireRole("User"));
-    options.AddPolicy("Guest", policy => policy.RequireRole("Guest"));
+    options.AddPolicy(Roles.Admin, policy => policy.RequireRole(Roles.Admin));
+    options.AddPolicy(Roles.Kiosk, policy => policy.RequireRole(Roles.Kiosk));
+    options.AddPolicy(Roles.User, policy => policy.RequireRole(Roles.User));
+    options.AddPolicy(Roles.Guest, policy => policy.RequireRole(Roles.Guest));
 });
 
 // Telemetry logging is handled via OpenTelemetry in AddServiceDefaults.
@@ -371,7 +372,7 @@ app.MapHub<SSSKLv2.Services.Hubs.LiveMetricsHub>("/hubs/livemetrics");
 using (var scope = app.Services.CreateScope())
 {
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-    var roles = new[] { "Admin", "User", "Kiosk", "Guest" };
+    var roles = Roles.AllProtected;
  
     foreach (var role in roles)
     {

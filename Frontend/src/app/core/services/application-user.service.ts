@@ -36,7 +36,9 @@ export class ApplicationUserService {
     return this.http.delete<void>(`${this.baseUrl}/${id}/profile-picture`);
   }
 
-  getObscuredUsers(): Observable<ApplicationUserDto[]> {
-    return this.http.get<ApplicationUserDto[]>(`/api/v1/applicationuser/obscured`);
+  getAdminUsers(skip: number = 0, take: number = 1000): Observable<PaginatedUsers> {
+    return this.http.get<PaginatedUsers>(`${this.baseUrl}/admin`, {
+      params: { skip, take }
+    });
   }
 }

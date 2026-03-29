@@ -54,25 +54,26 @@ import { forkJoin, finalize } from 'rxjs';
             <p-table stripedRows [value]="leaderboard12h()" [loading]="loading()" responsiveLayout="scroll" styleClass="p-datatable-sm">
                 <ng-template pTemplate="header">
                     <tr>
-                        <th class="w-20">{{ ls.t().rank }}</th>
-                        <th>{{ ls.t().name }}</th>
-                        <th class="w-32">{{ ls.t().amount }}</th>
+                        <th class="w-14 text-center px-2">{{ ls.t().rank }}</th>
+                        <th class="text-left">{{ ls.t().name }}</th>
+                        <th class="w-20 text-right px-4">{{ ls.t().amount }}</th>
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="body" let-entry>
                     <tr>
-                        <td class="font-bold">#{{ entry.position }}</td>
-                        <td>
+                        <td class="text-center font-bold px-2">#{{ entry.position }}</td>
+                        <td class="py-2">
                             <div class="flex items-center gap-3">
                                 <p-avatar 
+                                    class="flex-shrink-0"
                                     [image]="entry.profilePictureUrl" 
                                     [label]="!entry.profilePictureUrl ? entry.fullName.substring(0,1) : undefined" 
                                     shape="circle">
                                 </p-avatar>
-                                <span>{{ entry.fullName }}</span>
+                                <span class="leading-tight">{{ entry.fullName }}</span>
                             </div>
                         </td>
-                        <td>{{ entry.amount }}</td>
+                        <td class="text-right px-4 font-semibold">{{ entry.amount }}</td>
                     </tr>
                 </ng-template>
             </p-table>
@@ -84,26 +85,27 @@ import { forkJoin, finalize } from 'rxjs';
         <h2 class="text-xl font-bold mb-4 text-surface-900 dark:text-surface-0">{{ ls.t().monthly }}</h2>
         <p-table stripedRows [value]="leaderboardMonthly()" [loading]="loading()" responsiveLayout="scroll" styleClass="p-datatable-sm">
             <ng-template pTemplate="header">
-                <tr>
-                    <th class="w-20">{{ ls.t().rank }}</th>
-                    <th>{{ ls.t().name }}</th>
-                    <th class="w-32">{{ ls.t().amount }}</th>
-                </tr>
+                    <tr>
+                        <th class="w-14 text-center px-2">{{ ls.t().rank }}</th>
+                        <th class="text-left">{{ ls.t().name }}</th>
+                        <th class="w-20 text-right px-4">{{ ls.t().amount }}</th>
+                    </tr>
             </ng-template>
             <ng-template pTemplate="body" let-entry>
                 <tr>
-                    <td class="font-bold">#{{ entry.position }}</td>
-                    <td>
+                    <td class="text-center font-bold px-2">#{{ entry.position }}</td>
+                    <td class="py-2">
                         <div class="flex items-center gap-3">
                             <p-avatar 
+                                class="flex-shrink-0"
                                 [image]="entry.profilePictureUrl" 
                                 [label]="!entry.profilePictureUrl ? entry.fullName.substring(0,1) : undefined" 
                                 shape="circle">
                             </p-avatar>
-                            <span>{{ entry.fullName }}</span>
+                            <span class="leading-tight">{{ entry.fullName }}</span>
                         </div>
                     </td>
-                    <td>{{ entry.amount }}</td>
+                    <td class="text-right px-4 font-semibold">{{ entry.amount }}</td>
                 </tr>
             </ng-template>
             <ng-template pTemplate="emptymessage">
@@ -119,26 +121,27 @@ import { forkJoin, finalize } from 'rxjs';
         <h2 class="text-xl font-bold mb-4 text-surface-900 dark:text-surface-0">{{ ls.t().total }}</h2>
         <p-table stripedRows [value]="leaderboardTotal()" [loading]="loading()" responsiveLayout="scroll" styleClass="p-datatable-sm">
             <ng-template pTemplate="header">
-                <tr>
-                    <th class="w-20">{{ ls.t().rank }}</th>
-                    <th>{{ ls.t().name }}</th>
-                    <th class="w-32">{{ ls.t().amount }}</th>
-                </tr>
+                    <tr>
+                        <th class="w-14 text-center px-2">{{ ls.t().rank }}</th>
+                        <th class="text-left">{{ ls.t().name }}</th>
+                        <th class="w-20 text-right px-4">{{ ls.t().amount }}</th>
+                    </tr>
             </ng-template>
             <ng-template pTemplate="body" let-entry>
                 <tr>
-                    <td class="font-bold">#{{ entry.position }}</td>
-                    <td>
+                    <td class="text-center font-bold px-2">#{{ entry.position }}</td>
+                    <td class="py-2">
                         <div class="flex items-center gap-3">
                             <p-avatar 
+                                class="flex-shrink-0"
                                 [image]="entry.profilePictureUrl" 
                                 [label]="!entry.profilePictureUrl ? entry.fullName.substring(0,1) : undefined" 
                                 shape="circle">
                             </p-avatar>
-                            <span>{{ entry.fullName }}</span>
+                            <span class="leading-tight">{{ entry.fullName }}</span>
                         </div>
                     </td>
-                    <td>{{ entry.amount }}</td>
+                    <td class="text-right px-4 font-semibold">{{ entry.amount }}</td>
                 </tr>
             </ng-template>
             <ng-template pTemplate="emptymessage">

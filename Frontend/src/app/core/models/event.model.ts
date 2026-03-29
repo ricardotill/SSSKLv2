@@ -14,6 +14,7 @@ export interface EventCreateDto {
   description: string;
   startDateTime: string;
   endDateTime: string;
+  requiredRoles?: string[];
 }
 
 export interface EventDto {
@@ -29,6 +30,7 @@ export interface EventDto {
   acceptedUsers: EventResponseUserDto[];
   declinedUsers: EventResponseUserDto[];
   userResponse?: EventResponseStatus | null;
+  requiredRoles?: string[];
 }
 
 export interface EventResponseDto {

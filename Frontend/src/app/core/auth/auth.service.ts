@@ -78,12 +78,14 @@ export class AuthService {
     private readonly USER_API_URL = `/api/v1/ApplicationUser`;
 
     private currentUserSignal = signal<ApplicationUserDetailedDto | null>(null);
+    private isInitializedSignal = signal<boolean>(false);
     public isRefreshing = false;
     public refreshTokenSubject = new BehaviorSubject<string | null>(null);
 
     // Public computed signals for components to consume
     currentUser = computed(() => this.currentUserSignal());
     isAuthenticated = computed(() => !!this.currentUserSignal() || !!this.getAccessToken());
+    isInitialized = computed(() => this.isInitializedSignal());
 
     constructor() {
         // Defer initAuth to prevent circular dependency with HttpInterceptor
@@ -97,8 +99,14 @@ export class AuthService {
         if (token) {
             // If we have a token, fetch user info to populate the current user signal
             this.fetchCurrentUser().subscribe({
-                error: (err) => console.error('Failed to fetch user:', err)
+                next: () => this.isInitializedSignal.set(true),
+                error: (err) => {
+                    console.error('Failed to fetch user:', err);
+                    this.isInitializedSignal.set(true);
+                }
             });
+        } else {
+            this.isInitializedSignal.set(true);
         }
     }
 

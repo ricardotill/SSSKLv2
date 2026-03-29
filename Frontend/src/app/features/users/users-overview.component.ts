@@ -65,10 +65,10 @@ export default class UsersOverviewComponent implements OnInit {
 
   loadUsers(): void {
     this.loading.set(true);
-    this.userService.getObscuredUsers().subscribe({
+    this.userService.getUsers().subscribe({
       next: (data) => {
         // Sort by saldo ascending as requested
-        const sortedData = [...data].sort((a, b) => a.saldo - b.saldo);
+        const sortedData = [...data.items].sort((a, b) => a.saldo - b.saldo);
         this.users.set(sortedData);
         this.loading.set(false);
       },

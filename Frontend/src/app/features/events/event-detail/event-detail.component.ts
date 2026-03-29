@@ -81,6 +81,17 @@ import { AvatarModule } from 'primeng/avatar';
 
                   <p-divider></p-divider>
 
+                  @if (event()?.requiredRoles && event()!.requiredRoles!.length > 0) {
+                    <div class="flex flex-col gap-2 mb-4">
+                      <span class="text-xs text-surface-500 uppercase font-bold tracking-wider">Toegestane Rollen</span>
+                      <div class="flex gap-2 flex-wrap">
+                        @for (role of event()?.requiredRoles; track role) {
+                          <p-tag severity="secondary" [value]="role" icon="pi pi-lock"></p-tag>
+                        }
+                      </div>
+                    </div>
+                  }
+
                   <div class="prose dark:prose-invert max-w-none" [innerHTML]="event()?.description">
                   </div>
                 </div>
@@ -96,22 +107,29 @@ import { AvatarModule } from 'primeng/avatar';
                   
                   <div class="flex gap-3">
                     @if (authService.isAuthenticated()) {
-                      <p-button 
-                        [label]="ls.t().accept" 
-                        icon="pi pi-check" 
-                        [severity]="event()?.userResponse === 'Accepted' ? 'success' : 'secondary'"
-                        [outlined]="event()?.userResponse !== 'Accepted'"
-                        (onClick)="rsvp('Accepted')"
-                        [loading]="rsvpLoading()"
-                      />
-                      <p-button 
-                        [label]="ls.t().decline" 
-                        icon="pi pi-times" 
-                        [severity]="event()?.userResponse === 'Declined' ? 'danger' : 'secondary'"
-                        [outlined]="event()?.userResponse !== 'Declined'"
-                        (onClick)="rsvp('Declined')"
-                        [loading]="rsvpLoading()"
-                      />
+                      @if (canRsvp()) {
+                        <p-button 
+                          [label]="ls.t().accept" 
+                          icon="pi pi-check" 
+                          [severity]="event()?.userResponse === 'Accepted' ? 'success' : 'secondary'"
+                          [outlined]="event()?.userResponse !== 'Accepted'"
+                          (onClick)="rsvp('Accepted')"
+                          [loading]="rsvpLoading()"
+                        />
+                        <p-button 
+                          [label]="ls.t().decline" 
+                          icon="pi pi-times" 
+                          [severity]="event()?.userResponse === 'Declined' ? 'danger' : 'secondary'"
+                          [outlined]="event()?.userResponse !== 'Declined'"
+                          (onClick)="rsvp('Declined')"
+                          [loading]="rsvpLoading()"
+                        />
+                      } @else {
+                        <div class="flex items-center gap-2 text-surface-500 bg-surface-100 dark:bg-surface-800 p-2 rounded-lg">
+                          <i class="pi pi-lock"></i>
+                          <span class="text-sm font-medium">Je hebt niet de juiste rol om je aan te melden.</span>
+                        </div>
+                      }
                     } @else {
                       <p-button [label]="ls.t().login" icon="pi pi-sign-in" [routerLink]="['/login']" [queryParams]="{ returnUrl: router.url }" />
                     }
@@ -243,6 +261,17 @@ export default class EventDetailComponent implements OnInit {
     return user.roles.includes('Admin') || user.userName === currentEvent.creatorName;
   });
 
+  canRsvp = computed(() => {
+    const user = this.authService.currentUser();
+    const evt = this.event();
+    if (!user || !evt) return false;
+    
+    if (user.roles.includes('Admin')) return true;
+    if (!evt.requiredRoles || evt.requiredRoles.length === 0) return true;
+
+    return evt.requiredRoles.some(role => user.roles.includes(role));
+  });
+
   ngOnInit(): void {
     const id = this.activatedRoute.snapshot.paramMap.get('id');
     if (id) {
@@ -269,7 +298,13 @@ export default class EventDetailComponent implements OnInit {
     const title = `${event.title} - SSSKL`;
     const description = this.stripHtml(event.description).substring(0, 160);
     const url = this.document.location.href;
-    const image = event.imageUrl || '';
+    let image = event.imageUrl || '';
+
+    if (image && image.startsWith('/')) {
+      image = `${window.location.origin}${image}`;
+    } else if (image && !image.startsWith('http')) {
+      image = `${window.location.origin}/${image}`;
+    }
 
     this.titleService.setTitle(title);
 
@@ -290,7 +325,7 @@ export default class EventDetailComponent implements OnInit {
     if (navigator.share) {
       navigator.share({
         title: currentEvent.title,
-        text: this.stripHtml(currentEvent.description).substring(0, 100),
+        text: "Meld je nu aan voor " + currentEvent.title + "!",
         url: window.location.href
       }).catch(err => console.error('Share failed', err));
     } else {

@@ -146,8 +146,8 @@ export default class TopUpsComponent implements OnInit {
   }
 
   loadUsers(): void {
-    this.userService.getObscuredUsers().subscribe({
-      next: (data) => this.users.set(data),
+    this.userService.getUsers().subscribe({
+      next: (data) => this.users.set(data.items),
       error: () => console.error('Failed to load users for topup')
     });
   }

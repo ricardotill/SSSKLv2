@@ -10,7 +10,7 @@ namespace SSSKLv2.Validators
             "image/jpeg", "image/jpg", "image/png"
         };
 
-        protected override ValidationResult IsValid(object value, ValidationContext validationContext)
+        protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
         {
             if (value is IBrowserFile file)
             {

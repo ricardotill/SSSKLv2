@@ -9,7 +9,7 @@ using SSSKLv2.Data.Constants;
 
 namespace SSSKLv2.Services;
 
-public class EventService(IEventRepository eventRepository, IBlobStorageAgent blobStorageAgent, IApplicationUserService applicationUserService, ApplicationDbContext dbContext, ILogger<EventService> logger) : IEventService
+public class EventService(IEventRepository eventRepository, IBlobStorageAgent blobStorageAgent, IApplicationUserService applicationUserService, ApplicationDbContext dbContext) : IEventService
 {
     public async Task<IEnumerable<EventDto>> GetAllEvents(int skip = 0, int take = 15, bool futureOnly = false, string? userId = null)
     {
@@ -136,7 +136,7 @@ public class EventService(IEventRepository eventRepository, IBlobStorageAgent bl
         if (e.RequiredRoles.Any())
         {
             var userRoles = await applicationUserService.GetUserRoles(userId);
-            if (!userRoles.Contains(Roles.Admin) && !e.RequiredRoles.Any(r => userRoles.Contains(r.Name)))
+            if (!userRoles.Contains(Roles.Admin) && !e.RequiredRoles.Any(r => userRoles.Contains(r.Name!)))
             {
                 throw new UnauthorizedAccessException("You don't have the required role to RSVP to this event.");
             }

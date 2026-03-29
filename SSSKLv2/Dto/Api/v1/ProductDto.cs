@@ -5,7 +5,7 @@ namespace SSSKLv2.Dto.Api.v1
     public class ProductDto
     {
         public Guid Id { get; set; }
-        public string Name { get; set; } = null!;
+        public required string Name { get; set; }
         public string? Description { get; set; }
         public decimal Price { get; set; }
         public int Stock { get; set; }
@@ -14,7 +14,7 @@ namespace SSSKLv2.Dto.Api.v1
     public class ProductCreateDto
     {
         [Required]
-        public string Name { get; set; } = null!;
+        public required string Name { get; set; }
         public string? Description { get; set; }
         [Required]
         public decimal Price { get; set; }
@@ -27,7 +27,7 @@ namespace SSSKLv2.Dto.Api.v1
         [Required]
         public Guid Id { get; set; }
         [Required]
-        public string Name { get; set; } = null!;
+        public required string Name { get; set; }
         public string? Description { get; set; }
         [Required]
         public decimal Price { get; set; }

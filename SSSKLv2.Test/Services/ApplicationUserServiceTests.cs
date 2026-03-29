@@ -62,7 +62,7 @@ public class ApplicationUserServiceTests
         // Arrange
         var userId = "user-123";
         var expectedUser = CreateApplicationUser(userId);
-        _mockUserRepository.GetById(userId).Returns(expectedUser);
+        _mockUserRepository.GetById(userId).Returns(expectedUser!);
 
         // Act
         var result = await _sut.GetUserById(userId);
@@ -97,7 +97,7 @@ public class ApplicationUserServiceTests
         // Arrange
         var username = "testuser";
         var expectedUser = CreateApplicationUser("user-123", username);
-        _mockUserRepository.GetByUsername(username).Returns(expectedUser);
+        _mockUserRepository.GetByUsername(username).Returns(expectedUser!);
 
         // Act
         var result = await _sut.GetUserByUsername(username);
@@ -135,7 +135,7 @@ public class ApplicationUserServiceTests
             CreateApplicationUser("user-1", "user1"),
             CreateApplicationUser("user-2", "user2")
         };
-        _mockUserRepository.GetAll().Returns(users);
+        _mockUserRepository.GetAll().Returns(users!);
 
         // Act
         var result = await _sut.GetAllUsers();
@@ -173,8 +173,8 @@ public class ApplicationUserServiceTests
         var product = CreateProduct(productId, "Test Product");
         var users = CreateUsersWithOrders(product);
         
-        _mockProductRepository.GetById(productId).Returns(product);
-        _mockUserRepository.GetAllWithOrders().Returns(users);
+        _mockProductRepository.GetById(productId).Returns(product!);
+        _mockUserRepository.GetAllWithOrders().Returns(users!);
 
         // Act
         var result = await _sut.GetAllLeaderboard(productId);
@@ -221,7 +221,7 @@ public class ApplicationUserServiceTests
         
         user.Orders = new List<Order> { overflowOrder, secondOverflowOrder };
         
-        _mockProductRepository.GetById(productId).Returns(product);
+        _mockProductRepository.GetById(productId).Returns(product!);
         _mockUserRepository.GetAllWithOrders().Returns(new List<ApplicationUser> { user });
 
         // Act
@@ -260,8 +260,8 @@ public class ApplicationUserServiceTests
         };
         users.Add(user);
         
-        _mockProductRepository.GetById(productId).Returns(product);
-        _mockUserRepository.GetAllWithOrders().Returns(users);
+        _mockProductRepository.GetById(productId).Returns(product!);
+        _mockUserRepository.GetAllWithOrders().Returns(users!);
 
         // Act
         var result = await _sut.GetAllLeaderboard(productId);
@@ -304,8 +304,8 @@ public class ApplicationUserServiceTests
         };
         users.Add(user2);
         
-        _mockProductRepository.GetById(productId).Returns(product);
-        _mockUserRepository.GetAllWithOrders().Returns(users);
+        _mockProductRepository.GetById(productId).Returns(product!);
+        _mockUserRepository.GetAllWithOrders().Returns(users!);
 
         // Act
         var result = await _sut.GetMonthlyLeaderboard(productId);
@@ -350,7 +350,7 @@ public class ApplicationUserServiceTests
         
         user.Orders = new List<Order> { overflowOrder, secondOverflowOrder };
         
-        _mockProductRepository.GetById(productId).Returns(product);
+        _mockProductRepository.GetById(productId).Returns(product!);
         _mockUserRepository.GetAllWithOrders().Returns(new List<ApplicationUser> { user });
 
         // Act
@@ -390,8 +390,8 @@ public class ApplicationUserServiceTests
         };
         users.Add(user);
         
-        _mockProductRepository.GetById(productId).Returns(product);
-        _mockUserRepository.GetAllWithOrders().Returns(users);
+        _mockProductRepository.GetById(productId).Returns(product!);
+        _mockUserRepository.GetAllWithOrders().Returns(users!);
 
         // Act
         var result = await _sut.GetMonthlyLeaderboard(productId);
@@ -434,8 +434,8 @@ public class ApplicationUserServiceTests
         };
         users.Add(user2);
         
-        _mockProductRepository.GetById(productId).Returns(product);
-        _mockUserRepository.GetAllWithOrders().Returns(users);
+        _mockProductRepository.GetById(productId).Returns(product!);
+        _mockUserRepository.GetAllWithOrders().Returns(users!);
 
         // Act
         var result = await _sut.Get12HourlyLeaderboard(productId);
@@ -480,7 +480,7 @@ public class ApplicationUserServiceTests
         
         user.Orders = new List<Order> { overflowOrder, secondOverflowOrder };
         
-        _mockProductRepository.GetById(productId).Returns(product);
+        _mockProductRepository.GetById(productId).Returns(product!);
         _mockUserRepository.GetAllWithOrders().Returns(new List<ApplicationUser> { user });
 
         // Act
@@ -520,8 +520,8 @@ public class ApplicationUserServiceTests
         };
         users.Add(user);
         
-        _mockProductRepository.GetById(productId).Returns(product);
-        _mockUserRepository.GetAllWithOrders().Returns(users);
+        _mockProductRepository.GetById(productId).Returns(product!);
+        _mockUserRepository.GetAllWithOrders().Returns(users!);
 
         // Act
         var result = await _sut.Get12HourlyLeaderboard(productId);
@@ -564,8 +564,8 @@ public class ApplicationUserServiceTests
         };
         users.Add(user2);
         
-        _mockProductRepository.GetById(productId).Returns(product);
-        _mockUserRepository.GetFirst12WithOrders().Returns(users);
+        _mockProductRepository.GetById(productId).Returns(product!);
+        _mockUserRepository.GetFirst12WithOrders().Returns(users!);
 
         // Act
         var result = await _sut.Get12HourlyLiveLeaderboard(productId);
@@ -610,8 +610,8 @@ public class ApplicationUserServiceTests
         
         user.Orders = new List<Order> { overflowOrder, secondOverflowOrder };
         
-        _mockProductRepository.GetById(productId).Returns(product);
-        _mockUserRepository.GetFirst12WithOrders().Returns(new List<ApplicationUser> { user });
+        _mockProductRepository.GetById(productId).Returns(product!);
+        _mockUserRepository.GetFirst12WithOrders().Returns(new List<ApplicationUser> { user }!);
 
         // Act
         var result = await _sut.Get12HourlyLiveLeaderboard(productId);
@@ -650,8 +650,8 @@ public class ApplicationUserServiceTests
         };
         users.Add(user);
         
-        _mockProductRepository.GetById(productId).Returns(product);
-        _mockUserRepository.GetFirst12WithOrders().Returns(users);
+        _mockProductRepository.GetById(productId).Returns(product!);
+        _mockUserRepository.GetFirst12WithOrders().Returns(users!);
 
         // Act
         var result = await _sut.Get12HourlyLiveLeaderboard(productId);
@@ -859,7 +859,7 @@ public class ApplicationUserServiceTests
     {
         var id = "user1";
         var existing = CreateApplicationUser(id, "old");
-        ((FakeUserManager)_fakeUserManager).FindByIdFunc = (uid) => Task.FromResult(existing);
+        ((FakeUserManager)_fakeUserManager).FindByIdFunc = (uid) => Task.FromResult<ApplicationUser?>(existing);
         ((FakeUserManager)_fakeUserManager).SetUserNameFunc = (user, name) => Task.FromResult(IdentityResult.Failed(new IdentityError { Description = "Invalid" }));
 
         var dto = new ApplicationUserUpdateDto { UserName = "new" };
@@ -874,14 +874,14 @@ public class ApplicationUserServiceTests
     {
         var id = "user1";
         var existing = CreateApplicationUser(id, "old", "Test", "User", "old@example.com");
-        ((FakeUserManager)_fakeUserManager).FindByIdFunc = (uid) => Task.FromResult(existing);
+        ((FakeUserManager)_fakeUserManager).FindByIdFunc = (uid) => Task.FromResult<ApplicationUser?>(existing);
         ((FakeUserManager)_fakeUserManager).SetUserNameFunc = (user, name) => Task.FromResult(IdentityResult.Success);
         ((FakeUserManager)_fakeUserManager).SetEmailFunc = (user, email) => Task.FromResult(IdentityResult.Success);
         ((FakeUserManager)_fakeUserManager).SetPhoneFunc = (user, phone) => Task.FromResult(IdentityResult.Success);
         ((FakeUserManager)_fakeUserManager).UpdateFunc = (user) => Task.FromResult(IdentityResult.Success);
         ((FakeUserManager)_fakeUserManager).GeneratePasswordResetTokenFunc = (user) => Task.FromResult("token");
         ((FakeUserManager)_fakeUserManager).ResetPasswordFunc = (user, token, pwd) => Task.FromResult(IdentityResult.Success);
-        ((FakeUserManager)_fakeUserManager).FindByIdFunc = (uid) => Task.FromResult(existing);
+        ((FakeUserManager)_fakeUserManager).FindByIdFunc = (uid) => Task.FromResult<ApplicationUser?>(existing);
 
         var dto = new ApplicationUserUpdateDto { UserName = "newname", Email = "new@example.com", PhoneNumber = "123", Name = "New", Surname = "Name", Password = "newpass" };
 

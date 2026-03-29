@@ -78,7 +78,7 @@ public class ProductController : ControllerBase
         var product = new Product
         {
             Name = dto.Name,
-            Description = dto.Description,
+            Description = dto.Description ?? string.Empty,
             Price = dto.Price,
             Stock = dto.Stock
         };
@@ -114,7 +114,7 @@ public class ProductController : ControllerBase
             if (existing == null) return NotFound();
 
             existing.Name = dto.Name;
-            existing.Description = dto.Description;
+            existing.Description = dto.Description ?? string.Empty;
             existing.Price = dto.Price;
             existing.Stock = dto.Stock;
 

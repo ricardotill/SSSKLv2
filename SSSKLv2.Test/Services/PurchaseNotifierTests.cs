@@ -29,9 +29,9 @@ namespace SSSKLv2.Test.Services
             await notifier.NotifyUserPurchaseAsync(dto);
 
             // Assert: SendCoreAsync will be invoked by the SendAsync extension
-            clientProxy.Received(1).SendCoreAsync(
+            _ = clientProxy.Received(1).SendCoreAsync(
                 Arg.Is<string>(s => s == "UserPurchase"),
-                Arg.Is<object?[]>(arr => arr != null && arr.Length == 1 && arr[0] == dto),
+                Arg.Is<object?[]>(arr => arr != null && arr.Length == 1 && object.Equals(arr[0], dto)),
                 Arg.Any<CancellationToken>());
         }
 
@@ -79,9 +79,9 @@ namespace SSSKLv2.Test.Services
             await notifier.NotifyAchievementAsync(dto);
 
             // Assert: SendCoreAsync will be invoked by the SendAsync extension
-            clientProxy.Received(1).SendCoreAsync(
+            _ = clientProxy.Received(1).SendCoreAsync(
                 Arg.Is<string>(s => s == "Achievement"),
-                Arg.Is<object?[]>(arr => arr != null && arr.Length == 1 && arr[0] == dto),
+                Arg.Is<object?[]>(arr => arr != null && arr.Length == 1 && object.Equals(arr[0], dto)),
                 Arg.Any<CancellationToken>());
         }
 

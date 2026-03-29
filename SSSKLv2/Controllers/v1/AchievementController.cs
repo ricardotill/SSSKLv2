@@ -90,11 +90,13 @@ public class AchievementController : ControllerBase
     {
         // Let [ApiController] + FluentValidation handle ModelState and automatic 400 responses.
 
-        if (image != null)
+        if (image == null)
         {
-            dto.ImageContentType = new ContentType(image.ContentType);
-            dto.ImageContent = image.OpenReadStream();
+            return BadRequest("Afbeelding is verplicht."); // "Image is required" in Dutch
         }
+
+        dto.ImageContentType = new ContentType(image.ContentType);
+        dto.ImageContent = image.OpenReadStream();
 
         await _achievementService.AddAchievement(dto);
         return StatusCode(StatusCodes.Status201Created);

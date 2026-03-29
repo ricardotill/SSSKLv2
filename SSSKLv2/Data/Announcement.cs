@@ -6,7 +6,7 @@ public class Announcement : BaseModel
 {
     [Microsoft.Build.Framework.Required]
     [DisplayName("Bericht")]
-    public string Message { get; set; }
+    public string Message { get; set; } = string.Empty;
     
     [DisplayName("Beschrijving")]
     public string? Description { get; set; }

@@ -107,14 +107,14 @@ public class OrderService(
         foreach (var order in orders)
         {
             csv.AppendLine(
-                $"{order.Id},{EscapeCsvField(order.User != null ? order.User.UserName : null)},{order.CreatedOn:yyyy-MM-dd HH:mm:ss},{EscapeCsvField(order.ProductNaam)},{order.Amount},{order.Paid.ToString(CultureInfo.InvariantCulture)}");
+                $"{order.Id},{EscapeCsvField(order.User?.UserName)},{order.CreatedOn:yyyy-MM-dd HH:mm:ss},{EscapeCsvField(order.ProductNaam)},{order.Amount},{order.Paid.ToString(CultureInfo.InvariantCulture)}");
         }
 
         return csv.ToString();
     }
 
     // Escapes a field for CSV output, including formula injection mitigation
-    private static string EscapeCsvField(string field)
+    private static string EscapeCsvField(string? field)
     {
         if (field == null)
             return "\"\"";

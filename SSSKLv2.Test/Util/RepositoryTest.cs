@@ -7,8 +7,8 @@ namespace SSSKLv2.Test.Util;
 
 public abstract class RepositoryTest
 {
-    private DbConnection _connection;
-    private DbContextOptions<ApplicationDbContext> _options;
+    private DbConnection _connection = null!;
+    private DbContextOptions<ApplicationDbContext> _options = null!;
     
     protected void InitializeDatabase()
     {

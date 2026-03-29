@@ -36,8 +36,8 @@ public class ProductControllerTests
             new Product { Id = Guid.NewGuid(), Name = "P2", Price = 2.0m, Stock = 3 }
         };
         // Controller calls GetAll(skip,take) and GetCount()
-        _mockService.GetAll(Arg.Any<int>(), Arg.Any<int>()).Returns(Task.FromResult((IList<Product>)items));
-        _mockService.GetCount().Returns(items.Count);
+        _mockService.GetAll(Arg.Any<int>(), Arg.Any<int>()).Returns(Task.FromResult<IList<Product>>(items));
+        _mockService.GetCount().Returns(Task.FromResult(items.Count));
 
         // Act
         var result = await _sut.GetAll();
@@ -58,7 +58,7 @@ public class ProductControllerTests
             new Product { Id = Guid.NewGuid(), Name = "P1", Price = 1.0m, Stock = 5 },
             new Product { Id = Guid.NewGuid(), Name = "P2", Price = 2.0m, Stock = 3 }
         };
-        _mockService.GetAll().Returns(Task.FromResult((IList<Product>)items));
+        _mockService.GetAll().Returns(Task.FromResult<IList<Product>>(items));
 
         // Act
         var result = await _sut.GetAll(all: true);
@@ -78,7 +78,7 @@ public class ProductControllerTests
         // Arrange
         var id = Guid.NewGuid();
         var prod = new Product { Id = id, Name = "Found", Price = 1.5m, Stock = 10 };
-        _mockService.GetProductById(id).Returns(Task.FromResult<Product?>(prod));
+        _mockService.GetProductById(id).Returns(Task.FromResult<Product>(prod));
 
         // Act
         var result = await _sut.GetById(id);
@@ -96,7 +96,7 @@ public class ProductControllerTests
     {
         // Arrange
         var id = Guid.NewGuid();
-        _mockService.GetProductById(id).Returns(Task.FromException<Product?>(new NotFoundException("Product not found")));
+        _mockService.GetProductById(id).Returns(Task.FromException<Product>(new NotFoundException("Product not found")));
 
         // Act
         var result = await _sut.GetById(id);
@@ -139,7 +139,7 @@ public class ProductControllerTests
         // Arrange
         var id = Guid.NewGuid();
         var prod = new Product { Id = id, Name = "Upd", Price = 3.0m, Stock = 7 };
-        _mockService.GetProductById(id).Returns(Task.FromResult<Product?>(prod));
+        _mockService.GetProductById(id).Returns(Task.FromResult<Product>(prod));
         var dto = new ProductUpdateDto { Id = id, Name = "Upd", Price = 3.0m, Stock = 7 };
 
         // Act
@@ -156,7 +156,7 @@ public class ProductControllerTests
         // Arrange
         var id = Guid.NewGuid();
         var dto = new ProductUpdateDto { Id = id, Name = "X", Price = 1m, Stock = 1 };
-        _mockService.GetProductById(id).Returns(Task.FromException<Product?>(new NotFoundException("Not found")));
+        _mockService.GetProductById(id).Returns(Task.FromException<Product>(new NotFoundException("Not found")));
 
         // Act
         var result = await _sut.Update(id, dto);
@@ -171,7 +171,7 @@ public class ProductControllerTests
         // Arrange
         var id = Guid.NewGuid();
         var prod = new Product { Id = id, Name = "X", Price = 1m, Stock = 1 };
-        _mockService.GetProductById(id).Returns(Task.FromResult<Product?>(prod));
+        _mockService.GetProductById(id).Returns(Task.FromResult<Product>(prod));
 
         // Act
         var result = await _sut.Delete(id);
@@ -186,7 +186,7 @@ public class ProductControllerTests
     {
         // Arrange
         var id = Guid.NewGuid();
-        _mockService.GetProductById(id).Returns(Task.FromException<Product?>(new NotFoundException("Not found")));
+        _mockService.GetProductById(id).Returns(Task.FromException<Product>(new NotFoundException("Not found")));
 
         // Act
         var result = await _sut.Delete(id);
@@ -220,7 +220,7 @@ public class ProductControllerTests
         // Arrange
         var id = Guid.NewGuid();
         var existing = new Product { Id = id, Name = "Valid", Price = 1.0m, Stock = 5 };
-        _mockService.GetProductById(id).Returns(Task.FromResult<Product?>(existing));
+        _mockService.GetProductById(id).Returns(Task.FromResult<Product>(existing));
 
         // Invalid update dto: empty name and negative price
         var dto = new ProductUpdateDto { Id = id, Name = "", Price = -10m, Stock = -1 };

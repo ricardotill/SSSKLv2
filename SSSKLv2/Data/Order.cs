@@ -8,10 +8,10 @@ public class Order : BaseModel
 {
     [Microsoft.Build.Framework.Required]
     [DisplayName("Gebruiker")]
-    public ApplicationUser User { get; set; }
+    public ApplicationUser User { get; set; } = null!;
     [Microsoft.Build.Framework.Required]
     [DisplayName("ProductNaam")]
-    public string ProductNaam { get; set; }
+    public string ProductNaam { get; set; } = string.Empty;
     [DisplayName("Product")]
     public Product? Product { get; set; }
     [Microsoft.Build.Framework.Required]

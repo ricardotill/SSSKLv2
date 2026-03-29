@@ -2,7 +2,7 @@ namespace SSSKLv2.Data;
 
 public class AchievementImage : BlobStorageItem
 {
-    public Achievement Achievement { get; set; }
+    public Achievement Achievement { get; set; } = null!;
     
     public static AchievementImage ToAchievementImage(BlobStorageItem item) => new()
     {

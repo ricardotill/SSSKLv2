@@ -501,7 +501,7 @@ public class AchievementRepositoryTests : RepositoryTest
         await SaveAchievements(achievement1, achievement2, achievement3);
 
         // Act
-        var result = (await _sut.GetUncompletedAchievementsForUser(TestUser.UserName)).ToList();
+        var result = (await _sut.GetUncompletedAchievementsForUser(TestUser.UserName!)).ToList();
 
         // Assert
         result.Should().HaveCount(3);
@@ -527,7 +527,7 @@ public class AchievementRepositoryTests : RepositoryTest
         await SaveAchievementEntries(entry1, entry3);
 
         // Act
-        var result = (await _sut.GetUncompletedAchievementsForUser(TestUser.UserName)).ToList();
+        var result = (await _sut.GetUncompletedAchievementsForUser(TestUser.UserName!)).ToList();
 
         // Assert
         result.Should().HaveCount(2);
@@ -552,7 +552,7 @@ public class AchievementRepositoryTests : RepositoryTest
         await SaveAchievementEntries(entry1, entry2);
 
         // Act
-        var result = await _sut.GetUncompletedAchievementsForUser(TestUser.UserName);
+        var result = await _sut.GetUncompletedAchievementsForUser(TestUser.UserName!);
 
         // Assert
         result.Should().BeEmpty();
@@ -562,7 +562,7 @@ public class AchievementRepositoryTests : RepositoryTest
     public async Task GetUncompletedAchievementsForUser_WhenNoAchievementsExist_ReturnEmptyCollection()
     {
         // Act
-        var result = await _sut.GetUncompletedAchievementsForUser(TestUser.UserName);
+        var result = await _sut.GetUncompletedAchievementsForUser(TestUser.UserName!);
 
         // Assert
         result.Should().BeEmpty();
@@ -610,7 +610,7 @@ public class AchievementRepositoryTests : RepositoryTest
         await SaveAchievementEntries(testUserEntry, otherUserEntry);
 
         // Act
-        var result = (await _sut.GetUncompletedAchievementsForUser(TestUser.UserName)).ToList();
+        var result = (await _sut.GetUncompletedAchievementsForUser(TestUser.UserName!)).ToList();
 
         // Assert
         result.Should().HaveCount(2);

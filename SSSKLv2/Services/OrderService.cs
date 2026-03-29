@@ -42,10 +42,10 @@ public class OrderService(
         return await orderRepository.GetPersonal(username, skip, take);
     }
     
-    public async Task<IEnumerable<Order>> GetLatestOrders()
+    public async Task<IEnumerable<Order>> GetLatestOrders(int take = 10)
     {
         logger.LogInformation("{Type}: Get Latest Orders", nameof(OrderService));
-        return await orderRepository.GetLatest();
+        return await orderRepository.GetLatest(take);
     }
     
     public async Task<Order> GetOrderById(Guid id)

@@ -12,7 +12,7 @@ public interface IOrderService
     public IQueryable<Order> GetPersonalQueryable(string username, ApplicationDbContext dbContext);
     public Task<IList<Order>> GetAll(int skip, int take);
     public Task<IList<Order>> GetPersonal(string username, int skip, int take);
-    public Task<IEnumerable<Order>> GetLatestOrders();
+    public Task<IEnumerable<Order>> GetLatestOrders(int take = 10);
     public Task CreateOrder(OrderSubmitDto order);
     public Task<string> ExportOrdersFromPastTwoYearsToCsvAsync();
     public Task DeleteOrder(Guid id);

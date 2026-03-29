@@ -13,5 +13,6 @@ public class OrderDto
 
     public int Amount { get; set; }
     public decimal Paid { get; set; }
+    public string? ProfilePictureUrl { get; set; }
 }
 

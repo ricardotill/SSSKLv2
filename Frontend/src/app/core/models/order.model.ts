@@ -22,6 +22,7 @@ export interface OrderDto {
   userFullName: string;
   amount: number;
   paid: number;
+  profilePictureUrl?: string;
 }
 
 export interface PaginatedOrders {

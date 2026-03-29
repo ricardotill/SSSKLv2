@@ -12,10 +12,25 @@ export const routes: Routes = [
     title: 'Login - SSSKL'
   },
   {
+    path: 'error',
+    loadComponent: () => import('./features/error/error.component'),
+    title: 'Fout - SSSKL'
+  },
+  {
     path: 'register',
     loadComponent: () => import('./features/auth/register.component'),
     canActivate: [unauthGuard],
     title: 'Registreren - SSSKL'
+  },
+  {
+    path: 'leaderboard/livedisplay',
+    loadComponent: () => import('./features/leaderboard/live-display/live-display.component').then(m => m.LiveDisplayComponent),
+    title: 'Live Leaderboard - SSSKL'
+  },
+  {
+    path: 'leaderboard/livedisplay/:id',
+    loadComponent: () => import('./features/leaderboard/live-display/live-display.component').then(m => m.LiveDisplayComponent),
+    title: 'Live Leaderboard - SSSKL'
   },
   {
     path: '',
@@ -117,5 +132,6 @@ export const routes: Routes = [
       }
     ]
   },
-  { path: '**', redirectTo: '' }
+  { path: '404', loadComponent: () => import('./features/error/error.component'), data: { code: '404' }, title: 'Pagina niet gevonden - SSSKL' },
+  { path: '**', redirectTo: '404' }
 ];

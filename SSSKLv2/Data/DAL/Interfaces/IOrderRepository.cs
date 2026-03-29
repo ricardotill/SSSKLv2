@@ -11,7 +11,7 @@ public interface IOrderRepository
     public IQueryable<Order> GetPersonalQueryable(string username, ApplicationDbContext context);
     public Task<IList<Order>> GetPersonal(string username, int skip, int take);
     public Task<IList<Order>> GetPersonal(string username);
-    public Task<IEnumerable<Order>> GetLatest();
+    public Task<IEnumerable<Order>> GetLatest(int take = 10);
     public Task CreateRange(IEnumerable<Order> orders);
     public Task<Order> GetById(Guid id);
     public Task Delete(Guid id);

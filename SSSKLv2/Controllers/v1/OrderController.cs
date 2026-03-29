@@ -85,10 +85,10 @@ public class OrderController : ControllerBase
 
     // GET v1/order/latest
     [HttpGet("latest")]
-    public async Task<IActionResult> GetLatest()
+    public async Task<IActionResult> GetLatest([FromQuery] int take = 6)
     {
-        _logger.LogInformation("{Controller}: Get latest orders", nameof(OrderController));
-        var list = await _orderService.GetLatestOrders();
+        _logger.LogInformation("{Controller}: Get latest {Take} orders", nameof(OrderController), take);
+        var list = await _orderService.GetLatestOrders(take);
         var dtoList = list.Select(MapToDto);
         return Ok(dtoList);
     }
@@ -220,7 +220,8 @@ public class OrderController : ControllerBase
             UserId = order.User?.Id != null ? Guid.TryParse(order.User.Id, out var uid) ? uid : (Guid?)null : null,
             UserFullName = order.User?.FullName ?? string.Empty,
             Amount = order.Amount,
-            Paid = order.Paid
+            Paid = order.Paid,
+            ProfilePictureUrl = order.User?.ProfileImageId != null ? $"/api/v1/blob/profilepicture/image/{order.User.ProfileImageId}" : null
         };
     }
 }

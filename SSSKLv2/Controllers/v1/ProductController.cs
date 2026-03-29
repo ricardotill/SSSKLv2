@@ -45,7 +45,7 @@ public class ProductController : ControllerBase
     }
 
     // GET v1/product/{id}
-    [Authorize(Roles = "Admin")]
+    [AllowAnonymous]
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<ProductDto>> GetById(Guid id)
     {
@@ -80,7 +80,8 @@ public class ProductController : ControllerBase
             Name = dto.Name,
             Description = dto.Description ?? string.Empty,
             Price = dto.Price,
-            Stock = dto.Stock
+            Stock = dto.Stock,
+            EnableLeaderboard = dto.EnableLeaderboard
         };
 
         try
@@ -117,6 +118,7 @@ public class ProductController : ControllerBase
             existing.Description = dto.Description ?? string.Empty;
             existing.Price = dto.Price;
             existing.Stock = dto.Stock;
+            existing.EnableLeaderboard = dto.EnableLeaderboard;
 
             await _productService.UpdateProduct(existing);
             return NoContent();
@@ -158,6 +160,7 @@ public class ProductController : ControllerBase
         Name = p.Name,
         Description = p.Description,
         Price = p.Price,
-        Stock = p.Stock
+        Stock = p.Stock,
+        EnableLeaderboard = p.EnableLeaderboard
     };
 }

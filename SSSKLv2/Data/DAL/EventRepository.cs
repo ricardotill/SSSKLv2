@@ -6,7 +6,7 @@ namespace SSSKLv2.Data.DAL;
 
 public class EventRepository(ApplicationDbContext context) : IEventRepository
 {
-    public async Task<IList<Event>> GetAll(int skip = 0, int take = 15, bool futureOnly = false, IList<string>? userRoles = null, bool isAdmin = false)
+    public async Task<IList<Event>> GetAll(int skip = 0, int take = 15, bool futureOnly = false, IList<string>? userRoles = null, bool isAdmin = false, string? requiredRole = null)
     {
         var query = context.Event
             .Include(e => e.Creator)
@@ -24,8 +24,16 @@ public class EventRepository(ApplicationDbContext context) : IEventRepository
 
         if (!isAdmin)
         {
-            query = query.Where(e => !e.RequiredRoles.Any() || 
-                                     (userRoles != null && e.RequiredRoles.Any(r => userRoles.Contains(r.Name!))));
+            if (string.IsNullOrEmpty(requiredRole))
+            {
+                query = query.Where(e => !e.RequiredRoles.Any() || 
+                                         (userRoles != null && e.RequiredRoles.Any(r => userRoles.Contains(r.Name!))));
+            }
+        }
+
+        if (!string.IsNullOrEmpty(requiredRole))
+        {
+            query = query.Where(e => e.RequiredRoles.Any(r => r.Name == requiredRole));
         }
 
         return await query
@@ -37,7 +45,7 @@ public class EventRepository(ApplicationDbContext context) : IEventRepository
             .ToListAsync();
     }
 
-    public async Task<int> GetCount(bool futureOnly = false, IList<string>? userRoles = null, bool isAdmin = false)
+    public async Task<int> GetCount(bool futureOnly = false, IList<string>? userRoles = null, bool isAdmin = false, string? requiredRole = null)
     {
         var query = context.Event.AsQueryable();
         if (futureOnly)
@@ -47,8 +55,16 @@ public class EventRepository(ApplicationDbContext context) : IEventRepository
         
         if (!isAdmin)
         {
-            query = query.Where(e => !e.RequiredRoles.Any() || 
-                                     (userRoles != null && e.RequiredRoles.Any(r => userRoles.Contains(r.Name!))));
+            if (string.IsNullOrEmpty(requiredRole))
+            {
+                query = query.Where(e => !e.RequiredRoles.Any() || 
+                                         (userRoles != null && e.RequiredRoles.Any(r => userRoles.Contains(r.Name!))));
+            }
+        }
+
+        if (!string.IsNullOrEmpty(requiredRole))
+        {
+            query = query.Where(e => e.RequiredRoles.Any(r => r.Name == requiredRole));
         }
         return await query.CountAsync();
     }

@@ -1,4 +1,5 @@
 import { Component, ChangeDetectionStrategy, inject, signal, OnInit } from '@angular/core';
+import { Router } from '@angular/router';
 import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { TableModule } from 'primeng/table';
@@ -17,12 +18,12 @@ import { finalize } from 'rxjs';
   selector: 'app-roles',
   standalone: true,
   imports: [
-    CommonModule, 
-    FormsModule, 
+    CommonModule,
+    FormsModule,
     ReactiveFormsModule,
-    TableModule, 
-    ButtonModule, 
-    InputTextModule, 
+    TableModule,
+    ButtonModule,
+    InputTextModule,
     ConfirmDialogModule,
     DialogModule,
     CardModule
@@ -120,6 +121,15 @@ import { finalize } from 'rxjs';
       </form>
 
       <ng-template pTemplate="footer">
+        @if (editingRole()) {
+          <p-button 
+            label="Live Display" 
+            icon="pi pi-external-link" 
+            [text]="true"
+            severity="help"
+            (onClick)="openLiveDisplay()">
+          </p-button>
+        }
         <p-button 
           [label]="ls.t().cancel" 
           icon="pi pi-times" 
@@ -144,6 +154,7 @@ export class RolesComponent implements OnInit {
   private confirmationService = inject(ConfirmationService);
   private messageService = inject(MessageService);
   private fb = inject(FormBuilder);
+  private router = inject(Router);
   public ls = inject(LanguageService);
 
   roles = signal<Role[]>([]);
@@ -172,14 +183,24 @@ export class RolesComponent implements OnInit {
         this.loading.set(false);
       },
       error: () => {
-        this.messageService.add({ 
-            severity: 'error', 
-            summary: this.ls.t().error, 
-            detail: this.ls.t().load_failed 
+        this.messageService.add({
+          severity: 'error',
+          summary: this.ls.t().error,
+          detail: this.ls.t().load_failed
         });
         this.loading.set(false);
       }
     });
+  }
+
+  openLiveDisplay() {
+    const roleName = this.roleForm.get('name')?.value;
+    if (roleName) {
+      const url = this.router.serializeUrl(
+        this.router.createUrlTree(['/leaderboard/livedisplay'], { queryParams: { role: roleName } })
+      );
+      window.open(url, '_blank');
+    }
   }
 
   showAddDialog() {
@@ -204,27 +225,27 @@ export class RolesComponent implements OnInit {
     const formValue = this.roleForm.getRawValue();
     const roleToSave = { name: formValue.name! };
 
-    const operation = this.editingRole() 
-        ? this.roleService.updateRole(this.editingRole()!.id, roleToSave)
-        : this.roleService.createRole(roleToSave);
+    const operation = this.editingRole()
+      ? this.roleService.updateRole(this.editingRole()!.id, roleToSave)
+      : this.roleService.createRole(roleToSave);
 
     operation.pipe(
-        finalize(() => this.saving.set(false))
+      finalize(() => this.saving.set(false))
     ).subscribe({
       next: () => {
         this.loadRoles();
         this.displayDialog.set(false);
-        this.messageService.add({ 
-            severity: 'success', 
-            summary: this.ls.t().success, 
-            detail: this.editingRole() ? this.ls.t().role_updated || 'Rol bijgewerkt' : this.ls.t().role_created 
+        this.messageService.add({
+          severity: 'success',
+          summary: this.ls.t().success,
+          detail: this.editingRole() ? this.ls.t().role_updated || 'Rol bijgewerkt' : this.ls.t().role_created
         });
       },
       error: (err) => {
-        this.messageService.add({ 
-            severity: 'error', 
-            summary: this.ls.t().error, 
-            detail: err.error?.title || (this.editingRole() ? 'Bijwerken rol mislukt' : this.ls.t().role_creation_failed)
+        this.messageService.add({
+          severity: 'error',
+          summary: this.ls.t().error,
+          detail: err.error?.title || (this.editingRole() ? 'Bijwerken rol mislukt' : this.ls.t().role_creation_failed)
         });
       }
     });
@@ -245,21 +266,21 @@ export class RolesComponent implements OnInit {
   deleteRole(role: Role) {
     this.deletingRoleId.set(role.id);
     this.roleService.deleteRole(role.id).pipe(
-        finalize(() => this.deletingRoleId.set(null))
+      finalize(() => this.deletingRoleId.set(null))
     ).subscribe({
       next: () => {
         this.roles.set(this.roles().filter(r => r.id !== role.id));
-        this.messageService.add({ 
-            severity: 'success', 
-            summary: this.ls.t().success, 
-            detail: this.ls.t().role_deleted 
+        this.messageService.add({
+          severity: 'success',
+          summary: this.ls.t().success,
+          detail: this.ls.t().role_deleted
         });
       },
       error: (err) => {
-        this.messageService.add({ 
-            severity: 'error', 
-            summary: this.ls.t().error, 
-            detail: err.error || this.ls.t().role_deletion_failed 
+        this.messageService.add({
+          severity: 'error',
+          summary: this.ls.t().error,
+          detail: err.error || this.ls.t().role_deletion_failed
         });
       }
     });

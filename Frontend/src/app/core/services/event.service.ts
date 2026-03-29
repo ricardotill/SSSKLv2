@@ -16,6 +16,12 @@ export class EventService {
     });
   }
 
+  getPublicEvents(skip: number = 0, take: number = 15, futureOnly: boolean = true, requiredRole?: string): Observable<PaginationObject<EventDto>> {
+    const params: any = { skip, take, futureOnly };
+    if (requiredRole) params.requiredRole = requiredRole;
+    return this.http.get<PaginationObject<EventDto>>(`${this.apiUrl}/public`, { params });
+  }
+
   getEvent(id: string): Observable<EventDto> {
     return this.http.get<EventDto>(`${this.apiUrl}/${id}`);
   }

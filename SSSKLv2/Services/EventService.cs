@@ -9,9 +9,9 @@ using SSSKLv2.Data.Constants;
 
 namespace SSSKLv2.Services;
 
-public class EventService(IEventRepository eventRepository, IBlobStorageAgent blobStorageAgent, IApplicationUserService applicationUserService, ApplicationDbContext dbContext) : IEventService
+public class EventService(IEventRepository eventRepository, IBlobStorageAgent blobStorageAgent, IApplicationUserService applicationUserService, ApplicationDbContext dbContext, IEventNotifier eventNotifier) : IEventService
 {
-    public async Task<IEnumerable<EventDto>> GetAllEvents(int skip = 0, int take = 15, bool futureOnly = false, string? userId = null)
+    public async Task<IEnumerable<EventDto>> GetAllEvents(int skip = 0, int take = 15, bool futureOnly = false, string? userId = null, string? requiredRole = null)
     {
         IList<string>? userRoles = null;
         bool isAdmin = false;
@@ -21,11 +21,11 @@ public class EventService(IEventRepository eventRepository, IBlobStorageAgent bl
             isAdmin = userRoles.Contains(Roles.Admin);
         }
         
-        var events = await eventRepository.GetAll(skip, take, futureOnly, userRoles, isAdmin);
+        var events = await eventRepository.GetAll(skip, take, futureOnly, userRoles, isAdmin, requiredRole);
         return events.Select(e => MapToDto(e, userId));
     }
 
-    public async Task<int> GetCount(bool futureOnly = false, string? userId = null)
+    public async Task<int> GetCount(bool futureOnly = false, string? userId = null, string? requiredRole = null)
     {
         IList<string>? userRoles = null;
         bool isAdmin = false;
@@ -35,7 +35,7 @@ public class EventService(IEventRepository eventRepository, IBlobStorageAgent bl
             isAdmin = userRoles.Contains(Roles.Admin);
         }
         
-        return await eventRepository.GetCount(futureOnly, userRoles, isAdmin);
+        return await eventRepository.GetCount(futureOnly, userRoles, isAdmin, requiredRole);
     }
 
     public async Task<EventDto> GetEventById(Guid id, string? userId = null)
@@ -75,6 +75,7 @@ public class EventService(IEventRepository eventRepository, IBlobStorageAgent bl
         }
 
         await eventRepository.Add(e);
+        await eventNotifier.NotifyEventChangedAsync();
         return e.Id;
     }
 
@@ -115,6 +116,7 @@ public class EventService(IEventRepository eventRepository, IBlobStorageAgent bl
         }
 
         await eventRepository.Update(e);
+        await eventNotifier.NotifyEventChangedAsync();
     }
 
     public async Task DeleteEvent(Guid id, string userId, bool isAdmin)
@@ -126,6 +128,7 @@ public class EventService(IEventRepository eventRepository, IBlobStorageAgent bl
             throw new UnauthorizedAccessException("Only the creator or an admin can delete this event.");
 
         await eventRepository.Delete(id);
+        await eventNotifier.NotifyEventChangedAsync();
     }
 
     public async Task RespondToEvent(Guid id, string userId, EventResponseStatus status)

@@ -88,6 +88,7 @@ export class LanguageService {
     'product_deleted': 'Product succesvol verwijderd',
     'confirm_delete_product': 'Weet je zeker dat je product {name} wilt verwijderen? Dit kan niet ongedaan worden gemaakt.',
     'no_products': 'Geen producten gevonden.',
+    'enable_leaderboard': 'Leaderboard Inschakelen',
     'top_ups_desc': 'Beheer hier de opwaarderingen.',
     'no_top_ups': 'Geen opwaarderingen gevonden.',
     'showing_top_ups_report': 'Opwaarderingen {first} t/m {last} van {total}',

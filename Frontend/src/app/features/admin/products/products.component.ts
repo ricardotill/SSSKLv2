@@ -10,6 +10,7 @@ import { InputNumberModule } from 'primeng/inputnumber';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { CardModule } from 'primeng/card';
+import { ToggleSwitchModule } from 'primeng/toggleswitch';
 import { ProductService } from '../../../core/services/product.service';
 import { ProductDto, ProductCreateDto, ProductUpdateDto, PaginatedProducts } from '../../../core/models/product.model';
 import { LanguageService } from '../../../core/services/language.service';
@@ -26,7 +27,9 @@ import { LanguageService } from '../../../core/services/language.service';
     InputTextModule,
     InputNumberModule,
     ConfirmDialogModule,
-    CardModule
+    ConfirmDialogModule,
+    CardModule,
+    ToggleSwitchModule
   ],
   template: `
     <div class="flex justify-between items-center mb-4">
@@ -45,6 +48,7 @@ import { LanguageService } from '../../../core/services/language.service';
             <th>{{ ls.t().product_description }}</th>
             <th>{{ ls.t().price }}</th>
             <th>{{ ls.t().stock }}</th>
+            <th class="text-center">{{ ls.t().leaderboard }}</th>
             <th class="w-32">{{ ls.t().actions }}</th>
           </tr>
         </ng-template>
@@ -54,6 +58,9 @@ import { LanguageService } from '../../../core/services/language.service';
             <td>{{ product.description }}</td>
             <td>{{ product.price | currency:'EUR' }}</td>
             <td>{{ product.stock }}</td>
+            <td class="text-center">
+              <i class="pi" [class.pi-check-circle]="product.enableLeaderboard" [class.text-primary-500]="product.enableLeaderboard" [class.pi-times-circle]="!product.enableLeaderboard" [class.text-red-500]="!product.enableLeaderboard"></i>
+            </td>
             <td>
               <div class="flex gap-2">
                 <p-button icon="pi pi-pencil" [rounded]="true" [text]="true" severity="info" (onClick)="openEditDialog(product)" [ariaLabel]="ls.t().edit"></p-button>
@@ -91,6 +98,11 @@ import { LanguageService } from '../../../core/services/language.service';
           <label for="stock">{{ ls.t().stock }}</label>
           <p-inputNumber id="stock" formControlName="stock" class="w-full" [min]="0" [showButtons]="true"></p-inputNumber>
         </div>
+
+        <div class="flex items-center gap-3">
+          <p-toggleSwitch id="enableLeaderboard" formControlName="enableLeaderboard"></p-toggleSwitch>
+          <label for="enableLeaderboard">{{ ls.t().enable_leaderboard }}</label>
+        </div>
       </form>
       
       <ng-template pTemplate="footer">
@@ -126,7 +138,8 @@ export default class ProductsComponent implements OnInit {
     name: ['', Validators.required],
     description: [''],
     price: [0, [Validators.required, Validators.min(0)]],
-    stock: [0, [Validators.required, Validators.min(0)]]
+    stock: [0, [Validators.required, Validators.min(0)]],
+    enableLeaderboard: [true]
   });
 
   ngOnInit(): void {
@@ -156,7 +169,8 @@ export default class ProductsComponent implements OnInit {
       name: '',
       description: '',
       price: 0,
-      stock: 0
+      stock: 0,
+      enableLeaderboard: true
     });
     this.dialogVisible.set(true);
   }
@@ -168,7 +182,8 @@ export default class ProductsComponent implements OnInit {
       name: product.name,
       description: product.description ?? '',
       price: product.price,
-      stock: product.stock
+      stock: product.stock,
+      enableLeaderboard: product.enableLeaderboard
     });
     this.dialogVisible.set(true);
   }

@@ -55,7 +55,7 @@ public class BlobsController : ControllerBase
         return File(stream, image.ContentType);
     }
 
-    [HttpGet("event/image/{id}/social-preview")]
+    [HttpGet("event/image/{id}/social-preview.jpg")]
     [AllowAnonymous]
     public async Task<IActionResult> GetSocialPreview(Guid id)
     {

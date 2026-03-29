@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using SSSKLv2.Components;
 using SSSKLv2.Data;
 using System.Globalization;
 using Microsoft.Extensions.Logging.ApplicationInsights;
@@ -13,7 +12,6 @@ using SSSKLv2.Registrations;
 using SSSKLv2.Services;
 using Microsoft.OpenApi;
 using Microsoft.Azure.SignalR.Common;
-using Blazored.Toast;
 using Azure.Identity;
 using Microsoft.Extensions.Azure;
 using SSSKLv2.Util;
@@ -51,13 +49,6 @@ builder.Services.AddOpenApi(opt =>
 
 
 // Add services to the container.
-builder.Services.AddRazorComponents()
-    .AddInteractiveServerComponents()
-    .AddHubOptions(options =>
-    {
-        options.ClientTimeoutInterval = TimeSpan.FromSeconds(60);
-        options.HandshakeTimeout = TimeSpan.FromSeconds(30);
-    });
 
 builder.Services.AddHealthChecks();
 
@@ -146,6 +137,8 @@ var frontendOrigins = new[]
 {
     "http://localhost:3000",
     "https://localhost:3000",
+    "http://localhost:4200",
+    "https://localhost:4200",
     "http://localhost:5173",
     "https://localhost:5173",
     "https://ssskl.scoutingwilo.nl",
@@ -197,10 +190,7 @@ if (builder.Environment.IsProduction())
         });
 }
 
-builder.Services.AddQuickGridEntityFrameworkAdapter();
-
-// Register SignalR so the app can inject IHubContext and map hubs.
-if (builder.Environment.IsDevelopment())
+if (isIntegrationLikeEnvironment)
 {
     builder.Services.AddSignalR();
 }
@@ -242,8 +232,6 @@ builder.Services.AddIdentityCore<ApplicationUser>(options =>
 
 // TODO: Implement a proper IEmailSender if needed for the API
 builder.Services.AddSingleton<IEmailSender<ApplicationUser>, NoOpEmailSender>();
-
-builder.Services.AddBlazoredToast();
 
 builder.Services.AddServicesDI();
 builder.Services.AddDataDI();
@@ -313,7 +301,7 @@ if (app.Environment.IsDevelopment())
 }
 else
 {
-    app.UseExceptionHandler("/Error", createScopeForErrors: true);
+    app.UseExceptionHandler("/error", createScopeForErrors: true);
 }
 
 // Redirect all domains to the main domain specified in WEBSITE_DOMAIN environment variable
@@ -337,7 +325,6 @@ if (!string.IsNullOrWhiteSpace(mainDomain))
 
 app.UseHttpsRedirection();
 app.UseMiddleware<SocialPreviewMiddleware>();
-app.UseBlazorFrameworkFiles();
 app.UseStaticFiles();
 // Apply cookie policy before authentication so cookie flags are enforced.
 app.UseCookiePolicy();
@@ -348,9 +335,6 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapStaticAssets();
 app.UseAntiforgery();
-
-app.MapRazorComponents<App>()
-    .AddInteractiveServerRenderMode();
 
 app.MapGroup("/api")
     .MapControllers();

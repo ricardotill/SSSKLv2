@@ -4,9 +4,9 @@ using System.Xml;
 using Microsoft.AspNetCore.Mvc;
 using SSSKLv2.Services.Interfaces;
 
-namespace SSSKLv2.Controllers;
+namespace SSSKLv2.Controllers.v1;
 
-[Route("rss")]
+[Route("v1/rss")]
 public class RssController(IProductService productService, IAnnouncementService announcementService) : ControllerBase
 {
     [ResponseCache(Duration = 1200)]

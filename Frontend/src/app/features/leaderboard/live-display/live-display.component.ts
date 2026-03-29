@@ -52,7 +52,7 @@ import { AutoScrollDirective } from '../../../shared/directives/auto-scroll.dire
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [DatePipe],
   template: `
-    <div class="live-display-container w-screen h-screen overflow-hidden text-surface-0 relative dark">
+    <div class="live-display-container w-full h-screen overflow-hidden text-white relative dark bg-[#09090b]">
       <!-- Background effects -->
       <div class="absolute inset-0 bg-gradient-to-br from-[#121619] via-[#1a1f24] to-[#121619]"></div>
       <div class="absolute top-0 right-0 w-[800px] h-[800px] bg-primary-500/10 rounded-full blur-[120px] mix-blend-screen pointer-events-none"></div>
@@ -87,12 +87,12 @@ import { AutoScrollDirective } from '../../../shared/directives/auto-scroll.dire
                       [showIndicators]="true"
                       styleClass="flex-1 w-full border-none h-full">
             <ng-template pTemplate="item" let-slide let-i="index">
-              <div class="h-full w-full p-12">
+              <div class="h-full w-full p-12 overflow-hidden flex flex-col">
                 @if (slide.type === 'product') {
-                  <div class="grid grid-cols-2 gap-16 h-full max-w-[1700px] mx-auto items-stretch pt-12">
+                  <div class="grid grid-cols-2 gap-16 flex-1 min-h-0 w-full items-stretch">
                     <!-- Left Column -->
                     <div class="flex flex-col h-full overflow-hidden">
-                      <h1 class="text-5xl font-black tracking-tight mb-8 m-0 text-center text-transparent bg-clip-text bg-gradient-to-r from-primary-400 to-primary-200 drop-shadow-lg pt-12">{{ slide.product?.name }}</h1>
+                      <h1 class="text-6xl font-black tracking-tight mb-8 mt-12 m-0 text-center text-transparent bg-clip-text bg-gradient-to-r from-primary-400 to-primary-200 drop-shadow-lg">{{ slide.product?.name }}</h1>
                       
                       @if (slide.leaderboardTotal && slide.leaderboardTotal.length > 0) {
                         <div class="glass-panel flex flex-col flex-1 overflow-hidden p-8 rounded-3xl">
@@ -135,10 +135,10 @@ import { AutoScrollDirective } from '../../../shared/directives/auto-scroll.dire
                     </div>
 
                     <!-- Right Column -->
-                    <div class="flex flex-col h-full overflow-hidden justify-between gap-12 pt-16">
+                    <div class="flex flex-col h-full overflow-hidden justify-between gap-12 pt-12">
                       <div class="glass-panel flex-1 overflow-hidden flex flex-col p-8 rounded-3xl">
                         @if (slide.leaderboard12h && slide.leaderboard12h.length > 0) {
-                          <h2 class="text-2xl font-bold mb-6 m-0 text-center text-surface-0 tracking-wide uppercase text-sm">Leaderboard (12 uur)</h2>
+                          <h2 class="text-2xl font-bold mb-6 m-0 text-center text-white tracking-wide uppercase text-sm">Leaderboard (12 uur)</h2>
                           <div [appAutoScroll]="slide.index === currentPage()" class="flex-1 overflow-auto custom-scrollbar bg-black/20 rounded-2xl shadow-2xl border border-white/5">
                             <p-table [value]="slide.leaderboard12h" styleClass="p-datatable-sm custom-dark-table">
                               <ng-template pTemplate="header">
@@ -175,7 +175,7 @@ import { AutoScrollDirective } from '../../../shared/directives/auto-scroll.dire
 
                       <div class="glass-panel flex-1 overflow-hidden flex flex-col p-8 rounded-3xl">
                         @if (slide.latestOrders && slide.latestOrders.length > 0) {
-                          <h2 class="text-2xl font-bold mb-6 m-0 text-center text-surface-0 tracking-wide uppercase text-sm">Laatste Bestellingen</h2>
+                          <h2 class="text-2xl font-bold mb-6 m-0 text-center text-white tracking-wide uppercase text-sm">Laatste Bestellingen</h2>
                           <div [appAutoScroll]="slide.index === currentPage()" class="flex-1 overflow-auto custom-scrollbar bg-black/20 rounded-2xl shadow-2xl border border-white/5">
                             <p-table [value]="slide.latestOrders" styleClass="p-datatable-sm custom-dark-table">
                               <ng-template pTemplate="header">
@@ -213,10 +213,10 @@ import { AutoScrollDirective } from '../../../shared/directives/auto-scroll.dire
                   </div>
                 } @else {
                   <!-- In-between Slide -->
-                  <div class="grid grid-cols-[1fr_1fr_1fr] gap-12 h-full max-w-[1700px] mx-auto items-center pt-12">
+                  <div class="grid grid-cols-[1fr_1fr_1fr] gap-12 flex-1 min-h-0 w-full items-center">
                     
                     <!-- Left: Meme -->
-                    <div class="flex flex-col h-[70vh] justify-center">
+                    <div class="flex flex-col h-full justify-center overflow-hidden">
                       <div class="glass-panel p-4 rounded-3xl overflow-hidden shadow-2xl border-white/10 hover:scale-[1.02] transition-transform duration-500">
                         <img [src]="'/images/memes/' + slide.meme" class="w-full h-full object-contain rounded-2xl" alt="Meme" />
                       </div>
@@ -224,7 +224,7 @@ import { AutoScrollDirective } from '../../../shared/directives/auto-scroll.dire
 
                     <!-- Middle: QR and Link -->
                     <div class="flex flex-col items-center justify-center text-center gap-12">
-                       <h2 class="text-5xl font-black italic mb-4 text-surface-0 drop-shadow-xl uppercase tracking-tight">Vergeet niet te strepen!</h2>
+                       <h2 class="text-5xl font-black italic mb-4 text-white drop-shadow-xl uppercase tracking-tight">Vergeet niet te strepen!</h2>
                        <div class="qr-container-new p-12 rounded-[3.5rem] bg-white/[0.03] border border-white/10 shadow-3xl relative flex items-center justify-center">
                           @if (qrCodeUrl()) {
                             <img [src]="qrCodeUrl()" class="w-64 h-64 rounded-xl shadow-[0_0_50px_rgba(34,197,94,0.4)] transition-all duration-700 hover:scale-105" alt="QR Code" />
@@ -238,9 +238,9 @@ import { AutoScrollDirective } from '../../../shared/directives/auto-scroll.dire
                     </div>
 
                     <!-- Right: Agenda -->
-                    <div class="flex flex-col h-[80vh] overflow-hidden">
+                    <div class="flex flex-col h-full overflow-hidden">
                       <div class="glass-panel flex flex-col h-full overflow-hidden p-10 rounded-3xl border-white/10 shadow-2xl">
-                        <h2 class="text-3xl font-bold mb-10 text-surface-0 flex items-center gap-4">
+                        <h2 class="text-3xl font-bold mb-10 text-white flex items-center gap-4">
                           <i class="pi pi-calendar text-primary-400 text-3xl"></i>
                           Agenda
                         </h2>
@@ -264,7 +264,7 @@ import { AutoScrollDirective } from '../../../shared/directives/auto-scroll.dire
                                       {{ event.startDateTime | date:'HH:mm' }}
                                     </span>
                                   </div>
-                                  <h3 class="font-bold m-0 text-surface-0 leading-tight tracking-tight"
+                                  <h3 class="font-bold m-0 text-white leading-tight tracking-tight"
                                       [ngClass]="isFirst ? 'text-3xl' : 'text-2xl'">{{ event.title }}</h3>
                                 </div>
                               </div>
@@ -297,20 +297,20 @@ import { AutoScrollDirective } from '../../../shared/directives/auto-scroll.dire
         </div>
       } @else {
         <!-- Single Product Display (Existing) -->
-        <div class="relative z-10 w-full h-full flex flex-col pt-24">
-          <div class="flex-1 w-full max-w-[1700px] mx-auto p-12 grid grid-cols-2 gap-16">
+        <div class="relative z-10 w-full h-full flex flex-col overflow-hidden">
+          <div class="flex-1 min-h-0 w-full mx-auto p-12 grid grid-cols-2 gap-16 mt-24">
             
             <!-- Left Column -->
             <div class="flex flex-col h-full overflow-hidden">
               @if (loading() && !product()) {
                 <div class="h-12 w-64 bg-surface-800 animate-pulse rounded-lg mb-8 mx-auto"></div>
               } @else {
-                <h1 class="text-5xl font-black tracking-tight mb-8 m-0 text-center text-transparent bg-clip-text bg-gradient-to-r from-primary-400 to-primary-200 drop-shadow-lg">{{ product()?.name }}</h1>
+                <h1 class="text-6xl font-black tracking-tight mb-8 m-0 text-center text-transparent bg-clip-text bg-gradient-to-r from-primary-400 to-primary-200 drop-shadow-lg">{{ product()?.name }}</h1>
               }
               
               @if (leaderboardTotal().length > 0) {
                 <div class="glass-panel flex flex-col flex-1 overflow-hidden p-8 rounded-3xl">
-                  <h2 class="text-2xl font-bold mb-6 m-0 text-center text-surface-0 tracking-wide uppercase text-sm">All Time Leaderboard</h2>
+                  <h2 class="text-2xl font-bold mb-6 m-0 text-center text-white tracking-wide uppercase text-sm">All Time Leaderboard</h2>
                   <div [appAutoScroll]="true" class="flex-1 overflow-auto custom-scrollbar bg-black/20 rounded-2xl shadow-2xl border border-white/5">
                     <p-table [value]="leaderboardTotal()" styleClass="p-datatable-sm custom-dark-table">
                       <ng-template pTemplate="header">
@@ -354,7 +354,7 @@ import { AutoScrollDirective } from '../../../shared/directives/auto-scroll.dire
               <!-- Leaderboard 12h -->
               <div class="glass-panel flex-1 overflow-hidden flex flex-col p-8 rounded-3xl">
                 @if (leaderboard12h().length > 0) {
-                  <h2 class="text-2xl font-bold mb-6 m-0 text-center text-surface-0 tracking-wide uppercase text-sm">Leaderboard (12 uur)</h2>
+                  <h2 class="text-2xl font-bold mb-6 m-0 text-center text-white tracking-wide uppercase text-sm">Leaderboard (12 uur)</h2>
                   <div [appAutoScroll]="true" class="flex-1 overflow-auto custom-scrollbar bg-black/20 rounded-2xl shadow-2xl border border-white/5">
                     <p-table [value]="leaderboard12h()" styleClass="p-datatable-sm custom-dark-table">
                       <ng-template pTemplate="header">
@@ -392,7 +392,7 @@ import { AutoScrollDirective } from '../../../shared/directives/auto-scroll.dire
               <!-- Latest Orders -->
               <div class="glass-panel flex-1 overflow-hidden flex flex-col p-8 rounded-3xl">
                 @if (latestOrders().length > 0) {
-                  <h2 class="text-2xl font-bold mb-6 m-0 text-center text-surface-0 tracking-wide uppercase text-sm">Laatste Bestellingen</h2>
+                  <h2 class="text-2xl font-bold mb-6 m-0 text-center text-white tracking-wide uppercase text-sm">Laatste Bestellingen</h2>
                   <div [appAutoScroll]="true" class="flex-1 overflow-auto custom-scrollbar bg-black/20 rounded-2xl shadow-2xl border border-white/5">
                     <p-table [value]="latestOrders()" styleClass="p-datatable-sm custom-dark-table">
                       <ng-template pTemplate="header">
@@ -462,6 +462,68 @@ import { AutoScrollDirective } from '../../../shared/directives/auto-scroll.dire
       border: 1px solid rgba(255, 255, 255, 0.05);
       box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
     }
+
+    /* Force dark mode variables even if system is in light mode */
+    :host ::ng-deep .live-display-container.dark {
+      --p-surface-0: #09090b;
+      --p-surface-50: #18181b;
+      --p-surface-100: #27272a;
+      --p-surface-200: #3f3f46;
+      --p-surface-300: #52525b;
+      --p-surface-400: #71717a;
+      --p-surface-500: #a1a1aa;
+      --p-surface-600: #d4d4d8;
+      --p-surface-700: #e4e4e7;
+      --p-surface-800: #f4f4f5;
+      --p-surface-900: #fafafa;
+      --p-surface-950: #ffffff;
+
+      --p-text-color: rgba(255, 255, 255, 0.95) !important;
+      --p-text-muted-color: rgba(255, 255, 255, 0.6) !important;
+      
+      color-scheme: dark;
+    }
+
+    /* Force Table Dark Mode */
+    :host ::ng-deep .p-datatable {
+      background: transparent !important;
+    }
+
+    :host ::ng-deep .p-datatable-thead > tr > th {
+      background: rgba(255, 255, 255, 0.05) !important;
+      color: white !important;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+    }
+
+    :host ::ng-deep .p-datatable-tbody > tr {
+      background: transparent !important;
+      color: white !important;
+    }
+
+    :host ::ng-deep .p-datatable-tbody > tr:nth-child(even) {
+      background: rgba(255, 255, 255, 0.02) !important;
+    }
+
+    :host ::ng-deep .p-datatable-tbody > tr > td {
+      background: transparent !important;
+      color: white !important;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+    }
+
+    /* Force Carousel Full Width */
+    :host ::ng-deep .p-carousel-content,
+    :host ::ng-deep .p-carousel-container {
+      max-width: none !important;
+      width: 100% !important;
+    }
+
+    :host ::ng-deep .live-display-container h1,
+    :host ::ng-deep .live-display-container h2,
+    :host ::ng-deep .live-display-container h3,
+    :host ::ng-deep .live-display-container h4,
+    :host ::ng-deep .live-display-container h5 {
+      color: white !important;
+    }
     
     .glass-celebration {
       background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.02));
@@ -506,6 +568,7 @@ import { AutoScrollDirective } from '../../../shared/directives/auto-scroll.dire
     .custom-dark-table .p-datatable-tbody > tr > td {
       border: none !important;
       border-bottom: 1px solid rgba(255,255,255,0.02) !important;
+      background: transparent !important;
     }
 
     .custom-scrollbar::-webkit-scrollbar {

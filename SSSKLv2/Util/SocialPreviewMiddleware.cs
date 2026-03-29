@@ -28,6 +28,13 @@ public class SocialPreviewMiddleware(RequestDelegate next)
         {
             var path = context.Request.Path.Value ?? "";
             
+            // Skip social preview for RSS feeds and other specific file types
+            if (path.EndsWith(".rss", StringComparison.OrdinalIgnoreCase) || path.Contains("/rss", StringComparison.OrdinalIgnoreCase))
+            {
+                await next(context);
+                return;
+            }
+            
             // Look for event routes like /events/GUID
             var eventMatch = Regex.Match(path, @"^/events/([a-fA-F0-9-]{36})$", RegexOptions.IgnoreCase);
             

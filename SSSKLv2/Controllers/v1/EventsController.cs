@@ -25,11 +25,25 @@ public class EventsController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<PaginationObject<EventDto>>> GetAll([FromQuery] int skip = 0, [FromQuery] int take = 15, [FromQuery] bool futureOnly = false)
+    public async Task<ActionResult<PaginationObject<EventDto>>> GetAll([FromQuery] int skip = 0, [FromQuery] int take = 15, [FromQuery] bool futureOnly = false, [FromQuery] string? requiredRole = null)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        var items = await _eventService.GetAllEvents(skip, take, futureOnly, userId);
-        var totalCount = await _eventService.GetCount(futureOnly, userId);
+        var items = await _eventService.GetAllEvents(skip, take, futureOnly, userId, requiredRole);
+        var totalCount = await _eventService.GetCount(futureOnly, userId, requiredRole);
+
+        return Ok(new PaginationObject<EventDto>
+        {
+            Items = items,
+            TotalCount = totalCount
+        });
+    }
+
+    [AllowAnonymous]
+    [HttpGet("public")]
+    public async Task<ActionResult<PaginationObject<EventDto>>> GetPublic([FromQuery] int skip = 0, [FromQuery] int take = 15, [FromQuery] bool futureOnly = false, [FromQuery] string? requiredRole = null)
+    {
+        var items = await _eventService.GetAllEvents(skip, take, futureOnly, null, requiredRole);
+        var totalCount = await _eventService.GetCount(futureOnly, null, requiredRole);
 
         return Ok(new PaginationObject<EventDto>
         {

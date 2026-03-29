@@ -45,7 +45,7 @@ public class ProductControllerTests
         // Assert
         var ok = result as OkObjectResult;
         ok.Should().NotBeNull();
-        var expectedDtos = items.Select(p => new ProductDto { Id = p.Id, Name = p.Name, Description = p.Description, Price = p.Price, Stock = p.Stock }).ToList();
+        var expectedDtos = items.Select(p => new ProductDto { Id = p.Id, Name = p.Name, Description = p.Description, Price = p.Price, Stock = p.Stock, EnableLeaderboard = p.EnableLeaderboard }).ToList();
         ok!.Value.Should().BeEquivalentTo(new PaginationObject<ProductDto> { Items = expectedDtos, TotalCount = items.Count });
     }
 
@@ -66,7 +66,7 @@ public class ProductControllerTests
         // Assert
         var ok = result as OkObjectResult;
         ok.Should().NotBeNull();
-        var expectedDtos = items.Select(p => new ProductDto { Id = p.Id, Name = p.Name, Description = p.Description, Price = p.Price, Stock = p.Stock }).ToList();
+        var expectedDtos = items.Select(p => new ProductDto { Id = p.Id, Name = p.Name, Description = p.Description, Price = p.Price, Stock = p.Stock, EnableLeaderboard = p.EnableLeaderboard }).ToList();
         ok!.Value.Should().BeEquivalentTo(expectedDtos);
         await _mockService.Received(1).GetAll();
         await _mockService.DidNotReceive().GetAll(Arg.Any<int>(), Arg.Any<int>());
@@ -88,7 +88,7 @@ public class ProductControllerTests
         ok.Should().NotBeNull();
         var dto = ok!.Value as ProductDto;
         dto.Should().NotBeNull();
-        dto!.Should().BeEquivalentTo(new ProductDto { Id = prod.Id, Name = prod.Name, Description = prod.Description, Price = prod.Price, Stock = prod.Stock });
+        dto!.Should().BeEquivalentTo(new ProductDto { Id = prod.Id, Name = prod.Name, Description = prod.Description, Price = prod.Price, Stock = prod.Stock, EnableLeaderboard = prod.EnableLeaderboard });
     }
 
     [TestMethod]

@@ -4,8 +4,8 @@ namespace SSSKLv2.Data.DAL.Interfaces;
 
 public interface IEventRepository
 {
-    Task<IList<Event>> GetAll(int skip = 0, int take = 15, bool futureOnly = false, IList<string>? userRoles = null, bool isAdmin = false);
-    Task<int> GetCount(bool futureOnly = false, IList<string>? userRoles = null, bool isAdmin = false);
+    Task<IList<Event>> GetAll(int skip = 0, int take = 15, bool futureOnly = false, IList<string>? userRoles = null, bool isAdmin = false, string? requiredRole = null);
+    Task<int> GetCount(bool futureOnly = false, IList<string>? userRoles = null, bool isAdmin = false, string? requiredRole = null);
     Task<Event?> GetById(Guid id);
     Task Add(Event entity);
     Task Update(Event entity);

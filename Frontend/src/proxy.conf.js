@@ -10,6 +10,12 @@ const PROXY_CONFIG = {
     "target": target,
     "secure": false,
     "changeOrigin": true
+  },
+  "/hubs": {
+    "target": target,
+    "secure": false,
+    "changeOrigin": true,
+    "ws": true
   }
 };
 

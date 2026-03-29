@@ -95,7 +95,7 @@ public class OrderRepository(IDbContextFactory<ApplicationDbContext> dbContextFa
         return await GetPersonalQueryable(username, context).ToListAsync();
     }
     
-    public async Task<IEnumerable<Order>> GetLatest()
+    public async Task<IEnumerable<Order>> GetLatest(int take = 10)
     {
         var time = DateTime.Now.AddHours(-12);
 
@@ -103,8 +103,9 @@ public class OrderRepository(IDbContextFactory<ApplicationDbContext> dbContextFa
         return (await context.Order
                 .Where(x => x.CreatedOn > time)
                 .Include(x => x.User)
+                .Include(x => x.Product)
                 .OrderByDescending(x => x.CreatedOn)
-                .Take(10)
+                .Take(take)
                 .ToListAsync());
     }
     
@@ -113,6 +114,7 @@ public class OrderRepository(IDbContextFactory<ApplicationDbContext> dbContextFa
         await using var context = await dbContextFactory.CreateDbContextAsync();
         var order = await context.Order
             .Include(x => x.User)
+            .Include(x => x.Product)
             .SingleOrDefaultAsync(x => x.Id == id);
         if (order != null)
         {

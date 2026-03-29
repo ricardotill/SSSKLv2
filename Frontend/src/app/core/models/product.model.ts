@@ -4,6 +4,7 @@ export interface ProductDto {
   description?: string | null;
   price: number;
   stock: number;
+  enableLeaderboard: boolean;
 }
 
 export interface ProductCreateDto {
@@ -11,6 +12,7 @@ export interface ProductCreateDto {
   description?: string | null;
   price: number;
   stock: number;
+  enableLeaderboard: boolean;
 }
 
 export interface ProductUpdateDto {
@@ -19,6 +21,7 @@ export interface ProductUpdateDto {
   description?: string | null;
   price: number;
   stock: number;
+  enableLeaderboard: boolean;
 }
 
 export interface PaginatedProducts {

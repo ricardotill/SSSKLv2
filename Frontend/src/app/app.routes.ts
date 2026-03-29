@@ -18,6 +18,16 @@ export const routes: Routes = [
     title: 'Registreren - SSSKL'
   },
   {
+    path: 'leaderboard/livedisplay',
+    loadComponent: () => import('./features/leaderboard/live-display/live-display.component').then(m => m.LiveDisplayComponent),
+    title: 'Live Leaderboard - SSSKL'
+  },
+  {
+    path: 'leaderboard/livedisplay/:id',
+    loadComponent: () => import('./features/leaderboard/live-display/live-display.component').then(m => m.LiveDisplayComponent),
+    title: 'Live Leaderboard - SSSKL'
+  },
+  {
     path: '',
     loadComponent: () => import('./layout/main-layout/main-layout.component').then(m => m.MainLayoutComponent),
     providers: [MessageService, ConfirmationService],

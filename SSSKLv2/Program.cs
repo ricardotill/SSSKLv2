@@ -146,6 +146,8 @@ var frontendOrigins = new[]
 {
     "http://localhost:3000",
     "https://localhost:3000",
+    "http://localhost:4200",
+    "https://localhost:4200",
     "http://localhost:5173",
     "https://localhost:5173",
     "https://ssskl.scoutingwilo.nl",

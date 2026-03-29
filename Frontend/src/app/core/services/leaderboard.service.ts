@@ -21,4 +21,8 @@ export class LeaderboardService {
   get12HourLeaderboard(productId: string): Observable<LeaderboardEntryDto[]> {
     return this.http.get<LeaderboardEntryDto[]>(`${this.baseUrl}/12hour/${productId}`);
   }
+
+  get12HourLiveLeaderboard(productId: string): Observable<LeaderboardEntryDto[]> {
+    return this.http.get<LeaderboardEntryDto[]>(`${this.baseUrl}/12hour/live/${productId}`);
+  }
 }

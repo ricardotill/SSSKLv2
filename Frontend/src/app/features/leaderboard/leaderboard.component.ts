@@ -168,11 +168,11 @@ export default class LeaderboardComponent {
 
   products = signal<ProductDto[]>([]);
   selectedProduct = signal<ProductDto | null>(null);
-  
+
   leaderboard12h = signal<LeaderboardEntryDto[]>([]);
   leaderboardMonthly = signal<LeaderboardEntryDto[]>([]);
   leaderboardTotal = signal<LeaderboardEntryDto[]>([]);
-  
+
   loading = signal<boolean>(false);
 
   constructor() {

@@ -9,6 +9,8 @@ namespace SSSKLv2.Dto.Api.v1
         public string? Description { get; set; }
         public decimal Price { get; set; }
         public int Stock { get; set; }
+        public bool EnableLeaderboard { get; set; }
+
     }
 
     public class ProductCreateDto
@@ -20,6 +22,8 @@ namespace SSSKLv2.Dto.Api.v1
         public decimal Price { get; set; }
         [Required]
         public int Stock { get; set; }
+        public bool EnableLeaderboard { get; set; }
+
     }
 
     public class ProductUpdateDto
@@ -33,6 +37,8 @@ namespace SSSKLv2.Dto.Api.v1
         public decimal Price { get; set; }
         [Required]
         public int Stock { get; set; }
+        public bool EnableLeaderboard { get; set; }
+
     }
 }
 

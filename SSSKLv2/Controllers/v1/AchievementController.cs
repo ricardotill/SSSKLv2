@@ -34,7 +34,7 @@ public class AchievementController : ControllerBase
         {
             Id = a.Image.Id,
             FileName = a.Image.FileName,
-            Uri = a.Image.Uri,
+            Uri = $"/api/v1/blob/achievement/image/{a.Image.Id}",
             ContentType = a.Image.ContentType
         }
     };
@@ -46,7 +46,7 @@ public class AchievementController : ControllerBase
         AchievementName = e.Achievement?.Name ?? string.Empty,
         AchievementDescription = e.Achievement?.Description ?? string.Empty,
         DateAdded = e.CreatedOn,
-        ImageUrl = e.Achievement?.Image?.Uri,
+        ImageUrl = e.Achievement?.Image != null ? $"/api/v1/blob/achievement/image/{e.Achievement.Image.Id}" : null,
         HasSeen = e.HasSeen,
         UserId = e.User?.Id
     };

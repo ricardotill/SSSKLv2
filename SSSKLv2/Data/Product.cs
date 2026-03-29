@@ -26,5 +26,8 @@ namespace SSSKLv2.Data
         
         [DisplayName("Bestellingen")] 
         public IList<Order> Orders { get; set; } = new List<Order>();
+
+        [DisplayName("Leaderboard Ingeschakeld")]
+        public bool EnableLeaderboard { get; set; } = true;
     }
 }

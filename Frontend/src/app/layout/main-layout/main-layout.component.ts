@@ -2,14 +2,17 @@ import { Component, ChangeDetectionStrategy, signal } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { SidebarComponent } from '../sidebar/sidebar.component';
 import { HeaderComponent } from '../header/header.component';
-import { ToastModule } from 'primeng/toast';
+import { MessageService, ConfirmationService } from 'primeng/api';
+import { Toast } from 'primeng/toast';
+import { ConfirmDialog } from 'primeng/confirmdialog';
 
 @Component({
   selector: 'app-main-layout',
-  imports: [RouterOutlet, SidebarComponent, HeaderComponent, ToastModule],
+  imports: [RouterOutlet, SidebarComponent, HeaderComponent, Toast, ConfirmDialog],
   template: `
     <div class="layout-container bg-surface-50 dark:bg-surface-950">
       <p-toast position="bottom-left" />
+      <p-confirmDialog />
       <app-sidebar [isOpen]="isSidebarOpen()" (close)="isSidebarOpen.set(false)" />
       <div class="main-wrapper">
         <app-header [isSidebarOpen]="isSidebarOpen()" (menuToggled)="toggleSidebar()" />
@@ -54,7 +57,7 @@ import { ToastModule } from 'primeng/toast';
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export default class MainLayoutComponent {
+export class MainLayoutComponent {
   isSidebarOpen = signal(false);
 
   toggleSidebar() {

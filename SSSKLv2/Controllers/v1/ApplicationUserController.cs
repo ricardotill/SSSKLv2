@@ -54,7 +54,7 @@ public class ApplicationUserController : ControllerBase
         Roles = roles
     };
 
-    [Authorize(Roles = "Admin")]
+    [Authorize]
     [HttpGet]
     public async Task<ActionResult<IEnumerable<ApplicationUserDto>>> GetAll([FromQuery] int skip = 0, [FromQuery] int take = 15)
     {
@@ -62,6 +62,23 @@ public class ApplicationUserController : ControllerBase
         
         var list = await _applicationUserService.GetAllUsers(skip, take);
         var totalCount = await _applicationUserService.GetCount();
+        var dtoItems = list.Select(MapToDto).ToList();
+        
+        return Ok(new PaginationObject<ApplicationUserDto>()
+        {
+            Items = dtoItems,
+            TotalCount = totalCount
+        });
+    }
+
+    [Authorize(Roles = "Admin")]
+    [HttpGet("admin")]
+    public async Task<ActionResult<IEnumerable<ApplicationUserDto>>> GetAllAdmin([FromQuery] int skip = 0, [FromQuery] int take = 15)
+    {
+        _logger.LogInformation("{Controller}: Get all users for admin", nameof(ApplicationUserController));
+        
+        var list = await _applicationUserService.GetAllUsersAdmin(skip, take);
+        var totalCount = await _applicationUserService.GetCountAdmin();
         var dtoItems = list.Select(MapToDto).ToList();
         
         return Ok(new PaginationObject<ApplicationUserDto>()
@@ -105,14 +122,6 @@ public class ApplicationUserController : ControllerBase
         }
     }
 
-    [Authorize]
-    [HttpGet("obscured")]
-    public async Task<ActionResult<IEnumerable<ApplicationUserDto>>> GetAllObscured()
-    {
-        _logger.LogInformation("{Controller}: Get all users obscured", nameof(ApplicationUserController));
-        var users = await _applicationUserService.GetAllUsersObscured();
-        return Ok(users.Select(MapToDto).ToList());
-    }
 
 
     // GET v1/applicationuser/me

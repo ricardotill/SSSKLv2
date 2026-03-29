@@ -162,53 +162,6 @@ public class ApplicationUserServiceTests
 
     #endregion
 
-    #region GetAllUsersObscured Tests
-
-    [TestMethod]
-    public async Task GetAllUsersObscured_ReturnsObscuredUserList()
-    {
-        // Arrange
-        var users = new List<ApplicationUser>
-        {
-            CreateApplicationUser("user-1", "user1", "Test1", "User1", "test1@example.com"),
-            CreateApplicationUser("user-2", "user2", "Test2", "User2", "test2@example.com")
-        };
-        _mockUserRepository.GetAllForAdmin().Returns(users);
-
-        // Act
-        var result = await _sut.GetAllUsersObscured();
-        var resultList = result.ToList();
-
-        // Assert
-        resultList.Should().HaveCount(2);
-        resultList.Should().AllSatisfy(u => u.PasswordHash.Should().Be("*****"));
-        
-        // Verify specific user properties were retained
-        resultList[0].Id.Should().Be("user-1");
-        resultList[0].UserName.Should().Be("user1");
-        resultList[0].Name.Should().Be("Test1");
-        resultList[0].Surname.Should().Be("User1");
-        resultList[0].Email.Should().Be("test1@example.com");
-        
-        await _mockUserRepository.Received(1).GetAllForAdmin();
-    }
-
-    [TestMethod]
-    public async Task GetAllUsersObscured_WhenRepositoryReturnsEmptyList_ReturnsEmptyList()
-    {
-        // Arrange
-        var emptyList = new List<ApplicationUser>();
-        _mockUserRepository.GetAllForAdmin().Returns(emptyList);
-
-        // Act
-        var result = await _sut.GetAllUsersObscured();
-
-        // Assert
-        result.Should().BeEmpty();
-        await _mockUserRepository.Received(1).GetAllForAdmin();
-    }
-
-    #endregion
 
     #region GetAllLeaderboard Tests
 

@@ -1,23 +1,41 @@
+using Microsoft.EntityFrameworkCore;
 using SSSKLv2.Agents;
 using SSSKLv2.Data;
 using SSSKLv2.Data.DAL.Interfaces;
 using SSSKLv2.Dto.Api;
 using SSSKLv2.Services.Interfaces;
 using SSSKLv2.Util;
+using SSSKLv2.Data.Constants;
 
 namespace SSSKLv2.Services;
 
-public class EventService(IEventRepository eventRepository, IBlobStorageAgent blobStorageAgent, ILogger<EventService> logger) : IEventService
+public class EventService(IEventRepository eventRepository, IBlobStorageAgent blobStorageAgent, IApplicationUserService applicationUserService, ApplicationDbContext dbContext, ILogger<EventService> logger) : IEventService
 {
     public async Task<IEnumerable<EventDto>> GetAllEvents(int skip = 0, int take = 15, bool futureOnly = false, string? userId = null)
     {
-        var events = await eventRepository.GetAll(skip, take, futureOnly);
+        IList<string>? userRoles = null;
+        bool isAdmin = false;
+        if (userId != null)
+        {
+            userRoles = await applicationUserService.GetUserRoles(userId);
+            isAdmin = userRoles.Contains(Roles.Admin);
+        }
+        
+        var events = await eventRepository.GetAll(skip, take, futureOnly, userRoles, isAdmin);
         return events.Select(e => MapToDto(e, userId));
     }
 
-    public async Task<int> GetCount(bool futureOnly = false)
+    public async Task<int> GetCount(bool futureOnly = false, string? userId = null)
     {
-        return await eventRepository.GetCount(futureOnly);
+        IList<string>? userRoles = null;
+        bool isAdmin = false;
+        if (userId != null)
+        {
+            userRoles = await applicationUserService.GetUserRoles(userId);
+            isAdmin = userRoles.Contains(Roles.Admin);
+        }
+        
+        return await eventRepository.GetCount(futureOnly, userRoles, isAdmin);
     }
 
     public async Task<EventDto> GetEventById(Guid id, string? userId = null)
@@ -37,6 +55,12 @@ public class EventService(IEventRepository eventRepository, IBlobStorageAgent bl
             EndDateTime = dto.EndDateTime,
             CreatorId = creatorId
         };
+
+        if (dto.RequiredRoles != null && dto.RequiredRoles.Any())
+        {
+            var rolesToFetch = dto.RequiredRoles.Except(Roles.AllProtected, StringComparer.OrdinalIgnoreCase);
+            e.RequiredRoles = await dbContext.Roles.Where(r => rolesToFetch.Contains(r.Name)).ToListAsync();
+        }
 
         if (dto.ImageContent != null && dto.ImageContentType != null)
         {
@@ -66,6 +90,17 @@ public class EventService(IEventRepository eventRepository, IBlobStorageAgent bl
         e.Description = dto.Description;
         e.StartDateTime = dto.StartDateTime;
         e.EndDateTime = dto.EndDateTime;
+
+        e.RequiredRoles.Clear();
+        if (dto.RequiredRoles != null && dto.RequiredRoles.Any())
+        {
+            var rolesToFetch = dto.RequiredRoles.Except(Roles.AllProtected, StringComparer.OrdinalIgnoreCase);
+            var newRoles = await dbContext.Roles.Where(r => rolesToFetch.Contains(r.Name)).ToListAsync();
+            foreach (var r in newRoles)
+            {
+                e.RequiredRoles.Add(r);
+            }
+        }
 
         if (dto.ImageContent != null && dto.ImageContentType != null)
         {
@@ -97,6 +132,15 @@ public class EventService(IEventRepository eventRepository, IBlobStorageAgent bl
     {
         var e = await eventRepository.GetById(id);
         if (e == null) throw new Data.DAL.Exceptions.NotFoundException("Event not found");
+
+        if (e.RequiredRoles.Any())
+        {
+            var userRoles = await applicationUserService.GetUserRoles(userId);
+            if (!userRoles.Contains(Roles.Admin) && !e.RequiredRoles.Any(r => userRoles.Contains(r.Name)))
+            {
+                throw new UnauthorizedAccessException("You don't have the required role to RSVP to this event.");
+            }
+        }
 
         var response = await eventRepository.GetResponse(id, userId);
         if (response == null)
@@ -145,7 +189,8 @@ public class EventService(IEventRepository eventRepository, IBlobStorageAgent bl
                     UserName = r.User?.FullName ?? "Unknown",
                     ProfilePictureUrl = r.User?.ProfileImageId != null ? $"/api/v1/blob/profilepicture/image/{r.User.ProfileImageId}" : null
                 })
-                .ToList()
+                .ToList(),
+            RequiredRoles = e.RequiredRoles?.Select(r => r.Name ?? string.Empty).ToList() ?? new List<string>()
         };
 
         if (userId != null)

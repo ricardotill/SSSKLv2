@@ -52,7 +52,7 @@ public class EventsControllerTests
             new EventDto { Id = Guid.NewGuid(), Title = "Event 2" }
         };
         _mockService.GetAllEvents(0, 15, false, _currentUserId).Returns(events);
-        _mockService.GetCount(false).Returns(2);
+        _mockService.GetCount(false, _currentUserId).Returns(2);
 
         // Act
         var result = await _sut.GetAll();

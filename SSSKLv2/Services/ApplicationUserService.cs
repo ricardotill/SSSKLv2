@@ -19,6 +19,7 @@ public class ApplicationUserService(
     ILogger<ApplicationUserService> logger) : IApplicationUserService
 {
     public Task<int> GetCount() => applicationUserRepository.GetCount();
+    public Task<int> GetCountAdmin() => applicationUserRepository.GetCountAll();
     public async Task<ApplicationUser> GetUserById(string id)
     {
         logger.LogInformation("{GetType}: Get User with ID {Id}", GetType(), id);
@@ -39,32 +40,10 @@ public class ApplicationUserService(
         logger.LogInformation("{GetType}: Get All Users paged Skip={Skip} Take={Take}", GetType(), skip, take);
         return await applicationUserRepository.GetAllPaged(skip, take);
     }
-    public async Task<IQueryable<ApplicationUser>> GetAllUsersObscured()
+    public async Task<IList<ApplicationUser>> GetAllUsersAdmin(int skip, int take)
     {
-        logger.LogInformation("{GetType}: Get All Users Obscured", GetType());
-        var result = new List<ApplicationUser>();
-
-        var list = await applicationUserRepository.GetAllForAdmin();
-
-        foreach (var item in list)
-        {
-            ApplicationUser objApplicationUser = new ApplicationUser();
-
-            objApplicationUser.Id = item.Id;
-            objApplicationUser.UserName = item.UserName;
-            objApplicationUser.Saldo = item.Saldo;
-            objApplicationUser.Email = item.Email;
-            objApplicationUser.Name = item.Name;
-            objApplicationUser.Surname = item.Surname;
-            objApplicationUser.EmailConfirmed = item.EmailConfirmed;
-            objApplicationUser.PhoneNumber = item.PhoneNumber;
-            objApplicationUser.ProfileImageId = item.ProfileImageId;
-            objApplicationUser.PasswordHash = "*****";
-
-            result.Add(objApplicationUser);
-        }
-
-        return result.AsQueryable();
+        logger.LogInformation("{GetType}: Get All Users Admin paged Skip={Skip} Take={Take}", GetType(), skip, take);
+        return await applicationUserRepository.GetAllForAdminPaged(skip, take);
     }
 
     public async Task<IEnumerable<LeaderboardEntryDto>> GetAllLeaderboard(Guid productId)

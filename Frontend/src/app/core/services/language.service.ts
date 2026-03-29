@@ -135,6 +135,24 @@ export class LanguageService {
     'confirm_delete_announcement': 'Weet je zeker dat je deze mededeling wilt verwijderen? Dit kan niet ongedaan worden gemaakt.',
     'no_announcements': 'Geen mededelingen gevonden.',
 
+    // Admin - Roles
+    'roles_title': 'Rollen Beheren',
+    'roles_add': 'Rol Toevoegen',
+    'roles_id': 'ID',
+    'roles_name': 'Naam',
+    'roles_actions': 'Acties',
+    'roles_delete': 'Verwijderen',
+    'roles_no_roles': 'Geen rollen gevonden',
+    'roles_add_role': 'Nieuwe Rol Aanmaken',
+    'confirm_delete_role': 'Weet je zeker dat je de rol \'{role}\' wilt verwijderen?',
+    'role_created': 'Rol aanmaken succesvol',
+    'role_updated': 'Rol bijwerken succesvol',
+    'role_creation_failed': 'Aanmaken rol mislukt',
+    'role_deleted': 'Rol verwijderen succesvol',
+    'role_deletion_failed': 'Verwijderen rol mislukt',
+    'roles_edit_role': 'Rol Bewerken',
+    'required': 'Verplicht',
+
     // Settings
     'user_settings': 'Gebruikersinstellingen',
     'profile': 'Profiel',

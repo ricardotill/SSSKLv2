@@ -17,6 +17,7 @@ public class EventDto
     public List<EventResponseUserDto> AcceptedUsers { get; set; } = new();
     public List<EventResponseUserDto> DeclinedUsers { get; set; } = new();
     public EventResponseStatus? UserResponse { get; set; }
+    public IList<string> RequiredRoles { get; set; } = new List<string>();
 }
 
 public class EventCreateDto
@@ -27,6 +28,7 @@ public class EventCreateDto
     public ContentType? ImageContentType { get; set; }
     public DateTime StartDateTime { get; set; }
     public DateTime EndDateTime { get; set; }
+    public IList<string> RequiredRoles { get; set; } = new List<string>();
 }
 
 public class EventResponseDto

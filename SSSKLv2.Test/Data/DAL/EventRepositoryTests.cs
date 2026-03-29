@@ -28,7 +28,7 @@ public class EventRepositoryTests
     }
 
     [TestMethod]
-    public async Task GetAll_OrdersFutureBeforePast_AndChronological()
+    public async Task GetAll_OrdersFutureASC_AndPastDESC()
     {
         // Arrange
         var now = DateTime.UtcNow;
@@ -99,7 +99,7 @@ public class EventRepositoryTests
         result.Should().HaveCount(4, "all events should be returned when futureOnly is false");
         result[0].Title.Should().Be("Future Early");
         result[1].Title.Should().Be("Future Late");
-        result[2].Title.Should().Be("Past Early");
-        result[3].Title.Should().Be("Past Late");
+        result[2].Title.Should().Be("Past Late"); // Most recent past first
+        result[3].Title.Should().Be("Past Early"); // Older past last
     }
 }

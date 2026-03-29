@@ -1,6 +1,8 @@
 import { inject } from '@angular/core';
 import { Router, CanActivateFn } from '@angular/router';
 import { AuthService } from './auth.service';
+import { toObservable } from '@angular/core/rxjs-interop';
+import { filter, map, take } from 'rxjs';
 
 export const roleGuard: CanActivateFn = (route, state) => {
     const authService = inject(AuthService);
@@ -13,20 +15,25 @@ export const roleGuard: CanActivateFn = (route, state) => {
         return true;
     }
 
-    const currentUser = authService.currentUser();
-    
-    // Wait for the user to be loaded? Assuming currentUser is set since authGuard runs first
-    if (!currentUser) {
-        return router.createUrlTree(['/']);
-    }
+    // Wait for the auth service to be initialized before making a decision
+    return toObservable(authService.isInitialized).pipe(
+        filter(initialized => initialized),
+        take(1),
+        map(() => {
+            const currentUser = authService.currentUser();
+            
+            if (!currentUser) {
+                return router.createUrlTree(['/']);
+            }
 
-    const userRoles = currentUser.roles || [];
-    
-    const hasRole = requiredRoles.some(role => userRoles.includes(role));
+            const userRoles = currentUser.roles || [];
+            const hasRole = requiredRoles.some(role => userRoles.includes(role));
 
-    if (hasRole) {
-        return true;
-    }
+            if (hasRole) {
+                return true;
+            }
 
-    return router.createUrlTree(['/']);
+            return router.createUrlTree(['/']);
+        })
+    );
 };

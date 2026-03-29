@@ -46,6 +46,13 @@ export const routes: Routes = [
         canActivate: [roleGuard],
         data: { roles: ['Admin'] },
         title: 'Achievements Beheren - SSSKL'
+      },
+      {
+        path: 'roles',
+        loadComponent: () => import('./roles/roles.component').then(m => m.RolesComponent),
+        canActivate: [roleGuard],
+        data: { roles: ['Admin'] },
+        title: 'Rollen Beheren - SSSKL'
       }
     ]
   }

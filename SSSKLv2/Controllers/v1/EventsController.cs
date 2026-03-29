@@ -29,7 +29,7 @@ public class EventsController : ControllerBase
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         var items = await _eventService.GetAllEvents(skip, take, futureOnly, userId);
-        var totalCount = await _eventService.GetCount(futureOnly);
+        var totalCount = await _eventService.GetCount(futureOnly, userId);
 
         return Ok(new PaginationObject<EventDto>
         {

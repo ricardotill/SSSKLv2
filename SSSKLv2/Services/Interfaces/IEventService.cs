@@ -6,7 +6,7 @@ namespace SSSKLv2.Services.Interfaces;
 public interface IEventService
 {
     Task<IEnumerable<EventDto>> GetAllEvents(int skip = 0, int take = 15, bool futureOnly = false, string? userId = null);
-    Task<int> GetCount(bool futureOnly = false);
+    Task<int> GetCount(bool futureOnly = false, string? userId = null);
     Task<EventDto> GetEventById(Guid id, string? userId = null);
     Task<Guid> CreateEvent(EventCreateDto dto, string creatorId);
     Task UpdateEvent(Guid id, EventCreateDto dto, string userId, bool isAdmin);

@@ -218,9 +218,9 @@ export default class AchievementsComponent implements OnInit {
 
   loadUsers(): void {
     this.loading.set(true);
-    this.userService.getObscuredUsers().subscribe({
-      next: (users) => {
-        this.users.set(users);
+    this.userService.getUsers().subscribe({
+      next: (data) => {
+        this.users.set(data.items);
         this.loading.set(false);
       },
       error: () => this.loading.set(false)

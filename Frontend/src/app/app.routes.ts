@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { MessageService, ConfirmationService } from 'primeng/api';
 import { authGuard } from './core/auth/auth.guard';
 import { roleGuard } from './core/auth/role.guard';
 import { unauthGuard } from './core/auth/unauth.guard'; // Assume I will create this snippet
@@ -18,7 +19,8 @@ export const routes: Routes = [
   },
   {
     path: '',
-    loadComponent: () => import('./layout/main-layout/main-layout.component'),
+    loadComponent: () => import('./layout/main-layout/main-layout.component').then(m => m.MainLayoutComponent),
+    providers: [MessageService, ConfirmationService],
     children: [
       {
         path: 'leaderboard',

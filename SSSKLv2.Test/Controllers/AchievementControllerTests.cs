@@ -226,4 +226,50 @@ public class AchievementControllerTests
         var expected = entries.Select(e => new AchievementEntryDto { Id = e.Id, AchievementId = e.Achievement.Id, AchievementName = e.Achievement.Name, AchievementDescription = e.Achievement.Description ?? string.Empty, DateAdded = e.CreatedOn, ImageUrl = e.Achievement?.Image?.Uri, HasSeen = e.HasSeen, UserId = e.User?.Id });
         result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeEquivalentTo(expected);
     }
+
+    [TestMethod]
+    public async Task GetPersonalUnseenEntriesForCurrentUser_ReturnsOkWithMappedDtos()
+    {
+        var username = "user1";
+        var entries = new List<AchievementEntry> 
+        { 
+            new AchievementEntry { Id = Guid.NewGuid(), Achievement = new Achievement { Id = Guid.NewGuid(), Name = "ach1" }, HasSeen = true } 
+        };
+        _mockService.GetPersonalUnseenAchievementEntries(username).Returns(entries);
+
+        // Set authenticated user on controller
+        _sut.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext
+            {
+                User = new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim(ClaimTypes.Name, username) }, "TestAuth"))
+            }
+        };
+
+        var result = await _sut.GetPersonalUnseenEntriesForCurrentUser();
+
+        var expected = entries.Select(e => new AchievementEntryDto { Id = e.Id, AchievementId = e.Achievement.Id, AchievementName = e.Achievement.Name, AchievementDescription = e.Achievement.Description ?? string.Empty, DateAdded = e.CreatedOn, ImageUrl = e.Achievement?.Image?.Uri, HasSeen = true, UserId = e.User?.Id });
+        result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeEquivalentTo(expected);
+    }
+
+    [TestMethod]
+    public async Task GetEarners_ReturnsOkWithMappedDtos()
+    {
+        var achievementId = Guid.NewGuid();
+        var entries = new List<AchievementEntry> 
+        { 
+            new AchievementEntry 
+            { 
+                Id = Guid.NewGuid(), 
+                Achievement = new Achievement { Id = achievementId, Name = "ach1" },
+                User = new ApplicationUser { Id = "u1", UserName = "un1", Name = "fn1", Surname = "" }
+            } 
+        };
+        _mockService.GetEntriesForAchievement(achievementId).Returns(entries);
+
+        var result = await _sut.GetEarners(achievementId);
+
+        var expected = entries.Select(e => new AchievementEntryDto { Id = e.Id, AchievementId = achievementId, AchievementName = "ach1", AchievementDescription = string.Empty, DateAdded = e.CreatedOn, HasSeen = false, UserId = "u1", UserName = "un1", UserFullName = "fn1" });
+        result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeEquivalentTo(expected);
+    }
 }

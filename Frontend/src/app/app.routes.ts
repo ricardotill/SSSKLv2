@@ -1,10 +1,20 @@
+import { isDevMode } from '@angular/core';
 import { Routes } from '@angular/router';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { authGuard } from './core/auth/auth.guard';
 import { roleGuard } from './core/auth/role.guard';
 import { unauthGuard } from './core/auth/unauth.guard'; // Assume I will create this snippet
 
+const devRoutes = isDevMode() ? [
+  {
+    path: 'leaderboard/livedisplay/dev',
+    loadComponent: () => import('./features/leaderboard/live-display/dev-live-display.component').then(m => m.DevLiveDisplayComponent),
+    title: 'Dev: Live Display Scaling Test - SSSKL'
+  }
+] : [];
+
 export const routes: Routes = [
+  ...devRoutes,
   {
     path: 'login',
     loadComponent: () => import('./features/auth/login.component'),

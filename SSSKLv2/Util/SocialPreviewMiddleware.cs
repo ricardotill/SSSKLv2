@@ -7,8 +7,20 @@ namespace SSSKLv2.Util;
 
 public class SocialPreviewMiddleware(RequestDelegate next)
 {
-    private static readonly string[] SocialUserAgents = 
-    {
+    private static readonly TimeSpan RegexTimeout = TimeSpan.FromMilliseconds(100);
+
+    private static readonly Regex EventRouteRegex = new(
+        @"^/events/([a-fA-F0-9-]{36})$",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled,
+        RegexTimeout);
+
+    private static readonly Regex StripHtmlRegex = new(
+        @"<[^>]*>",
+        RegexOptions.Compiled,
+        RegexTimeout);
+
+    private static readonly string[] SocialUserAgents =
+    [
         "WhatsApp",
         "WhatsAppBot",
         "facebookexternalhit",
@@ -18,7 +30,7 @@ public class SocialPreviewMiddleware(RequestDelegate next)
         "Slackbot",
         "Discordbot",
         "TelegramBot"
-    };
+    ];
 
     public async Task InvokeAsync(HttpContext context, IEventRepository eventRepository)
     {
@@ -36,16 +48,23 @@ public class SocialPreviewMiddleware(RequestDelegate next)
             }
             
             // Look for event routes like /events/GUID
-            var eventMatch = Regex.Match(path, @"^/events/([a-fA-F0-9-]{36})$", RegexOptions.IgnoreCase);
-            
-            if (eventMatch.Success && Guid.TryParse(eventMatch.Groups[1].Value, out var eventId))
+            try
             {
-                var @event = await eventRepository.GetById(eventId);
-                if (@event != null)
+                var eventMatch = EventRouteRegex.Match(path);
+
+                if (eventMatch.Success && Guid.TryParse(eventMatch.Groups[1].Value, out var eventId))
                 {
-                    await ServeEventPreview(context, @event);
-                    return;
+                    var @event = await eventRepository.GetById(eventId);
+                    if (@event != null)
+                    {
+                        await ServeEventPreview(context, @event);
+                        return;
+                    }
                 }
+            }
+            catch (RegexMatchTimeoutException)
+            {
+                // Path did not match within the allowed time; fall through to generic preview
             }
             
             // Generic site preview for other pages requested by crawlers
@@ -112,6 +131,15 @@ public class SocialPreviewMiddleware(RequestDelegate next)
     private static string StripHtml(string input)
     {
         if (string.IsNullOrEmpty(input)) return "";
-        return Regex.Replace(input, "<.*?>", string.Empty).Trim();
+
+        try
+        {
+            return StripHtmlRegex.Replace(input, string.Empty).Trim();
+        }
+        catch (RegexMatchTimeoutException)
+        {
+            // Description too complex to strip within budget; return empty string
+            return string.Empty;
+        }
     }
 }

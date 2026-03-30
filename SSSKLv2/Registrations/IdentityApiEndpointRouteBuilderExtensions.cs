@@ -85,12 +85,13 @@ public static class IdentityApiEndpointRouteBuilderExtensions
 
             await emailStore.SetEmailAsync(user, email, CancellationToken.None);
             var result = await userManager.CreateAsync(user, registration.Password);
-            await userManager.AddToRoleAsync(user, Roles.Guest);
 
             if (!result.Succeeded)
             {
                 return CreateValidationProblem(result);
             }
+
+            await userManager.AddToRoleAsync(user, Roles.Guest);
 
             await SendConfirmationEmailAsync(user, userManager, context, email);
             return TypedResults.Ok();

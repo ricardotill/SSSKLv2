@@ -19,6 +19,7 @@ interface AchievementEvent {
 
 import { AvatarModule } from 'primeng/avatar';
 import { CarouselModule } from 'primeng/carousel';
+import { TagModule } from 'primeng/tag';
 import { PublicService } from '../../../core/services/public.service';
 import { EventService } from '../../../core/services/event.service';
 import { EventDto } from '../../../core/models/event.model';
@@ -48,7 +49,7 @@ import { AutoScrollDirective } from '../../../shared/directives/auto-scroll.dire
 @Component({
   selector: 'app-live-display',
   standalone: true,
-  imports: [CommonModule, TableModule, AvatarModule, CarouselModule, AutoScrollDirective],
+  imports: [CommonModule, TableModule, AvatarModule, CarouselModule, TagModule, AutoScrollDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [DatePipe],
   host: {
@@ -265,11 +266,11 @@ import { AutoScrollDirective } from '../../../shared/directives/auto-scroll.dire
                                 }
                                 <div class="flex-1 flex flex-col gap-1 w-full">
                                   <div class="flex justify-between items-start">
-                                    <span class="text-primary-400 font-bold text-sm tracking-widest uppercase">
+                                    <span class="text-primary-400 font-bold text-lg tracking-widest uppercase">
                                       {{ event.startDateTime | date:'dd MMM' }}
                                     </span>
-                                    <span class="text-surface-400 text-xs font-medium">
-                                      {{ event.startDateTime | date:'HH:mm' }}
+                                    <span class="text-primary-400 text-sm font-medium">
+                                      Start: {{ event.startDateTime | date:'HH:mm' }}
                                     </span>
                                   </div>
                                   <h3 class="font-bold m-0 text-white leading-tight tracking-tight"
@@ -280,9 +281,7 @@ import { AutoScrollDirective } from '../../../shared/directives/auto-scroll.dire
                               @if (event.requiredRoles && event.requiredRoles.length > 0) {
                                 <div class="flex gap-2 flex-wrap">
                                   @for (role of event.requiredRoles; track role) {
-                                    <span class="role-badge text-[10px] px-3 py-1 rounded-full bg-primary-500/10 text-primary-300 border border-primary-500/20 uppercase tracking-widest font-bold">
-                                      {{ role }}
-                                    </span>
+                                    <p-tag [value]="role" [rounded]="true" />
                                   }
                                 </div>
                               }
@@ -683,11 +682,6 @@ import { AutoScrollDirective } from '../../../shared/directives/auto-scroll.dire
     .event-card {
       border-left: 4px solid var(--primary-500);
     }
-
-    .role-badge {
-      background: rgba(var(--primary-500-rgb), 0.15);
-      border: 1px solid rgba(var(--primary-500-rgb), 0.3);
-    }
   `]
 })
 export class LiveDisplayComponent implements OnInit, OnDestroy {
@@ -751,7 +745,7 @@ export class LiveDisplayComponent implements OnInit, OnDestroy {
       this.loadData();
     } else {
       this.isCycling.set(true);
-      
+
       // Subscribe to role query parameter for reactivity
       this.route.queryParamMap.subscribe(params => {
         const role = params.get('role') || undefined;
@@ -894,7 +888,7 @@ export class LiveDisplayComponent implements OnInit, OnDestroy {
   }
 
   refreshMemes() {
-    this.slides.update(currentSlides => 
+    this.slides.update(currentSlides =>
       currentSlides.map(s => {
         if (s.type === 'between') {
           return { ...s, meme: this.getRandomMeme() };
@@ -928,7 +922,7 @@ export class LiveDisplayComponent implements OnInit, OnDestroy {
         this.loadData();
       }
     });
-    
+
     this.hubConnection.on('EventChanged', () => {
       if (this.isCycling()) {
         this.loadCyclingData();

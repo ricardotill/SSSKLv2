@@ -3,6 +3,7 @@ import { CommonModule, DatePipe } from '@angular/common';
 import { TableModule } from 'primeng/table';
 import { AvatarModule } from 'primeng/avatar';
 import { CarouselModule } from 'primeng/carousel';
+import { TagModule } from 'primeng/tag';
 import { LeaderboardEntryDto } from '../../../core/models/leaderboard.model';
 import { ProductDto } from '../../../core/models/product.model';
 import { OrderDto } from '../../../core/models/order.model';
@@ -27,7 +28,7 @@ const MEMES = [
 @Component({
   selector: 'app-dev-live-display',
   standalone: true,
-  imports: [CommonModule, TableModule, AvatarModule, CarouselModule, AutoScrollDirective],
+  imports: [CommonModule, TableModule, AvatarModule, CarouselModule, TagModule, AutoScrollDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [DatePipe],
   template: `
@@ -221,7 +222,7 @@ const MEMES = [
                               <div class="flex gap-6 items-center" [ngClass]="isFirst ? 'flex-col items-start gap-4' : ''">
                                 <div class="flex-1 flex flex-col gap-1 w-full">
                                   <div class="flex justify-between items-start">
-                                    <span class="text-primary-400 font-bold text-sm tracking-widest uppercase">
+                                    <span class="text-primary-400 font-bold text-lg tracking-widest uppercase">
                                       Day {{ $index + 1 }}
                                     </span>
                                   </div>
@@ -229,6 +230,14 @@ const MEMES = [
                                       [ngClass]="isFirst ? 'text-3xl' : 'text-2xl'">{{ event.title }}</h3>
                                 </div>
                               </div>
+
+                              @if (event.requiredRoles && event.requiredRoles.length > 0) {
+                                <div class="flex gap-2 flex-wrap">
+                                  @for (role of event.requiredRoles; track role) {
+                                    <p-tag [value]="role" severity="secondary" [rounded]="true" />
+                                  }
+                                </div>
+                              }
                             </div>
                           }
                         </div>
@@ -407,7 +416,8 @@ export class DevLiveDisplayComponent implements OnInit, OnDestroy {
       creatorName: 'Dev',
       createdOn: new Date().toISOString(),
       acceptedUsers: [],
-      declinedUsers: []
+      declinedUsers: [],
+      requiredRoles: i % 2 === 0 ? ['Leiding', 'Admin'] : []
     }));
 
     this.publicEvents.set(mockEvents);

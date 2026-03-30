@@ -856,6 +856,59 @@ public class AchievementRepositoryTests : RepositoryTest
 
     #endregion
 
+    #region GetPersonalUnseenAchievementEntries Tests
+
+    [TestMethod]
+    public async Task GetPersonalUnseenAchievementEntries_ReturnsOnlyUnseenForUser()
+    {
+        // Arrange
+        var achievement = NewAchievement("Test Achievement");
+        await SaveAchievements(achievement);
+        
+        var unseen = NewAchievementEntry(achievement, TestUser);
+        unseen.HasSeen = false;
+        
+        var seen = NewAchievementEntry(achievement, TestUser);
+        seen.HasSeen = true;
+        
+        await SaveAchievementEntries(unseen, seen);
+
+        // Act
+        var result = (await _sut.GetPersonalUnseenAchievementEntries(TestUser.UserName!)).ToList();
+
+        // Assert
+        result.Should().HaveCount(1);
+        result.First().Id.Should().Be(unseen.Id);
+    }
+
+    #endregion
+
+    #region UpdateAchievementEntryRange Tests
+
+    [TestMethod]
+    public async Task UpdateAchievementEntryRange_UpdatesAllEntries()
+    {
+        // Arrange
+        var achievement = NewAchievement("Test Achievement");
+        await SaveAchievements(achievement);
+        
+        var entry1 = NewAchievementEntry(achievement, TestUser);
+        var entry2 = NewAchievementEntry(achievement, TestUser);
+        await SaveAchievementEntries(entry1, entry2);
+
+        entry1.HasSeen = true;
+        entry2.HasSeen = true;
+
+        // Act
+        await _sut.UpdateAchievementEntryRange(new[] { entry1, entry2 });
+
+        // Assert
+        var dbEntries = await GetAchievementEntries();
+        dbEntries.Should().AllSatisfy(e => e.HasSeen.Should().BeTrue());
+    }
+
+    #endregion
+
     #region Helper Methods
 
     private async Task<IList<AchievementImage>> GetAchievementImagesForAchievement(Guid achievementId)

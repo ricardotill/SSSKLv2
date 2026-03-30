@@ -1072,4 +1072,79 @@ public class AchievementServiceTests
         await _achievementRepository.Received(1).CreateEntryRange(Arg.Is<IEnumerable<AchievementEntry>>(entries => entries.Count() == 1 && entries.First().User.Id == "u1"));
     }
     #endregion
+
+    #region New Methods Tests
+
+    [TestMethod]
+    public async Task GetPersonalUnseenAchievementEntries_WhenUnseenExist_MarksAsSeenAndReturnsUpdated()
+    {
+        // Arrange
+        var username = "user1";
+        var entries = new List<AchievementEntry> 
+        { 
+            new AchievementEntry { Id = Guid.NewGuid(), Achievement = new Achievement { Id = Guid.NewGuid() }, HasSeen = false } 
+        };
+        _achievementRepository.GetPersonalUnseenAchievementEntries(username).Returns(entries);
+
+        // Act
+        var result = await _sut.GetPersonalUnseenAchievementEntries(username);
+
+        // Assert
+        result.Should().HaveCount(1);
+        result.First().HasSeen.Should().BeTrue();
+        await _achievementRepository.Received(1).UpdateAchievementEntryRange(Arg.Is<IEnumerable<AchievementEntry>>(list => list.All(e => e.HasSeen)));
+    }
+
+    [TestMethod]
+    public async Task GetEntriesForAchievement_ReturnsEntriesFromRepository()
+    {
+        // Arrange
+        var achievementId = Guid.NewGuid();
+        var entries = new List<AchievementEntry> { new AchievementEntry { Id = Guid.NewGuid() } };
+        _achievementRepository.GetAllEntries(achievementId).Returns(entries);
+
+        // Act
+        var result = await _sut.GetEntriesForAchievement(achievementId);
+
+        // Assert
+        result.Should().BeEquivalentTo(entries);
+    }
+
+    [TestMethod]
+    public async Task GetPersonalAchievementsByUsername_ResolvesUserAndCallsExistingLogic()
+    {
+        // Arrange
+        var username = "user1";
+        var user = new ApplicationUser { Id = "u1", UserName = username };
+        _applicationUserRepository.GetByUsername(username).Returns(user);
+        _achievementRepository.GetAll().Returns(new List<Achievement>());
+        _achievementRepository.GetAllEntriesOfUser(user.Id).Returns(new List<AchievementEntry>());
+
+        // Act
+        var result = await _sut.GetPersonalAchievementsByUsername(username);
+
+        // Assert
+        result.Should().NotBeNull();
+        await _applicationUserRepository.Received(1).GetByUsername(username);
+        await _achievementRepository.Received(1).GetAllEntriesOfUser(user.Id);
+    }
+
+    [TestMethod]
+    public async Task GetPersonalAchievementEntriesByUsername_ResolvesUserAndCallsExistingLogic()
+    {
+        // Arrange
+        var username = "user1";
+        var user = new ApplicationUser { Id = "u1", UserName = username };
+        _applicationUserRepository.GetByUsername(username).Returns(user);
+        _achievementRepository.GetAllEntriesOfUser(user.Id).Returns(new List<AchievementEntry>());
+
+        // Act
+        var result = await _sut.GetPersonalAchievementEntriesByUsername(username);
+
+        // Assert
+        result.Should().NotBeNull();
+        await _applicationUserRepository.Received(1).GetByUsername(username);
+        await _achievementRepository.Received(1).GetAllEntriesOfUser(user.Id);
+    }
+    #endregion
 }

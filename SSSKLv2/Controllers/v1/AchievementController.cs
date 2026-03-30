@@ -48,7 +48,10 @@ public class AchievementController : ControllerBase
         DateAdded = e.CreatedOn,
         ImageUrl = e.Achievement?.Image != null ? $"/api/v1/blob/achievement/image/{e.Achievement.Image.Id}" : null,
         HasSeen = e.HasSeen,
-        UserId = e.User?.Id
+        UserId = e.User?.Id,
+        UserName = e.User?.UserName,
+        UserFullName = e.User?.FullName,
+        UserProfilePictureUrl = e.User?.ProfileImageId != null ? $"/api/v1/blob/profilepicture/image/{e.User.ProfileImageId}" : null
     };
 
     // GET v1/achievement
@@ -223,6 +226,14 @@ public class AchievementController : ControllerBase
         var entries = ids.Select(id => new AchievementEntry { Id = id });
         await _achievementService.DeleteAchievementEntryRange(entries);
         return NoContent();
+    }
+
+    // GET v1/achievement/{id}/earners
+    [HttpGet("{id:guid}/earners")]
+    public async Task<IActionResult> GetEarners(Guid id)
+    {
+        var entries = await _achievementService.GetEntriesForAchievement(id);
+        return Ok(entries.Select(MapEntryToDto));
     }
 
     // POST v1/achievement/award/{userId}/{achievementId}

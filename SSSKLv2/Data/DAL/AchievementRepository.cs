@@ -29,7 +29,7 @@ public class AchievementRepository(IDbContextFactory<ApplicationDbContext> dbCon
             .Take(take)
             .ToListAsync();
     }
-    
+
     public async Task<int> GetCount()
     {
         await using var context = await dbContextFactory.CreateDbContextAsync();
@@ -42,23 +42,24 @@ public class AchievementRepository(IDbContextFactory<ApplicationDbContext> dbCon
         return context.Achievement
             .OrderBy(x => x.CreatedOn);
     }
-    
+
     public async Task<IEnumerable<AchievementEntry>> GetAllEntries(Guid achievementId)
     {
         await using var context = await dbContextFactory.CreateDbContextAsync();
         return await context.AchievementEntry
+            .Include(x => x.User)
             .Include(x => x.Achievement.Image)
             .Where(x => x.Achievement.Id == achievementId)
             .OrderBy(x => x.CreatedOn)
             .ToListAsync();
     }
-    
+
     public IQueryable<AchievementEntry> GetAllEntriesQueryable(ApplicationDbContext context)
     {
         return context.AchievementEntry
             .OrderBy(x => x.CreatedOn);
     }
-    
+
     public async Task<IList<AchievementEntry>> GetAllEntriesOfUser(string userId)
     {
         await using var context = await dbContextFactory.CreateDbContextAsync();
@@ -70,7 +71,7 @@ public class AchievementRepository(IDbContextFactory<ApplicationDbContext> dbCon
             .OrderBy(x => x.CreatedOn)
             .ToListAsync();
     }
-    
+
     public async Task<IList<AchievementEntry>> GetPersonalUnseenAchievementEntries(string username)
     {
         await using var context = await dbContextFactory.CreateDbContextAsync();
@@ -92,7 +93,7 @@ public class AchievementRepository(IDbContextFactory<ApplicationDbContext> dbCon
             .Where(x => x.Id == id)
             .SingleOrDefaultAsync();
         if (achievement != null) return achievement;
-        
+
         throw new NotFoundException("Achievement not found");
     }
 
@@ -102,11 +103,11 @@ public class AchievementRepository(IDbContextFactory<ApplicationDbContext> dbCon
         await context.AddAsync(achievement);
         await context.SaveChangesAsync();
     }
-    
+
     public async Task CreateEntryRange(IEnumerable<AchievementEntry> entries)
     {
         await using var context = await dbContextFactory.CreateDbContextAsync();
-        
+
         var entriesToAdd = new List<AchievementEntry>();
         foreach (var entry in entries)
         {
@@ -117,14 +118,14 @@ public class AchievementRepository(IDbContextFactory<ApplicationDbContext> dbCon
                 Achievement = null!, // Don't set navigation property to avoid re-inserting Achievement
                 User = null! // Don't set navigation property to avoid re-inserting User
             };
-            
+
             // Set the foreign keys directly
             context.Entry(newEntry).Property("AchievementId").CurrentValue = entry.Achievement.Id;
             context.Entry(newEntry).Property("UserId").CurrentValue = entry.User.Id;
-            
+
             entriesToAdd.Add(newEntry);
         }
-        
+
         await context.AchievementEntry.AddRangeAsync(entriesToAdd);
         await context.SaveChangesAsync();
     }
@@ -200,11 +201,11 @@ public class AchievementRepository(IDbContextFactory<ApplicationDbContext> dbCon
             {
                 context.Entry(existing).Property("ImageId").CurrentValue = newImage.Id;
             }
-         }
+        }
 
-         await context.SaveChangesAsync();
+        await context.SaveChangesAsync();
     }
-    
+
     public async Task UpdateAchievementEntryRange(IEnumerable<AchievementEntry> entries)
     {
         await using var context = await dbContextFactory.CreateDbContextAsync();
@@ -226,7 +227,7 @@ public class AchievementRepository(IDbContextFactory<ApplicationDbContext> dbCon
         }
         else throw new NotFoundException("Achievement not found");
     }
-    
+
     public async Task DeleteAchievementEntryRange(IEnumerable<AchievementEntry> entries)
     {
         await using var context = await dbContextFactory.CreateDbContextAsync();
@@ -243,7 +244,7 @@ public class AchievementRepository(IDbContextFactory<ApplicationDbContext> dbCon
     public async Task<IEnumerable<Achievement>> GetUncompletedAchievementsForUser(string username)
     {
         await using var context = await dbContextFactory.CreateDbContextAsync();
-        
+
         // Resolve the user for the provided username. If user doesn't exist, return all achievements.
         var user = await context.Users.SingleOrDefaultAsync(u => u.UserName == username);
         if (user == null)
@@ -252,12 +253,12 @@ public class AchievementRepository(IDbContextFactory<ApplicationDbContext> dbCon
                 .OrderBy(achievement => achievement.CreatedOn)
                 .ToListAsync();
         }
-        
+
         // Query completed achievement IDs using shadow FK properties to ensure translation
         var completedAchievementIds = context.AchievementEntry
             .Where(entry => EF.Property<string>(entry, "UserId") == user.Id)
             .Select(entry => EF.Property<Guid>(entry, "AchievementId"));
-        
+
         // Get all achievements that are NOT in the completed list
         return await context.Achievement
             .Where(achievement => !completedAchievementIds.Contains(achievement.Id))

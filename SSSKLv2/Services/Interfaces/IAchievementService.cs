@@ -12,6 +12,7 @@ public interface IAchievementService
     Task<IList<AchievementEntry>> GetPersonalAchievementEntries(string userId);
     Task<IList<AchievementEntry>> GetPersonalAchievementEntriesByUsername(string username);
     Task<IList<AchievementEntry>> GetPersonalUnseenAchievementEntries(string username);
+    Task<IList<AchievementEntry>> GetEntriesForAchievement(Guid achievementId);
     Task<IEnumerable<Achievement>> GetAchievements();
     Task<IList<Achievement>> GetAchievements(int skip, int take);
     Task<Achievement> GetAchievementById(Guid id);

@@ -111,6 +111,12 @@ export const routes: Routes = [
         title: 'Achievements - SSSKL'
       },
       {
+        path: 'achievements/:id',
+        loadComponent: () => import('./features/achievements/achievement-detail/achievement-detail.component'),
+        canActivate: [authGuard],
+        title: 'Achievement - SSSKL'
+      },
+      {
         path: 'events',
         children: [
           {

@@ -53,6 +53,13 @@ export const routes: Routes = [
         canActivate: [roleGuard],
         data: { roles: ['Admin'] },
         title: 'Rollen Beheren - SSSKL'
+      },
+      {
+        path: 'global-settings',
+        loadComponent: () => import('./global-settings/admin-global-settings.component'),
+        canActivate: [roleGuard],
+        data: { roles: ['Admin'] },
+        title: 'Globale Instellingen Beheren - SSSKL'
       }
     ]
   }

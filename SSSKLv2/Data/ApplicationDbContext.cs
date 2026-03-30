@@ -19,6 +19,7 @@ namespace SSSKLv2.Data
         public DbSet<SSSKLv2.Data.EventResponse> EventResponse { get; set; } = default!;
         public DbSet<SSSKLv2.Data.EventImage> EventImage { get; set; } = default!;
         public DbSet<SSSKLv2.Data.UserImage> UserImage { get; set; } = default!;
+        public DbSet<SSSKLv2.Data.GlobalSetting> GlobalSetting { get; set; } = default!;
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -164,6 +165,16 @@ namespace SSSKLv2.Data
                 .WithOne(e => e.ProfileImage)
                 .HasForeignKey<ApplicationUser>(e => e.ProfileImageId)
                 .OnDelete(DeleteBehavior.NoAction);
+
+            builder.Entity<GlobalSetting>()
+                .HasIndex(p => p.Key)
+                .IsUnique();
+            builder.Entity<GlobalSetting>()
+                .Property(s => s.CreatedOn )
+                .HasDefaultValueSql("GETDATE()");
+            builder.Entity<GlobalSetting>()
+                .Property(s => s.UpdatedOn)
+                .HasDefaultValueSql("GETDATE()");
         }
     }
 }

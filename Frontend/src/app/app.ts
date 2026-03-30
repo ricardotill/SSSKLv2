@@ -5,10 +5,11 @@ import { PrimeNG } from 'primeng/config';
 import { AchievementModalComponent } from './shared/components/achievement-modal/achievement-modal.component';
 import { AuthService } from './core/auth/auth.service';
 import { AchievementPopupService } from './core/services/achievement-popup.service';
+import { WhatsNewModalComponent } from './shared/components/whats-new-modal/whats-new-modal.component';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, AchievementModalComponent],
+  imports: [RouterOutlet, AchievementModalComponent, WhatsNewModalComponent],
   templateUrl: './app.html',
   styleUrl: './app.css'
 })

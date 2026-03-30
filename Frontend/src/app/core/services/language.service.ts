@@ -135,6 +135,13 @@ export class LanguageService {
     'announcement_deleted': 'Mededeling succesvol verwijderd',
     'confirm_delete_announcement': 'Weet je zeker dat je deze mededeling wilt verwijderen? Dit kan niet ongedaan worden gemaakt.',
     'no_announcements': 'Geen mededelingen gevonden.',
+    'global_settings': "Globale Instellingen",
+    'global_settings_admin': "Globale Instellingen Beheer",
+    'global_settings_updated': "Instellingen succesvol bijgewerkt",
+    'global_settings_desc': "Beheer hier de globale instellingen van de applicatie, zoals de 'Wat is er nieuw?' modal.",
+    'whats_new_settings_section_title': "'Wat is er nieuw?' Instellingen",
+    'whats_new_settings_section_desc': "Voer hier de content in voor de 'Wat is er nieuw?' modal. Deze content wordt getoond aan gebruikers bij het inloggen.",
+    'whats_new_modal_title': "Wat is er nieuw in SSSKL?",
 
     // Admin - Roles
     'roles_title': 'Rollen Beheren',

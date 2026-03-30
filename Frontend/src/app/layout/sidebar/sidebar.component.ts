@@ -210,6 +210,7 @@ export class SidebarComponent {
             { label: t.products, icon: 'pi pi-box', routerLink: '/admin/products' },
             { label: t.achievements, icon: 'pi pi-verified', routerLink: '/admin/achievements' },
             { label: t.announcements, icon: 'pi pi-megaphone', routerLink: '/admin/announcements' },
+            { label: t.global_settings, icon: 'pi pi-info-circle', routerLink: '/admin/global-settings' },
             { label: t.top_ups, icon: 'pi pi-wallet', routerLink: '/admin/topups' }
           );
         }

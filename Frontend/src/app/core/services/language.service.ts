@@ -242,6 +242,11 @@ export class LanguageService {
     'new_achievement': '🎉 Nieuwe Achievement{s}! 🎉',
     'new_achievement_desc': 'Je hebt zojuist nieuwe achievement(s) ontgrendeld!',
     'awesome': 'Geweldig!',
+    'achievement_detail': 'Achievement Details',
+    'earners': 'Behaald door',
+    'no_earners': 'Niemand heeft dit achievement nog behaald.',
+    'earned_by_count': 'Behaald door {count} gebruiker(s)',
+    'earned_on': 'Behaald op',
 
     // Events
     'events': 'Evenementen',

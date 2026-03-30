@@ -109,7 +109,7 @@ public class AchievementControllerTests
     public async Task GetPersonal_ReturnsOk()
     {
         var username = "user1";
-        var list = new List<AchievementListingDto> { new AchievementListingDto("n","d",null,null,false) };
+        var list = new List<AchievementListingDto> { new AchievementListingDto(Guid.NewGuid(), "n", "d", null, null, false) };
         _mockService.GetPersonalAchievementsByUsername(username).Returns(list);
 
         // Set authenticated user on controller

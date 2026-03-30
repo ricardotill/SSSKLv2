@@ -26,6 +26,7 @@ public class AchievementService(
         {
             var entry = achievementEntries.SingleOrDefault(e => e.Achievement.Id == a.Id);
             return new AchievementListingDto(
+                a.Id,
                 a.Name,
                 a.Description,
                 entry?.CreatedOn,
@@ -88,6 +89,12 @@ public class AchievementService(
     public async Task<IList<AchievementEntry>> GetPersonalAchievementEntries(string userId)
     {
         return await achievementRepository.GetAllEntriesOfUser(userId);
+    }
+
+    public async Task<IList<AchievementEntry>> GetEntriesForAchievement(Guid achievementId)
+    {
+        var entries = await achievementRepository.GetAllEntries(achievementId);
+        return entries.ToList();
     }
 
     public async Task<IEnumerable<Achievement>> GetAchievements()

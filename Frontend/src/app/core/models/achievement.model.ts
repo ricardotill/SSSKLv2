@@ -38,9 +38,13 @@ export interface AchievementEntry {
   imageUrl?: string;
   hasSeen: boolean;
   userId: string;
+  userName?: string;
+  userFullName?: string;
+  userProfilePictureUrl?: string;
 }
 
 export interface AchievementListing {
+  id: string;
   name: string;
   description: string;
   dateAdded?: string;

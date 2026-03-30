@@ -1,5 +1,6 @@
 import { Component, ChangeDetectionStrategy, inject, signal, OnInit, computed, effect } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
+import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { SelectModule } from 'primeng/select';
 import { CardModule } from 'primeng/card';
@@ -19,6 +20,7 @@ import { ApplicationUserDto } from '../../core/models/application-user.model';
   standalone: true,
   imports: [
     CommonModule,
+    RouterModule,
     FormsModule,
     SelectModule,
     CardModule,
@@ -70,7 +72,10 @@ import { ApplicationUserDto } from '../../core/models/application-user.model';
           <ng-template #grid let-items>
             <div class="grid grid-cols-12 gap-4">
               @for (entry of items; track entry.name) {
-                <div class="col-span-12 sm:col-span-6 md:col-span-4 xl:col-span-3">
+                <div
+                  class="col-span-12 sm:col-span-6 md:col-span-4 xl:col-span-3 cursor-pointer"
+                  [routerLink]="['/achievements', entry.id]"
+                >
                   <p-card class="h-full achievement-card" [class.locked]="!entry.completed">
                     <ng-template pTemplate="header">
                       <div class="flex justify-center bg-surface-50/50 dark:bg-surface-800/50 rounded-t-lg items-center overflow-hidden min-h-[12rem]">

@@ -12,5 +12,8 @@ public class AchievementEntryDto
     public string? ImageUrl { get; set; }
     public bool HasSeen { get; set; }
     public string? UserId { get; set; }
+    public string? UserName { get; set; }
+    public string? UserFullName { get; set; }
+    public string? UserProfilePictureUrl { get; set; }
 }
 

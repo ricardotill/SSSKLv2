@@ -58,6 +58,7 @@ export class AchievementService {
                 // Find if the target user has an entry for this achievement by matching the name
                 const userEntry = entries.find(e => e.achievementName === ac.name);
                 return {
+                    id: ac.id,
                     name: ac.name,
                     description: ac.description,
                     dateAdded: userEntry ? userEntry.dateAdded : undefined,
@@ -71,6 +72,10 @@ export class AchievementService {
 
   getPersonalAchievementEntries(): Observable<AchievementEntry[]> {
     return this.http.get<AchievementEntry[]>(`${this.baseUrl}/entries/personal`);
+  }
+
+  getEarnersForAchievement(achievementId: string): Observable<AchievementEntry[]> {
+    return this.http.get<AchievementEntry[]>(`${this.baseUrl}/${achievementId}/earners`);
   }
 
   getUnseenAchievementEntries(): Observable<AchievementEntry[]> {

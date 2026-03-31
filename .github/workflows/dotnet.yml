@@ -97,7 +97,7 @@ jobs:
             /d:sonar.token="${{ secrets.SONAR_TOKEN }}" \
             /d:sonar.host.url="https://sonarcloud.io" \
             /d:sonar.cs.opencover.reportsPaths="**/*.opencover.xml" \
-            /d:sonar.exclusions="**/Migrations/**,**/Components/**,**/Controllers/**,**/Pages/**,**/ServiceExtensions.cs,**/Program.cs" \
+            /d:sonar.exclusions="Frontend/**,**/Migrations/**,**/Components/**,**/Controllers/**,**/Pages/**,**/ServiceExtensions.cs,**/Program.cs" \
             /d:sonar.scanner.skipJreProvisioning=true
           
           dotnet build SSSKLv2.slnx

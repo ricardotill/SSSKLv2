@@ -1,5 +1,5 @@
 import { inject, Injectable, signal } from '@angular/core';
-import { AchievementEntry } from '../models/achievement.model';
+import { AchievementEntry } from '../../../core/models/achievement.model';
 import { AchievementService } from './achievement.service';
 
 @Injectable({

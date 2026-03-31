@@ -127,6 +127,23 @@ public class AchievementControllerTests
     }
 
     [TestMethod]
+    public async Task GetPersonal_WhenUsernameIsNull_ReturnsUnauthorized()
+    {
+        // Set authenticated user without name
+        _sut.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext
+            {
+                User = new ClaimsPrincipal(new ClaimsIdentity())
+            }
+        };
+
+        var result = await _sut.GetPersonal();
+
+        result.Should().BeOfType<UnauthorizedResult>();
+    }
+
+    [TestMethod]
     public async Task GetPersonalEntries_ReturnsOk()
     {
         var userId = "user1";
@@ -253,6 +270,25 @@ public class AchievementControllerTests
     }
 
     [TestMethod]
+    public async Task GetPersonalUnseenEntriesForCurrentUser_WhenUnauthorized_ReturnsUnauthorized()
+    {
+        _sut.ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() };
+        var result = await _sut.GetPersonalUnseenEntriesForCurrentUser();
+        result.Should().BeOfType<UnauthorizedResult>();
+    }
+
+    [TestMethod]
+    public async Task Update_WhenNotFoundException_ReturnsNotFound()
+    {
+        var dto = new AchievementUpdateDto { Id = Guid.NewGuid(), Name = "New" };
+        _mockService.UpdateAchievement(Arg.Any<Achievement>()).Returns(Task.FromException(new NotFoundException("test")));
+
+        var result = await _sut.Update(dto);
+
+        result.Should().BeOfType<NotFoundResult>();
+    }
+
+    [TestMethod]
     public async Task GetEarners_ReturnsOkWithMappedDtos()
     {
         var achievementId = Guid.NewGuid();
@@ -271,5 +307,70 @@ public class AchievementControllerTests
 
         var expected = entries.Select(e => new AchievementEntryDto { Id = e.Id, AchievementId = achievementId, AchievementName = "ach1", AchievementDescription = string.Empty, DateAdded = e.CreatedOn, HasSeen = false, UserId = "u1", UserName = "un1", UserFullName = "fn1" });
         result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeEquivalentTo(expected);
+    }
+    [TestMethod]
+    public async Task GetAllForUser_ReturnsOk()
+    {
+        var userId = "u1";
+        var list = new List<AchievementListingDto> { new AchievementListingDto(Guid.NewGuid(), "n", "d", null, null, false) };
+        _mockService.GetPersonalAchievements(userId).Returns(list);
+
+        var result = await _sut.GetAllForUser(userId);
+
+        result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeEquivalentTo(list);
+    }
+
+    [TestMethod]
+    public async Task GetPersonal_WhenNotAuthenticated_ReturnsUnauthorized()
+    {
+        _sut.ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() };
+        var result = await _sut.GetPersonal();
+        result.Should().BeOfType<UnauthorizedResult>();
+    }
+
+    [TestMethod]
+    public async Task Create_WithValidForm_ReturnsCreated()
+    {
+        // Arrange
+        var dto = new AchievementDto { Name = "New", Description = "Desc" };
+        var fileMock = Substitute.For<IFormFile>();
+        fileMock.ContentType.Returns("image/png");
+        var stream = new MemoryStream();
+        fileMock.OpenReadStream().Returns(stream);
+
+        // Act
+        var result = await _sut.Create(dto, fileMock);
+
+        // Assert
+        result.Should().BeOfType<StatusCodeResult>().Which.StatusCode.Should().Be(StatusCodes.Status201Created);
+        await _mockService.Received(1).AddAchievement(Arg.Is<AchievementDto>(d => d.Name == "New" && d.ImageContentType != null));
+    }
+
+    [TestMethod]
+    public async Task Create_WithoutImage_ReturnsBadRequest()
+    {
+        var dto = new AchievementDto { Name = "New", Description = "Desc" };
+        var result = await _sut.Create(dto, null);
+        result.Should().BeOfType<BadRequestObjectResult>();
+    }
+
+    [TestMethod]
+    public async Task Update_WithImage_CallsUpdateWithImage()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        var dto = new AchievementUpdateDto
+        {
+            Id = id,
+            Name = "New",
+            Image = new AchievementImageDto { Id = Guid.NewGuid(), FileName = "test.png", ContentType = "image/png", Uri = "uri" }
+        };
+
+        // Act
+        var result = await _sut.Update(dto);
+
+        // Assert
+        result.Should().BeOfType<NoContentResult>();
+        await _mockService.Received(1).UpdateAchievement(Arg.Is<Achievement>(a => a.Image != null && a.Image.FileName == "test.png"));
     }
 }

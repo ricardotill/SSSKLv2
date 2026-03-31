@@ -49,7 +49,7 @@ public class ApplicationUserServiceTests
         var dbContextOptions = new DbContextOptionsBuilder<ApplicationDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
-        _mockContext = Substitute.For<ApplicationDbContext>(dbContextOptions);
+        _mockContext = new ApplicationDbContext(dbContextOptions);
 
         _sut = new ApplicationUserService(_mockUserRepository, _mockProductRepository, _fakeUserManager, _mockBlobAgent, _mockContext, _mockLogger);
     }
@@ -997,6 +997,120 @@ public class ApplicationUserServiceTests
 
         await act.Should().ThrowAsync<InvalidOperationException>();
     }
+
+    #region Paged and Count Tests
+
+    [TestMethod]
+    public async Task GetCount_ShouldReturnCountFromRepository()
+    {
+        _mockUserRepository.GetCount().Returns(42);
+        var result = await _sut.GetCount();
+        result.Should().Be(42);
+    }
+
+    [TestMethod]
+    public async Task GetCountAdmin_ShouldReturnCountFromRepository()
+    {
+        _mockUserRepository.GetCountAll().Returns(100);
+        var result = await _sut.GetCountAdmin();
+        result.Should().Be(100);
+    }
+
+    [TestMethod]
+    public async Task GetAllUsers_Paged_ShouldReturnUsersFromRepository()
+    {
+        var users = new List<ApplicationUser> { CreateApplicationUser("u1") };
+        _mockUserRepository.GetAllPaged(10, 5).Returns(users);
+        var result = await _sut.GetAllUsers(10, 5);
+        result.Should().BeEquivalentTo(users);
+    }
+
+    [TestMethod]
+    public async Task GetAllUsersAdmin_Paged_ShouldReturnUsersFromRepository()
+    {
+        var users = new List<ApplicationUser> { CreateApplicationUser("u1") };
+        _mockUserRepository.GetAllForAdminPaged(10, 5).Returns(users);
+        var result = await _sut.GetAllUsersAdmin(10, 5);
+        result.Should().BeEquivalentTo(users);
+    }
+
+    [TestMethod]
+    public async Task GetUserRoles_ShouldReturnRolesFromUserManager()
+    {
+        var id = "user1";
+        var user = CreateApplicationUser(id);
+        var roles = new List<string> { "Role1", "Role2" };
+        ((FakeUserManager)_fakeUserManager).FindByIdFunc = _ => Task.FromResult<ApplicationUser?>(user);
+        ((FakeUserManager)_fakeUserManager).GetRolesFunc = _ => Task.FromResult<IList<string>>(roles);
+
+        var result = await _sut.GetUserRoles(id);
+        result.Should().BeEquivalentTo(roles);
+    }
+
+    #endregion
+
+    #region Profile Picture Tests
+
+    [TestMethod]
+    public async Task UpdateProfilePictureAsync_WithValidImage_ShouldUploadAndStore()
+    {
+        // Arrange
+        var userId = "user1";
+        var user = CreateApplicationUser(userId);
+        _mockContext.Users.Add(user);
+        await _mockContext.SaveChangesAsync();
+
+        ((FakeUserManager)_fakeUserManager).FindByIdFunc = _ => Task.FromResult<ApplicationUser?>(user);
+        
+        // 1x1 transparent PNG
+        var pngBytes = new byte[] { 
+            0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52, 
+            0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0x15, 0xC4, 
+            0x89, 0x00, 0x00, 0x00, 0x0A, 0x49, 0x44, 0x41, 0x54, 0x08, 0xD7, 0x63, 0x60, 0x00, 0x00, 0x00, 
+            0x02, 0x00, 0x01, 0xE2, 0x21, 0xBC, 0x33, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE, 
+            0x42, 0x60, 0x82 
+        };
+        using var stream = new MemoryStream(pngBytes);
+        
+        var blobItem = new BlobStorageItem { Id = Guid.NewGuid(), FileName = "test.png", Uri = "http://test.com/test.png" };
+        _mockBlobAgent.UploadFileToBlobAsync(Arg.Any<string>(), "image/png", Arg.Any<Stream>()).Returns(blobItem);
+
+        // Act
+        await _sut.UpdateProfilePictureAsync(userId, stream, "image/png");
+
+        // Assert
+        user.ProfileImageId.Should().NotBeNull();
+        var storedImage = await _mockContext.UserImage.FirstOrDefaultAsync(i => i.Id == user.ProfileImageId);
+        storedImage.Should().NotBeNull();
+        storedImage!.FileName.Should().Be("test.png");
+        await _mockBlobAgent.Received(1).UploadFileToBlobAsync(Arg.Any<string>(), "image/png", Arg.Any<Stream>());
+    }
+
+    [TestMethod]
+    public async Task DeleteProfilePictureAsync_WithExistingPicture_ShouldCleanup()
+    {
+        // Arrange
+        var userId = "user1";
+        var user = CreateApplicationUser(userId);
+        var image = new UserImage { Id = Guid.NewGuid(), FileName = "old.png", User = user };
+        user.ProfileImage = image;
+        user.ProfileImageId = image.Id;
+        
+        _mockContext.Users.Add(user);
+        _mockContext.UserImage.Add(image);
+        await _mockContext.SaveChangesAsync();
+
+        // Act
+        await _sut.DeleteProfilePictureAsync(userId);
+
+        // Assert
+        user.ProfileImageId.Should().BeNull();
+        var dbImage = await _mockContext.UserImage.FirstOrDefaultAsync(i => i.Id == image.Id);
+        dbImage.Should().BeNull();
+        await _mockBlobAgent.Received(1).DeleteFileToBlobAsync("old.png");
+    }
+
+    #endregion
 
     // Minimal fake UserManager to allow per-test behavior via Func fields
     private class FakeUserManager : UserManager<ApplicationUser>

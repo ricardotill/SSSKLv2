@@ -4,7 +4,7 @@ import { TableModule, TableLazyLoadEvent, Table } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ConfirmationService, MessageService } from 'primeng/api';
-import { OrderService } from '../../core/services/order.service';
+import { OrderService } from './services/order.service';
 import { OrderDto } from '../../core/models/order.model';
 import { LanguageService } from '../../core/services/language.service';
 import { AuthService } from '../../core/auth/auth.service';

@@ -2,7 +2,7 @@ import { Component, ChangeDetectionStrategy, inject, ChangeDetectorRef } from '@
 import { CommonModule } from '@angular/common';
 import { DialogModule } from 'primeng/dialog';
 import { ButtonModule } from 'primeng/button';
-import { WhatsNewService } from '../../../core/services/whats-new.service';
+import { WhatsNewService } from '../../../features/admin/services/whats-new.service';
 import { LanguageService } from '../../../core/services/language.service';
 
 @Component({
@@ -46,6 +46,9 @@ import { LanguageService } from '../../../core/services/language.service';
   styles: [`
     :host ::ng-deep .rich-text-content {
       line-height: 1.6;
+      overflow-wrap: break-word; /* modern property for breaking long strings */
+      word-break: break-word; /* fallback for older browsers */
+      white-space: pre-wrap; /* preserve line breaks and spaces from rich text */
     }
     :host ::ng-deep .rich-text-content h1, 
     :host ::ng-deep .rich-text-content h2, 

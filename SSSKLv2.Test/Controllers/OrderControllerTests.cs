@@ -4,10 +4,13 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
+using NSubstitute.ExceptionExtensions;
 using SSSKLv2.Controllers.v1;
 using SSSKLv2.Data;
 using SSSKLv2.Data.DAL.Exceptions;
 using SSSKLv2.Services.Interfaces;
+using SSSKLv2.Dto;
+using SSSKLv2.Dto.Api.v1;
 
 namespace SSSKLv2.Test.Controllers;
 
@@ -147,7 +150,6 @@ public class OrderControllerTests
         {
             claims.Add(new Claim(ClaimTypes.Role, "Admin"));
         }
-
         _sut.ControllerContext = new ControllerContext
         {
             HttpContext = new DefaultHttpContext
@@ -155,6 +157,165 @@ public class OrderControllerTests
                 User = new ClaimsPrincipal(new ClaimsIdentity(claims, "TestAuth"))
             }
         };
+    }
+
+    [TestMethod]
+    public async Task GetAll_ReturnsOkWithItems()
+    {
+        var list = new List<Order> { new Order { Id = Guid.NewGuid(), ProductNaam = "P1" } };
+        _orderService.GetAll(0, 15).Returns(list);
+        _orderService.GetCount().Returns(1);
+
+        var result = await _sut.GetAll(0, 15);
+
+        result.Should().BeOfType<OkObjectResult>().Which.Value.As<PaginationObject<OrderDto>>().TotalCount.Should().Be(1);
+    }
+
+    [TestMethod]
+    public async Task GetPersonal_ReturnsOkWithItems()
+    {
+        var username = "user1";
+        SetUserContext("u1", username, false);
+        var list = new List<Order> { new Order { Id = Guid.NewGuid(), ProductNaam = "P1" } };
+        _orderService.GetPersonal(username, 0, 15).Returns(list);
+        _orderService.GetPersonalCount(username).Returns(1);
+
+        var result = await _sut.GetPersonal(0, 15);
+
+        result.Should().BeOfType<OkObjectResult>().Which.Value.As<PaginationObject<OrderDto>>().TotalCount.Should().Be(1);
+    }
+
+    [TestMethod]
+    public async Task GetPersonal_WhenUsernameMissing_ReturnsUnauthorized()
+    {
+        // Arrange
+        SetUserContext("u1", null, false);
+
+        // Act
+        var result = await _sut.GetPersonal(0, 15);
+
+        // Assert
+        result.Should().BeOfType<UnauthorizedResult>();
+    }
+
+    [TestMethod]
+    public async Task GetById_WhenFound_ReturnsOk()
+    {
+        var id = Guid.NewGuid();
+        _orderService.GetOrderById(id).Returns(new Order { Id = id, ProductNaam = "P1" });
+
+        var result = await _sut.GetById(id);
+
+        result.Should().BeOfType<OkObjectResult>().Which.Value.As<OrderDto>().Id.Should().Be(id);
+    }
+
+    [TestMethod]
+    public async Task GetById_WhenNotFound_ReturnsNotFound()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        _orderService.GetOrderById(id).Throws(new NotFoundException(""));
+
+        // Act
+        var result = await _sut.GetById(id);
+
+        // Assert
+        result.Should().BeOfType<NotFoundResult>();
+    }
+
+    [TestMethod]
+    public async Task GetLatest_ReturnsOk()
+    {
+        var list = new List<Order> { new Order { Id = Guid.NewGuid() } };
+        _orderService.GetLatestOrders(5).Returns(list);
+
+        var result = await _sut.GetLatest(5);
+
+        result.Should().BeOfType<OkObjectResult>().Which.Value.As<IEnumerable<OrderDto>>().Should().HaveCount(1);
+    }
+
+    [TestMethod]
+    public async Task GetOrderInitialize_ReturnsOk()
+    {
+        _productService.GetAllAvailable().Returns(new List<Product> { new Product { Id = Guid.NewGuid(), Name = "P1" } });
+        _applicationUserService.GetAllUsers().Returns(new List<ApplicationUser> { new ApplicationUser { Id = "u1", UserName = "un1" } });
+
+        var result = await _sut.GetOrderInitialize();
+
+        result.Should().BeOfType<OkObjectResult>().Which.Value.As<OrderInitializeDto>().Products.Should().NotBeEmpty();
+    }
+
+    [TestMethod]
+    public async Task Create_WithValidDto_ReturnsOk()
+    {
+        var dto = new OrderSubmitDto { Products = new List<Guid>(), Users = new List<Guid>() };
+        
+        var result = await _sut.Create(dto);
+
+        result.Should().BeOfType<OkResult>();
+        await _orderService.Received(1).CreateOrder(dto);
+    }
+
+    [TestMethod]
+    public async Task Create_WhenNullDto_ReturnsBadRequest()
+    {
+        // Act
+        var result = await _sut.Create(null);
+
+        // Assert
+        result.Should().BeOfType<BadRequestResult>();
+    }
+
+    [TestMethod]
+    public async Task Create_WhenServiceThrowsNotFound_ReturnsNotFound()
+    {
+        // Arrange
+        var dto = new OrderSubmitDto();
+        _orderService.CreateOrder(dto).Throws(new NotFoundException(""));
+
+        // Act
+        var result = await _sut.Create(dto);
+
+        // Assert
+        result.Should().BeOfType<NotFoundResult>();
+    }
+
+    [TestMethod]
+    public async Task Create_WhenServiceThrowsGenericException_ReturnsProblem()
+    {
+        // Arrange
+        var dto = new OrderSubmitDto();
+        _orderService.CreateOrder(dto).Throws(new Exception("Fail"));
+
+        // Act
+        var result = await _sut.Create(dto);
+
+        // Assert
+        result.Should().BeOfType<ObjectResult>().Which.StatusCode.Should().Be(500);
+    }
+
+    [TestMethod]
+    public async Task ExportCsv_ReturnsFile()
+    {
+        _orderService.ExportOrdersFromPastTwoYearsToCsvAsync().Returns("csv,content");
+
+        var result = await _sut.ExportCsv();
+
+        var fileResult = result.Should().BeOfType<FileContentResult>().Subject;
+        fileResult.ContentType.Should().Be("text/csv");
+        fileResult.FileDownloadName.Should().Be("orders_last_2_years.csv");
+    }
+
+    [TestMethod]
+    public async Task Delete_AdminOrderNotFound_ReturnsNotFound()
+    {
+        var id = Guid.NewGuid();
+        SetUserContext("adminId", "admin", true);
+        _orderService.DeleteOrder(id).Returns(Task.FromException(new NotFoundException("")));
+
+        var result = await _sut.Delete(id);
+
+        result.Should().BeOfType<NotFoundResult>();
     }
 }
 

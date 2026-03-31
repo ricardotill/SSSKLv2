@@ -29,15 +29,48 @@ public class AnnouncementRepositoryTests : RepositoryTest
     }
 
     [TestMethod]
-    public async Task GetAll_WhenDbEmpty_ReturnNoAnnouncements()
+    public async Task GetCount_ReturnsTotalCount()
     {
+        // Arrange
+        await SaveAnnouncements(new Announcement { Message = "A1" }, new Announcement { Message = "A2" });
+
         // Act
-        var list = await _sut.GetAll();
+        var result = await _sut.GetCount();
 
         // Assert
-        list.Should().BeEmpty();
+        result.Should().Be(2);
     }
-    
+
+    [TestMethod]
+    public async Task GetAllPaged_ReturnsCorrectSubset()
+    {
+        // Arrange
+        var a1 = new Announcement { Message = "A1", Order = 1 };
+        var a2 = new Announcement { Message = "A2", Order = 2 };
+        var a3 = new Announcement { Message = "A3", Order = 3 };
+        await SaveAnnouncements(a1, a2, a3);
+
+        // Act
+        var result = await _sut.GetAllPaged(skip: 1, take: 1);
+
+        // Assert
+        result.Should().HaveCount(1);
+        result.First().Message.Should().Be("A2");
+    }
+
+    [TestMethod]
+    public void GetAllQueryable_ReturnsQueryable()
+    {
+        // Arrange
+        using var context = new ApplicationDbContext(GetOptions());
+
+        // Act
+        var result = _sut.GetAllQueryable(context);
+
+        // Assert
+        result.Should().NotBeNull();
+    }
+
     [TestMethod]
     public async Task GetAll_WhenAnnouncementsInDb_ReturnAll()
     {

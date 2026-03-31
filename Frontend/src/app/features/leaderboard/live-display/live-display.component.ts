@@ -2,12 +2,15 @@ import { Component, ChangeDetectionStrategy, inject, signal, OnInit, OnDestroy }
 import { CommonModule, DatePipe } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { TableModule } from 'primeng/table';
-import { LeaderboardService } from '../../../core/services/leaderboard.service';
-import { ProductService } from '../../../core/services/product.service';
-import { OrderService } from '../../../core/services/order.service';
-import { LeaderboardEntryDto } from '../../../core/models/leaderboard.model';
-import { ProductDto } from '../../../core/models/product.model';
+import { LeaderboardService } from '../services/leaderboard.service';
+import { ProductService } from '../../pos/services/product.service';
+import { OrderService } from '../../orders/services/order.service';
+import { PublicService } from '../../../core/services/public.service';
+import { EventService } from '../../events/services/event.service';
 import { OrderDto } from '../../../core/models/order.model';
+import { ProductDto } from '../../../core/models/product.model';
+import { LeaderboardEntryDto } from '../../../core/models/leaderboard.model';
+import { EventDto } from '../../../core/models/event.model';
 import * as signalR from '@microsoft/signalr';
 import confetti from 'canvas-confetti';
 
@@ -20,9 +23,6 @@ interface AchievementEvent {
 import { AvatarModule } from 'primeng/avatar';
 import { CarouselModule } from 'primeng/carousel';
 import { TagModule } from 'primeng/tag';
-import { PublicService } from '../../../core/services/public.service';
-import { EventService } from '../../../core/services/event.service';
-import { EventDto } from '../../../core/models/event.model';
 import { switchMap, forkJoin, of, map, Observable } from 'rxjs';
 import * as QRCode from 'qrcode';
 

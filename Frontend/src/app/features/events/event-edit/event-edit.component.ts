@@ -8,14 +8,14 @@ import { CardModule } from 'primeng/card';
 import { InputTextModule } from 'primeng/inputtext';
 import { EditorModule } from 'primeng/editor';
 import { DatePickerModule } from 'primeng/datepicker';
-import { EventService } from '../../../core/services/event.service';
+import { EventService } from '../services/event.service';
 import { AuthService } from '../../../core/auth/auth.service';
 import { LanguageService } from '../../../core/services/language.service';
 import { MessageService } from 'primeng/api';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { FileUploadModule } from 'primeng/fileupload';
 import { MultiSelect } from 'primeng/multiselect';
-import { RoleService } from '../../../core/services/role.service';
+import { RoleService } from '../../admin/services/role.service';
 import { Role } from '../../../core/models/role.model';
 
 @Component({

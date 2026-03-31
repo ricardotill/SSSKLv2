@@ -162,10 +162,98 @@ public class ApplicationUserRepositoryTests : RepositoryTest
         // Assert
         result.Should().BeEmpty();
     }
+
+    [TestMethod]
+    public async Task GetAllForAdminPaged_ReturnsCorrectPage()
+    {
+        // Arrange
+        var users = new[]
+        {
+            CreateUser("user1", "u1@test.com", "A", "User"),
+            CreateUser("user2", "u2@test.com", "B", "User"),
+            CreateUser("user3", "u3@test.com", "C", "User")
+        };
+        await SaveUsers(users);
+
+        // Act
+        var result = await _sut.GetAllForAdminPaged(1, 1);
+
+        // Assert
+        result.Should().HaveCount(1);
+        result[0].UserName.Should().Be("user2");
+    }
+
+    [TestMethod]
+    public async Task GetCountAll_ReturnsCorrectCount()
+    {
+        // Arrange
+        await DeleteAllUsers();
+        var users = new[]
+        {
+            CreateUser("user1", "u1@test.com", "A", "User"),
+            CreateUser("user2", "u2@test.com", "B", "User")
+        };
+        await SaveUsers(users);
+
+        // Act
+        var result = await _sut.GetCountAll();
+
+        // Assert
+        result.Should().Be(2);
+    }
     
     #endregion
     
     #region GetAll Tests
+
+    [TestMethod]
+    public async Task GetCount_ReturnsOnlyConsumerUsers()
+    {
+        // Arrange
+        await DeleteAllUsersAndRoles();
+        await SetupRolesAndUserRoles();
+        
+        var consumer = CreateUser("consumer", "c@test.com", "C", "User");
+        var kiosk = CreateUser("kiosk", "k@test.com", "K", "User");
+        await SaveUsers(consumer, kiosk);
+        
+        await AddUserToRole(consumer, "Consumer");
+        await AddUserToRole(kiosk, "Kiosk");
+
+        // Act
+        var result = await _sut.GetCount();
+
+        // Assert
+        result.Should().Be(1);
+    }
+
+    [TestMethod]
+    public async Task GetAllPaged_ReturnsCorrectPageOfConsumerUsers()
+    {
+        // Arrange
+        await DeleteAllUsersAndRoles();
+        await SetupRolesAndUserRoles();
+        
+        var now = DateTime.Now;
+        var u1 = CreateUser("u1", "u1@test.com", "U1", "User");
+        u1.LastOrdered = now;
+        var u2 = CreateUser("u2", "u2@test.com", "U2", "User");
+        u2.LastOrdered = now.AddMinutes(-5);
+        var u3 = CreateUser("u3", "u3@test.com", "U3", "User");
+        u3.LastOrdered = now.AddMinutes(-10);
+        
+        await SaveUsers(u1, u2, u3);
+        await AddUserToRole(u1, "Consumer");
+        await AddUserToRole(u2, "Consumer");
+        await AddUserToRole(u3, "Consumer");
+
+        // Act
+        var result = await _sut.GetAllPaged(1, 1);
+
+        // Assert
+        result.Should().HaveCount(1);
+        result[0].UserName.Should().Be("u2");
+    }
     
     [TestMethod]
     public async Task GetAll_WithMultipleUsers_ReturnsConsumerUsersOrderedByLastOrdered()

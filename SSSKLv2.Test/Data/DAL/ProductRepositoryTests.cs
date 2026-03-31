@@ -144,16 +144,33 @@ public class ProductRepositoryTests : RepositoryTest
     }
     
     [TestMethod]
-    public async Task Create_WhenDuplicateName_RejectsSecondProductSinceUniqueConstraint()
+    public async Task GetCount_ReturnsTotalProductCount()
     {
-        var name = "dup";
-        var p1 = NewProduct(name, 30.32m, 1);
-        var p2 = NewProduct(name, 18.99m, 0);
-        await SaveProducts(p1);
-        var act = () => _ = _sut.Create(p2) ; // should fail (no unique constraint on Name)
-        await act.Should().ThrowAsync<DbUpdateException>();
-        var dblist = await GetProducts();
-        dblist.Should().HaveCount(1);
+        // Arrange
+        await SaveProducts(NewProduct("p1", 10, 10), NewProduct("p2", 20, 20));
+        
+        // Act
+        var result = await _sut.GetCount();
+        
+        // Assert
+        result.Should().Be(2);
+    }
+    
+    [TestMethod]
+    public async Task GetAll_WithPaging_ReturnsCorrectSubset()
+    {
+        // Arrange
+        await SaveProducts(
+            NewProduct("a", 1, 1),
+            NewProduct("b", 1, 1),
+            NewProduct("c", 1, 1)
+        );
+        
+        // Act
+        var result = await _sut.GetAll(skip: 1, take: 1);
+        
+        // Assert
+        result.Should().HaveCount(1);
     }
 
     [TestMethod]

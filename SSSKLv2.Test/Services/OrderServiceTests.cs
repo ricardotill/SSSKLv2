@@ -1,11 +1,17 @@
+using System;
+using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
+using System.Threading.Tasks;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NSubstitute;
+using NSubstitute.ExceptionExtensions;
 using SSSKLv2.Data;
 using SSSKLv2.Data.DAL.Exceptions;
 using SSSKLv2.Data.DAL.Interfaces;
+using SSSKLv2.Dto.Api.v1;
 using SSSKLv2.Services;
 using SSSKLv2.Services.Interfaces;
 
@@ -370,6 +376,208 @@ public class OrderServiceTests
         await act.Should().ThrowAsync<ArgumentException>()
             .WithMessage("Invalid order ID");
         await _mockOrderRepository.Received(1).Delete(emptyGuid);
+    }
+
+    #endregion
+
+    #region CreateOrder Tests
+
+    [TestMethod]
+    public async Task CreateOrder_WithNullDto_ShouldThrowArgumentNullException()
+    {
+        // Act
+        Func<Task> act = async () => await _sut.CreateOrder(null!);
+
+        // Assert
+        await act.Should().ThrowAsync<ArgumentNullException>();
+    }
+
+    [TestMethod]
+    public async Task CreateOrder_SingleUserSingleProduct_ShouldCreateSuccessfulOrder()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var productId = Guid.NewGuid();
+        var user = CreateUser("testuser");
+        var product = CreateProduct(productId, "Product 1", 10.00m);
+        
+        var dto = new OrderSubmitDto
+        {
+            Users = new List<Guid> { userId },
+            Products = new List<Guid> { productId },
+            Amount = 1,
+            Split = false
+        };
+
+        _applicationUserService.GetUserById(userId.ToString()).Returns(user);
+        _productService.GetProductById(productId).Returns(product);
+
+        // Act
+        await _sut.CreateOrder(dto);
+
+        // Assert
+        await _mockOrderRepository.Received(1).CreateRange(Arg.Is<IEnumerable<Order>>(
+            orders => orders.Count() == 1 && 
+                      orders.First().ProductNaam == product.Name &&
+                      orders.First().Paid == product.Price));
+        await _purchaseNotifier.Received(1).NotifyUserPurchaseAsync(Arg.Any<UserPurchaseEvent>());
+        await _achievementService.Received(1).CheckOrdersForAchievements(Arg.Any<IEnumerable<Order>>());
+    }
+
+    [TestMethod]
+    public async Task CreateOrder_MultipleUsersDutchSplit_ShouldCalculateCorrectPrices()
+    {
+        // Arrange
+        var user1Id = Guid.NewGuid();
+        var user2Id = Guid.NewGuid();
+        var productId = Guid.NewGuid();
+        var user1 = CreateUser("user1");
+        var user2 = CreateUser("user2");
+        var product = CreateProduct(productId, "Expensive Product", 9.99m); // 9.99 / 2 = 5.00 rounded up
+        
+        var dto = new OrderSubmitDto
+        {
+            Users = new List<Guid> { user1Id, user2Id },
+            Products = new List<Guid> { productId },
+            Amount = 1,
+            Split = true
+        };
+
+        _applicationUserService.GetUserById(user1Id.ToString()).Returns(user1);
+        _applicationUserService.GetUserById(user2Id.ToString()).Returns(user2);
+        _productService.GetProductById(productId).Returns(product);
+
+        // Act
+        await _sut.CreateOrder(dto);
+
+        // Assert
+        // Decimal.Round(9.99 / 2, 2, ToPositiveInfinity) = 5.00
+        await _mockOrderRepository.Received(1).CreateRange(Arg.Is<IEnumerable<Order>>(
+            orders => orders.Count() == 2 && 
+                      orders.All(o => o.Paid == 5.00m)));
+    }
+
+    [TestMethod]
+    public async Task CreateOrder_MultipleUsersNoSplit_ShouldChargeFullPriceToEach()
+    {
+        // Arrange
+        var user1Id = Guid.NewGuid();
+        var user2Id = Guid.NewGuid();
+        var productId = Guid.NewGuid();
+        var user1 = CreateUser("user1");
+        var user2 = CreateUser("user2");
+        var product = CreateProduct(productId, "Normal Product", 2.50m);
+        
+        var dto = new OrderSubmitDto
+        {
+            Users = new List<Guid> { user1Id, user2Id },
+            Products = new List<Guid> { productId },
+            Amount = 1,
+            Split = false
+        };
+
+        _applicationUserService.GetUserById(user1Id.ToString()).Returns(user1);
+        _applicationUserService.GetUserById(user2Id.ToString()).Returns(user2);
+        _productService.GetProductById(productId).Returns(product);
+
+        // Act
+        await _sut.CreateOrder(dto);
+
+        // Assert
+        await _mockOrderRepository.Received(1).CreateRange(Arg.Is<IEnumerable<Order>>(
+            orders => orders.Count() == 2 && 
+                      orders.All(o => o.Paid == 2.50m)));
+        await _purchaseNotifier.Received(2).NotifyUserPurchaseAsync(Arg.Any<UserPurchaseEvent>());
+        await _achievementService.Received(1).CheckOrdersForAchievements(Arg.Any<IEnumerable<Order>>());
+        await _achievementService.Received(1).CheckUserForAchievements("user1");
+        await _achievementService.Received(1).CheckUserForAchievements("user2");
+    }
+
+    [TestMethod]
+    public async Task CreateOrder_WhenProductNotFound_ShouldPropagateNotFoundException()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var productId = Guid.NewGuid();
+        var user = CreateUser("user");
+        
+        var dto = new OrderSubmitDto
+        {
+            Users = new List<Guid> { userId },
+            Products = new List<Guid> { productId },
+            Amount = 1
+        };
+
+        _applicationUserService.GetUserById(userId.ToString()).Returns(user);
+        _productService.GetProductById(productId).Throws(new NotFoundException("Product not found"));
+
+        // Act
+        Func<Task> act = async () => await _sut.CreateOrder(dto);
+
+        // Assert
+        await act.Should().ThrowAsync<NotFoundException>().WithMessage("Product not found");
+        await _mockOrderRepository.DidNotReceiveWithAnyArgs().CreateRange(null!);
+    }
+
+    [TestMethod]
+    public async Task CreateOrder_WhenUserNotFound_ShouldPropagateNotFoundException()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var productId = Guid.NewGuid();
+        var product = CreateProduct(productId, "Product", 1.0m);
+        
+        var dto = new OrderSubmitDto
+        {
+            Users = new List<Guid> { userId },
+            Products = new List<Guid> { productId },
+            Amount = 1
+        };
+
+        _productService.GetProductById(productId).Returns(product);
+        _applicationUserService.GetUserById(userId.ToString()).Throws(new NotFoundException("User not found"));
+
+        // Act
+        Func<Task> act = async () => await _sut.CreateOrder(dto);
+
+        // Assert
+        await act.Should().ThrowAsync<NotFoundException>().WithMessage("User not found");
+        await _mockOrderRepository.DidNotReceiveWithAnyArgs().CreateRange(null!);
+    }
+
+    #endregion
+
+    #region Paged Get Tests
+
+    [TestMethod]
+    public async Task GetAll_ShouldCallRepositoryWithCorrectPaging()
+    {
+        // Arrange
+        var skip = 10;
+        var take = 5;
+        _mockOrderRepository.GetAll(skip, take).Returns(new List<Order>());
+
+        // Act
+        await _sut.GetAll(skip, take);
+
+        // Assert
+        await _mockOrderRepository.Received(1).GetAll(skip, take);
+    }
+
+    [TestMethod]
+    public async Task GetPersonal_ShouldCallRepositoryWithCorrectPaging()
+    {
+        // Arrange
+        var username = "testuser";
+        var skip = 0;
+        var take = 10;
+        _mockOrderRepository.GetPersonal(username, skip, take).Returns(new List<Order>());
+
+        // Act
+        await _sut.GetPersonal(username, skip, take);
+
+        // Assert
+        await _mockOrderRepository.Received(1).GetPersonal(username, skip, take);
     }
 
     #endregion

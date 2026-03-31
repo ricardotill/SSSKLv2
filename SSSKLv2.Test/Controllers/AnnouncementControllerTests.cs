@@ -142,4 +142,35 @@ public class AnnouncementControllerTests
         // Assert
         result.Should().BeOfType<NotFoundResult>();
     }
+
+    [TestMethod]
+    public async Task Update_WhenFound_ReturnsNoContent()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        var dto = new AnnouncementUpdateDto { Message = "New Message", IsScheduled = false };
+        _mockService.GetAnnouncementById(id).Returns(Task.FromResult<Announcement?>(new Announcement { Id = id }));
+
+        // Act
+        var result = await _sut.Update(id, dto);
+
+        // Assert
+        result.Should().BeOfType<NoContentResult>();
+        await _mockService.Received(1).UpdateAnnouncement(Arg.Is<Announcement>(a => a.Id == id && a.Message == "New Message"));
+    }
+
+    [TestMethod]
+    public async Task Delete_WhenFound_ReturnsNoContent()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        _mockService.GetAnnouncementById(id).Returns(Task.FromResult<Announcement?>(new Announcement { Id = id }));
+
+        // Act
+        var result = await _sut.Delete(id);
+
+        // Assert
+        result.Should().BeOfType<NoContentResult>();
+        await _mockService.Received(1).DeleteAnnouncement(id);
+    }
 }

@@ -7,6 +7,7 @@ using SSSKLv2.Controllers.v1;
 using SSSKLv2.Data;
 using SSSKLv2.Data.DAL.Exceptions;
 using SSSKLv2.Services.Interfaces;
+using Microsoft.AspNetCore.Http;
 using SSSKLv2.Dto.Api.v1;
 
 namespace SSSKLv2.Test.Controllers;
@@ -236,5 +237,50 @@ public class ProductControllerTests
         // Assert
         result.Should().BeOfType<BadRequestObjectResult>();
         await _mockService.DidNotReceive().UpdateProduct(Arg.Any<Product>());
+    }
+    [TestMethod]
+    public async Task Create_WhenServiceThrows_ReturnsProblem()
+    {
+        // Arrange
+        var prodDto = new ProductCreateDto { Name = "New", Price = 2.0m, Stock = 20 };
+        _mockService.CreateProduct(Arg.Any<Product>()).Returns(Task.FromException(new Exception("Fail")));
+
+        // Act
+        var result = await _sut.Create(prodDto);
+
+        // Assert
+        result.Result.Should().BeOfType<ObjectResult>().Which.StatusCode.Should().Be(StatusCodes.Status500InternalServerError);
+    }
+
+    [TestMethod]
+    public async Task Update_WhenServiceThrows_ReturnsProblem()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        var prod = new Product { Id = id, Name = "Upd", Price = 3.0m, Stock = 7 };
+        _mockService.GetProductById(id).Returns(Task.FromResult<Product>(prod));
+        _mockService.UpdateProduct(Arg.Any<Product>()).Returns(Task.FromException(new Exception("Fail")));
+        var dto = new ProductUpdateDto { Id = id, Name = "Upd", Price = 3.0m, Stock = 7 };
+
+        // Act
+        var result = await _sut.Update(id, dto);
+
+        // Assert
+        result.Should().BeOfType<ObjectResult>().Which.StatusCode.Should().Be(StatusCodes.Status500InternalServerError);
+    }
+
+    [TestMethod]
+    public async Task Update_WhenExistingIsNull_ReturnsNotFound()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        var dto = new ProductUpdateDto { Id = id, Name = "Upd", Price = 3.0m, Stock = 7 };
+        _mockService.GetProductById(id).Returns(Task.FromResult<Product>(null!));
+
+        // Act
+        var result = await _sut.Update(id, dto);
+
+        // Assert
+        result.Should().BeOfType<NotFoundResult>();
     }
 }

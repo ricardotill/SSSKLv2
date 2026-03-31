@@ -41,8 +41,21 @@ This will compile your project and store the build artifacts in the `dist/` dire
 To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
 
 ```bash
-ng test
+npm run test
 ```
+
+### Snapshot Testing
+
+This project uses **Snapshot Testing** to ensure UI components don't change unexpectedly. When you create or modify a component that uses snapshots, a `__snapshots__` directory will be created next to your spec file.
+
+*   **View Snapshots**: Check the `.snap` files to verify the rendered HTML.
+*   **Update Snapshots**: If you've intentionally changed a component's UI, update the snapshots by running:
+    ```bash
+    npm run test:update
+    ```
+
+> [!IMPORTANT]
+> Always review snapshot changes before committing them to ensure they represent the intended UI state.
 
 ## Running end-to-end tests
 

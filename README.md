@@ -72,6 +72,11 @@ The easiest way to run the entire stack is using .NET Aspire:
 3. Set `SSSKLv2.AppHost` as the startup project.
 4. Press `F5` to start. This will launch the Aspire Dashboard, SQL Server, Azurite, the API, and the Frontend.
 
+Alternatively, you can use the **CLI**:
+```bash
+dotnet run --project SSSKLv2.AppHost
+```
+
 ### Manual Setup
 If you prefer to run services manually:
 

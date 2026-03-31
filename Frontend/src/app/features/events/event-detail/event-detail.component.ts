@@ -5,7 +5,7 @@ import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { TagModule } from 'primeng/tag';
 import { DividerModule } from 'primeng/divider';
-import { EventService } from '../../../core/services/event.service';
+import { EventService } from '../services/event.service';
 import { LanguageService } from '../../../core/services/language.service';
 import { AuthService } from '../../../core/auth/auth.service';
 import { EventDto, EventResponseStatus } from '../../../core/models/event.model';

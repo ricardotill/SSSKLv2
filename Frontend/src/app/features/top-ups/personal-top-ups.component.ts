@@ -4,7 +4,7 @@ import { TableModule, TableLazyLoadEvent, Table } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { MessageService } from 'primeng/api';
-import { TopUpService } from '../../core/services/top-up.service';
+import { TopUpService } from './services/top-up.service';
 import { TopUpDto } from '../../core/models/top-up.model';
 import { LanguageService } from '../../core/services/language.service';
 import { finalize } from 'rxjs';

@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { Announcement, AnnouncementCreateDto, AnnouncementUpdateDto, PaginatedAnnouncements } from '../models/announcement.model';
+import { Announcement, AnnouncementCreateDto, AnnouncementUpdateDto, PaginatedAnnouncements } from '../../../core/models/announcement.model';
 
 @Injectable({
   providedIn: 'root'

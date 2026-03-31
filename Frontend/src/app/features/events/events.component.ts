@@ -6,7 +6,7 @@ import { DataViewModule, DataViewLazyLoadEvent } from 'primeng/dataview';
 import { ButtonModule } from 'primeng/button';
 import { TagModule } from 'primeng/tag';
 import { ToggleButtonModule } from 'primeng/togglebutton';
-import { EventService } from '../../core/services/event.service';
+import { EventService } from './services/event.service';
 import { LanguageService } from '../../core/services/language.service';
 import { AuthService } from '../../core/auth/auth.service';
 import { EventDto } from '../../core/models/event.model';

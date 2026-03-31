@@ -1,6 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { GlobalSetting, GlobalSettingUpdateDto } from '../models/global-settings.model';
+import { GlobalSetting, GlobalSettingUpdateDto } from '../../../core/models/global-settings.model';
 import { Observable } from 'rxjs';
 
 @Injectable({

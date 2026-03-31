@@ -5,12 +5,12 @@ import { MessageService } from 'primeng/api';
 import { CheckboxModule } from 'primeng/checkbox';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { ButtonModule } from 'primeng/button';
-import { OrderService } from '../../core/services/order.service';
+import { OrderService } from '../orders/services/order.service';
 import { ApplicationUserDto } from '../../core/models/application-user.model';
 import { ProductDto } from '../../core/models/product.model';
 import { AuthService } from '../../core/auth/auth.service';
 import { LanguageService } from '../../core/services/language.service';
-import { AchievementPopupService } from '../../core/services/achievement-popup.service';
+import { AchievementPopupService } from '../achievements/services/achievement-popup.service';
 
 import { CardModule } from 'primeng/card';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';

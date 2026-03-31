@@ -5,7 +5,7 @@ import { EditorModule } from 'primeng/editor';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { MessageService } from 'primeng/api';
-import { GlobalSettingsService } from '../../../core/services/global-settings.service';
+import { GlobalSettingsService } from '../services/global-settings.service';
 import { LanguageService } from '../../../core/services/language.service';
 import { finalize } from 'rxjs';
 

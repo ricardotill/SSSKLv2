@@ -11,7 +11,7 @@ import { MessageService, ConfirmationService } from 'primeng/api';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { CardModule } from 'primeng/card';
 import { ToggleSwitchModule } from 'primeng/toggleswitch';
-import { ProductService } from '../../../core/services/product.service';
+import { ProductService } from '../../pos/services/product.service';
 import { ProductDto, ProductCreateDto, ProductUpdateDto, PaginatedProducts } from '../../../core/models/product.model';
 import { LanguageService } from '../../../core/services/language.service';
 

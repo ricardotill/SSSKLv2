@@ -1,6 +1,6 @@
 import { inject, Injectable, signal, effect } from '@angular/core';
 import { GlobalSettingsService } from './global-settings.service';
-import { AuthService } from '../auth/auth.service';
+import { AuthService } from '../../../core/auth/auth.service';
 import { take } from 'rxjs';
 
 @Injectable({

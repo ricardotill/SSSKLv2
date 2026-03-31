@@ -2,7 +2,7 @@ import { Component, ChangeDetectionStrategy, inject, OnInit, effect, signal, Vie
 import { FormBuilder, ReactiveFormsModule, Validators, FormGroup } from '@angular/forms';
 import { AuthService, InfoResponse, TwoFactorResponse } from '../../core/auth/auth.service';
 import { PasskeyDto } from '../../core/models/passkey.model';
-import { WebAuthnService } from '../../core/services/webauthn.service';
+import { WebAuthnService } from '../auth/services/webauthn.service';
 import { CommonModule } from '@angular/common';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ConfirmationService, MessageService } from 'primeng/api';

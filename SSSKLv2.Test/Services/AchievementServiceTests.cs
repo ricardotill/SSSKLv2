@@ -4,7 +4,10 @@ using SSSKLv2.Agents;
 using SSSKLv2.Data;
 using SSSKLv2.Data.DAL.Interfaces;
 using SSSKLv2.Services;
+using SSSKLv2.Dto;
 using SSSKLv2.Services.Interfaces;
+using System.IO;
+using System.Net.Mime;
 
 namespace SSSKLv2.Test.Services;
 
@@ -1146,5 +1149,166 @@ public class AchievementServiceTests
         await _applicationUserRepository.Received(1).GetByUsername(username);
         await _achievementRepository.Received(1).GetAllEntriesOfUser(user.Id);
     }
+    [TestMethod]
+    public async Task GetCount_ShouldReturnCountFromRepository()
+    {
+        _achievementRepository.GetCount().Returns(Task.FromResult(5));
+        var result = await _sut.GetCount();
+        result.Should().Be(5);
+    }
+
+    [TestMethod]
+    public async Task GetAchievements_Paged_ShouldReturnPagedResults()
+    {
+        var achievements = new List<Achievement> { new Achievement { Id = Guid.NewGuid() } };
+        _achievementRepository.GetAll(10, 5).Returns(Task.FromResult<IList<Achievement>>(achievements));
+        var result = await _sut.GetAchievements(10, 5);
+        result.Should().BeEquivalentTo(achievements);
+    }
+
+    [TestMethod]
+    public async Task GetAchievementById_ShouldReturnAchievement()
+    {
+        var id = Guid.NewGuid();
+        var achievement = new Achievement { Id = id };
+        _achievementRepository.GetById(id).Returns(Task.FromResult(achievement));
+        var result = await _sut.GetAchievementById(id);
+        result.Should().Be(achievement);
+    }
+
+    [TestMethod]
+    public async Task UpdateAchievement_ShouldCallRepository()
+    {
+        var achievement = new Achievement { Id = Guid.NewGuid() };
+        await _sut.UpdateAchievement(achievement);
+        await _achievementRepository.Received(1).Update(achievement);
+    }
+
+    [TestMethod]
+    public async Task DeleteAchievement_ShouldCallRepository()
+    {
+        var id = Guid.NewGuid();
+        await _sut.DeleteAchievement(id);
+        await _achievementRepository.Received(1).Delete(id);
+    }
+
+    [TestMethod]
+    public async Task DeleteAchievementEntryRange_ShouldCallRepository()
+    {
+        var entries = new List<AchievementEntry> { new AchievementEntry { Id = Guid.NewGuid() } };
+        await _sut.DeleteAchievementEntryRange(entries);
+        await _achievementRepository.Received(1).DeleteAchievementEntryRange(entries);
+    }
+
+    [TestMethod]
+    public async Task AddAchievement_WithValidData_ShouldUploadImageAndCreateAchievement()
+    {
+        // Arrange
+        var stream = new MemoryStream(new byte[] { 0x01, 0x02 });
+        var dto = new AchievementDto
+        {
+            Name = "New Achievement",
+            Description = "Desc",
+            ImageContent = stream,
+            ImageContentType = new ContentType("image/png"),
+            AutoAchieve = true,
+            Action = Achievement.ActionOption.UserOrderAmountBought,
+            ComparisonOperator = Achievement.ComparisonOperatorOption.GreaterThanOrEqual,
+            ComparisonValue = 10
+        };
+
+        var blobItem = new BlobStorageItem 
+        { 
+            Id = Guid.NewGuid(), 
+            FileName = "test.png", 
+            Uri = "http://test.com/test.png",
+            ContentType = "image/png",
+            CreatedOn = DateTime.Now
+        };
+        _blobStorageAgent.UploadFileToBlobAsync(Arg.Any<string>(), "image/png", stream).Returns(blobItem);
+
+        // Act
+        await _sut.AddAchievement(dto);
+
+        // Assert
+        await _blobStorageAgent.Received(1).UploadFileToBlobAsync(Arg.Any<string>(), "image/png", stream);
+        await _achievementRepository.Received(1).Create(Arg.Is<Achievement>(a => 
+            a.Name == dto.Name && 
+            a.Description == dto.Description &&
+            a.Image != null &&
+            a.Image.FileName == "test.png"
+        ));
+    }
+
+    [TestMethod]
+    public async Task AddAchievement_MissingImage_ShouldThrowArgumentException()
+    {
+        var dto = new AchievementDto { Name = "Fail", Description = "Fail" };
+        var act = () => _sut.AddAchievement(dto);
+        await act.Should().ThrowAsync<ArgumentException>();
+    }
+
+    [TestMethod]
+    public async Task CheckOrdersForAchievements_OrdersWithinHour_ShouldAwardIfMet()
+    {
+        // Arrange
+        var achievement = new Achievement
+        {
+            Id = Guid.NewGuid(),
+            Name = "Hourly Rush",
+            AutoAchieve = true,
+            Action = Achievement.ActionOption.OrdersWithinHour,
+            ComparisonOperator = Achievement.ComparisonOperatorOption.GreaterThanOrEqual,
+            ComparisonValue = 2
+        };
+
+        var now = DateTime.Now;
+        var userOrders = new List<Order>
+        {
+            new() { User = _testUser, CreatedOn = now.AddMinutes(-5) },
+            new() { User = _testUser, CreatedOn = now.AddMinutes(-10) }
+        };
+
+        _achievementRepository.GetUncompletedAchievementsForUser(_testUser.UserName!).Returns(new List<Achievement> { achievement });
+        _orderRepository.GetPersonal(_testUser.UserName!).Returns(userOrders);
+
+        // Act
+        await _sut.CheckOrdersForAchievements(new List<Order> { _testOrder });
+
+        // Assert
+        await _achievementRepository.Received(1).CreateEntryRange(Arg.Is<IEnumerable<AchievementEntry>>(e => e.Count() == 1));
+    }
+
+    [TestMethod]
+    public async Task CheckOrdersForAchievements_MinutesBetweenOrders_ShouldAwardIfMet()
+    {
+        // Arrange
+        var achievement = new Achievement
+        {
+            Id = Guid.NewGuid(),
+            Name = "Quick Chain",
+            AutoAchieve = true,
+            Action = Achievement.ActionOption.MinutesBetweenOrders,
+            ComparisonOperator = Achievement.ComparisonOperatorOption.LessThanOrEqual,
+            ComparisonValue = 5
+        };
+
+        var now = DateTime.Now;
+        var userOrders = new List<Order>
+        {
+            new() { User = _testUser, CreatedOn = now },
+            new() { User = _testUser, CreatedOn = now.AddMinutes(-4) }
+        };
+
+        _achievementRepository.GetUncompletedAchievementsForUser(_testUser.UserName!).Returns(new List<Achievement> { achievement });
+        _orderRepository.GetPersonal(_testUser.UserName!).Returns(userOrders);
+
+        // Act
+        await _sut.CheckOrdersForAchievements(new List<Order> { _testOrder });
+
+        // Assert
+        await _achievementRepository.Received(1).CreateEntryRange(Arg.Is<IEnumerable<AchievementEntry>>(e => e.Count() == 1));
+    }
+
     #endregion
 }

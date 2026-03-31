@@ -3,7 +3,7 @@ import { CurrencyPipe } from '@angular/common';
 import { TableModule } from 'primeng/table';
 import { CardModule } from 'primeng/card';
 import { ButtonModule } from 'primeng/button';
-import { ApplicationUserService } from '../../core/services/application-user.service';
+import { ApplicationUserService } from './services/application-user.service';
 import { ApplicationUserDto } from '../../core/models/application-user.model';
 import { LanguageService } from '../../core/services/language.service';
 import { AvatarModule } from 'primeng/avatar';

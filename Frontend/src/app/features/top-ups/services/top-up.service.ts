@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { PaginatedTopUps, TopUpDto, TopUpCreateDto } from '../models/top-up.model';
+import { PaginatedTopUps, TopUpDto, TopUpCreateDto } from '../../../core/models/top-up.model';
 
 @Injectable({
   providedIn: 'root'

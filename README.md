@@ -1,4 +1,10 @@
-# SSSKLv2 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=ricardotill_SSSKLv2&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=ricardotill_SSSKLv2) [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=ricardotill_SSSKLv2&metric=coverage)](https://sonarcloud.io/summary/new_code?id=ricardotill_SSSKLv2)
+# SSSKLv2
+
+| Component | Quality Gate | Coverage |
+| :--- | :--- | :--- |
+| **Backend** | [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=SSSKLv2_Backend&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=SSSKLv2_Backend) | [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=SSSKLv2_Backend&metric=coverage)](https://sonarcloud.io/summary/new_code?id=SSSKLv2_Backend) |
+| **Frontend** | [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=SSSKLv2_Frontend&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=SSSKLv2_Frontend) | [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=SSSKLv2_Frontend&metric=coverage)](https://sonarcloud.io/summary/new_code?id=SSSKLv2_Frontend) |
+
 
 SSSKLv2 is a modern, full-stack management and Point of Sale (POS) system designed for clubs and organizations. It provides a seamless interface for managing products, users, events, and financial transactions, with a focus on ease of use and visual excellence.
 
@@ -71,6 +77,11 @@ The easiest way to run the entire stack is using .NET Aspire:
 2. Open the solution in **Visual Studio 2022** or **JetBrains Rider**.
 3. Set `SSSKLv2.AppHost` as the startup project.
 4. Press `F5` to start. This will launch the Aspire Dashboard, SQL Server, Azurite, the API, and the Frontend.
+
+Alternatively, you can use the **CLI**:
+```bash
+dotnet run --project SSSKLv2.AppHost
+```
 
 ### Manual Setup
 If you prefer to run services manually:

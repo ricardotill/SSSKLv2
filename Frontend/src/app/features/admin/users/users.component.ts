@@ -9,13 +9,13 @@ import { InputTextModule } from 'primeng/inputtext';
 import { CheckboxModule } from 'primeng/checkbox';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
-import { ApplicationUserService } from '../../../core/services/application-user.service';
+import { ApplicationUserService } from '../../users/services/application-user.service';
 import { ApplicationUserDto, ApplicationUserUpdateDto } from '../../../core/models/application-user.model';
 import { LanguageService } from '../../../core/services/language.service';
 import { CardModule } from 'primeng/card';
 import { MultiSelect } from 'primeng/multiselect';
 import { AvatarModule } from 'primeng/avatar';
-import { RoleService } from '../../../core/services/role.service';
+import { RoleService } from '../services/role.service';
 
 
 @Component({

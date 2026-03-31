@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { DialogModule } from 'primeng/dialog';
 import { ButtonModule } from 'primeng/button';
 import { CarouselModule } from 'primeng/carousel';
-import { AchievementPopupService } from '../../../core/services/achievement-popup.service';
+import { AchievementPopupService } from '../../../features/achievements/services/achievement-popup.service';
 import confetti from 'canvas-confetti';
 import { LanguageService } from '../../../core/services/language.service';
 import { AchievementEntry } from '../../../core/models/achievement.model';

@@ -6,7 +6,7 @@ import { CardModule } from 'primeng/card';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { finalize } from 'rxjs';
-import { OrderService } from '../../../core/services/order.service';
+import { OrderService } from '../../orders/services/order.service';
 import { OrderDto } from '../../../core/models/order.model';
 import { LanguageService } from '../../../core/services/language.service';
 import { AuthService } from '../../../core/auth/auth.service';

@@ -396,6 +396,81 @@ public class OrderRepositoryTests : RepositoryTest
 
     #endregion
 
+    #region GetCount Tests
+
+    [TestMethod]
+    public async Task GetCount_ReturnsTotalOrderCount()
+    {
+        // Arrange
+        await SaveOrdersDirectly(CreateTestOrder(DateTime.Now), CreateTestOrder(DateTime.Now));
+
+        // Act
+        var result = await _sut.GetCount();
+
+        // Assert
+        Assert.AreEqual(2, result);
+    }
+
+    [TestMethod]
+    public async Task GetPersonalCount_ReturnsCountForSpecificUser()
+    {
+        // Arrange
+        var user2 = new ApplicationUser { Id = Guid.NewGuid().ToString(), UserName = "user2" };
+        await SaveUserDirectly(user2);
+        await SaveOrdersDirectly(CreateTestOrder(DateTime.Now, TestUser), CreateTestOrder(DateTime.Now, user2));
+
+        // Act
+        var result = await _sut.GetPersonalCount("testuser");
+
+        // Assert
+        Assert.AreEqual(1, result);
+    }
+
+    #endregion
+
+    #region Paging Tests
+
+    [TestMethod]
+    public async Task GetAll_WithPaging_ReturnsCorrectSubset()
+    {
+        // Arrange
+        for (int i = 0; i < 5; i++) await SaveOrdersDirectly(CreateTestOrder(DateTime.Now.AddMinutes(-i)));
+
+        // Act
+        var result = await _sut.GetAll(skip: 1, take: 2);
+
+        // Assert
+        Assert.AreEqual(2, result.Count);
+    }
+
+    [TestMethod]
+    public async Task GetPersonal_WithPaging_ReturnsCorrectSubset()
+    {
+        // Arrange
+        for (int i = 0; i < 5; i++) await SaveOrdersDirectly(CreateTestOrder(DateTime.Now.AddMinutes(-i), TestUser));
+
+        // Act
+        var result = await _sut.GetPersonal("testuser", skip: 1, take: 2);
+
+        // Assert
+        Assert.AreEqual(2, result.Count);
+    }
+
+    [TestMethod]
+    public async Task GetPersonal_NoPaging_ReturnsAllForUser()
+    {
+        // Arrange
+        await SaveOrdersDirectly(CreateTestOrder(DateTime.Now, TestUser), CreateTestOrder(DateTime.Now, TestUser));
+
+        // Act
+        var result = await _sut.GetPersonal("testuser");
+
+        // Assert
+        Assert.AreEqual(2, result.Count);
+    }
+
+    #endregion
+
     [TestCleanup]
     public void TestCleanup()
     {

@@ -52,14 +52,59 @@ public class AchievementRepositoryTests : RepositoryTest
         result.Should().ContainEquivalentOf(achievement3, options => options.Excluding(x => x.CompletedEntries));
     }
 
+    #endregion
+
+    #region GetCount Tests
+
     [TestMethod]
-    public async Task GetAll_WhenDbEmpty_ReturnEmptyCollection()
+    public async Task GetCount_ReturnsTotalAchievementCount()
     {
+        // Arrange
+        await SaveAchievements(NewAchievement("A1"), NewAchievement("A2"));
+
         // Act
-        var result = await _sut.GetAll();
+        var result = await _sut.GetCount();
 
         // Assert
-        result.Should().BeEmpty();
+        result.Should().Be(2);
+    }
+
+    #endregion
+
+    #region GetAll Paged Tests
+
+    [TestMethod]
+    public async Task GetAll_WithPaging_ReturnsCorrectSubsetAndOrdersByCreatedOn()
+    {
+        // Arrange
+        var a1 = NewAchievement("A1", createdOn: DateTime.Now.AddMinutes(-3));
+        var a2 = NewAchievement("A2", createdOn: DateTime.Now.AddMinutes(-2));
+        var a3 = NewAchievement("A3", createdOn: DateTime.Now.AddMinutes(-1));
+        await SaveAchievements(a1, a2, a3);
+
+        // Act
+        var result = await _sut.GetAll(skip: 1, take: 1);
+
+        // Assert
+        result.Should().HaveCount(1);
+        result.First().Name.Should().Be("A2");
+    }
+
+    #endregion
+
+    #region GetAllQueryable Tests
+
+    [TestMethod]
+    public void GetAllQueryable_ReturnsQueryable()
+    {
+        // Arrange
+        using var context = new ApplicationDbContext(GetOptions());
+
+        // Act
+        var query = _sut.GetAllQueryable(context);
+
+        // Assert
+        query.Should().NotBeNull();
     }
 
     #endregion
@@ -130,6 +175,23 @@ public class AchievementRepositoryTests : RepositoryTest
         result.Should().HaveCount(1);
         result.Should().ContainEquivalentOf(entry1, options => options.Excluding(x => x.Achievement).Excluding(x => x.User));
         result.Should().NotContainEquivalentOf(entry2, options => options.Excluding(x => x.Achievement).Excluding(x => x.User));
+    }
+
+    #endregion
+
+    #region GetAllEntriesQueryable Tests
+
+    [TestMethod]
+    public void GetAllEntriesQueryable_ReturnsQueryable()
+    {
+        // Arrange
+        using var context = new ApplicationDbContext(GetOptions());
+
+        // Act
+        var query = _sut.GetAllEntriesQueryable(context);
+
+        // Assert
+        query.Should().NotBeNull();
     }
 
     #endregion
@@ -905,6 +967,30 @@ public class AchievementRepositoryTests : RepositoryTest
         // Assert
         var dbEntries = await GetAchievementEntries();
         dbEntries.Should().AllSatisfy(e => e.HasSeen.Should().BeTrue());
+    }
+
+    #endregion
+
+    #region DeleteAchievementEntryRange Tests
+
+    [TestMethod]
+    public async Task DeleteAchievementEntryRange_RemovesSpecifiedEntries()
+    {
+        // Arrange
+        var achievement = NewAchievement("Test Achievement");
+        await SaveAchievements(achievement);
+        
+        var entry1 = NewAchievementEntry(achievement, TestUser);
+        var entry2 = NewAchievementEntry(achievement, TestUser);
+        await SaveAchievementEntries(entry1, entry2);
+
+        // Act
+        await _sut.DeleteAchievementEntryRange(new[] { entry1 });
+
+        // Assert
+        var dbEntries = await GetAchievementEntries();
+        dbEntries.Should().HaveCount(1);
+        dbEntries.First().Id.Should().Be(entry2.Id);
     }
 
     #endregion

@@ -31,6 +31,108 @@ public class TopUpRepositoryTests : RepositoryTest
     {
         CleanupDatabase();
     }
+
+    #region Count Tests
+
+    [TestMethod]
+    public async Task GetCount_ReturnsTotalCount()
+    {
+        // Arrange
+        var user = TestUser;
+        await SaveTopUps(CreateTopUp(user, 10), CreateTopUp(user, 20));
+
+        // Act
+        var result = await _sut.GetCount();
+
+        // Assert
+        result.Should().Be(2);
+    }
+
+    [TestMethod]
+    public async Task GetPersonalCount_ReturnsUserCount()
+    {
+        // Arrange
+        var user1 = TestUser;
+        var user2 = new ApplicationUser { Id = "u2", UserName = "u2", Email = "u2@t.c" };
+        await SaveUser(user2);
+        await SaveTopUps(CreateTopUp(user1, 10), CreateTopUp(user2, 20));
+
+        // Act
+        var result = await _sut.GetPersonalCount(user1.UserName!);
+
+        // Assert
+        result.Should().Be(1);
+    }
+
+    #endregion
+
+    #region GetAll/GetPersonal Paging Tests
+
+    [TestMethod]
+    public async Task GetAll_ReturnsAllOrderedByCreatedOnDescending()
+    {
+        // Arrange
+        var user = TestUser;
+        var t1 = CreateTopUp(user, 10, DateTime.Now.AddMinutes(-5));
+        var t2 = CreateTopUp(user, 20, DateTime.Now.AddMinutes(-10));
+        await SaveTopUps(t1, t2);
+
+        // Act
+        var result = await _sut.GetAll();
+
+        // Assert
+        result.Should().HaveCount(2);
+        result[0].Id.Should().Be(t1.Id);
+    }
+
+    [TestMethod]
+    public async Task GetAll_Paged_ReturnsCorrectSubset()
+    {
+        // Arrange
+        var user = TestUser;
+        await SaveTopUps(CreateTopUp(user, 10), CreateTopUp(user, 20), CreateTopUp(user, 30));
+
+        // Act
+        var result = await _sut.GetAll(take: 1, skip: 1);
+
+        // Assert
+        result.Should().HaveCount(1);
+    }
+
+    [TestMethod]
+    public async Task GetPersonal_ReturnsCorrectUsersTopUps()
+    {
+        // Arrange
+        var user1 = TestUser;
+        var user2 = new ApplicationUser { Id = "u2", UserName = "u2", Email = "u2@t.c" };
+        await SaveUser(user2);
+        var t1 = CreateTopUp(user1, 10);
+        var t2 = CreateTopUp(user2, 20);
+        await SaveTopUps(t1, t2);
+
+        // Act
+        var result = await _sut.GetPersonal(user1.UserName!);
+
+        // Assert
+        result.Should().HaveCount(1);
+        result[0].Id.Should().Be(t1.Id);
+    }
+
+    [TestMethod]
+    public async Task GetPersonal_Paged_ReturnsCorrectSubset()
+    {
+        // Arrange
+        var user = TestUser;
+        await SaveTopUps(CreateTopUp(user, 10), CreateTopUp(user, 20), CreateTopUp(user, 30));
+
+        // Act
+        var result = await _sut.GetPersonal(user.UserName!, take: 1, skip: 1);
+
+        // Assert
+        result.Should().HaveCount(1);
+    }
+
+    #endregion
     
     #region GetAllQueryable Tests
     

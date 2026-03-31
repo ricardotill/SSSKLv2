@@ -5,6 +5,7 @@ using NSubstitute;
 using SSSKLv2.Controllers.v1;
 using SSSKLv2.Data;
 using SSSKLv2.Services.Interfaces;
+using SSSKLv2.Data.DAL.Exceptions;
 using SSSKLv2.Dto.Api.v1;
 
 namespace SSSKLv2.Test.Controllers;
@@ -188,6 +189,74 @@ public class TopUpControllerTests
 
         // Act
         var result = await _sut.Delete(Guid.NewGuid());
+
+        // Assert
+        result.Should().BeOfType<NotFoundResult>();
+    }
+    [TestMethod]
+    public async Task GetAll_WhenUnauthenticated_ReturnsUnauthorized()
+    {
+        // Arrange
+        _sut.ControllerContext = new ControllerContext { HttpContext = new Microsoft.AspNetCore.Http.DefaultHttpContext() };
+
+        // Act
+        var result = await _sut.GetAll();
+
+        // Assert
+        result.Result.Should().BeOfType<UnauthorizedResult>();
+    }
+
+    [TestMethod]
+    public async Task GetPersonal_WhenUnauthenticated_ReturnsUnauthorized()
+    {
+        // Arrange
+        _sut.ControllerContext = new ControllerContext { HttpContext = new Microsoft.AspNetCore.Http.DefaultHttpContext() };
+
+        // Act
+        var result = await _sut.GetPersonal();
+
+        // Assert
+        result.Result.Should().BeOfType<UnauthorizedResult>();
+    }
+
+    [TestMethod]
+    public async Task Create_WhenUserNotFound_ReturnsNotFound()
+    {
+        // Arrange
+        var dto = new TopUpCreateDto { UserName = "missing", Saldo = 10m };
+        _mockUserService.GetUserByUsername(dto.UserName).Returns(Task.FromException<ApplicationUser>(new NotFoundException("User not found")));
+
+        // Act
+        var result = await _sut.Create(dto);
+
+        // Assert
+        result.Result.Should().BeOfType<NotFoundObjectResult>();
+    }
+
+    [TestMethod]
+    public async Task Create_WhenServiceThrows_ReturnsProblem()
+    {
+        // Arrange
+        var dto = new TopUpCreateDto { UserName = "u1", Saldo = 10m };
+        _mockUserService.GetUserByUsername(dto.UserName).Returns(Task.FromResult(new ApplicationUser { UserName = "u1" }));
+        _mockService.CreateTopUp(Arg.Any<TopUp>()).Returns(Task.FromException(new Exception("Fail")));
+
+        // Act
+        var result = await _sut.Create(dto);
+
+        // Assert
+        result.Result.Should().BeOfType<ObjectResult>().Which.StatusCode.Should().Be(500);
+    }
+
+    [TestMethod]
+    public async Task Delete_WhenExistingIsNull_ReturnsNotFound()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        _mockService.GetById(id.ToString()).Returns(Task.FromResult<TopUp>(null!));
+
+        // Act
+        var result = await _sut.Delete(id);
 
         // Assert
         result.Should().BeOfType<NotFoundResult>();

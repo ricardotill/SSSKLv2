@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { EventDto, EventResponseStatus, PaginationObject } from '../models/event.model';
+import { EventDto, EventResponseStatus, PaginationObject } from '../../../core/models/event.model';
 
 @Injectable({
   providedIn: 'root'

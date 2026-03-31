@@ -147,6 +147,21 @@ public class ProductServiceTests
         await _mockRepository.Received(1).GetAll();
     }
 
+    [TestMethod]
+    public async Task GetAll_Paged_ShouldReturnPagedProductsFromRepository()
+    {
+        // Arrange
+        var products = new List<Product> { CreateProduct(Guid.NewGuid(), "Product 1", 10.99m) };
+        _mockRepository.GetAll(10, 5).Returns(products);
+
+        // Act
+        var result = await _sut.GetAll(10, 5);
+
+        // Assert
+        result.Should().BeEquivalentTo(products);
+        await _mockRepository.Received(1).GetAll(10, 5);
+    }
+
     #endregion
 
     #region GetAllAvailable Tests

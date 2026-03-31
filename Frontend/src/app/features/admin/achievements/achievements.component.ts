@@ -16,8 +16,8 @@ import { FileUploadModule } from 'primeng/fileupload';
 import { NgIf, NgClass } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
-import { AchievementService } from '../../../core/services/achievement.service';
-import { ApplicationUserService } from '../../../core/services/application-user.service';
+import { AchievementService } from '../../achievements/services/achievement.service';
+import { ApplicationUserService } from '../../users/services/application-user.service';
 import { Achievement, AchievementUpdateDto, ActionOption, ComparisonOperatorOption, PaginationObject } from '../../../core/models/achievement.model';
 import { ApplicationUserDto } from '../../../core/models/application-user.model';
 import { LanguageService } from '../../../core/services/language.service';

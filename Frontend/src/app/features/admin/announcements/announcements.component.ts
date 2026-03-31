@@ -13,7 +13,7 @@ import { DatePickerModule } from 'primeng/datepicker';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { CardModule } from 'primeng/card';
-import { AnnouncementService } from '../../../core/services/announcement.service';
+import { AnnouncementService } from '../services/announcement.service';
 import { Announcement, AnnouncementCreateDto, AnnouncementUpdateDto } from '../../../core/models/announcement.model';
 import { LanguageService } from '../../../core/services/language.service';
 

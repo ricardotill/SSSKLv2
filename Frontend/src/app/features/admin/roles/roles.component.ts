@@ -7,7 +7,7 @@ import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ConfirmationService, MessageService } from 'primeng/api';
-import { RoleService } from '../../../core/services/role.service';
+import { RoleService } from '../services/role.service';
 import { Role } from '../../../core/models/role.model';
 import { LanguageService } from '../../../core/services/language.service';
 import { DialogModule } from 'primeng/dialog';

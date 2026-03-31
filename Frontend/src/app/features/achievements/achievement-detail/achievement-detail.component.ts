@@ -9,7 +9,7 @@ import { AvatarModule } from 'primeng/avatar';
 import { DividerModule } from 'primeng/divider';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { ImageModule } from 'primeng/image';
-import { AchievementService } from '../../../core/services/achievement.service';
+import { AchievementService } from '../services/achievement.service';
 import { AuthService } from '../../../core/auth/auth.service';
 import { LanguageService } from '../../../core/services/language.service';
 import { AchievementEntry, AchievementListing } from '../../../core/models/achievement.model';

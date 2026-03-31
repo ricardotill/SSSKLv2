@@ -2,7 +2,7 @@ import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, forkJoin } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { Achievement, AchievementEntry, AchievementListing, PaginationObject, AchievementUpdateDto } from '../models/achievement.model';
+import { Achievement, AchievementEntry, AchievementListing, PaginationObject, AchievementUpdateDto } from '../../../core/models/achievement.model';
 
 @Injectable({
   providedIn: 'root'

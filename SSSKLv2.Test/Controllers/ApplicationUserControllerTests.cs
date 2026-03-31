@@ -12,6 +12,7 @@ using SSSKLv2.Dto.Api.v1;
 using SSSKLv2.Services.Interfaces;
 using SSSKLv2.Data.DAL.Exceptions;
 using Microsoft.Extensions.Logging;
+using System.Security.Claims;
 
 namespace SSSKLv2.Test.Controllers;
 
@@ -41,7 +42,13 @@ public class ApplicationUserControllerTests
             Substitute.For<IServiceProvider>(),
             Substitute.For<ILogger<UserManager<ApplicationUser>>>());
 
-        _sut = new ApplicationUserController(_mockService, logger, _userManager);
+        _sut = new ApplicationUserController(_mockService, logger, _userManager)
+        {
+            ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext()
+            }
+        };
     }
 
     [TestMethod]
@@ -154,6 +161,25 @@ public class ApplicationUserControllerTests
         result.Result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeEquivalentTo(expected);
     }
 
+    [TestMethod]
+    public async Task GetCurrent_WhenUserNotFoundInService_ReturnsNotFound()
+    {
+        var username = "nonexistent";
+        _mockService.GetUserByUsername(username).Returns(Task.FromException<ApplicationUser>(new NotFoundException("User not found")));
+
+        _sut.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext
+            {
+                User = new System.Security.Claims.ClaimsPrincipal(new System.Security.Claims.ClaimsIdentity(new[] { new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Name, username) }, "TestAuth"))
+            }
+        };
+
+        var result = await _sut.GetCurrent();
+
+        result.Result.Should().BeOfType<NotFoundResult>();
+    }
+
 
 
     [TestMethod]
@@ -247,6 +273,63 @@ public class ApplicationUserControllerTests
         personalData.Should().NotContainKey("Authenticator Key");
 
         _ = userManager.DidNotReceive().GetAuthenticatorKeyAsync(Arg.Any<ApplicationUser>());
+    }
+
+    [TestMethod]
+    public async Task DownloadPersonalData_WhenUserNotFound_ReturnsNotFound()
+    {
+        var userStore = Substitute.For<IUserStore<ApplicationUser>>();
+        var userManager = Substitute.For<UserManager<ApplicationUser>>(
+            userStore, null, new PasswordHasher<ApplicationUser>(),
+            Array.Empty<IUserValidator<ApplicationUser>>(), Array.Empty<IPasswordValidator<ApplicationUser>>(),
+            new UpperInvariantLookupNormalizer(), new IdentityErrorDescriber(), null,
+            Substitute.For<ILogger<UserManager<ApplicationUser>>>());
+
+        userManager.GetUserAsync(Arg.Any<ClaimsPrincipal>()).Returns((ApplicationUser)null!);
+
+        _sut.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim(ClaimTypes.Name, "testuser") }, "TestAuth")) }
+        };
+        var sutWithNullUser = new ApplicationUserController(_mockService, Substitute.For<ILogger<ApplicationUserController>>(), userManager)
+        {
+            ControllerContext = _sut.ControllerContext
+        };
+
+        var result = await sutWithNullUser.DownloadPersonalData();
+
+        result.Should().BeOfType<NotFoundObjectResult>();
+    }
+
+    [TestMethod]
+    public async Task DownloadPersonalData_WhenSuccess_ReturnsFile()
+    {
+        var userStore = Substitute.For<IUserStore<ApplicationUser>>();
+        var userManager = Substitute.For<UserManager<ApplicationUser>>(
+            userStore, null, new PasswordHasher<ApplicationUser>(),
+            Array.Empty<IUserValidator<ApplicationUser>>(), Array.Empty<IPasswordValidator<ApplicationUser>>(),
+            new UpperInvariantLookupNormalizer(), new IdentityErrorDescriber(), null,
+            Substitute.For<ILogger<UserManager<ApplicationUser>>>());
+
+        var user = new ApplicationUser { Id = "test-id", UserName = "testuser", Email = "test@example.com" };
+        userManager.GetUserAsync(Arg.Any<ClaimsPrincipal>()).Returns(user);
+        userManager.GetUserIdAsync(user).Returns("test-id");
+
+        _sut.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim(ClaimTypes.Name, "testuser") }, "TestAuth")) }
+        };
+        var sutWithUser = new ApplicationUserController(_mockService, Substitute.For<ILogger<ApplicationUserController>>(), userManager)
+        {
+            ControllerContext = _sut.ControllerContext
+        };
+
+        var result = await sutWithUser.DownloadPersonalData();
+
+        result.Should().BeOfType<FileContentResult>();
+        var fileResult = (FileContentResult)result;
+        fileResult.ContentType.Should().Be("application/json");
+        fileResult.FileDownloadName.Should().Be("PersonalData.json");
     }
 
     [TestMethod]
@@ -537,4 +620,140 @@ public class ApplicationUserControllerTests
         result.Should().BeOfType<BadRequestObjectResult>();
     }
 
+    [TestMethod]
+    public async Task GetAllAdmin_ReturnsOkWithItems()
+    {
+        var list = new List<ApplicationUser>
+        {
+            new ApplicationUser { Id = "admin1", UserName = "admin1" },
+            new ApplicationUser { Id = "admin2", UserName = "admin2" }
+        };
+        _mockService.GetAllUsersAdmin(Arg.Any<int>(), Arg.Any<int>()).Returns(Task.FromResult((IList<ApplicationUser>)list));
+        _mockService.GetCountAdmin().Returns(list.Count);
+
+        var result = await _sut.GetAllAdmin();
+
+        var expectedItems = list.Select(u => new ApplicationUserDto 
+        { 
+            Id = u.Id, 
+            UserName = u.UserName ?? string.Empty,
+            FullName = u.FullName,
+            LastOrdered = u.LastOrdered
+        }).ToList();
+        
+        var expectedContent = new PaginationObject<ApplicationUserDto>
+        {
+            Items = expectedItems,
+            TotalCount = list.Count
+        };
+        result.Result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeEquivalentTo(expectedContent);
+    }
+
+    [TestMethod]
+    public async Task GetCurrent_WhenUnauthenticated_ReturnsUnauthorized()
+    {
+        _sut.ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() };
+        var result = await _sut.GetCurrent();
+        result.Result.Should().BeOfType<UnauthorizedResult>();
+    }
+
+    [TestMethod]
+    public async Task UpdateMe_WhenAuthenticated_ReturnsOkWithUpdated()
+    {
+        var username = "currentuser";
+        var user = new ApplicationUser { Id = "u-current", UserName = username };
+        var dto = new ApplicationUserSelfUpdateDto { Name = "NewName", Surname = "NewSurname", PhoneNumber = "123" };
+        var updatedUser = new ApplicationUser { Id = user.Id, UserName = username, Name = dto.Name, Surname = dto.Surname, PhoneNumber = dto.PhoneNumber };
+
+        _mockService.GetUserByUsername(username).Returns(user);
+        _mockService.UpdateUser(user.Id, Arg.Is<ApplicationUserUpdateDto>(d => d.Name == dto.Name)).Returns(updatedUser);
+
+        _sut.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext
+            {
+                User = new System.Security.Claims.ClaimsPrincipal(new System.Security.Claims.ClaimsIdentity(new[] { new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Name, username) }, "TestAuth"))
+            }
+        };
+
+        var result = await _sut.UpdateMe(dto);
+
+        result.Should().BeOfType<OkObjectResult>().Which.Value.As<ApplicationUserDetailedDto>().Name.Should().Be(dto.Name);
+    }
+
+    [TestMethod]
+    public async Task UploadProfilePicture_WithValidFile_ReturnsOk()
+    {
+        var username = "currentuser";
+        var user = new ApplicationUser { Id = "u-current", UserName = username };
+        var fileMock = Substitute.For<IFormFile>();
+        fileMock.Length.Returns(100);
+        fileMock.ContentType.Returns("image/png");
+        fileMock.OpenReadStream().Returns(new MemoryStream());
+
+        _mockService.GetUserByUsername(username).Returns(user);
+
+        _sut.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext
+            {
+                User = new System.Security.Claims.ClaimsPrincipal(new System.Security.Claims.ClaimsIdentity(new[] { new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Name, username) }, "TestAuth"))
+            }
+        };
+
+        var result = await _sut.UploadProfilePicture(fileMock);
+
+        result.Should().BeOfType<OkResult>();
+        await _mockService.Received(1).UpdateProfilePictureAsync(user.Id, Arg.Any<Stream>(), "image/png");
+    }
+
+    [TestMethod]
+    public async Task UploadProfilePicture_WhenFileMockIsNull_ReturnsBadRequest()
+    {
+        // Must be authorized to reach the file null check
+        _sut.ControllerContext.HttpContext.User = new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim(ClaimTypes.Name, "testuser") }, "TestAuth"));
+        
+        var result = await _sut.UploadProfilePicture(null!);
+        result.Should().BeOfType<BadRequestObjectResult>();
+    }
+
+    [TestMethod]
+    public async Task UploadProfilePicture_WhenUnauthorized_ReturnsUnauthorized()
+    {
+        // Default context from Init is unauthorized (no identity name)
+        var result = await _sut.UploadProfilePicture(Substitute.For<IFormFile>());
+        result.Should().BeOfType<UnauthorizedResult>();
+    }
+
+    [TestMethod]
+    public async Task DeleteProfilePicture_AsSelf_ReturnsNoContent()
+    {
+        var username = "currentuser";
+        var user = new ApplicationUser { Id = "u-current", UserName = username };
+        _mockService.GetUserByUsername(username).Returns(user);
+
+        _sut.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext
+            {
+                User = new System.Security.Claims.ClaimsPrincipal(new System.Security.Claims.ClaimsIdentity(new[] { new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Name, username) }, "TestAuth"))
+            }
+        };
+
+        var result = await _sut.DeleteProfilePicture();
+
+        result.Should().BeOfType<NoContentResult>();
+        await _mockService.Received(1).DeleteProfilePictureAsync(user.Id);
+    }
+
+    [TestMethod]
+    public async Task DeleteUserProfilePicture_AsAdmin_ReturnsNoContent()
+    {
+        var id = "user-to-delete-pic";
+
+        var result = await _sut.DeleteUserProfilePicture(id);
+
+        result.Should().BeOfType<NoContentResult>();
+        await _mockService.Received(1).DeleteProfilePictureAsync(id);
+    }
 }

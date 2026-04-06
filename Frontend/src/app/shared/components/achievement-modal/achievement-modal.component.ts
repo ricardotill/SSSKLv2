@@ -7,11 +7,12 @@ import { AchievementPopupService } from '../../../features/achievements/services
 import confetti from 'canvas-confetti';
 import { LanguageService } from '../../../core/services/language.service';
 import { AchievementEntry } from '../../../core/models/achievement.model';
+import { ResolveApiUrlPipe } from '../../pipes/resolve-api-url.pipe';
 
 @Component({
   selector: 'app-achievement-modal',
   standalone: true,
-  imports: [CommonModule, DialogModule, ButtonModule, CarouselModule],
+  imports: [CommonModule, DialogModule, ButtonModule, CarouselModule, ResolveApiUrlPipe],
   template: `
     <p-dialog 
       [(visible)]="isVisible" 
@@ -46,7 +47,7 @@ import { AchievementEntry } from '../../../core/models/achievement.model';
                   <div class="flex flex-col items-center justify-center p-4">
                     <div class="w-32 h-32 mb-6 rounded-full overflow-hidden shadow-lg border-4 border-primary/20 flex items-center justify-center bg-surface-100 dark:bg-surface-700">
                       @if (entry.imageUrl) {
-                        <img [src]="entry.imageUrl" [alt]="entry.achievementName" class="w-full h-full object-cover" />
+                        <img [src]="entry.imageUrl | resolveApiUrl" [alt]="entry.achievementName" class="w-full h-full object-cover" />
                       } @else {
                         <i class="pi pi-star-fill text-5xl text-yellow-500"></i>
                       }
@@ -61,7 +62,7 @@ import { AchievementEntry } from '../../../core/models/achievement.model';
               <div class="flex flex-col items-center justify-center p-4">
                 <div class="w-32 h-32 mb-6 rounded-full overflow-hidden shadow-lg border-4 border-primary/20 flex items-center justify-center bg-surface-100 dark:bg-surface-700">
                   @if (entries[0].imageUrl) {
-                    <img [src]="entries[0].imageUrl" [alt]="entries[0].achievementName" class="w-full h-full object-cover" />
+                    <img [src]="entries[0].imageUrl | resolveApiUrl" [alt]="entries[0].achievementName" class="w-full h-full object-cover" />
                   } @else {
                     <i class="pi pi-star-fill text-5xl text-yellow-500"></i>
                   }

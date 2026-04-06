@@ -8,9 +8,11 @@ import { AuthService } from '../../core/auth/auth.service';
 import { LanguageService } from '../../core/services/language.service';
 import { BrandingComponent } from '../../shared/components/branding/branding.component';
 
+import { ResolveApiUrlPipe } from '../../shared/pipes/resolve-api-url.pipe';
+
 @Component({
   selector: 'app-sidebar',
-  imports: [CommonModule, MenuModule, AvatarModule, RouterModule, BrandingComponent],
+  imports: [CommonModule, MenuModule, AvatarModule, RouterModule, BrandingComponent, ResolveApiUrlPipe],
   template: `
     @if (isOpen()) {
       <div class="mobile-overlay" (click)="close.emit()"></div>
@@ -28,7 +30,7 @@ import { BrandingComponent } from '../../shared/components/branding/branding.com
         @if (authService.isAuthenticated()) {
           <a class="flex items-center gap-3 px-6 py-3 cursor-pointer text-surface-200 hover:text-white hover:bg-surface-700 transition-colors" [routerLink]="['/settings']" style="text-decoration: none;" (click)="close.emit()">
             <p-avatar 
-              [image]="authService.currentUser()?.profilePictureUrl || undefined" 
+              [image]="(authService.currentUser()?.profilePictureUrl | resolveApiUrl) || undefined" 
               [label]="!authService.currentUser()?.profilePictureUrl ? authService.currentUser()?.fullName?.substring(0,1) : undefined"
               shape="circle" 
               styleClass="w-8 h-8 flex-shrink-0"

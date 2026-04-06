@@ -15,6 +15,7 @@ import { LanguageService } from '../../../core/services/language.service';
 import { CardModule } from 'primeng/card';
 import { MultiSelect } from 'primeng/multiselect';
 import { AvatarModule } from 'primeng/avatar';
+import { ResolveApiUrlPipe } from '../../../shared/pipes/resolve-api-url.pipe';
 import { RoleService } from '../services/role.service';
 
 
@@ -34,7 +35,8 @@ import { RoleService } from '../services/role.service';
     ConfirmDialogModule,
     CardModule,
     MultiSelect,
-    AvatarModule
+    AvatarModule,
+    ResolveApiUrlPipe
   ],
   template: `
     <div class="flex justify-between items-center mb-4">
@@ -79,7 +81,7 @@ import { RoleService } from '../services/role.service';
     <p-dialog [header]="ls.t().edit_user" [(visible)]="editDialogVisible" [modal]="true" [style]="{width: '500px'}" [breakpoints]="{'768px': '90vw'}">
       @if (editingUserProfilePictureUrl()) {
         <div class="flex flex-col items-center gap-3 mb-6 p-4 bg-surface-50 dark:bg-surface-900 rounded-xl border border-surface-200 dark:border-surface-700">
-          <p-avatar [image]="editingUserProfilePictureUrl()!" size="xlarge" shape="circle" class="shadow-md border-2 border-white dark:border-surface-800"></p-avatar>
+          <p-avatar [image]="(editingUserProfilePictureUrl() | resolveApiUrl)!" size="xlarge" shape="circle" class="shadow-md border-2 border-white dark:border-surface-800"></p-avatar>
           <p-button 
             [label]="ls.t().remove_profile_picture" 
             icon="pi pi-trash" 

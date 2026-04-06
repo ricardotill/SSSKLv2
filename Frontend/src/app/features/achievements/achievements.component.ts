@@ -14,6 +14,7 @@ import { AuthService } from '../../core/auth/auth.service';
 import { LanguageService } from '../../core/services/language.service';
 import { AchievementListing } from '../../core/models/achievement.model';
 import { ApplicationUserDto } from '../../core/models/application-user.model';
+import { ResolveApiUrlPipe } from '../../shared/pipes/resolve-api-url.pipe';
 
 @Component({
   selector: 'app-achievements',
@@ -28,7 +29,8 @@ import { ApplicationUserDto } from '../../core/models/application-user.model';
     TagModule,
     ImageModule,
     ProgressSpinnerModule,
-    DatePipe
+    DatePipe,
+    ResolveApiUrlPipe
   ],
   template: `
     <div class="flex flex-col gap-4">
@@ -81,7 +83,7 @@ import { ApplicationUserDto } from '../../core/models/application-user.model';
                       <div class="flex justify-center bg-surface-50/50 dark:bg-surface-800/50 rounded-t-lg items-center overflow-hidden min-h-[12rem]">
                         @if (entry.imageUrl) {
                           <p-image 
-                            [src]="entry.imageUrl" 
+                            [src]="entry.imageUrl | resolveApiUrl" 
                             [alt]="entry.name" 
                             imageClass="max-h-[150px] object-contain drop-shadow-md hover:scale-110 transition-transform duration-300"
                           ></p-image>

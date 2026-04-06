@@ -13,6 +13,7 @@ import { AchievementService } from '../services/achievement.service';
 import { AuthService } from '../../../core/auth/auth.service';
 import { LanguageService } from '../../../core/services/language.service';
 import { AchievementEntry, AchievementListing } from '../../../core/models/achievement.model';
+import { ResolveApiUrlPipe } from '../../../shared/pipes/resolve-api-url.pipe';
 
 @Component({
   selector: 'app-achievement-detail',
@@ -27,7 +28,8 @@ import { AchievementEntry, AchievementListing } from '../../../core/models/achie
     DividerModule,
     ProgressSpinnerModule,
     ImageModule,
-    DatePipe
+    DatePipe,
+    ResolveApiUrlPipe
   ],
   template: `
     <div class="max-w-4xl mx-auto flex flex-col gap-6">
@@ -55,7 +57,7 @@ import { AchievementEntry, AchievementListing } from '../../../core/models/achie
             <div class="achievement-badge flex-shrink-0 w-36 h-36 rounded-2xl flex items-center justify-center overflow-hidden bg-surface-100 dark:bg-surface-800 shadow-lg border border-surface-200 dark:border-surface-700">
               @if (imageUrl()) {
                 <p-image
-                  [src]="imageUrl()!"
+                  [src]="(imageUrl()! | resolveApiUrl)!"
                   [alt]="achievementName()"
                   imageClass="max-w-full max-h-full object-contain"
                 ></p-image>
@@ -104,7 +106,7 @@ import { AchievementEntry, AchievementListing } from '../../../core/models/achie
 
                     <!-- Avatar -->
                     <p-avatar
-                      [image]="earner.userProfilePictureUrl || undefined"
+                      [image]="(earner.userProfilePictureUrl | resolveApiUrl) || undefined"
                       [label]="!earner.userProfilePictureUrl ? (earner.userFullName || earner.userName || '?').substring(0, 1).toUpperCase() : undefined"
                       shape="circle"
                       size="large"

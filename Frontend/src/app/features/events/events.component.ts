@@ -13,6 +13,7 @@ import { EventDto } from '../../core/models/event.model';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { FormsModule } from '@angular/forms';
 import { AvatarModule } from 'primeng/avatar';
+import { ResolveApiUrlPipe } from '../../shared/pipes/resolve-api-url.pipe';
 
 @Component({
   selector: 'app-events',
@@ -27,7 +28,8 @@ import { AvatarModule } from 'primeng/avatar';
     ProgressSpinnerModule,
     ToggleButtonModule,
     FormsModule,
-    AvatarModule
+    AvatarModule,
+    ResolveApiUrlPipe
   ],
   template: `
     <div class="flex flex-col gap-6">
@@ -78,7 +80,7 @@ import { AvatarModule } from 'primeng/avatar';
                   <ng-template pTemplate="header">
                     <div class="relative h-48 w-full bg-surface-100 dark:bg-surface-800 flex items-center justify-center">
                       @if (event.imageUrl) {
-                        <img [src]="event.imageUrl" alt="Event Image" class="w-full h-full object-cover">
+                        <img [src]="event.imageUrl | resolveApiUrl" alt="Event Image" class="w-full h-full object-cover">
                       } @else {
                         <i class="pi pi-calendar text-5xl text-surface-300 dark:text-surface-600"></i>
                       }
@@ -119,7 +121,7 @@ import { AvatarModule } from 'primeng/avatar';
                       <div class="flex -space-x-2">
                          @for (user of event.acceptedUsers.slice(0, 3); track user.userId) {
                            <p-avatar 
-                              [image]="user.profilePictureUrl || undefined" 
+                              [image]="(user.profilePictureUrl | resolveApiUrl) || undefined" 
                               [label]="!user.profilePictureUrl ? user.userName?.substring(0,1) : undefined"
                               shape="circle" 
                               size="normal"

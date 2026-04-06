@@ -13,6 +13,8 @@ import { LeaderboardEntryDto } from '../../../core/models/leaderboard.model';
 import { EventDto } from '../../../core/models/event.model';
 import * as signalR from '@microsoft/signalr';
 import confetti from 'canvas-confetti';
+import { ResolveApiUrlPipe } from '../../../shared/pipes/resolve-api-url.pipe';
+import { UrlService } from '../../../core/services/url.service';
 
 interface AchievementEvent {
   achievementName: string;
@@ -49,7 +51,7 @@ import { AutoScrollDirective } from '../../../shared/directives/auto-scroll.dire
 @Component({
   selector: 'app-live-display',
   standalone: true,
-  imports: [CommonModule, TableModule, AvatarModule, CarouselModule, TagModule, AutoScrollDirective],
+  imports: [CommonModule, TableModule, AvatarModule, CarouselModule, TagModule, AutoScrollDirective, ResolveApiUrlPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [DatePipe],
   host: {
@@ -119,7 +121,7 @@ import { AutoScrollDirective } from '../../../shared/directives/auto-scroll.dire
                                     <div class="flex items-center gap-4">
                                       <p-avatar 
                                         class="flex-shrink-0 drop-shadow-md"
-                                        [image]="entry.profilePictureUrl" 
+                                        [image]="entry.profilePictureUrl | resolveApiUrl" 
                                         [label]="!entry.profilePictureUrl ? entry.fullName.substring(0,1) : undefined" 
                                         shape="circle"
                                         size="normal">
@@ -163,7 +165,7 @@ import { AutoScrollDirective } from '../../../shared/directives/auto-scroll.dire
                                     <div class="flex items-center gap-4">
                                       <p-avatar 
                                         class="flex-shrink-0 drop-shadow-md"
-                                        [image]="entry.profilePictureUrl" 
+                                        [image]="entry.profilePictureUrl | resolveApiUrl" 
                                         [label]="!entry.profilePictureUrl ? entry.fullName.substring(0,1) : undefined" 
                                         shape="circle"
                                         size="normal">
@@ -201,7 +203,7 @@ import { AutoScrollDirective } from '../../../shared/directives/auto-scroll.dire
                                     <div class="flex items-center gap-4">
                                       <p-avatar 
                                         class="flex-shrink-0 drop-shadow-md"
-                                        [image]="order.profilePictureUrl"
+                                        [image]="order.profilePictureUrl | resolveApiUrl"
                                         [label]="!order.profilePictureUrl ? formatUserInitials(order.userFullName) : undefined" 
                                         shape="circle"
                                         size="normal">
@@ -260,7 +262,7 @@ import { AutoScrollDirective } from '../../../shared/directives/auto-scroll.dire
                                  [ngClass]="isFirst ? 'bg-primary-500/5 border-primary-500/20 shadow-[0_0_30px_rgba(34,197,94,0.1)]' : 'bg-white/[0.02] border-white/5 hover:bg-white/[0.05]'">
                               <div class="flex gap-6 items-center" [ngClass]="isFirst ? 'flex-col items-start gap-4' : ''">
                                 @if (event.imageUrl) {
-                                  <img [src]="event.imageUrl" alt="Event" 
+                                  <img [src]="event.imageUrl | resolveApiUrl" alt="Event" 
                                        class="object-cover rounded-xl shadow-lg border border-white/10 flex-shrink-0"
                                        [ngClass]="isFirst ? 'w-full h-48' : 'w-24 h-24'" />
                                 }
@@ -335,7 +337,7 @@ import { AutoScrollDirective } from '../../../shared/directives/auto-scroll.dire
                             <div class="flex items-center gap-4">
                               <p-avatar 
                                 class="flex-shrink-0 drop-shadow-md"
-                                [image]="entry.profilePictureUrl" 
+                                [image]="entry.profilePictureUrl | resolveApiUrl" 
                                 [label]="!entry.profilePictureUrl ? entry.fullName.substring(0,1) : undefined" 
                                 shape="circle"
                                 size="normal">
@@ -379,7 +381,7 @@ import { AutoScrollDirective } from '../../../shared/directives/auto-scroll.dire
                             <div class="flex items-center gap-4">
                               <p-avatar 
                                 class="flex-shrink-0 drop-shadow-md"
-                                [image]="entry.profilePictureUrl" 
+                                [image]="entry.profilePictureUrl | resolveApiUrl" 
                                 [label]="!entry.profilePictureUrl ? entry.fullName.substring(0,1) : undefined" 
                                 shape="circle"
                                 size="normal">
@@ -418,7 +420,7 @@ import { AutoScrollDirective } from '../../../shared/directives/auto-scroll.dire
                             <div class="flex items-center gap-4">
                               <p-avatar 
                                 class="flex-shrink-0 drop-shadow-md"
-                                [image]="order.profilePictureUrl"
+                                [image]="order.profilePictureUrl | resolveApiUrl"
                                 [label]="!order.profilePictureUrl ? formatUserInitials(order.userFullName) : undefined" 
                                 shape="circle"
                                 size="normal">
@@ -451,7 +453,7 @@ import { AutoScrollDirective } from '../../../shared/directives/auto-scroll.dire
           <div class="absolute -top-10 -left-10 w-40 h-40 bg-yellow-500/10 rounded-full blur-[60px] pointer-events-none"></div>
           
           @if (currentAchievementEvent()?.imageUrl && achievementImageLoaded()) {
-            <img [src]="currentAchievementEvent()?.imageUrl" [alt]="currentAchievementEvent()?.achievementName" class="max-h-[260px] object-contain rounded-2xl mx-auto block drop-shadow-[0_20px_50px_rgba(0,0,0,0.5)] hover:scale-105 transition-transform duration-700" />
+            <img [src]="currentAchievementEvent()?.imageUrl | resolveApiUrl" [alt]="currentAchievementEvent()?.achievementName" class="max-h-[260px] object-contain rounded-2xl mx-auto block drop-shadow-[0_20px_50px_rgba(0,0,0,0.5)] hover:scale-105 transition-transform duration-700" />
           }
           
           <div class="flex flex-col gap-3">
@@ -692,6 +694,7 @@ export class LiveDisplayComponent implements OnInit, OnDestroy {
   private eventService = inject(EventService);
   private publicService = inject(PublicService);
   private datePipe = inject(DatePipe);
+  private urlService = inject(UrlService);
 
   productId = signal<string | null>(null);
   product = signal<ProductDto | null>(null);
@@ -946,7 +949,7 @@ export class LiveDisplayComponent implements OnInit, OnDestroy {
     if (event.imageUrl) {
       const img = new Image();
       img.onload = () => this.achievementImageLoaded.set(true);
-      img.src = event.imageUrl;
+      img.src = this.urlService.resolveApiUrl(event.imageUrl) || '';
     }
 
     this.achievementTimeout = setTimeout(() => {

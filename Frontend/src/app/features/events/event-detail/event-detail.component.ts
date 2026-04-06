@@ -14,6 +14,8 @@ import { MessageService } from 'primeng/api';
 import { Meta, Title } from '@angular/platform-browser';
 import { DOCUMENT } from '@angular/common';
 import { AvatarModule } from 'primeng/avatar';
+import { ResolveApiUrlPipe } from '../../../shared/pipes/resolve-api-url.pipe';
+import { UrlService } from '../../../core/services/url.service';
 
 @Component({
   selector: 'app-event-detail',
@@ -26,7 +28,8 @@ import { AvatarModule } from 'primeng/avatar';
     TagModule,
     DividerModule,
     ProgressSpinnerModule,
-    AvatarModule
+    AvatarModule,
+    ResolveApiUrlPipe
   ],
   template: `
     <div class="max-w-4xl mx-auto">
@@ -57,7 +60,7 @@ import { AvatarModule } from 'primeng/avatar';
               <p-card styleClass="overflow-hidden">
                 <ng-template pTemplate="header">
                   @if (event()?.imageUrl) {
-                    <img [src]="event()?.imageUrl" alt="Event Banner" class="w-full h-64 object-cover">
+                    <img [src]="event()?.imageUrl | resolveApiUrl" alt="Event Banner" class="w-full h-64 object-cover">
                   }
                 </ng-template>
                 
@@ -149,7 +152,7 @@ import { AvatarModule } from 'primeng/avatar';
                     <div class="flex -space-x-2">
                       @for (user of event()?.acceptedUsers?.slice(0, 5); track user.userId) {
                         <p-avatar 
-                          [image]="user.profilePictureUrl || undefined" 
+                          [image]="(user.profilePictureUrl | resolveApiUrl) || undefined" 
                           [label]="!user.profilePictureUrl ? user.userName.substring(0,1) : undefined"
                           shape="circle" 
                           size="normal"
@@ -167,7 +170,7 @@ import { AvatarModule } from 'primeng/avatar';
                     @for (user of event()?.acceptedUsers; track user.userId) {
                       <div class="flex items-center gap-2 p-2 bg-surface-50 dark:bg-surface-800 rounded-lg">
                         <p-avatar 
-                          [image]="user.profilePictureUrl || undefined" 
+                          [image]="(user.profilePictureUrl | resolveApiUrl) || undefined" 
                           [label]="!user.profilePictureUrl ? user.userName.substring(0,1) : undefined"
                           shape="circle" 
                           size="normal"
@@ -189,7 +192,7 @@ import { AvatarModule } from 'primeng/avatar';
                     @for (user of event()?.declinedUsers; track user.userId) {
                       <div class="flex items-center gap-2 p-2 bg-surface-50 dark:bg-surface-800 rounded-lg opacity-60">
                         <p-avatar 
-                          [image]="user.profilePictureUrl || undefined" 
+                          [image]="(user.profilePictureUrl | resolveApiUrl) || undefined" 
                           [label]="!user.profilePictureUrl ? user.userName.substring(0,1) : undefined"
                           shape="circle" 
                           size="normal"
@@ -209,7 +212,7 @@ import { AvatarModule } from 'primeng/avatar';
                     <span class="text-surface-500">Gemaakt door</span>
                     <div class="flex items-center gap-2">
                       <p-avatar 
-                        [image]="event()?.creatorProfilePictureUrl || undefined" 
+                        [image]="(event()?.creatorProfilePictureUrl | resolveApiUrl) || undefined" 
                         [label]="!event()?.creatorProfilePictureUrl ? event()?.creatorName?.substring(0,1) : undefined"
                         shape="circle" 
                         size="normal"
@@ -247,6 +250,7 @@ export default class EventDetailComponent implements OnInit {
   private readonly meta = inject(Meta);
   private readonly titleService = inject(Title);
   private readonly document = inject(DOCUMENT);
+  private readonly urlService = inject(UrlService);
   ls = inject(LanguageService);
 
   event = signal<EventDto | null>(null);
@@ -298,13 +302,7 @@ export default class EventDetailComponent implements OnInit {
     const title = `${event.title} - SSSKL`;
     const description = this.stripHtml(event.description).substring(0, 160);
     const url = this.document.location.href;
-    let image = event.imageUrl || '';
-
-    if (image && image.startsWith('/')) {
-      image = `${window.location.origin}${image}`;
-    } else if (image && !image.startsWith('http')) {
-      image = `${window.location.origin}/${image}`;
-    }
+    const image = this.urlService.resolveApiUrl(event.imageUrl) || '';
 
     this.titleService.setTitle(title);
 

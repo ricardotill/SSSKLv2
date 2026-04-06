@@ -15,6 +15,7 @@ import { MessageService } from 'primeng/api';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { FileUploadModule } from 'primeng/fileupload';
 import { MultiSelect } from 'primeng/multiselect';
+import { ResolveApiUrlPipe } from '../../../shared/pipes/resolve-api-url.pipe';
 import { RoleService } from '../../admin/services/role.service';
 import { Role } from '../../../core/models/role.model';
 
@@ -33,7 +34,8 @@ import { Role } from '../../../core/models/role.model';
     DatePickerModule,
     ProgressSpinnerModule,
     FileUploadModule,
-    MultiSelect
+    MultiSelect,
+    ResolveApiUrlPipe
   ],
   template: `
     <div class="max-w-3xl mx-auto">
@@ -100,7 +102,7 @@ import { Role } from '../../../core/models/role.model';
             @if (isEdit && currentImageUri()) {
               <div class="mb-2">
                 <span class="text-sm text-surface-500 block mb-1">Huidige afbeelding:</span>
-                <img [src]="currentImageUri()" class="w-16 h-16 object-contain rounded-md border border-surface-200 dark:border-surface-700 bg-surface-100 dark:bg-surface-800" />
+                <img [src]="currentImageUri() | resolveApiUrl" class="w-16 h-16 object-contain rounded-md border border-surface-200 dark:border-surface-700 bg-surface-100 dark:bg-surface-800" />
               </div>
             }
             <input type="file" id="image" (change)="onFileSelected($event)" accept="image/png, image/jpeg" class="w-full p-2 border border-surface-200 dark:border-surface-700 rounded-md" />

@@ -16,6 +16,7 @@ import { FormsModule } from '@angular/forms';
 import { FileUploadModule } from 'primeng/fileupload';
 import { ThemeService, ThemeMode } from '../../core/services/theme.service';
 import { LanguageService } from '../../core/services/language.service';
+import { ResolveApiUrlPipe } from '../../shared/pipes/resolve-api-url.pipe';
 import * as QRCode from 'qrcode';
 
 import { CardModule } from 'primeng/card';
@@ -23,7 +24,7 @@ import { CardModule } from 'primeng/card';
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, ButtonModule, InputTextModule, TagModule, TabsModule, ConfirmDialogModule, SelectButtonModule, CardModule, DialogModule, FileUploadModule],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, ButtonModule, InputTextModule, TagModule, TabsModule, ConfirmDialogModule, SelectButtonModule, CardModule, DialogModule, FileUploadModule, ResolveApiUrlPipe],
   providers: [ConfirmationService],
   template: `
     <div class="max-w-3xl mx-auto">
@@ -93,7 +94,7 @@ import { CardModule } from 'primeng/card';
                     <div class="relative group">
                       <div class="w-48 h-48 border-4 border-primary shadow-lg rounded-full overflow-hidden flex items-center justify-center bg-surface-100 dark:bg-surface-800">
                         @if (authService.currentUser()?.profilePictureUrl; as url) {
-                          <img [src]="url" class="w-full h-full object-cover" alt="Profile picture" />
+                          <img [src]="url | resolveApiUrl" class="w-full h-full object-cover" alt="Profile picture" />
                         } @else {
                           <span class="text-6xl font-bold uppercase text-surface-500 dark:text-surface-400">
                             {{ authService.currentUser()?.fullName?.substring(0,1) }}

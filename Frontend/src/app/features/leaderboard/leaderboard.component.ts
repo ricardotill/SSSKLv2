@@ -12,6 +12,7 @@ import { LeaderboardEntryDto } from '../../core/models/leaderboard.model';
 import { ProductDto } from '../../core/models/product.model';
 import { LanguageService } from '../../core/services/language.service';
 import { forkJoin, finalize } from 'rxjs';
+import { ResolveApiUrlPipe } from '../../shared/pipes/resolve-api-url.pipe';
 
 @Component({
   selector: 'app-leaderboard',
@@ -23,7 +24,8 @@ import { forkJoin, finalize } from 'rxjs';
     ButtonModule,
     CardModule,
     FormsModule,
-    AvatarModule
+    AvatarModule,
+    ResolveApiUrlPipe
   ],
   template: `
     <div class="flex justify-between items-center mb-6 px-4">
@@ -66,7 +68,7 @@ import { forkJoin, finalize } from 'rxjs';
                             <div class="flex items-center gap-3">
                                 <p-avatar 
                                     class="flex-shrink-0"
-                                    [image]="entry.profilePictureUrl" 
+                                    [image]="entry.profilePictureUrl | resolveApiUrl" 
                                     [label]="!entry.profilePictureUrl ? entry.fullName.substring(0,1) : undefined" 
                                     shape="circle">
                                 </p-avatar>

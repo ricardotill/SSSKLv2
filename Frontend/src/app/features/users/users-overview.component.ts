@@ -7,11 +7,12 @@ import { ApplicationUserService } from './services/application-user.service';
 import { ApplicationUserDto } from '../../core/models/application-user.model';
 import { LanguageService } from '../../core/services/language.service';
 import { AvatarModule } from 'primeng/avatar';
+import { ResolveApiUrlPipe } from '../../shared/pipes/resolve-api-url.pipe';
 
 @Component({
   selector: 'app-users-overview',
   standalone: true,
-  imports: [CurrencyPipe, TableModule, CardModule, ButtonModule, AvatarModule],
+  imports: [CurrencyPipe, TableModule, CardModule, ButtonModule, AvatarModule, ResolveApiUrlPipe],
   template: `
     <div class="flex justify-between items-center mb-4">
       <h1 class="text-2xl font-bold m-0 text-surface-900 dark:text-surface-0">{{ ls.t().user_overview }}</h1>
@@ -31,7 +32,7 @@ import { AvatarModule } from 'primeng/avatar';
             <td>
               <div class="flex items-center gap-3">
                 <p-avatar 
-                  [image]="user.profilePictureUrl || undefined" 
+                  [image]="(user.profilePictureUrl | resolveApiUrl) || undefined" 
                   [label]="!user.profilePictureUrl ? user.fullName?.substring(0,1) : undefined"
                   shape="circle" 
                   size="normal"

@@ -15,6 +15,7 @@ import { CheckboxModule } from 'primeng/checkbox';
 import { FileUploadModule } from 'primeng/fileupload';
 import { NgIf, NgClass } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ResolveApiUrlPipe } from '../../../shared/pipes/resolve-api-url.pipe';
 
 import { AchievementService } from '../../achievements/services/achievement.service';
 import { ApplicationUserService } from '../../users/services/application-user.service';
@@ -47,7 +48,8 @@ interface PickListAchievement {
     FileUploadModule,
     NgIf,
     NgClass,
-    FormsModule
+    FormsModule,
+    ResolveApiUrlPipe
   ],
   template: `
     <div class="flex justify-between items-center mb-4">
@@ -75,7 +77,7 @@ interface PickListAchievement {
         <ng-template pTemplate="body" let-ach>
           <tr>
             <td>
-              <img *ngIf="ach.image?.uri" [src]="ach.image?.uri" class="w-10 h-10 object-contain shadow-sm rounded-md" />
+              <img *ngIf="ach.image?.uri" [src]="ach.image?.uri | resolveApiUrl" class="w-10 h-10 object-contain shadow-sm rounded-md" />
             </td>
             <td>{{ ach.name }}</td>
             <td>{{ ach.description }}</td>
@@ -144,7 +146,7 @@ interface PickListAchievement {
           @if (isEdit() && currentImageUri()) {
             <div class="mb-2">
               <span class="text-sm text-surface-500 block mb-1">Huidige afbeelding:</span>
-              <img [src]="currentImageUri()" class="w-16 h-16 object-contain rounded-md border border-surface-200 dark:border-surface-700 bg-surface-100 dark:bg-surface-800" />
+              <img [src]="currentImageUri() | resolveApiUrl" class="w-16 h-16 object-contain rounded-md border border-surface-200 dark:border-surface-700 bg-surface-100 dark:bg-surface-800" />
             </div>
           }
           <input type="file" id="image" (change)="onFileSelected($event)" accept="image/png, image/jpeg" class="w-full p-2 border border-surface-200 dark:border-surface-700 rounded-md" />
@@ -168,7 +170,7 @@ interface PickListAchievement {
           <p-pickList [source]="availableAchievements()" [target]="userAchievements()" sourceHeader="Beschikbaar" targetHeader="Achievements van Gebruiker" [dragdrop]="true" [responsive]="true" [sourceStyle]="{ height: '30rem' }" [targetStyle]="{ height: '30rem' }" filterBy="name" sourceFilterPlaceholder="Zoeken op naam" targetFilterPlaceholder="Zoeken op naam" [showSourceControls]="false" [showTargetControls]="false" (onMoveToTarget)="onMoveToTarget($event)" (onMoveToSource)="onMoveToSource($event)">
             <ng-template let-ach pTemplate="item">
               <div class="flex flex-wrap p-2 items-center gap-3">
-                <img *ngIf="ach.imageUri" [src]="ach.imageUri" [alt]="ach.name" class="w-10 h-10 object-contain shadow-sm shrink-0 rounded-md bg-surface-100 dark:bg-surface-800" />
+                <img *ngIf="ach.imageUri" [src]="ach.imageUri | resolveApiUrl" [alt]="ach.name" class="w-10 h-10 object-contain shadow-sm shrink-0 rounded-md bg-surface-100 dark:bg-surface-800" />
                 <div class="flex-1 flex flex-col gap-1">
                     <span class="font-bold border-surface-200 dark:border-surface-700">{{ ach.name }}</span>
                 </div>

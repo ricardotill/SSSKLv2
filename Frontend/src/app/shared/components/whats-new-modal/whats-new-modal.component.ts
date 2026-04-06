@@ -27,7 +27,8 @@ import { LanguageService } from '../../../core/services/language.service';
         <div class="overflow-y-auto px-6 py-6 custom-scrollbar">
           <div 
             class="rich-text-content text-surface-700 dark:text-surface-300 font-body"
-            [innerHTML]="content()">
+            style="word-wrap: break-word; overflow-wrap: break-word; word-break: normal; white-space: normal;"
+            [innerHTML]="processedContent">
           </div>
         </div>
 
@@ -46,9 +47,11 @@ import { LanguageService } from '../../../core/services/language.service';
   styles: [`
     :host ::ng-deep .rich-text-content {
       line-height: 1.6;
-      overflow-wrap: break-word; /* modern property for breaking long strings */
-      word-break: break-word; /* fallback for older browsers */
-      white-space: pre-wrap; /* preserve line breaks and spaces from rich text */
+    }
+    :host ::ng-deep .rich-text-content * {
+      word-break: normal !important;
+      overflow-wrap: break-word !important;
+      white-space: normal !important;
     }
     :host ::ng-deep .rich-text-content h1, 
     :host ::ng-deep .rich-text-content h2, 
@@ -65,6 +68,12 @@ import { LanguageService } from '../../../core/services/language.service';
     :host ::ng-deep .rich-text-content ol {
       margin-bottom: 1rem;
       padding-left: 1.5rem;
+    }
+    :host ::ng-deep .rich-text-content ul {
+      list-style-type: disc;
+    }
+    :host ::ng-deep .rich-text-content ol {
+      list-style-type: decimal;
     }
     :host ::ng-deep .rich-text-content li {
       margin-bottom: 0.5rem;
@@ -100,6 +109,13 @@ export class WhatsNewModalComponent {
   }
 
   content = this.whatsNewService.content;
+
+  get processedContent() {
+    const raw = this.content();
+    if (!raw) return '';
+    // Replace non-breaking spaces with normal spaces to allow native CSS word-wrapping
+    return raw.replace(/&nbsp;/g, ' ').replace(/&#160;/g, ' ');
+  }
 
   onClose() {
     this.whatsNewService.markAsSeen();

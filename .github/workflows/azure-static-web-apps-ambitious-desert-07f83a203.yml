@@ -3,11 +3,11 @@ name: Azure Static Web Apps CI/CD
 on:
   push:
     branches:
-      - feature/azure-swa
+      - master
   pull_request:
     types: [opened, synchronize, reopened, closed]
     branches:
-      - feature/azure-swa
+      - master
 
 jobs:
   build_and_deploy_job:
@@ -29,6 +29,7 @@ jobs:
           ###### Repository/Build Configurations - These values can be configured to match your app requirements. ######
           # For more information regarding Static Web App workflow configurations, please visit: https://aka.ms/swaworkflowconfig
           app_location: "./Frontend" # App source code path
+          app_build_command: "ng build --define CUSTOM_API_URL=\"'https://api.ssskl.scoutingwilo.nl'\""
           api_location: "" # Api source code path - optional
           output_location: "dist/frontend" # Built app content directory - optional
           ###### End of Repository/Build Configurations ######

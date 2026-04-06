@@ -4,7 +4,6 @@ using SSSKLv2.Services.Interfaces;
 using SSSKLv2.Data;
 using SSSKLv2.Data.DAL.Exceptions;
 using SSSKLv2.Dto.Api.v1;
-using SSSKLv2.Validators.Announcement;
 
 namespace SSSKLv2.Controllers.v1;
 
@@ -67,13 +66,6 @@ public class AnnouncementController : ControllerBase
             PlannedTill = dto.PlannedTill
         };
 
-        var validator = new AnnouncementValidator();
-        var validationResult = await validator.ValidateAsync(announcement);
-        if (!validationResult.IsValid)
-        {
-            return BadRequest(validationResult.Errors.Select(e => e.ErrorMessage));
-        }
-
         await _announcementService.CreateAnnouncement(announcement);
 
         return CreatedAtAction(nameof(GetById), new { id = announcement.Id }, announcement);
@@ -99,13 +91,6 @@ public class AnnouncementController : ControllerBase
             existing.IsScheduled = dto.IsScheduled;
             existing.PlannedFrom = dto.PlannedFrom;
             existing.PlannedTill = dto.PlannedTill;
-
-            var validator = new AnnouncementValidator();
-            var validationResult = await validator.ValidateAsync(existing);
-            if (!validationResult.IsValid)
-            {
-                return BadRequest(validationResult.Errors.Select(e => e.ErrorMessage));
-            }
 
             await _announcementService.UpdateAnnouncement(existing);
             return NoContent();

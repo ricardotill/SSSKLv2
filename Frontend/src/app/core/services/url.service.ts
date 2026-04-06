@@ -20,8 +20,20 @@ export class UrlService {
 
     // Force relative API paths to use the absolute base URL
     if (url.startsWith('/api/')) {
-      const baseUrl = environment.apiUrl.endsWith('/') ? environment.apiUrl.slice(0, -1) : environment.apiUrl;
-      return `${baseUrl}${url}`;
+      let baseUrl = environment.apiUrl;
+      
+      // Fallback for production if the build-time injection failed or is empty
+      if (!baseUrl && typeof window !== 'undefined') {
+        const hostname = window.location.hostname;
+        if (hostname === 'sssklv2.scoutingwilo.nl' || hostname === 'ambitious-desert-07f83a203.azurestaticapps.net') {
+          baseUrl = 'https://api.ssskl.scoutingwilo.nl';
+        }
+      }
+
+      if (baseUrl) {
+        const normalizedBase = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+        return `${normalizedBase}${url}`;
+      }
     }
 
     return url;

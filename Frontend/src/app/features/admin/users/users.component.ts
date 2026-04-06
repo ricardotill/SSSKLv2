@@ -58,7 +58,17 @@ import { RoleService } from '../services/role.service';
         </ng-template>
         <ng-template pTemplate="body" let-user>
           <tr>
-            <td>{{ user.userName }}</td>
+            <td>
+              <div class="flex items-center gap-3">
+                <p-avatar 
+                  [image]="(user.profilePictureUrl | resolveApiUrl) || undefined" 
+                  [label]="!user.profilePictureUrl ? user.fullName?.substring(0,1) : undefined"
+                  shape="circle" 
+                  size="normal">
+                </p-avatar>
+                <span>{{ user.userName }}</span>
+              </div>
+            </td>
             <td>{{ user.fullName }}</td>
             <td>{{ user.saldo | currency:'EUR' }}</td>
             <td>{{ user.lastOrdered ? (user.lastOrdered | date:'dd-MM-yyyy HH:mm') : ls.t().never }}</td>

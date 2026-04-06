@@ -9,6 +9,7 @@ import { ProductDto } from '../../../core/models/product.model';
 import { OrderDto } from '../../../core/models/order.model';
 import { EventDto } from '../../../core/models/event.model';
 import { AutoScrollDirective } from '../../../shared/directives/auto-scroll.directive';
+import { ResolveApiUrlPipe } from '../../../shared/pipes/resolve-api-url.pipe';
 import * as QRCode from 'qrcode';
 
 interface Slide {
@@ -28,7 +29,7 @@ const MEMES = [
 @Component({
   selector: 'app-dev-live-display',
   standalone: true,
-  imports: [CommonModule, TableModule, AvatarModule, CarouselModule, TagModule, AutoScrollDirective],
+  imports: [CommonModule, TableModule, AvatarModule, CarouselModule, TagModule, AutoScrollDirective, ResolveApiUrlPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [DatePipe],
   template: `
@@ -90,7 +91,7 @@ const MEMES = [
                                     <div class="flex items-center gap-4">
                                       <p-avatar 
                                         class="flex-shrink-0 drop-shadow-md"
-                                        [image]="entry.profilePictureUrl" 
+                                        [image]="entry.profilePictureUrl | resolveApiUrl" 
                                         [label]="!entry.profilePictureUrl ? entry.fullName.substring(0,1) : undefined" 
                                         shape="circle"
                                         size="normal">
@@ -130,7 +131,7 @@ const MEMES = [
                                     <div class="flex items-center gap-4">
                                       <p-avatar 
                                         class="flex-shrink-0 drop-shadow-md"
-                                        [image]="entry.profilePictureUrl" 
+                                        [image]="entry.profilePictureUrl | resolveApiUrl" 
                                         [label]="!entry.profilePictureUrl ? entry.fullName.substring(0,1) : undefined" 
                                         shape="circle"
                                         size="normal">
@@ -166,7 +167,7 @@ const MEMES = [
                                     <div class="flex items-center gap-4">
                                       <p-avatar 
                                         class="flex-shrink-0 drop-shadow-md"
-                                        [image]="order.profilePictureUrl"
+                                        [image]="order.profilePictureUrl | resolveApiUrl"
                                         [label]="!order.profilePictureUrl ? formatUserInitials(order.userFullName) : undefined" 
                                         shape="circle"
                                         size="normal">

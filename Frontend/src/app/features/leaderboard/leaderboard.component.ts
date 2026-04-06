@@ -100,7 +100,7 @@ import { ResolveApiUrlPipe } from '../../shared/pipes/resolve-api-url.pipe';
                         <div class="flex items-center gap-3">
                             <p-avatar 
                                 class="flex-shrink-0"
-                                [image]="entry.profilePictureUrl" 
+                                [image]="entry.profilePictureUrl | resolveApiUrl" 
                                 [label]="!entry.profilePictureUrl ? entry.fullName.substring(0,1) : undefined" 
                                 shape="circle">
                             </p-avatar>
@@ -136,7 +136,7 @@ import { ResolveApiUrlPipe } from '../../shared/pipes/resolve-api-url.pipe';
                         <div class="flex items-center gap-3">
                             <p-avatar 
                                 class="flex-shrink-0"
-                                [image]="entry.profilePictureUrl" 
+                                [image]="entry.profilePictureUrl | resolveApiUrl" 
                                 [label]="!entry.profilePictureUrl ? entry.fullName.substring(0,1) : undefined" 
                                 shape="circle">
                             </p-avatar>

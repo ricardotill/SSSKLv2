@@ -55,6 +55,11 @@ public class AnnouncementController : ControllerBase
         if (dto is null)
             return BadRequest();
 
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+
         // Map DTO to domain model
         var announcement = new Announcement
         {
@@ -77,6 +82,11 @@ public class AnnouncementController : ControllerBase
     {
         if (dto is null)
             return BadRequest();
+
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
 
         try
         {

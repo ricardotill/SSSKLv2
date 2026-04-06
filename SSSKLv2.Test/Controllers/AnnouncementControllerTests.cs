@@ -107,6 +107,7 @@ public class AnnouncementControllerTests
         };
 
         // Act
+        _sut.ModelState.AddModelError("PlannedFrom", "Gepland Vanaf is verplicht.");
         var result = await _sut.Create(dto!);
 
         // Assert
@@ -127,6 +128,27 @@ public class AnnouncementControllerTests
 
         // Assert
         result.Should().BeOfType<NotFoundResult>();
+    }
+
+    [TestMethod]
+    public async Task Update_WithInvalidDto_ReturnsBadRequest()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        var dto = new AnnouncementUpdateDto
+        {
+            Message = "Scheduled",
+            IsScheduled = true
+        };
+        _mockService.GetAnnouncementById(id).Returns(Task.FromResult<Announcement?>(new Announcement { Id = id }));
+
+        // Act
+        _sut.ModelState.AddModelError("PlannedFrom", "Gepland Vanaf is verplicht.");
+        var result = await _sut.Update(id, dto);
+
+        // Assert
+        result.Should().BeOfType<BadRequestObjectResult>();
+        await _mockService.DidNotReceive().UpdateAnnouncement(Arg.Any<Announcement>());
     }
 
     [TestMethod]

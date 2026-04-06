@@ -141,8 +141,9 @@ var frontendOrigins = new[]
     "https://localhost:4200",
     "http://localhost:5173",
     "https://localhost:5173",
+    "https://sssklv2-app.azurewebsites.net",
     "https://ssskl.scoutingwilo.nl",
-    "https://icy-island-07ad9b303.azurestaticapps.net"
+    "https://ambitious-desert-07f83a203.2.azurestaticapps.net"
 };
 
 builder.Services.AddCors(options =>
@@ -304,15 +305,20 @@ else
     app.UseExceptionHandler("/error", createScopeForErrors: true);
 }
 
-// Redirect all domains to the main domain specified in WEBSITE_DOMAIN environment variable
+// Redirect specific domains to the main domain specified in WEBSITE_DOMAIN environment variable
 var mainDomain = builder.Configuration["WEBSITE_DOMAIN"];
 if (!string.IsNullOrWhiteSpace(mainDomain))
 {
+    var redirectDomains = new[]
+    {
+        "sssklv2-app.azurewebsites.net",
+        "sssklv2.scoutingwilo.nl"
+    };
+
     app.Use(async (context, next) =>
     {
         var host = context.Request.Host.Host;
-        if (!string.Equals(host, mainDomain, StringComparison.OrdinalIgnoreCase) && 
-            !string.Equals(host, "localhost", StringComparison.OrdinalIgnoreCase))
+        if (redirectDomains.Contains(host, StringComparer.OrdinalIgnoreCase))
         {
             var request = context.Request;
             var destination = $"https://{mainDomain}{request.Path}{request.QueryString}";
@@ -357,7 +363,7 @@ using (var scope = app.Services.CreateScope())
 {
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
     var roles = Roles.AllProtected;
- 
+
     foreach (var role in roles)
     {
         if (!await roleManager.RoleExistsAsync(role))

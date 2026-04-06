@@ -14,6 +14,7 @@ import { MessageService, ConfirmationService } from 'primeng/api';
 
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { authInterceptor } from './core/auth/auth.interceptor';
+import { apiBaseInterceptor } from './core/interceptors/api-base.interceptor';
 
 const MyPreset = definePreset(Aura, {
   semantic: {
@@ -39,7 +40,7 @@ export const appConfig: ApplicationConfig = {
     provideBrowserGlobalErrorListeners(),
     provideRouter(routes),
     provideHttpClient(
-      withInterceptors([authInterceptor])
+      withInterceptors([apiBaseInterceptor, authInterceptor])
     ),
     providePrimeNG({
       theme: {

@@ -5,10 +5,12 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: ['src/test-setup.ts'],
+    update: process.env['UPDATE_SNAPSHOTS'] === 'true' ? 'all' : 'none',
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov'],
       reportsDirectory: './coverage',
+      exclude: ['src/environments/**'],
     },
   },
 });

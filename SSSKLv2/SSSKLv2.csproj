@@ -65,14 +65,6 @@
     <ProjectReference Include="..\SSSKLv2.ServiceDefaults\SSSKLv2.ServiceDefaults.csproj" />
   </ItemGroup>
 
-  <Target Name="BuildFrontend" BeforeTargets="Build">
-    <Message Importance="high" Text="Building Frontend..." />
-    <Exec Command="npm install" WorkingDirectory="../Frontend" />
-    <Exec Command="npm run build" WorkingDirectory="../Frontend" />
-    <ItemGroup>
-      <FrontendFiles Include="../Frontend/dist/SSSKLv2/browser/**" />
-    </ItemGroup>
-    <Copy SourceFiles="@(FrontendFiles)" DestinationFolder="wwwroot/%(RecursiveDir)" SkipUnchangedFiles="true" />
-  </Target>
+
 
 </Project>

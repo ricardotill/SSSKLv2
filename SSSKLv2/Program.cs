@@ -238,8 +238,15 @@ builder.Services.AddServicesDI();
 builder.Services.AddDataDI();
 builder.Services.AddAgentsDI();
 
+builder.Services.AddResponseCompression(options =>
+{
+    options.EnableForHttps = true;
+    // Default safe MIME types are used by default.
+});
+
 builder.Services.AddAntiforgery(o =>
 {
+    o.HeaderName = "X-XSRF-TOKEN";
     o.SuppressXFrameOptionsHeader = true;
     // Make antiforgery cookie HttpOnly and secure.
     o.Cookie.HttpOnly = true;
@@ -305,49 +312,45 @@ else
     app.UseExceptionHandler("/error", createScopeForErrors: true);
 }
 
-// Redirect specific domains to the main domain specified in WEBSITE_DOMAIN environment variable
-var mainDomain = builder.Configuration["WEBSITE_DOMAIN"];
-if (!string.IsNullOrWhiteSpace(mainDomain))
-{
-    var redirectDomains = new[]
-    {
-        "sssklv2-app.azurewebsites.net",
-        "sssklv2.scoutingwilo.nl"
-    };
 
-    app.Use(async (context, next) =>
-    {
-        var host = context.Request.Host.Host;
-        if (redirectDomains.Contains(host, StringComparer.OrdinalIgnoreCase))
-        {
-            var request = context.Request;
-            var destination = $"https://{mainDomain}{request.Path}{request.QueryString}";
-            context.Response.Redirect(destination, permanent: true);
-            return;
-        }
-        await next();
-    });
-}
 
+app.UseResponseCompression();
 app.UseHttpsRedirection();
-app.UseMiddleware<SocialPreviewMiddleware>();
-app.UseStaticFiles();
 // Apply cookie policy before authentication so cookie flags are enforced.
 app.UseCookiePolicy();
+
+// Global middleware to provide the XSRF token to the frontend
+app.Use(async (context, next) =>
+{
+    var antiforgery = context.RequestServices.GetRequiredService<Microsoft.AspNetCore.Antiforgery.IAntiforgery>();
+    var tokens = antiforgery.GetAndStoreTokens(context);
+    
+    if (tokens.RequestToken != null)
+    {
+        context.Response.Cookies.Append(
+            "XSRF-TOKEN",
+            tokens.RequestToken,
+            new CookieOptions
+            {
+                HttpOnly = false, // Angular needs to read this cookie
+                Secure = !isIntegrationLikeEnvironment,
+                SameSite = SameSiteMode.Lax
+            });
+    }
+
+    await next(context);
+});
 
 // Apply CORS policy.
 app.UseCors("AllowFrontend");
 app.UseAuthentication();
 app.UseAuthorization();
-app.MapStaticAssets();
 app.UseAntiforgery();
 
 app.MapGroup("/api")
     .MapControllers();
 app.MapGroup("/api/v1/identity")
     .MapSssklIdentityApi();
-
-app.MapFallbackToFile("index.html");
 
 if (app.Environment.IsDevelopment())
 {

@@ -23,17 +23,6 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
-
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '22'
-        cache: 'npm'
-        cache-dependency-path: Frontend/package-lock.json
-
-    - name: Install dependencies
-      run: npm ci --ignore-scripts
-      working-directory: Frontend
         
     - name: Restore dependencies
       run: dotnet restore
@@ -63,17 +52,6 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'npm'
-          cache-dependency-path: Frontend/package-lock.json
-
-      - name: Install dependencies
-        run: npm ci --ignore-scripts
-        working-directory: Frontend
 
       - name: Cache SonarCloud packages
         uses: actions/cache@v4

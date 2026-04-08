@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit, AfterViewInit, OnDestroy, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MessageService } from 'primeng/api';
@@ -88,55 +88,106 @@ import { ProgressSpinnerModule } from 'primeng/progressspinner';
           <!-- Betalen Column -->
           <div class="col-span-1 lg:col-span-4">
             <h2 class="text-2xl font-bold mb-4 font-heading">{{ ls.t().pay }}</h2>
-            
-            <label for="splitCheck" class="flex items-center mb-4 cursor-pointer w-fit">
-              <p-checkbox [ngModel]="split()" (ngModelChange)="split.set($event)" [binary]="true" inputId="splitCheck"></p-checkbox>
-              <div class="ml-2 font-medium font-body">{{ ls.t().split_bill }}</div>
-            </label>
-
-            <div class="flex flex-col gap-4">
-              <div class="flex items-stretch border border-surface-200 dark:border-surface-700 rounded-lg overflow-hidden bg-surface-0 dark:bg-surface-900 border-opacity-50">
-                <div class="flex items-center justify-center bg-surface-100 dark:bg-surface-800 px-4 font-medium font-body border-r border-surface-200 dark:border-surface-700">
-                  {{ ls.t().amount }}
-                </div>
-                <input 
-                  type="number" 
-                  [ngModel]="amount()"
-                  (ngModelChange)="amount.set($event)"
-                  class="w-full bg-transparent p-3 outline-none font-body text-surface-900 dark:text-surface-0 min-w-0" 
-                  min="1"
-                />
-              </div>
-              <p-button 
-                [label]="ls.t().order"
-                icon="pi pi-credit-card" 
-                styleClass="p-button-primary w-full justify-center p-3 text-xl rounded-lg"
-                [style]="{'width': '100%'}"
-                [disabled]="isSubmitting() || selectedProducts().length === 0 || selectedUsers().length === 0 || amount() < 1 || isGuest()"
-                [loading]="isSubmitting()"
-                (onClick)="submitOrder()">
-              </p-button>
-            </div>
+            <!-- Sentinel: observed to detect when Pay column is off-screen -->
+            <div #payColumnSentinel></div>
+            <ng-container *ngTemplateOutlet="payControls"></ng-container>
           </div>
 
         </div>
       }
     </div>
   </p-card>
+
+  <!-- Shared Pay controls template -->
+  <ng-template #payControls>
+    <label for="splitCheck" class="flex items-center mb-4 cursor-pointer w-fit">
+      <p-checkbox [ngModel]="split()" (ngModelChange)="split.set($event)" [binary]="true" inputId="splitCheck"></p-checkbox>
+      <div class="ml-2 font-medium font-body">{{ ls.t().split_bill }}</div>
+    </label>
+
+    <div class="flex flex-col gap-4">
+      <div class="flex items-stretch border border-surface-200 dark:border-surface-700 rounded-lg overflow-hidden bg-surface-0 dark:bg-surface-900 border-opacity-50">
+        <div class="flex items-center justify-center bg-surface-100 dark:bg-surface-800 px-4 font-medium font-body border-r border-surface-200 dark:border-surface-700">
+          {{ ls.t().amount }}
+        </div>
+        <input 
+          type="number" 
+          [ngModel]="amount()"
+          (ngModelChange)="amount.set($event)"
+          class="w-full bg-transparent p-3 outline-none font-body text-surface-900 dark:text-surface-0 min-w-0" 
+          min="1"
+        />
+      </div>
+      <p-button 
+        [label]="ls.t().order"
+        icon="pi pi-credit-card" 
+        styleClass="p-button-primary w-full justify-center p-3 text-xl rounded-lg"
+        [style]="{'width': '100%'}"
+        [disabled]="isSubmitting() || selectedProducts().length === 0 || selectedUsers().length === 0 || amount() < 1 || isGuest()"
+        [loading]="isSubmitting()"
+        (onClick)="submitOrder()">
+      </p-button>
+    </div>
+  </ng-template>
+
+  <!-- Floating bottom bar – only visible on mobile when Pay column is out of view -->
+  @if (showFloatingBar()) {
+    <div class="pos-floating-bar">
+      <ng-container *ngTemplateOutlet="payControls"></ng-container>
+    </div>
+  }
   `,
   styles: [`
     ::ng-deep .p-checkbox .p-checkbox-box {
       border-radius: 4px;
     }
+
+    .pos-floating-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 1000;
+      padding: 1rem 1.25rem;
+      background: var(--p-surface-card);
+      border-top: 1px solid var(--p-surface-border);
+      box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.15);
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      animation: posSlideUp 0.25s ease-out;
+    }
+
+    :host-context(.dark) .pos-floating-bar {
+      background: var(--p-surface-900);
+      border-top-color: var(--p-surface-700);
+      box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.4);
+    }
+
+    @keyframes posSlideUp {
+      from { transform: translateY(100%); opacity: 0; }
+      to   { transform: translateY(0);    opacity: 1; }
+    }
+
+    /* Hide on desktop – the Pay column is always visible there */
+    @media (min-width: 1024px) {
+      .pos-floating-bar {
+        display: none !important;
+      }
+    }
   `],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export default class PosComponent implements OnInit {
+export default class PosComponent implements OnInit, AfterViewInit, OnDestroy {
   private orderService = inject(OrderService);
   private messageService = inject(MessageService);
   private authService = inject(AuthService);
   private popupService = inject(AchievementPopupService);
   ls = inject(LanguageService);
+
+  @ViewChild('payColumnSentinel') private payColumnSentinel!: ElementRef<HTMLElement>;
+
+  private intersectionObserver: IntersectionObserver | null = null;
 
   isLoading = signal(true);
   isSubmitting = signal(false);
@@ -149,6 +200,9 @@ export default class PosComponent implements OnInit {
   selectedUsers = signal<string[]>([]);
   amount = signal<number>(1);
   split = signal<boolean>(false);
+
+  /** Controls visibility of the floating bottom action bar on mobile. */
+  showFloatingBar = signal(false);
 
   ngOnInit() {
     this.orderService.initialize().subscribe({
@@ -173,6 +227,25 @@ export default class PosComponent implements OnInit {
         console.error(err);
       }
     });
+  }
+
+  ngAfterViewInit() {
+    this.intersectionObserver = new IntersectionObserver(
+      ([entry]) => {
+        // Show the floating bar when the sentinel is NOT intersecting (out of view)
+        this.showFloatingBar.set(!entry.isIntersecting);
+      },
+      { threshold: 0 }
+    );
+
+    if (this.payColumnSentinel) {
+      this.intersectionObserver.observe(this.payColumnSentinel.nativeElement);
+    }
+  }
+
+  ngOnDestroy() {
+    this.intersectionObserver?.disconnect();
+    this.intersectionObserver = null;
   }
 
   submitOrder() {
@@ -218,4 +291,3 @@ export default class PosComponent implements OnInit {
     });
   }
 }
-

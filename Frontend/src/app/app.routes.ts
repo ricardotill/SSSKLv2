@@ -10,6 +10,11 @@ const devRoutes = isDevMode() ? [
     path: 'leaderboard/livedisplay/dev',
     loadComponent: () => import('./features/leaderboard/live-display/dev-live-display.component').then(m => m.DevLiveDisplayComponent),
     title: 'Dev: Live Display Scaling Test - SSSKL'
+  },
+  {
+    path: 'pos/dev',
+    loadComponent: () => import('./features/pos/pos-demo.component').then(m => m.PosDemoComponent),
+    title: 'Dev: POS Demo - SSSKL'
   }
 ] : [];
 

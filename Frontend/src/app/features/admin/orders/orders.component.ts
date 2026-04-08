@@ -50,6 +50,7 @@ import { AuthService } from '../../../core/auth/auth.service';
             <th>{{ ls.t().date }}</th>
             <th>{{ ls.t().user }}</th>
             <th>{{ ls.t().product }}</th>
+            <th>{{ ls.t().amount }}</th>
             <th>{{ ls.t().price }}</th>
             <th class="w-32">{{ ls.t().actions }}</th>
           </tr>
@@ -59,7 +60,8 @@ import { AuthService } from '../../../core/auth/auth.service';
             <td>{{ order.createdOn | date:'dd-MM-yyyy HH:mm' }}</td>
             <td>{{ order.userFullName }}</td>
             <td>{{ order.productName }}</td>
-            <td>{{ order.amount | currency:'EUR' }}</td>
+            <td>{{ order.amount }}</td>
+            <td>{{ order.paid | currency:'EUR' }}</td>
             <td>
               <div class="flex gap-2">
                 <p-button icon="pi pi-trash" [rounded]="true" [text]="true" severity="danger" (onClick)="confirmDelete(order)" [loading]="deletingOrderId() === order.id" [ariaLabel]="ls.t().delete"></p-button>
@@ -69,7 +71,7 @@ import { AuthService } from '../../../core/auth/auth.service';
         </ng-template>
         <ng-template pTemplate="emptymessage">
           <tr>
-            <td colspan="5" class="text-center p-4 text-surface-500">{{ ls.t().no_orders }}</td>
+            <td colspan="6" class="text-center p-4 text-surface-500">{{ ls.t().no_orders }}</td>
           </tr>
         </ng-template>
       </p-table>

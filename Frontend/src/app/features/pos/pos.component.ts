@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit, AfterViewInit, OnDestroy, ViewChild, ElementRef } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit, OnDestroy, ViewChild, ElementRef, effect, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MessageService } from 'primeng/api';
@@ -178,11 +178,12 @@ import { ProgressSpinnerModule } from 'primeng/progressspinner';
   `],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export default class PosComponent implements OnInit, AfterViewInit, OnDestroy {
+export default class PosComponent implements OnInit, OnDestroy {
   private orderService = inject(OrderService);
   private messageService = inject(MessageService);
   private authService = inject(AuthService);
   private popupService = inject(AchievementPopupService);
+  private cdr = inject(ChangeDetectorRef);
   ls = inject(LanguageService);
 
   @ViewChild('payColumnSentinel') private payColumnSentinel!: ElementRef<HTMLElement>;
@@ -203,6 +204,16 @@ export default class PosComponent implements OnInit, AfterViewInit, OnDestroy {
 
   /** Controls visibility of the floating bottom action bar on mobile. */
   showFloatingBar = signal(false);
+
+  constructor() {
+    // Watch isLoading: once it flips to false the @else branch renders the sentinel.
+    // We defer one tick with setTimeout so Angular has time to stamp the DOM.
+    effect(() => {
+      if (!this.isLoading()) {
+        setTimeout(() => this.attachObserver());
+      }
+    });
+  }
 
   ngOnInit() {
     this.orderService.initialize().subscribe({
@@ -229,18 +240,18 @@ export default class PosComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  ngAfterViewInit() {
+  private attachObserver() {
+    if (this.intersectionObserver || !this.payColumnSentinel) {
+      return;
+    }
     this.intersectionObserver = new IntersectionObserver(
       ([entry]) => {
-        // Show the floating bar when the sentinel is NOT intersecting (out of view)
         this.showFloatingBar.set(!entry.isIntersecting);
+        this.cdr.markForCheck();
       },
       { threshold: 0 }
     );
-
-    if (this.payColumnSentinel) {
-      this.intersectionObserver.observe(this.payColumnSentinel.nativeElement);
-    }
+    this.intersectionObserver.observe(this.payColumnSentinel.nativeElement);
   }
 
   ngOnDestroy() {

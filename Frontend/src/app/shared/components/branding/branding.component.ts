@@ -17,7 +17,7 @@ import { AuthService } from '../../../core/auth/auth.service';
       [attr.tabindex]="authService.isAuthenticated() ? 0 : null"
     >
       <h2 class="text-xl font-bold m-0">SSSKL</h2>
-      <p-tag class="ml-2" value="v3.5.0" />
+      <p-tag class="ml-2" value="v3.5.1" />
     </div>
   `,
   styles: `

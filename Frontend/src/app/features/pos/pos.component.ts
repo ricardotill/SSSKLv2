@@ -147,7 +147,7 @@ import { ProgressSpinnerModule } from 'primeng/progressspinner';
       bottom: 0;
       left: 0;
       right: 0;
-      z-index: 1000;
+      z-index: 100;
       padding: 1rem 1.25rem;
       background: var(--p-surface-card);
       border-top: 1px solid var(--p-surface-border);

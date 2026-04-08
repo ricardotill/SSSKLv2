@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Hosting;
 
 namespace SSSKLv2.Controllers.v1;
 
@@ -14,9 +15,9 @@ public class PublicController : ControllerBase
     }
 
     [HttpGet("domain")]
-    public ActionResult<string> GetDomain()
+    public ActionResult<string> GetDomain([FromServices] IWebHostEnvironment env)
     {
         var domain = _configuration["WEBSITE_DOMAIN"];
-        return Ok(domain ?? "ssskl.scoutingwilo.nl");
+        return Ok(domain ?? (env.IsDevelopment() ? "localhost" : "ssskl.scoutingwilo.nl"));
     }
 }

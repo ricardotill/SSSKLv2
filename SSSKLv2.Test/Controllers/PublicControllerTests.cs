@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using NSubstitute;
 using SSSKLv2.Controllers.v1;
@@ -24,10 +25,11 @@ public class PublicControllerTests
     public void GetDomain_ReturnsConfiguredDomain()
     {
         // Arrange
+        var mockEnv = Substitute.For<IWebHostEnvironment>();
         _mockConfiguration["WEBSITE_DOMAIN"].Returns("custom.domain.nl");
-
+ 
         // Act
-        var result = _sut.GetDomain();
+        var result = _sut.GetDomain(mockEnv);
 
         // Assert
         var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
@@ -38,13 +40,31 @@ public class PublicControllerTests
     public void GetDomain_ReturnsDefaultDomain_WhenConfigMissing()
     {
         // Arrange
+        var mockEnv = Substitute.For<IWebHostEnvironment>();
+        mockEnv.EnvironmentName.Returns("Production");
         _mockConfiguration["WEBSITE_DOMAIN"].Returns((string?)null);
-
+ 
         // Act
-        var result = _sut.GetDomain();
+        var result = _sut.GetDomain(mockEnv);
 
         // Assert
         var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
         okResult.Value.Should().Be("ssskl.scoutingwilo.nl");
+    }
+
+    [TestMethod]
+    public void GetDomain_ReturnsLocalhost_WhenConfigMissingInDevelopment()
+    {
+        // Arrange
+        var mockEnv = Substitute.For<IWebHostEnvironment>();
+        mockEnv.EnvironmentName.Returns("Development");
+        _mockConfiguration["WEBSITE_DOMAIN"].Returns((string?)null);
+
+        // Act
+        var result = _sut.GetDomain(mockEnv);
+
+        // Assert
+        var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
+        okResult.Value.Should().Be("localhost");
     }
 }

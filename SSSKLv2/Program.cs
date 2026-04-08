@@ -26,6 +26,8 @@ builder.AddServiceDefaults();
 // and cookie codepaths from requiring an actual SSL request when running tests
 // under TestServer.
 var isIntegrationLikeEnvironment = builder.Environment.IsDevelopment() || builder.Environment.IsEnvironment("IntegrationTest");
+var websiteDomain = builder.Configuration["WEBSITE_DOMAIN"] ?? (builder.Environment.IsDevelopment() ? "localhost" : "ssskl.scoutingwilo.nl");
+
 
 
 builder.Services.AddControllers();
@@ -142,7 +144,7 @@ var frontendOrigins = new[]
     "http://localhost:5173",
     "https://localhost:5173",
     "https://sssklv2-app.azurewebsites.net",
-    "https://ssskl.scoutingwilo.nl",
+    $"https://{websiteDomain}",
     "https://ambitious-desert-07f83a203.2.azurestaticapps.net"
 };
 
@@ -230,6 +232,11 @@ builder.Services.AddIdentityCore<ApplicationUser>(options =>
     .AddSignInManager()
     .AddDefaultTokenProviders()
     .AddApiEndpoints();
+
+builder.Services.Configure<IdentityPasskeyOptions>(options =>
+{
+    options.ServerDomain = websiteDomain;
+});
 
 // TODO: Implement a proper IEmailSender if needed for the API
 builder.Services.AddSingleton<IEmailSender<ApplicationUser>, NoOpEmailSender>();
@@ -324,7 +331,7 @@ app.Use(async (context, next) =>
 {
     var antiforgery = context.RequestServices.GetRequiredService<Microsoft.AspNetCore.Antiforgery.IAntiforgery>();
     var tokens = antiforgery.GetAndStoreTokens(context);
-    
+
     if (tokens.RequestToken != null)
     {
         context.Response.Cookies.Append(

@@ -24,11 +24,13 @@ describe('LocationSelectorComponent', () => {
     // Mock window.google object
     (window as any).google = {
       maps: {
-        Map: vi.fn().mockImplementation(() => ({
-          addListener: vi.fn(),
-          setCenter: vi.fn(),
-          setZoom: vi.fn()
-        })),
+        Map: vi.fn().mockImplementation(function() {
+          return {
+            addListener: vi.fn(),
+            setCenter: vi.fn(),
+            setZoom: vi.fn()
+          };
+        }),
         ColorScheme: {
           DARK: 'DARK',
           LIGHT: 'LIGHT'
@@ -36,10 +38,12 @@ describe('LocationSelectorComponent', () => {
         importLibrary: vi.fn().mockImplementation(async (lib) => {
           if (lib === 'marker') {
             return {
-              AdvancedMarkerElement: vi.fn().mockImplementation(() => ({
-                addListener: vi.fn(),
-                position: { lat: 0, lng: 0 }
-              }))
+              AdvancedMarkerElement: vi.fn().mockImplementation(function() {
+                return {
+                  addListener: vi.fn(),
+                  position: { lat: 0, lng: 0 }
+                };
+              })
             };
           }
           return {};

@@ -141,12 +141,9 @@ export class LocationSelectorComponent implements AfterViewInit, OnDestroy {
       const isDark = this.themeService.isDark();
       
       if (apiLoaded && container) {
-        console.log('Re-initializing map for theme change:', isDark ? 'dark' : 'light');
         this.initMap();
       }
     });
-
-    // React to initial coordinate changes (e.g. when loading an existing event)
 
     // React to initial coordinate changes (e.g. when loading an existing event)
     effect(() => {
@@ -155,7 +152,6 @@ export class LocationSelectorComponent implements AfterViewInit, OnDestroy {
       const name = this.initialName();
       
       if (this.map && lat && lng) {
-        console.log('Inputs changed, updating map/marker:', { lat, lng, name });
         this.updateMarker(lat, lng, name || '');
         this.map.setCenter({ lat, lng });
       }
@@ -206,8 +202,6 @@ export class LocationSelectorComponent implements AfterViewInit, OnDestroy {
         const lng = this.sanitizeCoordinate(this.initialLongitude()) || 5.1214;
         const zoom = this.initialLatitude() ? 15 : 7;
 
-        console.log('Initializing map at:', { lat, lng, zoom, mapId });
-
         const mapOptions: any = {
           center: { lat, lng },
           zoom: zoom,
@@ -245,23 +239,18 @@ export class LocationSelectorComponent implements AfterViewInit, OnDestroy {
   }
 
   public async handlePlaceSelect(event: any) {
-    console.log('Place selected event:', event);
     const placePrediction = (event as any).placePrediction;
     if (!placePrediction) {
-      console.warn('No place prediction found in event');
       return;
     }
 
     try {
       const place = await (placePrediction as any).toPlace();
-      console.log('Place skeleton fetched:', place);
       
       // We must explicitly fetch the fields we need in the new Places API
       await (place as any).fetchFields({
         fields: ['location', 'displayName', 'formattedAddress']
       });
-      
-      console.log('Place details populated:', place);
       
       if (place?.location) {
         const lat = place.location.lat();

@@ -325,7 +325,6 @@ export default class EventDetailComponent implements OnInit, AfterViewChecked {
 
       if (apiLoaded && container && lat && lng) {
         // If theme changed, we need to re-initialize because colorScheme is init-only
-        console.log('Detail map initialization/re-initialization triggered. isDark:', isDark);
         this.initDetailMap(lat, lng, evt?.locationName || '');
       }
     });

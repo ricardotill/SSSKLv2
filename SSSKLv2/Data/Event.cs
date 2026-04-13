@@ -26,6 +26,12 @@ public class Event : BaseModel
     [ForeignKey("CreatorId")]
     public ApplicationUser Creator { get; set; } = default!;
 
+    public string? LocationName { get; set; }
+
+    public double? Latitude { get; set; }
+
+    public double? Longitude { get; set; }
+
     public ICollection<EventResponse> Responses { get; set; } = new List<EventResponse>();
     
     public ICollection<IdentityRole> RequiredRoles { get; set; } = new List<IdentityRole>();

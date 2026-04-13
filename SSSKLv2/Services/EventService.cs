@@ -56,7 +56,10 @@ public class EventService(IEventRepository eventRepository, IBlobStorageAgent bl
             Description = sanitizer.Sanitize(dto.Description),
             StartDateTime = dto.StartDateTime,
             EndDateTime = dto.EndDateTime,
-            CreatorId = creatorId
+            CreatorId = creatorId,
+            LocationName = dto.LocationName,
+            Latitude = dto.Latitude,
+            Longitude = dto.Longitude
         };
 
         if (dto.RequiredRoles != null && dto.RequiredRoles.Any())
@@ -96,6 +99,9 @@ public class EventService(IEventRepository eventRepository, IBlobStorageAgent bl
         e.Description = sanitizer.Sanitize(dto.Description);
         e.StartDateTime = dto.StartDateTime;
         e.EndDateTime = dto.EndDateTime;
+        e.LocationName = dto.LocationName;
+        e.Latitude = dto.Latitude;
+        e.Longitude = dto.Longitude;
 
         e.RequiredRoles.Clear();
         if (dto.RequiredRoles != null && dto.RequiredRoles.Any())
@@ -180,6 +186,9 @@ public class EventService(IEventRepository eventRepository, IBlobStorageAgent bl
             CreatorName = e.Creator?.FullName ?? "Unknown",
             CreatorProfilePictureUrl = e.Creator?.ProfileImageId != null ? $"/api/v1/blob/profilepicture/image/{e.Creator.ProfileImageId}" : null,
             CreatedOn = e.CreatedOn,
+            LocationName = e.LocationName,
+            Latitude = e.Latitude,
+            Longitude = e.Longitude,
             AcceptedUsers = e.Responses
                 .Where(r => r.Status == EventResponseStatus.Accepted)
                 .Select(r => new EventResponseUserDto 

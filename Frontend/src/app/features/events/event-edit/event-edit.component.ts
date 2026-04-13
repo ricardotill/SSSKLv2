@@ -18,6 +18,7 @@ import { MultiSelect } from 'primeng/multiselect';
 import { ResolveApiUrlPipe } from '../../../shared/pipes/resolve-api-url.pipe';
 import { RoleService } from '../../admin/services/role.service';
 import { Role } from '../../../core/models/role.model';
+import { LocationSelectorComponent, LocationResult } from '../../../shared/components/location-selector/location-selector.component';
 
 @Component({
   selector: 'app-event-edit',
@@ -35,7 +36,8 @@ import { Role } from '../../../core/models/role.model';
     ProgressSpinnerModule,
     FileUploadModule,
     MultiSelect,
-    ResolveApiUrlPipe
+    ResolveApiUrlPipe,
+    LocationSelectorComponent
   ],
   template: `
     <div class="max-w-3xl mx-auto">
@@ -48,7 +50,7 @@ import { Role } from '../../../core/models/role.model';
       </div>
 
       <p-card>
-        <form [formGroup]="eventForm" (ngSubmit)="onSubmit()" class="flex flex-col gap-6">
+        <form [formGroup]="eventForm" class="flex flex-col gap-6">
           <div class="flex flex-col gap-2">
             <label for="title" class="font-bold">{{ ls.t().title }}</label>
             <input pInputText id="title" formControlName="title" [placeholder]="ls.t().title" class="w-full" />
@@ -128,6 +130,16 @@ import { Role } from '../../../core/models/role.model';
             </p-editor>
           </div>
 
+          <div class="flex flex-col gap-2">
+            <label class="font-bold">Locatie</label>
+            <app-location-selector
+              [initialName]="eventForm.get('locationName')?.value"
+              [initialLatitude]="eventForm.get('latitude')?.value"
+              [initialLongitude]="eventForm.get('longitude')?.value"
+              (locationChanged)="onLocationChanged($event)"
+            ></app-location-selector>
+          </div>
+
           <div class="flex justify-end gap-3 mt-4">
             <p-button 
               [label]="ls.t().cancel" 
@@ -137,10 +149,11 @@ import { Role } from '../../../core/models/role.model';
             />
             <p-button 
               [label]="ls.t().save" 
-              type="submit" 
+              type="button" 
               severity="primary" 
               [loading]="submitting()"
               [disabled]="eventForm.invalid"
+              (onClick)="onSubmit()"
             />
           </div>
         </form>
@@ -175,6 +188,9 @@ export default class EventEditComponent implements OnInit {
       description: ['', Validators.required],
       startDateTime: [null, Validators.required],
       endDateTime: [null, Validators.required],
+      locationName: [null],
+      latitude: [null],
+      longitude: [null],
       requiredRoles: [[]]
     });
   }
@@ -216,6 +232,9 @@ export default class EventEditComponent implements OnInit {
           description: event.description,
           startDateTime: new Date(event.startDateTime),
           endDateTime: new Date(event.endDateTime),
+          locationName: event.locationName,
+          latitude: event.latitude,
+          longitude: event.longitude,
           requiredRoles: event.requiredRoles || []
         });
       },
@@ -230,6 +249,22 @@ export default class EventEditComponent implements OnInit {
     }
   }
 
+  onLocationChanged(location: LocationResult | null): void {
+    if (location) {
+      this.eventForm.patchValue({
+        locationName: location.name,
+        latitude: location.lat,
+        longitude: location.lng
+      });
+    } else {
+      this.eventForm.patchValue({
+        locationName: null,
+        latitude: null,
+        longitude: null
+      });
+    }
+  }
+
   onSubmit(): void {
     if (this.eventForm.invalid) return;
 
@@ -241,6 +276,10 @@ export default class EventEditComponent implements OnInit {
     formData.append('Description', formValue.description);
     formData.append('StartDateTime', formValue.startDateTime.toISOString());
     formData.append('EndDateTime', formValue.endDateTime.toISOString());
+
+    if (formValue.locationName) formData.append('LocationName', formValue.locationName);
+    if (formValue.latitude) formData.append('Latitude', formValue.latitude.toString());
+    if (formValue.longitude) formData.append('Longitude', formValue.longitude.toString());
 
     if (formValue.requiredRoles && formValue.requiredRoles.length > 0) {
       formValue.requiredRoles.forEach((role: string, index: number) => {

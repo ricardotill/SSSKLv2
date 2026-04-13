@@ -1,5 +1,8 @@
-import { Component, ChangeDetectionStrategy, inject, signal, OnInit, computed } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal, OnInit, computed, ElementRef, viewChild, AfterViewChecked, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { GoogleMapsService } from '../../../core/services/google-maps.service';
+import { ThemeService } from '../../../core/services/theme.service';
+import { take } from 'rxjs';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
@@ -83,6 +86,33 @@ import { ProcessedContentPipe } from '../../../shared/pipes/processed-content.pi
                       </div>
                     </div>
                   </div>
+
+                  @if (event()?.locationName) {
+                    <p-divider></p-divider>
+                    <div class="flex flex-col gap-2">
+                      <span class="text-xs text-surface-500 uppercase font-bold tracking-wider">Locatie</span>
+                      <div class="flex items-center gap-2 mb-2">
+                        <i class="pi pi-map-marker text-primary-500"></i>
+                        <span class="font-medium">{{ event()?.locationName }}</span>
+                      </div>
+                      @if (event()?.latitude && event()?.longitude) {
+                        <a 
+                          [href]="'https://www.google.com/maps/search/?api=1&query=' + event()?.latitude + ',' + event()?.longitude" 
+                          target="_blank"
+                          class="relative w-full h-48 block rounded-lg overflow-hidden border border-surface-200 dark:border-surface-700 shadow-sm transition-all hover:shadow-md hover:border-primary-500 cursor-pointer group"
+                        >
+                          <div #detailMapContainer class="w-full h-full z-0 pointer-events-none grayscale-[0.2] transition-all group-hover:grayscale-0 group-hover:scale-105"></div>
+                          <div class="absolute inset-0 bg-black/5 group-hover:bg-transparent transition-colors pointer-events-none"></div>
+                          <div class="absolute top-3 left-3 pointer-events-none">
+                            <span class="text-white text-[10px] sm:text-xs font-bold bg-black/50 px-2 py-1 rounded-md backdrop-blur-md flex items-center gap-1 border border-white/10 group-hover:bg-primary-500/80 transition-all shadow-lg">
+                              <i class="pi pi-external-link"></i>
+                              Ga naar Google Maps
+                            </span>
+                          </div>
+                        </a>
+                      }
+                    </div>
+                  }
 
                   <p-divider></p-divider>
 
@@ -275,6 +305,30 @@ export default class EventDetailComponent implements OnInit {
   private readonly document = inject(DOCUMENT);
   private readonly urlService = inject(UrlService);
   ls = inject(LanguageService);
+  private readonly googleMapsService = inject(GoogleMapsService);
+  private readonly themeService = inject(ThemeService);
+
+  detailMapContainer = viewChild<ElementRef>('detailMapContainer');
+  private map?: google.maps.Map;
+  private mapInitialized = false;
+  apiLoaded = signal<boolean>(false);
+
+  constructor() {
+    // Handle map initialization and theme updates
+    effect(() => {
+      const container = this.detailMapContainer()?.nativeElement;
+      const evt = this.event();
+      const apiLoaded = this.apiLoaded();
+      const isDark = this.themeService.isDark();
+      const lat = this.sanitizeCoordinate(evt?.latitude);
+      const lng = this.sanitizeCoordinate(evt?.longitude);
+
+      if (apiLoaded && container && lat && lng) {
+        // If theme changed, we need to re-initialize because colorScheme is init-only
+        this.initDetailMap(lat, lng, evt?.locationName || '');
+      }
+    });
+  }
 
   event = signal<EventDto | null>(null);
   loading = signal<boolean>(false);
@@ -304,6 +358,10 @@ export default class EventDetailComponent implements OnInit {
     if (id) {
       this.loadEvent(id);
     }
+
+    this.googleMapsService.load().pipe(take(1)).subscribe(loaded => {
+      this.apiLoaded.set(loaded);
+    });
   }
 
   loadEvent(id: string): void {
@@ -318,6 +376,54 @@ export default class EventDetailComponent implements OnInit {
         this.loading.set(false);
         this.messageService.add({ severity: 'error', summary: 'Fout', detail: 'Kan evenement niet laden' });
       }
+    });
+  }
+
+  private async initDetailMap(lat: number, lng: number, name: string) {
+    const container = this.detailMapContainer()?.nativeElement;
+    if (!container) return;
+
+    // Reset previous map state if re-initializing for a theme change
+    if (this.map) {
+      container.innerHTML = ''; // Clear container
+    }
+
+    this.mapInitialized = true;
+    const isDark = this.themeService.isDark();
+
+    this.googleMapsService.getMapId().pipe(take(1)).subscribe(async (mapId) => {
+      // Brief delay to ensure container is fully rendered
+      setTimeout(async () => {
+        const mapOptions: any = {
+          center: { lat, lng },
+          zoom: 15,
+          mapId: mapId,
+          colorScheme: isDark ? (google.maps as any).ColorScheme.DARK : (google.maps as any).ColorScheme.LIGHT,
+          zoomControl: false,
+          mapTypeControl: false,
+          streetViewControl: false,
+          fullscreenControl: false,
+          gestureHandling: 'none' // Make it "static looking"
+        };
+
+        // Only apply inline styles if no Map ID is provided, to avoid API warnings
+        if (!mapId) {
+          mapOptions.styles = [
+            { featureType: 'poi', elementType: 'labels', stylers: [{ visibility: 'off' }] }
+          ];
+        }
+
+        this.map = new google.maps.Map(container, mapOptions);
+
+        const markerLib = await google.maps.importLibrary("marker") as any;
+        const AdvancedMarkerElement = markerLib.AdvancedMarkerElement;
+
+        new AdvancedMarkerElement({
+          position: { lat, lng },
+          map: this.map,
+          title: name
+        });
+      }, 100);
     });
   }
 
@@ -398,5 +504,21 @@ export default class EventDetailComponent implements OnInit {
         }
       });
     }
+  }
+
+  private sanitizeCoordinate(coord: number | undefined): number | undefined {
+    if (coord === undefined || coord === null || isNaN(coord)) return undefined;
+    if (coord === 0) return 0;
+
+    // Standard coordinates are between -180 and 180
+    if (Math.abs(coord) <= 180) return coord;
+
+    // If coordinate is ridiculously large, it was likely mangled by locale issues (dot vs comma)
+    let fixed = coord;
+    while (Math.abs(fixed) > 180) {
+      fixed /= 10;
+    }
+
+    return fixed;
   }
 }

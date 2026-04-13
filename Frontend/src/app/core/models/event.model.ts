@@ -14,6 +14,9 @@ export interface EventCreateDto {
   description: string;
   startDateTime: string;
   endDateTime: string;
+  locationName?: string;
+  latitude?: number;
+  longitude?: number;
   requiredRoles?: string[];
 }
 
@@ -30,6 +33,9 @@ export interface EventDto {
   acceptedUsers: EventResponseUserDto[];
   declinedUsers: EventResponseUserDto[];
   userResponse?: EventResponseStatus | null;
+  locationName?: string;
+  latitude?: number;
+  longitude?: number;
   requiredRoles?: string[];
 }
 

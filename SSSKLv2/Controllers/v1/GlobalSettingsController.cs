@@ -41,8 +41,14 @@ public class GlobalSettingsController : ControllerBase
     [HttpPut("{key}")]
     public async Task<IActionResult> UpdateSetting(string key, [FromBody] GlobalSettingUpdateDto dto)
     {
-        var sanitizer = new HtmlSanitizer();
-        var sanitizedValue = sanitizer.Sanitize(dto.Value);
+        var sanitizedValue = dto.Value;
+        
+        // Only sanitize if it's NOT an API key or other sensitive non-HTML setting
+        if (key != "GoogleMapsApiKey") 
+        {
+            var sanitizer = new HtmlSanitizer();
+            sanitizedValue = sanitizer.Sanitize(dto.Value);
+        }
 
         var setting = await _context.GlobalSetting
             .FirstOrDefaultAsync(s => s.Key == key);

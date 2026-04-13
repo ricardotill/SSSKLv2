@@ -1,4 +1,4 @@
-import { Injectable, signal, effect } from '@angular/core';
+import { Injectable, signal, effect, computed } from '@angular/core';
 
 export type ThemeMode = 'auto' | 'light' | 'dark';
 
@@ -10,6 +10,14 @@ export class ThemeService {
   
   // Initialize from localStorage or default to 'auto'
   mode = signal<ThemeMode>((localStorage.getItem(this.THEME_KEY) as ThemeMode) || 'auto');
+
+  isDark = computed(() => {
+    const currentMode = this.mode();
+    if (currentMode === 'auto') {
+      return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    }
+    return currentMode === 'dark';
+  });
 
   constructor() {
     // React to mode changes

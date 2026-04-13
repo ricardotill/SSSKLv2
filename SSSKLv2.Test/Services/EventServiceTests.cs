@@ -130,6 +130,31 @@ public class EventServiceTests : RepositoryTest
     }
 
     [TestMethod]
+    public async Task CreateEvent_WithLocation_ShouldSetLocationFields()
+    {
+        // Arrange
+        var dto = new EventCreateDto 
+        { 
+            Title = "Map Event", 
+            LocationName = "Schwerin",
+            Latitude = 53.6353,
+            Longitude = 11.4003,
+            StartDateTime = DateTime.Now, 
+            EndDateTime = DateTime.Now.AddHours(1) 
+        };
+        var creatorId = "creator-id";
+
+        // Act
+        await _sut.CreateEvent(dto, creatorId);
+
+        // Assert
+        await _eventRepository.Received(1).Add(Arg.Is<Event>(e => 
+            e.LocationName == "Schwerin" && 
+            e.Latitude == 53.6353 && 
+            e.Longitude == 11.4003));
+    }
+
+    [TestMethod]
     public async Task CreateEvent_WithRoles_ShouldFetchRolesFromDb()
     {
         // Arrange
@@ -168,6 +193,33 @@ public class EventServiceTests : RepositoryTest
         e.Title.Should().Be("New Title");
         await _eventRepository.Received(1).Update(e);
         await _eventNotifier.Received(1).NotifyEventChangedAsync();
+    }
+
+    [TestMethod]
+    public async Task UpdateEvent_WithLocation_ShouldUpdateLocationFields()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        var creatorId = "creator-id";
+        var e = new Event { Id = id, CreatorId = creatorId, Title = "Old Title", LocationName = "Old Location" };
+        _eventRepository.GetById(id).Returns(e);
+
+        var dto = new EventCreateDto 
+        { 
+            Title = "New Title", 
+            LocationName = "New Location",
+            Latitude = 1.23,
+            Longitude = 4.56
+        };
+
+        // Act
+        await _sut.UpdateEvent(id, dto, creatorId, false);
+
+        // Assert
+        e.LocationName.Should().Be("New Location");
+        e.Latitude.Should().Be(1.23);
+        e.Longitude.Should().Be(4.56);
+        await _eventRepository.Received(1).Update(e);
     }
 
     [TestMethod]

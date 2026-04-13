@@ -385,8 +385,8 @@ using (var scope = app.Services.CreateScope())
 
 app.MapHealthChecks("/healthz");
 
-CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.GetCultureInfo("nl-NL");
-CultureInfo.DefaultThreadCurrentCulture = CultureInfo.GetCultureInfo("nl-NL");
+CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.InvariantCulture;
+CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
 
 using (var scope = app.Services.GetService<IServiceScopeFactory>()!.CreateScope())
 {

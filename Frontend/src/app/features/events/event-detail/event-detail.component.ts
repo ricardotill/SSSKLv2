@@ -16,6 +16,7 @@ import { DOCUMENT } from '@angular/common';
 import { AvatarModule } from 'primeng/avatar';
 import { ResolveApiUrlPipe } from '../../../shared/pipes/resolve-api-url.pipe';
 import { UrlService } from '../../../core/services/url.service';
+import { ProcessedContentPipe } from '../../../shared/pipes/processed-content.pipe';
 
 @Component({
   selector: 'app-event-detail',
@@ -29,7 +30,8 @@ import { UrlService } from '../../../core/services/url.service';
     DividerModule,
     ProgressSpinnerModule,
     AvatarModule,
-    ResolveApiUrlPipe
+    ResolveApiUrlPipe,
+    ProcessedContentPipe
   ],
   template: `
     <div class="max-w-4xl mx-auto">
@@ -95,7 +97,9 @@ import { UrlService } from '../../../core/services/url.service';
                     </div>
                   }
 
-                  <div class="prose dark:prose-invert max-w-none" [innerHTML]="event()?.description">
+                  <div class="rich-text-content prose dark:prose-invert max-w-none" 
+                       style="word-wrap: break-word; overflow-wrap: break-word; word-break: normal; white-space: normal;"
+                       [innerHTML]="event()?.description | processedContent">
                   </div>
                 </div>
               </p-card>
@@ -238,6 +242,25 @@ import { UrlService } from '../../../core/services/url.service';
       scrollbar-width: thin;
       scrollbar-color: var(--p-surface-300) transparent;
     }
+    :host ::ng-deep .rich-text-content * {
+      word-break: normal !important;
+      overflow-wrap: break-word !important;
+      white-space: normal !important;
+    }
+    :host ::ng-deep .rich-text-content ul, 
+    :host ::ng-deep .rich-text-content ol {
+      margin-bottom: 1rem;
+      padding-left: 1.5rem;
+    }
+    :host ::ng-deep .rich-text-content ul {
+      list-style-type: disc;
+    }
+    :host ::ng-deep .rich-text-content ol {
+      list-style-type: decimal;
+    }
+    :host ::ng-deep .rich-text-content li {
+      margin-bottom: 0.5rem;
+    }
   `],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
@@ -269,7 +292,7 @@ export default class EventDetailComponent implements OnInit {
     const user = this.authService.currentUser();
     const evt = this.event();
     if (!user || !evt) return false;
-    
+
     if (user.roles.includes('Admin')) return true;
     if (!evt.requiredRoles || evt.requiredRoles.length === 0) return true;
 

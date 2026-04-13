@@ -14,6 +14,7 @@ import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { FormsModule } from '@angular/forms';
 import { AvatarModule } from 'primeng/avatar';
 import { ResolveApiUrlPipe } from '../../shared/pipes/resolve-api-url.pipe';
+import { ProcessedContentPipe } from '../../shared/pipes/processed-content.pipe';
 
 @Component({
   selector: 'app-events',
@@ -29,7 +30,8 @@ import { ResolveApiUrlPipe } from '../../shared/pipes/resolve-api-url.pipe';
     ToggleButtonModule,
     FormsModule,
     AvatarModule,
-    ResolveApiUrlPipe
+    ResolveApiUrlPipe,
+    ProcessedContentPipe
   ],
   template: `
     <div class="flex flex-col gap-6">
@@ -109,7 +111,7 @@ import { ResolveApiUrlPipe } from '../../shared/pipes/resolve-api-url.pipe';
                       <span>{{ event.startDateTime | date:'d MMM yyyy, HH:mm' }}</span>
                     </div>
 
-                    <div class="text-surface-600 dark:text-surface-400 text-sm line-clamp-2" [innerHTML]="event.description">
+                    <div class="text-surface-600 dark:text-surface-400 text-sm line-clamp-2 break-words" [innerHTML]="event.description | processedContent">
                     </div>
 
                     <div 

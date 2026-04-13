@@ -4,11 +4,12 @@ import { DialogModule } from 'primeng/dialog';
 import { ButtonModule } from 'primeng/button';
 import { WhatsNewService } from '../../../features/admin/services/whats-new.service';
 import { LanguageService } from '../../../core/services/language.service';
+import { ProcessedContentPipe } from '../../pipes/processed-content.pipe';
 
 @Component({
   selector: 'app-whats-new-modal',
   standalone: true,
-  imports: [CommonModule, DialogModule, ButtonModule],
+  imports: [CommonModule, DialogModule, ButtonModule, ProcessedContentPipe],
   template: `
     <p-dialog 
       [(visible)]="isVisible" 
@@ -28,7 +29,7 @@ import { LanguageService } from '../../../core/services/language.service';
           <div 
             class="rich-text-content text-surface-700 dark:text-surface-300 font-body"
             style="word-wrap: break-word; overflow-wrap: break-word; word-break: normal; white-space: normal;"
-            [innerHTML]="processedContent">
+            [innerHTML]="content() | processedContent">
           </div>
         </div>
 
@@ -109,13 +110,6 @@ export class WhatsNewModalComponent {
   }
 
   content = this.whatsNewService.content;
-
-  get processedContent() {
-    const raw = this.content();
-    if (!raw) return '';
-    // Replace non-breaking spaces with normal spaces to allow native CSS word-wrapping
-    return raw.replace(/&nbsp;/g, ' ').replace(/&#160;/g, ' ');
-  }
 
   onClose() {
     this.whatsNewService.markAsSeen();

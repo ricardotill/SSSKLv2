@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SSSKLv2.Data;
 using SSSKLv2.Dto.Api.v1;
+using Ganss.Xss;
 
 namespace SSSKLv2.Controllers.v1;
 
@@ -40,6 +41,9 @@ public class GlobalSettingsController : ControllerBase
     [HttpPut("{key}")]
     public async Task<IActionResult> UpdateSetting(string key, [FromBody] GlobalSettingUpdateDto dto)
     {
+        var sanitizer = new HtmlSanitizer();
+        var sanitizedValue = sanitizer.Sanitize(dto.Value);
+
         var setting = await _context.GlobalSetting
             .FirstOrDefaultAsync(s => s.Key == key);
 
@@ -49,14 +53,14 @@ public class GlobalSettingsController : ControllerBase
             setting = new GlobalSetting
             {
                 Key = key,
-                Value = dto.Value,
+                Value = sanitizedValue,
                 UpdatedOn = DateTime.UtcNow
             };
             _context.GlobalSetting.Add(setting);
         }
         else
         {
-            setting.Value = dto.Value;
+            setting.Value = sanitizedValue;
             setting.UpdatedOn = DateTime.UtcNow;
         }
 

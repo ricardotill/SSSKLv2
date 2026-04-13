@@ -274,4 +274,24 @@ public class EventServiceTests : RepositoryTest
         // Act & Assert
         await _sut.Invoking(s => s.RespondToEvent(id, userId, EventResponseStatus.Accepted)).Should().ThrowAsync<UnauthorizedAccessException>();
     }
+
+    [TestMethod]
+    public async Task CreateEvent_WithMaliciousDescription_ShouldSanitizeHtml()
+    {
+        // Arrange
+        var html = @"<script>alert('xss')</script><div onload=""alert('xss')"""
+            + @"style=""background-color: rgba(0, 0, 0, 1)"">Test<img src=""test.png"""
+            + @"style=""background-image: url(javascript:alert('xss')); margin: 10px""></div>";
+        var expected = @"<div style=""background-color: rgba(0, 0, 0, 1)"">"
+            + @"Test<img src=""test.png"" style=""margin: 10px""></div>";
+
+        var dto = new EventCreateDto { Title = "Sanitized Event", Description = html };
+        var creatorId = "creator-id";
+
+        // Act
+        await _sut.CreateEvent(dto, creatorId);
+
+        // Assert
+        await _eventRepository.Received(1).Add(Arg.Is<Event>(e => e.Description == expected));
+    }
 }

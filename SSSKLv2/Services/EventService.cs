@@ -6,6 +6,7 @@ using SSSKLv2.Dto.Api;
 using SSSKLv2.Services.Interfaces;
 using SSSKLv2.Util;
 using SSSKLv2.Data.Constants;
+using Ganss.Xss;
 
 namespace SSSKLv2.Services;
 
@@ -47,10 +48,12 @@ public class EventService(IEventRepository eventRepository, IBlobStorageAgent bl
 
     public async Task<Guid> CreateEvent(EventCreateDto dto, string creatorId)
     {
+        var sanitizer = new HtmlSanitizer();
+
         var e = new Event
         {
             Title = dto.Title,
-            Description = dto.Description,
+            Description = sanitizer.Sanitize(dto.Description),
             StartDateTime = dto.StartDateTime,
             EndDateTime = dto.EndDateTime,
             CreatorId = creatorId
@@ -87,8 +90,10 @@ public class EventService(IEventRepository eventRepository, IBlobStorageAgent bl
         if (e.CreatorId != userId && !isAdmin)
             throw new UnauthorizedAccessException("Only the creator or an admin can update this event.");
 
+        var sanitizer = new HtmlSanitizer();
+
         e.Title = dto.Title;
-        e.Description = dto.Description;
+        e.Description = sanitizer.Sanitize(dto.Description);
         e.StartDateTime = dto.StartDateTime;
         e.EndDateTime = dto.EndDateTime;
 

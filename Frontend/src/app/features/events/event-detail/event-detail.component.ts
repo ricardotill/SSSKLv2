@@ -294,7 +294,7 @@ import { ProcessedContentPipe } from '../../../shared/pipes/processed-content.pi
   `],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export default class EventDetailComponent implements OnInit, AfterViewChecked {
+export default class EventDetailComponent implements OnInit {
   private readonly eventService = inject(EventService);
   public readonly authService = inject(AuthService);
   private readonly activatedRoute = inject(ActivatedRoute);
@@ -377,10 +377,6 @@ export default class EventDetailComponent implements OnInit, AfterViewChecked {
         this.messageService.add({ severity: 'error', summary: 'Fout', detail: 'Kan evenement niet laden' });
       }
     });
-  }
-
-  ngAfterViewChecked(): void {
-    // Moved to effect in constructor
   }
 
   private async initDetailMap(lat: number, lng: number, name: string) {

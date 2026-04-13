@@ -111,8 +111,12 @@ import { ProcessedContentPipe } from '../../shared/pipes/processed-content.pipe'
                       <span>{{ event.startDateTime | date:'d MMM yyyy, HH:mm' }}</span>
                     </div>
 
-                    <div class="text-surface-600 dark:text-surface-400 text-sm line-clamp-2 break-words" [innerHTML]="event.description | processedContent">
-                    </div>
+                    @if (event.locationName) {
+                      <div class="flex items-center gap-2 text-surface-500 text-sm">
+                        <i class="pi pi-map-marker text-primary-500"></i>
+                        <span class="truncate">{{ event.locationName }}</span>
+                      </div>
+                    }
 
                     <div 
                       class="flex mt-2 pt-4 border-t border-surface-200 dark:border-surface-700"

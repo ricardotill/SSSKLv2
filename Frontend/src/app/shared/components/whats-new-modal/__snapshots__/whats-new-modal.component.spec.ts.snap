@@ -2,12 +2,12 @@
 
 exports[`WhatsNewModalComponent > should match snapshot when visible 1`] = `
 <div
-  _nghost-a-c2374611306=""
+  _nghost-a-c3389801030=""
   id="root4"
   ng-version="21.2.7"
 >
   <p-dialog
-    _ngcontent-a-c2374611306=""
+    _ngcontent-a-c3389801030=""
     contentstyleclass="p-0"
     data-pc-section="host"
     pc24=""
@@ -123,15 +123,15 @@ exports[`WhatsNewModalComponent > should match snapshot when visible 1`] = `
           data-pc-section="content"
         >
           <div
-            _ngcontent-a-c2374611306=""
+            _ngcontent-a-c3389801030=""
             class="flex flex-col max-h-[70vh]"
           >
             <div
-              _ngcontent-a-c2374611306=""
+              _ngcontent-a-c3389801030=""
               class="overflow-y-auto px-6 py-6 custom-scrollbar"
             >
               <div
-                _ngcontent-a-c2374611306=""
+                _ngcontent-a-c3389801030=""
                 class="rich-text-content text-surface-700 dark:text-surface-300 font-body"
                 style="word-wrap: break-word; overflow-wrap: break-word; word-break: normal; white-space: normal;"
               >
@@ -139,11 +139,11 @@ exports[`WhatsNewModalComponent > should match snapshot when visible 1`] = `
               </div>
             </div>
             <div
-              _ngcontent-a-c2374611306=""
+              _ngcontent-a-c3389801030=""
               class="p-6 border-t border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800/50 flex justify-end"
             >
               <p-button
-                _ngcontent-a-c2374611306=""
+                _ngcontent-a-c3389801030=""
                 data-pc-section="host"
                 icon="pi pi-check"
                 pc25=""

@@ -31,7 +31,6 @@ import { Router } from '@angular/router';
     ProcessedContentPipe,
     ConfirmDialogModule
   ],
-  providers: [ConfirmationService],
   template: `
     <p-drawer 
       [visible]="drawerService.drawerVisible()"

@@ -18,6 +18,7 @@ public class ReactionServiceTests : RepositoryTest
     private ReactionService _sut = null!;
     private ApplicationDbContext _dbContext = null!;
     private IApplicationUserService _userService = null!;
+    private INotificationService _notificationService = null!;
 
     [TestInitialize]
     public void TestInitialize()
@@ -25,7 +26,8 @@ public class ReactionServiceTests : RepositoryTest
         InitializeDatabase();
         _dbContext = new ApplicationDbContext(GetOptions());
         _userService = Substitute.For<IApplicationUserService>();
-        _sut = new ReactionService(_dbContext, _userService);
+        _notificationService = Substitute.For<INotificationService>();
+        _sut = new ReactionService(_dbContext, _userService, _notificationService);
     }
 
     [TestCleanup]

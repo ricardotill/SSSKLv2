@@ -9,6 +9,11 @@ import { MessageService, ConfirmationService } from 'primeng/api';
 import { provideRouter } from '@angular/router';
 import { PrimeNG } from 'primeng/config';
 import { ThemeService } from './core/services/theme.service';
+import { PushNotificationService } from './core/services/push-notification.service';
+import { SwPush } from '@angular/service-worker';
+import { vi } from 'vitest';
+import { providePrimeNG } from 'primeng/config';
+import Aura from '@primeuix/themes/aura';
 
 describe('App', () => {
   beforeEach(async () => {
@@ -29,13 +34,21 @@ describe('App', () => {
       imports: [App, NoopAnimationsModule],
       providers: [
         provideRouter([]),
-        { provide: PrimeNG, useValue: { setTranslation: () => {} } },
+        providePrimeNG({ theme: { preset: Aura } }),
         { provide: ThemeService, useValue: { init: () => {} } },
         { provide: AuthService, useValue: mockAuthService },
         { provide: AchievementPopupService, useValue: mockPopupService },
         { provide: UserProfileDrawerService, useValue: mockDrawerService },
         { provide: MessageService, useValue: {} },
-        { provide: ConfirmationService, useValue: {} }
+        { provide: ConfirmationService, useValue: {} },
+        {
+          provide: SwPush,
+          useValue: { isEnabled: false, subscription: { subscribe: vi.fn() } }
+        },
+        {
+          provide: PushNotificationService,
+          useValue: { showPrompt: signal(false), isSupported: signal(false), isEnabled: signal(false) }
+        }
       ]
     }).compileComponents();
   });

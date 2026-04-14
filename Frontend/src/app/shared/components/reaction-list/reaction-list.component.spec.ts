@@ -5,6 +5,7 @@ import { AuthService } from '../../../core/auth/auth.service';
 import { of } from 'rxjs';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { ReactionDto } from '../../../core/models/reaction.model';
+import { ConfirmationService, MessageService } from 'primeng/api';
 
 describe('ReactionListComponent', () => {
   let component: ReactionListComponent;
@@ -33,7 +34,9 @@ describe('ReactionListComponent', () => {
       imports: [ReactionListComponent],
       providers: [
         { provide: ReactionService, useValue: reactionServiceMock },
-        { provide: AuthService, useValue: authServiceMock }
+        { provide: AuthService, useValue: authServiceMock },
+        { provide: ConfirmationService, useValue: { confirm: vi.fn() } },
+        { provide: MessageService, useValue: { add: vi.fn() } }
       ]
     }).compileComponents();
 

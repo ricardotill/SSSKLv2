@@ -299,6 +299,15 @@ export class LanguageService {
     'confirm_remove_profile_picture': 'Weet je zeker dat je de profielfoto van deze gebruiker wilt verwijderen?',
     'profile_picture_removed': 'Profielfoto succesvol verwijderd',
     'password': 'Wachtwoord',
+    'send_notification': 'Notificatie Verzenden',
+    'notification_title': 'Titel',
+    'notification_message': 'Bericht',
+    'notification_link': 'Link (Optioneel)',
+    'fan_out': 'Stuur naar iedereen (Fan-Out)',
+    'select_users': 'Selecteer Gebruikers',
+    'notification_sent_success': 'Notificatie is succesvol verzonden!',
+    'admin_notifications': 'Notificaties Beheren',
+    'notification_link_help': 'Optionele URL waar de gebruiker naartoe wordt gestuurd bij het klikken op de notificatie.',
   };
 
   // Signal for getting translations

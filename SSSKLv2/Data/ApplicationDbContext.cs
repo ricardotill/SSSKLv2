@@ -21,6 +21,7 @@ namespace SSSKLv2.Data
         public DbSet<SSSKLv2.Data.UserImage> UserImage { get; set; } = default!;
         public DbSet<SSSKLv2.Data.GlobalSetting> GlobalSetting { get; set; } = default!;
         public DbSet<SSSKLv2.Data.Reaction> Reaction { get; set; } = default!;
+        public DbSet<SSSKLv2.Data.Notification> Notification { get; set; } = default!;
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -191,6 +192,19 @@ namespace SSSKLv2.Data
                 .OnDelete(DeleteBehavior.Cascade);
             builder.Entity<Reaction>()
                 .HasIndex(p => new { p.TargetId, p.TargetType });
+
+            builder.Entity<Notification>()
+                .HasIndex(p => p.Id)
+                .IsUnique();
+            builder.Entity<Notification>()
+                .Property(s => s.CreatedOn)
+                .HasDefaultValueSql("GETUTCDATE()")
+                .HasConversion(v => v, v => DateTime.SpecifyKind(v, DateTimeKind.Utc));
+            builder.Entity<Notification>()
+                .HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

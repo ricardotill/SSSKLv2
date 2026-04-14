@@ -10,11 +10,13 @@ public class ReactionService : IReactionService
 {
     private readonly ApplicationDbContext _context;
     private readonly IApplicationUserService _userService;
+    private readonly INotificationService _notificationService;
 
-    public ReactionService(ApplicationDbContext context, IApplicationUserService userService)
+    public ReactionService(ApplicationDbContext context, IApplicationUserService userService, INotificationService notificationService)
     {
         _context = context;
         _userService = userService;
+        _notificationService = notificationService;
     }
 
     public async Task ToggleReaction(Guid targetId, string targetTypeStr, string content, string userId)
@@ -47,6 +49,47 @@ public class ReactionService : IReactionService
                 CreatedOn = DateTime.UtcNow
             };
             _context.Reaction.Add(reaction);
+            
+            var actor = await _context.Users.FindAsync(userId);
+            var actorName = actor?.Name ?? actor?.UserName ?? "Someone";
+
+            if (targetType == ReactionTargetType.Event)
+            {
+                var evt = await _context.Event.FirstOrDefaultAsync(e => e.Id == targetId);
+                if (evt != null && evt.CreatorId != userId)
+                {
+                    await _notificationService.CreateNotificationAsync(
+                        evt.CreatorId,
+                        "Nieuwe reactie",
+                        $"{actorName} heeft gereageerd op jouw evenement '{evt.Title}'.",
+                        $"/events/{evt.Id}"
+                    );
+                }
+            }
+            else if (targetType == ReactionTargetType.Reaction)
+            {
+                var parentReaction = await _context.Reaction.FirstOrDefaultAsync(r => r.Id == targetId);
+                if (parentReaction != null && parentReaction.UserId != userId)
+                {
+                    var rootId = targetId;
+                    var rootType = targetType;
+                    while (rootType == ReactionTargetType.Reaction)
+                    {
+                        var parent = await _context.Reaction.FirstOrDefaultAsync(r => r.Id == rootId);
+                        if (parent == null) break;
+                        rootId = parent.TargetId;
+                        rootType = parent.TargetType;
+                    }
+                    var link = rootType == ReactionTargetType.Event ? $"/events/{rootId}" : null;
+
+                    await _notificationService.CreateNotificationAsync(
+                        parentReaction.UserId,
+                        "Nieuw antwoord",
+                        $"{actorName} heeft geantwoord op je reactie.",
+                        link
+                    );
+                }
+            }
         }
 
         await _context.SaveChangesAsync();

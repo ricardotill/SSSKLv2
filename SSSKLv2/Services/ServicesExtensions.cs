@@ -18,7 +18,9 @@ public static class ServicesExtensions
             .AddTransient<IEventService, EventService>()
             .AddTransient<IReactionService, ReactionService>()
             .AddTransient<INotificationService, NotificationService>()
+            .AddTransient<IWebPushService, WebPushService>()
             .AddSingleton<IPurchaseNotifier, PurchaseNotifier>()
-            .AddSingleton<IEventNotifier, EventNotifier>();
+            .AddSingleton<IEventNotifier, EventNotifier>()
+            .AddHttpClient();
     }
 }

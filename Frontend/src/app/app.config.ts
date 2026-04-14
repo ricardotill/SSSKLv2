@@ -1,4 +1,5 @@
-import { ApplicationConfig, provideBrowserGlobalErrorListeners, LOCALE_ID } from '@angular/core';
+import { ApplicationConfig, provideBrowserGlobalErrorListeners, LOCALE_ID, isDevMode } from '@angular/core';
+import { provideServiceWorker } from '@angular/service-worker';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { registerLocaleData } from '@angular/common';
 import localeNl from '@angular/common/locales/nl';
@@ -56,6 +57,10 @@ export const appConfig: ApplicationConfig = {
     }),
     { provide: MessageService, useClass: MessageService },
     { provide: ConfirmationService, useClass: ConfirmationService },
-    { provide: LOCALE_ID, useValue: 'nl-NL' }
+    { provide: LOCALE_ID, useValue: 'nl-NL' },
+    provideServiceWorker('ngsw-worker.js', {
+      enabled: true,
+      registrationStrategy: 'registerImmediately'
+    })
   ]
 };

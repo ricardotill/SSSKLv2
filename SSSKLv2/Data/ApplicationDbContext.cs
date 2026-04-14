@@ -22,6 +22,7 @@ namespace SSSKLv2.Data
         public DbSet<SSSKLv2.Data.GlobalSetting> GlobalSetting { get; set; } = default!;
         public DbSet<SSSKLv2.Data.Reaction> Reaction { get; set; } = default!;
         public DbSet<SSSKLv2.Data.Notification> Notification { get; set; } = default!;
+        public DbSet<SSSKLv2.Data.PushSubscription> PushSubscription { get; set; } = default!;
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -201,6 +202,22 @@ namespace SSSKLv2.Data
                 .HasDefaultValueSql("GETUTCDATE()")
                 .HasConversion(v => v, v => DateTime.SpecifyKind(v, DateTimeKind.Utc));
             builder.Entity<Notification>()
+                .HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<PushSubscription>()
+                .HasIndex(p => p.Id)
+                .IsUnique();
+            builder.Entity<PushSubscription>()
+                .HasIndex(p => new { p.UserId, p.Endpoint })
+                .IsUnique();
+            builder.Entity<PushSubscription>()
+                .Property(s => s.CreatedOn)
+                .HasDefaultValueSql("GETUTCDATE()")
+                .HasConversion(v => v, v => DateTime.SpecifyKind(v, DateTimeKind.Utc));
+            builder.Entity<PushSubscription>()
                 .HasOne(e => e.User)
                 .WithMany()
                 .HasForeignKey(e => e.UserId)

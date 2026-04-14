@@ -16,6 +16,7 @@ public class CreateCustomNotificationDto
     public string? LinkUri { get; set; }
 
     public bool FanOut { get; set; } = true;
+    public bool SendPush { get; set; } = true;
 
     public List<string>? UserIds { get; set; }
 }

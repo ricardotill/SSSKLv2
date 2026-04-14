@@ -62,7 +62,8 @@ public class ReactionService : IReactionService
                         evt.CreatorId,
                         "Nieuwe reactie",
                         $"{actorName} heeft gereageerd op jouw evenement '{evt.Title}'.",
-                        $"/events/{evt.Id}"
+                        $"/events/{evt.Id}",
+                        true
                     );
                 }
             }
@@ -86,7 +87,8 @@ public class ReactionService : IReactionService
                         parentReaction.UserId,
                         "Nieuw antwoord",
                         $"{actorName} heeft geantwoord op je reactie.",
-                        link
+                        link,
+                        true
                     );
                 }
             }

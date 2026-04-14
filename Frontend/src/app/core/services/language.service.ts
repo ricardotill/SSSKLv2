@@ -308,6 +308,18 @@ export class LanguageService {
     'notification_sent_success': 'Notificatie is succesvol verzonden!',
     'admin_notifications': 'Notificaties Beheren',
     'notification_link_help': 'Optionele URL waar de gebruiker naartoe wordt gestuurd bij het klikken op de notificatie.',
+    'push_notifications': 'Push Notificaties',
+    'push_notifications_desc': 'Ontvang meldingen op je apparaat, ook als de website niet open staat.',
+    'push_enabled': 'Ingeschakeld',
+    'push_disabled': 'Uitgeschakeld',
+    'push_unsupported': 'Niet ondersteund door je browser',
+    
+    // Push Dialog
+    'PUSH.DIALOG.TITLE': 'Blijf op de hoogte!',
+    'PUSH.DIALOG.HEADING': 'Push Notificaties',
+    'PUSH.DIALOG.DESCRIPTION': 'Wil je meldingen ontvangen voor nieuwe reacties, mededelingen en behaalde achievements? Je kunt dit altijd weer uitzetten in de instellingen.',
+    'PUSH.DIALOG.ENABLE': 'Inschakelen',
+    'PUSH.DIALOG.LATER': 'Misschien later',
   };
 
   // Signal for getting translations

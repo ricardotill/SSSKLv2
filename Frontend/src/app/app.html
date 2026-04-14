@@ -2,3 +2,6 @@
 <app-achievement-modal></app-achievement-modal>
 <app-whats-new-modal></app-whats-new-modal>
 <app-user-profile-drawer></app-user-profile-drawer>
+@if (pushService.showPrompt()) {
+    <app-push-permission-dialog></app-push-permission-dialog>
+  }

@@ -16,7 +16,9 @@ import { FormsModule } from '@angular/forms';
 import { FileUploadModule } from 'primeng/fileupload';
 import { ThemeService, ThemeMode } from '../../core/services/theme.service';
 import { LanguageService } from '../../core/services/language.service';
+import { PushNotificationService } from '../../core/services/push-notification.service';
 import { ResolveApiUrlPipe } from '../../shared/pipes/resolve-api-url.pipe';
+import { ToggleSwitchModule } from 'primeng/toggleswitch';
 import * as QRCode from 'qrcode';
 
 import { CardModule } from 'primeng/card';
@@ -24,7 +26,7 @@ import { CardModule } from 'primeng/card';
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, ButtonModule, InputTextModule, TagModule, TabsModule, ConfirmDialogModule, SelectButtonModule, CardModule, DialogModule, FileUploadModule],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, ButtonModule, InputTextModule, TagModule, TabsModule, ConfirmDialogModule, SelectButtonModule, CardModule, DialogModule, FileUploadModule, ToggleSwitchModule],
   providers: [ConfirmationService],
   template: `
     <div class="max-w-3xl mx-auto">
@@ -81,6 +83,31 @@ import { CardModule } from 'primeng/card';
                   <p class="text-sm text-surface-500 mt-3">
                     {{ ls.t().color_mode_desc }}
                   </p>
+                </div>
+
+                <div class="p-4 bg-surface-50 dark:bg-surface-800/50 rounded-lg border border-surface-200 dark:border-surface-700">
+                  <h3 class="text-xl font-semibold mb-2 flex items-center gap-2">
+                    <i class="pi pi-bell text-primary"></i>
+                    {{ ls.t().push_notifications }}
+                  </h3>
+                  <div class="flex items-center justify-between gap-4">
+                    <div class="flex flex-col gap-1">
+                      <p class="text-sm text-surface-500">
+                        {{ ls.t().push_notifications_desc }}
+                      </p>
+                      @if (!pushService.isSupported()) {
+                        <p class="text-xs text-orange-500">
+                          <i class="pi pi-exclamation-triangle mr-1"></i>
+                          {{ ls.t().push_unsupported }}
+                        </p>
+                      }
+                    </div>
+                    <p-toggleswitch 
+                      [ngModel]="pushService.isEnabled()" 
+                      (ngModelChange)="$event ? pushService.subscribe() : pushService.unsubscribe()"
+                      [disabled]="!pushService.isSupported()">
+                    </p-toggleswitch>
+                  </div>
                 </div>
 
                 <div class="p-4 bg-surface-50 dark:bg-surface-800/50 rounded-lg border border-surface-200 dark:border-surface-700">
@@ -382,6 +409,7 @@ export default class SettingsComponent {
   webAuthnService = inject(WebAuthnService);
   themeService = inject(ThemeService);
   ls = inject(LanguageService);
+  pushService = inject(PushNotificationService);
   private fb = inject(FormBuilder);
   private messageService = inject(MessageService);
   private confirmationService = inject(ConfirmationService);

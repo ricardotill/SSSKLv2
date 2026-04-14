@@ -7,10 +7,13 @@ import { AuthService } from './core/auth/auth.service';
 import { AchievementPopupService } from './features/achievements/services/achievement-popup.service';
 import { WhatsNewModalComponent } from './shared/components/whats-new-modal/whats-new-modal.component';
 import { UserProfileDrawerComponent } from './shared/components/user-profile-drawer/user-profile-drawer.component';
+import { PushPermissionDialogComponent } from './layout/push-permission-dialog/push-permission-dialog.component';
+import { PushNotificationService } from './core/services/push-notification.service';
+import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, AchievementModalComponent, WhatsNewModalComponent, UserProfileDrawerComponent],
+  imports: [RouterOutlet, AchievementModalComponent, WhatsNewModalComponent, UserProfileDrawerComponent, PushPermissionDialogComponent, CommonModule],
   templateUrl: './app.html',
   styleUrl: './app.css'
 })
@@ -20,6 +23,7 @@ export class App {
   private primeng = inject(PrimeNG);
   private authService = inject(AuthService);
   private popupService = inject(AchievementPopupService);
+  protected pushService = inject(PushNotificationService);
 
   constructor() {
     this.themeService.init();

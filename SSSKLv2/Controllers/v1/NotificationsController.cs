@@ -13,10 +13,20 @@ namespace SSSKLv2.Controllers.v1;
 public class NotificationsController : ControllerBase
 {
     private readonly INotificationService _notificationService;
+    private readonly IConfiguration _configuration;
 
-    public NotificationsController(INotificationService notificationService)
+    public NotificationsController(INotificationService notificationService, IConfiguration configuration)
     {
         _notificationService = notificationService;
+        _configuration = configuration;
+    }
+
+    [HttpGet("vapid-public-key")]
+    [AllowAnonymous]
+    public ActionResult<string> GetVapidPublicKey()
+    {
+        var publicKey = _configuration["VAPID_PUBLIC_KEY"] ?? _configuration["VapidDetails:PublicKey"];
+        return Ok(publicKey);
     }
 
     [HttpGet]
@@ -64,6 +74,26 @@ public class NotificationsController : ControllerBase
     public async Task<IActionResult> SendCustomNotification(CreateCustomNotificationDto dto)
     {
         await _notificationService.CreateCustomNotificationAsync(dto);
+        return Ok();
+    }
+
+    [HttpPost("subscribe")]
+    public async Task<IActionResult> Subscribe(PushSubscriptionDto dto)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+        await _notificationService.SubscribeAsync(userId, dto);
+        return Ok();
+    }
+
+    [HttpPost("unsubscribe")]
+    public async Task<IActionResult> Unsubscribe([FromBody] string endpoint)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+        await _notificationService.UnsubscribeAsync(userId, endpoint);
         return Ok();
     }
 }

@@ -21,6 +21,7 @@ import { ResolveApiUrlPipe } from '../../../shared/pipes/resolve-api-url.pipe';
 import { UrlService } from '../../../core/services/url.service';
 import { ProcessedContentPipe } from '../../../shared/pipes/processed-content.pipe';
 import { UserProfileDrawerService } from '../../../core/services/user-profile-drawer.service';
+import { ReactionListComponent } from '../../../shared/components/reaction-list/reaction-list.component';
 
 @Component({
   selector: 'app-event-detail',
@@ -35,7 +36,8 @@ import { UserProfileDrawerService } from '../../../core/services/user-profile-dr
     ProgressSpinnerModule,
     AvatarModule,
     ResolveApiUrlPipe,
-    ProcessedContentPipe
+    ProcessedContentPipe,
+    ReactionListComponent
   ],
   template: `
     <div class="max-w-4xl mx-auto">
@@ -132,6 +134,7 @@ import { UserProfileDrawerService } from '../../../core/services/user-profile-dr
                        style="word-wrap: break-word; overflow-wrap: break-word; word-break: normal; white-space: normal;"
                        [innerHTML]="event()?.description | processedContent">
                   </div>
+
                 </div>
               </p-card>
 
@@ -173,6 +176,10 @@ import { UserProfileDrawerService } from '../../../core/services/user-profile-dr
                     }
                   </div>
                 </div>
+              </p-card>
+
+              <p-card header="Reacties">
+                <app-reaction-list [targetId]="event()!.id" [targetType]="'Event'"></app-reaction-list>
               </p-card>
             </div>
 

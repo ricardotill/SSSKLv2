@@ -185,6 +185,7 @@ public class EventService(IEventRepository eventRepository, IBlobStorageAgent bl
             EndDateTime = e.EndDateTime,
             CreatorName = e.Creator?.FullName ?? "Unknown",
             CreatorProfilePictureUrl = e.Creator?.ProfileImageId != null ? $"/api/v1/blob/profilepicture/image/{e.Creator.ProfileImageId}" : null,
+            CreatorId = e.CreatorId,
             CreatedOn = e.CreatedOn,
             LocationName = e.LocationName,
             Latitude = e.Latitude,

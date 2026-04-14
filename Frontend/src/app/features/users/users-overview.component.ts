@@ -8,6 +8,8 @@ import { ApplicationUserDto } from '../../core/models/application-user.model';
 import { LanguageService } from '../../core/services/language.service';
 import { AvatarModule } from 'primeng/avatar';
 import { ResolveApiUrlPipe } from '../../shared/pipes/resolve-api-url.pipe';
+import { UserProfileDrawerService } from '../../core/services/user-profile-drawer.service';
+import { AuthService } from '../../core/auth/auth.service';
 
 @Component({
   selector: 'app-users-overview',
@@ -30,14 +32,19 @@ import { ResolveApiUrlPipe } from '../../shared/pipes/resolve-api-url.pipe';
         <ng-template pTemplate="body" let-user>
           <tr>
             <td>
-              <div class="flex items-center gap-3">
+              <div 
+                class="flex items-center gap-3"
+                [class.cursor-pointer]="authService.isAuthenticated()"
+                [class.hover:opacity-70]="authService.isAuthenticated()"
+                (click)="authService.isAuthenticated() && drawerService.open(user.id)"
+              >
                 <p-avatar 
                   [image]="(user.profilePictureUrl | resolveApiUrl) || undefined" 
                   [label]="!user.profilePictureUrl ? user.fullName?.substring(0,1) : undefined"
                   shape="circle" 
                   size="normal"
                 ></p-avatar>
-                <span>{{ user.fullName }}</span>
+                <span class="font-medium">{{ user.fullName }}</span>
               </div>
             </td>
             <td>{{ user.saldo | currency:'EUR' }}</td>
@@ -55,6 +62,8 @@ import { ResolveApiUrlPipe } from '../../shared/pipes/resolve-api-url.pipe';
 })
 export default class UsersOverviewComponent implements OnInit {
   private readonly userService = inject(ApplicationUserService);
+  protected readonly drawerService = inject(UserProfileDrawerService);
+  protected readonly authService = inject(AuthService);
   ls = inject(LanguageService);
 
   users = signal<ApplicationUserDto[]>([]);

@@ -9,6 +9,7 @@ import { LanguageService } from '../../core/services/language.service';
 import { BrandingComponent } from '../../shared/components/branding/branding.component';
 
 import { ResolveApiUrlPipe } from '../../shared/pipes/resolve-api-url.pipe';
+import { UserProfileDrawerService } from '../../core/services/user-profile-drawer.service';
 
 @Component({
   selector: 'app-sidebar',
@@ -28,7 +29,7 @@ import { ResolveApiUrlPipe } from '../../shared/pipes/resolve-api-url.pipe';
       
       <div class="pb-4 flex flex-col">
         @if (authService.isAuthenticated()) {
-          <a class="flex items-center gap-3 px-6 py-3 cursor-pointer text-surface-200 hover:text-white hover:bg-surface-700 transition-colors" [routerLink]="['/settings']" style="text-decoration: none;" (click)="close.emit()">
+          <div class="flex items-center gap-3 px-6 py-3 cursor-pointer text-surface-200 hover:text-white hover:bg-surface-700 transition-colors" (click)="openOwnProfile()">
             <p-avatar 
               [image]="(authService.currentUser()?.profilePictureUrl | resolveApiUrl) || undefined" 
               [label]="!authService.currentUser()?.profilePictureUrl ? authService.currentUser()?.fullName?.substring(0,1) : undefined"
@@ -36,7 +37,7 @@ import { ResolveApiUrlPipe } from '../../shared/pipes/resolve-api-url.pipe';
               styleClass="w-8 h-8 flex-shrink-0"
             ></p-avatar>
             <span class="font-medium truncate">{{ authService.currentUser()?.fullName ?? authService.currentUser()?.userName }}</span>
-          </a>
+          </div>
           
           <a class="flex items-center gap-3 px-6 py-3 cursor-pointer text-red-500 hover:text-red-400 hover:bg-surface-700 transition-colors" (click)="authService.logout(); close.emit()" style="text-decoration: none;">
             <div class="w-8 h-8 flex items-center justify-center">
@@ -162,9 +163,18 @@ import { ResolveApiUrlPipe } from '../../shared/pipes/resolve-api-url.pipe';
 export class SidebarComponent {
   authService = inject(AuthService);
   ls = inject(LanguageService);
+  private readonly drawerService = inject(UserProfileDrawerService);
   public router = inject(Router);
   isOpen = input<boolean>(false);
   close = output<void>();
+
+  openOwnProfile() {
+    const user = this.authService.currentUser();
+    if (user) {
+      this.drawerService.open(user.id);
+      this.close.emit();
+    }
+  }
   items = computed<MenuItem[]>(() => {
     const t = this.ls.t();
     const baseItems: MenuItem[] = [];

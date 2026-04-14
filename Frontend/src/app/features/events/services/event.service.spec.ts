@@ -9,7 +9,19 @@ describe('EventService', () => {
   let httpMock: HttpTestingController;
 
   const mockResponse: PaginationObject<EventDto> = {
-    items: [{ id: '1', title: 'Test Event', description: 'Test' } as any],
+    items: [{ 
+      id: '1', 
+      title: 'Test Event', 
+      description: 'Test', 
+      creatorId: '1', 
+      creatorName: 'Test', 
+      createdOn: new Date().toISOString(), 
+      startDateTime: new Date().toISOString(), 
+      endDateTime: new Date().toISOString(), 
+      acceptedUsers: [], 
+      declinedUsers: [], 
+      requiredRoles: [] 
+    }],
     totalCount: 1
   };
 

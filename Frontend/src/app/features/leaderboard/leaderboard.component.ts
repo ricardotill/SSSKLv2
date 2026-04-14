@@ -13,6 +13,8 @@ import { ProductDto } from '../../core/models/product.model';
 import { LanguageService } from '../../core/services/language.service';
 import { forkJoin, finalize } from 'rxjs';
 import { ResolveApiUrlPipe } from '../../shared/pipes/resolve-api-url.pipe';
+import { UserProfileDrawerService } from '../../core/services/user-profile-drawer.service';
+import { AuthService } from '../../core/auth/auth.service';
 
 @Component({
   selector: 'app-leaderboard',
@@ -65,14 +67,19 @@ import { ResolveApiUrlPipe } from '../../shared/pipes/resolve-api-url.pipe';
                     <tr>
                         <td class="text-center font-bold px-2">#{{ entry.position }}</td>
                         <td class="py-2">
-                            <div class="flex items-center gap-3">
+                            <div 
+                                class="flex items-center gap-3" 
+                                [class.cursor-pointer]="authService.isAuthenticated()"
+                                [class.hover:opacity-70]="authService.isAuthenticated()"
+                                (click)="authService.isAuthenticated() && drawerService.open(entry.userId)"
+                            >
                                 <p-avatar 
                                     class="flex-shrink-0"
                                     [image]="entry.profilePictureUrl | resolveApiUrl" 
                                     [label]="!entry.profilePictureUrl ? entry.fullName.substring(0,1) : undefined" 
                                     shape="circle">
                                 </p-avatar>
-                                <span class="leading-tight">{{ entry.fullName }}</span>
+                                <span class="leading-tight font-medium">{{ entry.fullName }}</span>
                             </div>
                         </td>
                         <td class="text-right px-4 font-semibold">{{ entry.amount }}</td>
@@ -97,14 +104,19 @@ import { ResolveApiUrlPipe } from '../../shared/pipes/resolve-api-url.pipe';
                 <tr>
                     <td class="text-center font-bold px-2">#{{ entry.position }}</td>
                     <td class="py-2">
-                        <div class="flex items-center gap-3">
+                        <div 
+                            class="flex items-center gap-3"
+                            [class.cursor-pointer]="authService.isAuthenticated()"
+                            [class.hover:opacity-70]="authService.isAuthenticated()"
+                            (click)="authService.isAuthenticated() && drawerService.open(entry.userId)"
+                        >
                             <p-avatar 
                                 class="flex-shrink-0"
                                 [image]="entry.profilePictureUrl | resolveApiUrl" 
                                 [label]="!entry.profilePictureUrl ? entry.fullName.substring(0,1) : undefined" 
                                 shape="circle">
                             </p-avatar>
-                            <span class="leading-tight">{{ entry.fullName }}</span>
+                            <span class="leading-tight font-medium">{{ entry.fullName }}</span>
                         </div>
                     </td>
                     <td class="text-right px-4 font-semibold">{{ entry.amount }}</td>
@@ -133,14 +145,19 @@ import { ResolveApiUrlPipe } from '../../shared/pipes/resolve-api-url.pipe';
                 <tr>
                     <td class="text-center font-bold px-2">#{{ entry.position }}</td>
                     <td class="py-2">
-                        <div class="flex items-center gap-3">
+                        <div 
+                            class="flex items-center gap-3"
+                            [class.cursor-pointer]="authService.isAuthenticated()"
+                            [class.hover:opacity-70]="authService.isAuthenticated()"
+                            (click)="authService.isAuthenticated() && drawerService.open(entry.userId)"
+                        >
                             <p-avatar 
                                 class="flex-shrink-0"
                                 [image]="entry.profilePictureUrl | resolveApiUrl" 
                                 [label]="!entry.profilePictureUrl ? entry.fullName.substring(0,1) : undefined" 
                                 shape="circle">
                             </p-avatar>
-                            <span class="leading-tight">{{ entry.fullName }}</span>
+                            <span class="leading-tight font-medium">{{ entry.fullName }}</span>
                         </div>
                     </td>
                     <td class="text-right px-4 font-semibold">{{ entry.amount }}</td>
@@ -166,6 +183,8 @@ import { ResolveApiUrlPipe } from '../../shared/pipes/resolve-api-url.pipe';
 export default class LeaderboardComponent {
   private readonly leaderboardService = inject(LeaderboardService);
   private readonly productService = inject(ProductService);
+  protected readonly drawerService = inject(UserProfileDrawerService);
+  protected readonly authService = inject(AuthService);
   ls = inject(LanguageService);
 
   products = signal<ProductDto[]>([]);

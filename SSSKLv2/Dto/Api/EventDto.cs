@@ -13,6 +13,7 @@ public class EventDto
     public DateTime EndDateTime { get; set; }
     public string CreatorName { get; set; } = string.Empty;
     public string? CreatorProfilePictureUrl { get; set; }
+    public string CreatorId { get; set; } = string.Empty;
     public DateTime CreatedOn { get; set; }
     public List<EventResponseUserDto> AcceptedUsers { get; set; } = new();
     public List<EventResponseUserDto> DeclinedUsers { get; set; } = new();

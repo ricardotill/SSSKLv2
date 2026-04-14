@@ -896,6 +896,23 @@ public class ApplicationUserServiceTests
     }
 
     [TestMethod]
+    public async Task UpdateUser_WhenDescriptionProvided_UpdatesDescription()
+    {
+        var id = "user1";
+        var existing = CreateApplicationUser(id, "old", "Test", "User", "old@example.com");
+        existing.Description = "Old Description";
+        ((FakeUserManager)_fakeUserManager).FindByIdFunc = (uid) => Task.FromResult<ApplicationUser?>(existing);
+        ((FakeUserManager)_fakeUserManager).UpdateFunc = (user) => Task.FromResult(IdentityResult.Success);
+
+        var dto = new ApplicationUserUpdateDto { Description = "New Description" };
+
+        var result = await _sut.UpdateUser(id, dto);
+
+        result.Should().NotBeNull();
+        result.Description.Should().Be("New Description");
+    }
+
+    [TestMethod]
     public async Task DeleteUser_WhenUserNotFound_ThrowsNotFound()
     {
         var id = "missing";

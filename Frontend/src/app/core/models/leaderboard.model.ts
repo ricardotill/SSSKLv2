@@ -4,4 +4,5 @@ export interface LeaderboardEntryDto {
   productName: string;
   amount: number;
   profilePictureUrl?: string;
+  userId: string;
 }

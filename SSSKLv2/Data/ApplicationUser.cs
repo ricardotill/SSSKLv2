@@ -22,6 +22,9 @@ namespace SSSKLv2.Data
         public DateTime LastOrdered { get; set; } = DateTime.Now;
         public Guid? ProfileImageId { get; set; }
         public UserImage? ProfileImage { get; set; }
+        [PersonalData]
+        public string? Description { get; set; }
+
         
         public string FullName
         {

@@ -6,10 +6,11 @@ import { AchievementModalComponent } from './shared/components/achievement-modal
 import { AuthService } from './core/auth/auth.service';
 import { AchievementPopupService } from './features/achievements/services/achievement-popup.service';
 import { WhatsNewModalComponent } from './shared/components/whats-new-modal/whats-new-modal.component';
+import { UserProfileDrawerComponent } from './shared/components/user-profile-drawer/user-profile-drawer.component';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, AchievementModalComponent, WhatsNewModalComponent],
+  imports: [RouterOutlet, AchievementModalComponent, WhatsNewModalComponent, UserProfileDrawerComponent],
   templateUrl: './app.html',
   styleUrl: './app.css'
 })

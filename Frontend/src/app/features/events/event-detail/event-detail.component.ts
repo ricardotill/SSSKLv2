@@ -20,6 +20,7 @@ import { AvatarModule } from 'primeng/avatar';
 import { ResolveApiUrlPipe } from '../../../shared/pipes/resolve-api-url.pipe';
 import { UrlService } from '../../../core/services/url.service';
 import { ProcessedContentPipe } from '../../../shared/pipes/processed-content.pipe';
+import { UserProfileDrawerService } from '../../../core/services/user-profile-drawer.service';
 
 @Component({
   selector: 'app-event-detail',
@@ -190,7 +191,9 @@ import { ProcessedContentPipe } from '../../../shared/pipes/processed-content.pi
                           [label]="!user.profilePictureUrl ? user.userName.substring(0,1) : undefined"
                           shape="circle" 
                           size="normal"
-                          styleClass="ring-2 ring-surface-0 dark:ring-surface-900 shadow-sm"
+                          styleClass="ring-2 ring-surface-0 dark:ring-surface-900 shadow-sm cursor-pointer"
+                          [title]="user.userName"
+                          (click)="$event.stopPropagation(); drawerService.open(user.userId)"
                         ></p-avatar>
                       }
                       @if ((event()?.acceptedUsers?.length ?? 0) > 5) {
@@ -208,8 +211,10 @@ import { ProcessedContentPipe } from '../../../shared/pipes/processed-content.pi
                           [label]="!user.profilePictureUrl ? user.userName.substring(0,1) : undefined"
                           shape="circle" 
                           size="normal"
+                          styleClass="cursor-pointer"
+                          (click)="$event.stopPropagation(); drawerService.open(user.userId)"
                         ></p-avatar>
-                        <span class="text-sm font-medium">{{ user.userName }}</span>
+                        <span class="text-sm font-medium cursor-pointer hover:underline" (click)="drawerService.open(user.userId)">{{ user.userName }}</span>
                       </div>
                     } @empty {
                       <span class="text-xs text-surface-400 italic">Nog geen aanmeldingen</span>
@@ -230,8 +235,10 @@ import { ProcessedContentPipe } from '../../../shared/pipes/processed-content.pi
                           [label]="!user.profilePictureUrl ? user.userName.substring(0,1) : undefined"
                           shape="circle" 
                           size="normal"
+                          styleClass="cursor-pointer"
+                          (click)="$event.stopPropagation(); drawerService.open(user.userId)"
                         ></p-avatar>
-                        <span class="text-sm">{{ user.userName }}</span>
+                        <span class="text-sm cursor-pointer hover:underline" (click)="drawerService.open(user.userId)">{{ user.userName }}</span>
                       </div>
                     } @empty {
                       <span class="text-xs text-surface-400 italic">Nog geen afmeldingen</span>
@@ -250,9 +257,10 @@ import { ProcessedContentPipe } from '../../../shared/pipes/processed-content.pi
                         [label]="!event()?.creatorProfilePictureUrl ? event()?.creatorName?.substring(0,1) : undefined"
                         shape="circle" 
                         size="normal"
-                        styleClass="w-6 h-6 text-[10px]"
+                        styleClass="w-6 h-6 text-[10px] cursor-pointer"
+                        (click)="drawerService.open(event()?.creatorId!)"
                       ></p-avatar>
-                      <span class="font-medium">{{ event()?.creatorName }}</span>
+                      <span class="font-medium cursor-pointer hover:underline" (click)="drawerService.open(event()?.creatorId!)">{{ event()?.creatorName }}</span>
                     </div>
                   </div>
                   <div class="flex justify-between">
@@ -307,6 +315,7 @@ export default class EventDetailComponent implements OnInit {
   ls = inject(LanguageService);
   private readonly googleMapsService = inject(GoogleMapsService);
   private readonly themeService = inject(ThemeService);
+  drawerService = inject(UserProfileDrawerService);
 
   detailMapContainer = viewChild<ElementRef>('detailMapContainer');
   private map?: google.maps.Map;

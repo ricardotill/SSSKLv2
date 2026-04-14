@@ -8,5 +8,6 @@ public class ApplicationUserDto
     public decimal Saldo { get; set; }
     public DateTime LastOrdered { get; set; }
     public string? ProfilePictureUrl { get; set; }
+    public string? Description { get; set; }
 }
 

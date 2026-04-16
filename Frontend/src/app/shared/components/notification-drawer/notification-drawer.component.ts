@@ -106,7 +106,7 @@ export class NotificationDrawerComponent {
       if (this.visible()) {
         this.loadNotifications();
       }
-    }, { allowSignalWrites: true });
+    });
   }
 
   loadNotifications() {

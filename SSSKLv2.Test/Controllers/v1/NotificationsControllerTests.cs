@@ -54,9 +54,9 @@ public class NotificationsControllerTests
         var result = _sut.GetVapidPublicKey();
 
         // Assert
-        result.Result.Should().BeOfType<OkObjectResult>();
-        var ok = (OkObjectResult)result.Result!;
-        ok.Value.Should().Be(TestVapidPublicKey);
+        var contentResult = result.Result.Should().BeOfType<ContentResult>().Subject;
+        contentResult.Content.Should().Be(TestVapidPublicKey);
+        contentResult.ContentType.Should().Be("text/plain");
     }
 
     // ── GetNotifications ───────────────────────────────────────────────────────
@@ -163,9 +163,10 @@ public class NotificationsControllerTests
     {
         // Arrange
         var endpoint = "https://push.example.com/endpoint-to-remove";
+        var dto = new UnsubscribeDto { Endpoint = endpoint };
 
         // Act
-        var result = await _sut.Unsubscribe(endpoint);
+        var result = await _sut.Unsubscribe(dto);
 
         // Assert
         result.Should().BeOfType<OkResult>();

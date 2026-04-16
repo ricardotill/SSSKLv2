@@ -26,7 +26,11 @@ public class NotificationsController : ControllerBase
     public ActionResult<string> GetVapidPublicKey()
     {
         var publicKey = _configuration["VAPID_PUBLIC_KEY"] ?? _configuration["VapidDetails:PublicKey"];
-        return Ok(publicKey);
+        if (string.IsNullOrEmpty(publicKey))
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError, "VAPID Public Key is not configured on the server.");
+        }
+        return Content(publicKey, "text/plain");
     }
 
     [HttpGet]
@@ -88,12 +92,12 @@ public class NotificationsController : ControllerBase
     }
 
     [HttpPost("unsubscribe")]
-    public async Task<IActionResult> Unsubscribe([FromBody] string endpoint)
+    public async Task<IActionResult> Unsubscribe([FromBody] UnsubscribeDto dto)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
-        await _notificationService.UnsubscribeAsync(userId, endpoint);
+        await _notificationService.UnsubscribeAsync(userId, dto.Endpoint);
         return Ok();
     }
 }

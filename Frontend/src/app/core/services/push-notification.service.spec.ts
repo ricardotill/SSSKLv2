@@ -111,10 +111,10 @@ describe('PushNotificationService', () => {
 
     const req = httpMock.expectOne(r => r.url.includes('/vapid-public-key'));
     expect(req.request.method).toBe('GET');
-    req.flush('returned-vapid-key');
+    req.flush('BGXzpnAdCnSzcF1Ho4D7Ihtt23zgL4hXvSC3OhFhlK5WTN_Nm4leLgKqfliVPf5ci4hMzHIpqpMkySZLqFLsqsE');
 
     const key = await keyPromise;
-    expect(key).toBe('returned-vapid-key');
+    expect(key).toBe('BGXzpnAdCnSzcF1Ho4D7Ihtt23zgL4hXvSC3OhFhlK5WTN_Nm4leLgKqfliVPf5ci4hMzHIpqpMkySZLqFLsqsE');
   });
 
   // ── subscribe ──────────────────────────────────────────────────────────────
@@ -127,7 +127,7 @@ describe('PushNotificationService', () => {
 
     // 1. Answer VAPID key fetch
     const vapidReq = httpMock.expectOne(r => r.url.includes('/vapid-public-key'));
-    vapidReq.flush('the-vapid-key');
+    vapidReq.flush('BGXzpnAdCnSzcF1Ho4D7Ihtt23zgL4hXvSC3OhFhlK5WTN_Nm4leLgKqfliVPf5ci4hMzHIpqpMkySZLqFLsqsE');
 
     // 2. Wait for requestSubscription microtask to complete
     await vi.waitFor(() => {
@@ -147,7 +147,7 @@ describe('PushNotificationService', () => {
 
     expect(service.isEnabled()).toBe(true);
     expect(service.showPrompt()).toBe(false);
-    expect(swPushMock.requestSubscription).toHaveBeenCalledWith({ serverPublicKey: 'the-vapid-key' });
+    expect(swPushMock.requestSubscription).toHaveBeenCalledWith({ serverPublicKey: 'BGXzpnAdCnSzcF1Ho4D7Ihtt23zgL4hXvSC3OhFhlK5WTN_Nm4leLgKqfliVPf5ci4hMzHIpqpMkySZLqFLsqsE' });
   });
 
   it('subscribe should re-throw on error from requestSubscription', async () => {
@@ -155,10 +155,10 @@ describe('PushNotificationService', () => {
     swPushMock.requestSubscription.mockRejectedValue(new Error('User denied permission'));
 
     const subscribePromise = service.subscribe();
-
+ 
     const vapidReq = httpMock.expectOne(r => r.url.includes('/vapid-public-key'));
-    vapidReq.flush('key');
-
+    vapidReq.flush('BDummyVapidPublicKey1234567890ABCDEF');
+ 
     await expect(subscribePromise).rejects.toThrow('User denied permission');
   });
 
@@ -177,6 +177,7 @@ describe('PushNotificationService', () => {
 
     const req = httpMock.expectOne(r => r.url.includes('/unsubscribe'));
     expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({ endpoint: 'https://push.example.com/sub' });
     req.flush({});
 
     await unsubPromise;

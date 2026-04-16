@@ -249,11 +249,13 @@ public class OrderControllerTests
     public async Task Create_WithValidDto_ReturnsOk()
     {
         var dto = new OrderSubmitDto { Products = new List<Guid>(), Users = new List<Guid>() };
+        var userId = Guid.NewGuid().ToString();
+        SetUserContext(userId, "user1", false);
         
         var result = await _sut.Create(dto);
 
         result.Should().BeOfType<OkResult>();
-        await _orderService.Received(1).CreateOrder(dto);
+        await _orderService.Received(1).CreateOrder(dto, userId);
     }
 
     [TestMethod]
@@ -271,7 +273,9 @@ public class OrderControllerTests
     {
         // Arrange
         var dto = new OrderSubmitDto();
-        _orderService.CreateOrder(dto).Throws(new NotFoundException(""));
+        var userId = Guid.NewGuid().ToString();
+        SetUserContext(userId, "user1", false);
+        _orderService.CreateOrder(dto, userId).Throws(new NotFoundException(""));
 
         // Act
         var result = await _sut.Create(dto);
@@ -285,7 +289,9 @@ public class OrderControllerTests
     {
         // Arrange
         var dto = new OrderSubmitDto();
-        _orderService.CreateOrder(dto).Throws(new Exception("Fail"));
+        var userId = Guid.NewGuid().ToString();
+        SetUserContext(userId, "user1", false);
+        _orderService.CreateOrder(dto, userId).Throws(new Exception("Fail"));
 
         // Act
         var result = await _sut.Create(dto);

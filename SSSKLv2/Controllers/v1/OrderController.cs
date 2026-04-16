@@ -140,8 +140,11 @@ public class OrderController : ControllerBase
 
         try
         {
-            // Use new service overload that accepts the API DTO directly
-            await _orderService.CreateOrder(bestelling);
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)
+                         ?? User.FindFirstValue("sub");
+
+            // Use new service overload that accepts the API DTO directly along with the acting user's ID
+            await _orderService.CreateOrder(bestelling, userId);
             return Ok();
         }
         catch (NotFoundException)

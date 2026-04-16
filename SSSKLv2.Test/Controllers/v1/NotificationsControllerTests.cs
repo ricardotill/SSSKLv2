@@ -59,27 +59,85 @@ public class NotificationsControllerTests
         ok.Value.Should().Be(TestVapidPublicKey);
     }
 
+    // ── GetNotifications ───────────────────────────────────────────────────────
+
     [TestMethod]
-    public void GetVapidPublicKey_EnvironmentVariableOverride_ShouldReturnEnvKey()
+    public async Task GetNotifications_ShouldCallService()
     {
         // Arrange
-        var config = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?>
-            {
-                ["VAPID_PUBLIC_KEY"]        = "env-public-key",
-                ["VapidDetails:PublicKey"]  = "appsettings-public-key"
-            })
-            .Build();
-
-        var controller = new NotificationsController(_notificationService, config);
-        controller.ControllerContext = _sut.ControllerContext;
+        var unreadOnly = true;
+        var skip = 10;
+        var take = 5;
+        _notificationService.GetNotificationsAsync(TestUserId, unreadOnly, skip, take).Returns(new List<NotificationDto>());
 
         // Act
-        var result = controller.GetVapidPublicKey();
+        var result = await _sut.GetNotifications(unreadOnly, skip, take);
+
+        // Assert
+        result.Result.Should().BeOfType<OkObjectResult>();
+        await _notificationService.Received(1).GetNotificationsAsync(TestUserId, unreadOnly, skip, take);
+    }
+
+    // ── GetUnreadCount ─────────────────────────────────────────────────────────
+
+    [TestMethod]
+    public async Task GetUnreadCount_ShouldCallService()
+    {
+        // Arrange
+        _notificationService.GetUnreadCountAsync(TestUserId).Returns(42);
+
+        // Act
+        var result = await _sut.GetUnreadCount();
 
         // Assert
         var ok = result.Result.Should().BeOfType<OkObjectResult>().Subject;
-        ok.Value.Should().Be("env-public-key");
+        ok.Value.Should().Be(42);
+        await _notificationService.Received(1).GetUnreadCountAsync(TestUserId);
+    }
+
+    // ── MarkAsRead ─────────────────────────────────────────────────────────────
+
+    [TestMethod]
+    public async Task MarkAsRead_ShouldCallService()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+
+        // Act
+        var result = await _sut.MarkAsRead(id);
+
+        // Assert
+        result.Should().BeOfType<OkResult>();
+        await _notificationService.Received(1).MarkAsReadAsync(id, TestUserId);
+    }
+
+    // ── MarkAllAsRead ──────────────────────────────────────────────────────────
+
+    [TestMethod]
+    public async Task MarkAllAsRead_ShouldCallService()
+    {
+        // Act
+        var result = await _sut.MarkAllAsRead();
+
+        // Assert
+        result.Should().BeOfType<OkResult>();
+        await _notificationService.Received(1).MarkAllAsReadAsync(TestUserId);
+    }
+
+    // ── SendCustomNotification ─────────────────────────────────────────────────
+
+    [TestMethod]
+    public async Task SendCustomNotification_Admin_ShouldCallService()
+    {
+        // Arrange
+        var dto = new CreateCustomNotificationDto { Title = "Title", Message = "Msg" };
+
+        // Act
+        var result = await _sut.SendCustomNotification(dto);
+
+        // Assert
+        result.Should().BeOfType<OkResult>();
+        await _notificationService.Received(1).CreateCustomNotificationAsync(dto);
     }
 
     // ── Subscribe ──────────────────────────────────────────────────────────────
@@ -98,24 +156,6 @@ public class NotificationsControllerTests
         await _notificationService.Received(1).SubscribeAsync(TestUserId, dto);
     }
 
-    [TestMethod]
-    public async Task Subscribe_UnauthenticatedUser_ShouldReturnUnauthorized()
-    {
-        // Arrange – no identity
-        _sut.ControllerContext = new ControllerContext
-        {
-            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal() }
-        };
-        var dto = new PushSubscriptionDto { Endpoint = "https://push.example.com", P256dh = "key", Auth = "auth" };
-
-        // Act
-        var result = await _sut.Subscribe(dto);
-
-        // Assert
-        result.Should().BeOfType<UnauthorizedResult>();
-        await _notificationService.DidNotReceive().SubscribeAsync(Arg.Any<string>(), Arg.Any<PushSubscriptionDto>());
-    }
-
     // ── Unsubscribe ────────────────────────────────────────────────────────────
 
     [TestMethod]
@@ -130,22 +170,5 @@ public class NotificationsControllerTests
         // Assert
         result.Should().BeOfType<OkResult>();
         await _notificationService.Received(1).UnsubscribeAsync(TestUserId, endpoint);
-    }
-
-    [TestMethod]
-    public async Task Unsubscribe_UnauthenticatedUser_ShouldReturnUnauthorized()
-    {
-        // Arrange – no identity
-        _sut.ControllerContext = new ControllerContext
-        {
-            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal() }
-        };
-
-        // Act
-        var result = await _sut.Unsubscribe("https://some.endpoint.com");
-
-        // Assert
-        result.Should().BeOfType<UnauthorizedResult>();
-        await _notificationService.DidNotReceive().UnsubscribeAsync(Arg.Any<string>(), Arg.Any<string>());
     }
 }

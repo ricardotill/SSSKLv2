@@ -599,6 +599,78 @@ public class OrderServiceTests
             Arg.Any<bool>());
     }
 
+    [TestMethod]
+    public async Task CreateOrder_OnBehalfOf_MissingActingUser_ShouldUseFallbackName()
+    {
+        // Arrange
+        var actingUserId = Guid.NewGuid();
+        var targetUserId = Guid.NewGuid();
+        
+        var targetUser = CreateUser("target");
+        targetUser.Id = targetUserId.ToString();
+        var product = CreateProduct(Guid.NewGuid(), "Cola", 1.00m);
+        
+        var dto = new OrderSubmitDto
+        {
+            Users = new List<Guid> { targetUserId },
+            Products = new List<Guid> { product.Id },
+            Amount = 1
+        };
+
+        _applicationUserService.GetUserById(actingUserId.ToString()).Returns((ApplicationUser)null!);
+        _applicationUserService.GetUserById(targetUserId.ToString()).Returns(targetUser);
+        _productService.GetProductById(product.Id).Returns(product);
+
+        // Act
+        await _sut.CreateOrder(dto, actingUserId.ToString());
+
+        // Assert
+        await _notificationService.Received(1).CreateNotificationAsync(
+            targetUserId.ToString(),
+            "Nieuwe bestelling!",
+            Arg.Is<string>(s => s.Contains("Iemand") && s.Contains("Cola")),
+            "/personal",
+            sendPush: true);
+    }
+
+    [TestMethod]
+    public async Task CreateOrder_OnBehalfOf_MultipleTargetUsers_ShouldNotifyAllExceptActor()
+    {
+        // Arrange
+        var actingUserId = Guid.NewGuid();
+        var target1Id = Guid.NewGuid();
+        var target2Id = Guid.NewGuid();
+        
+        var actingUser = CreateUser("actor");
+        actingUser.Id = actingUserId.ToString();
+        var target1 = CreateUser("target1");
+        target1.Id = target1Id.ToString();
+        var target2 = CreateUser("target2");
+        target2.Id = target2Id.ToString();
+        
+        var product = CreateProduct(Guid.NewGuid(), "Snack", 2.00m);
+        
+        var dto = new OrderSubmitDto
+        {
+            Users = new List<Guid> { actingUserId, target1Id, target2Id },
+            Products = new List<Guid> { product.Id },
+            Amount = 1
+        };
+
+        _applicationUserService.GetUserById(actingUserId.ToString()).Returns(actingUser);
+        _applicationUserService.GetUserById(target1Id.ToString()).Returns(target1);
+        _applicationUserService.GetUserById(target2Id.ToString()).Returns(target2);
+        _productService.GetProductById(product.Id).Returns(product);
+
+        // Act
+        await _sut.CreateOrder(dto, actingUserId.ToString());
+
+        // Assert
+        await _notificationService.Received(1).CreateNotificationAsync(target1Id.ToString(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), true);
+        await _notificationService.Received(1).CreateNotificationAsync(target2Id.ToString(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), true);
+        await _notificationService.DidNotReceive().CreateNotificationAsync(actingUserId.ToString(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), true);
+    }
+
     #endregion
 
     #region Paged Get Tests

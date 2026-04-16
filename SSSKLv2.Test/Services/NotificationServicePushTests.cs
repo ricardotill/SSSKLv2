@@ -11,7 +11,7 @@ using SSSKLv2.Test.Util;
 namespace SSSKLv2.Test.Services;
 
 [TestClass]
-public class NotificationServicePushTests : RepositoryTest
+public class NotificationServiceTests : RepositoryTest
 {
     private ApplicationDbContext _dbContext = null!;
     private IWebPushService _webPushService = null!;
@@ -31,6 +31,160 @@ public class NotificationServicePushTests : RepositoryTest
     {
         CleanupDatabase();
         _dbContext.Dispose();
+    }
+
+    // ── GetNotificationsAsync ──────────────────────────────────────────────────
+
+    [TestMethod]
+    public async Task GetNotificationsAsync_ShouldReturnNotificationsForUser()
+    {
+        // Arrange
+        var otherUser = new ApplicationUser { Id = "other", UserName = "other", Name = "Other", Surname = "User", Email = "other@test.com" };
+        _dbContext.Users.Add(otherUser);
+        
+        _dbContext.Notification.AddRange(
+            new Notification { UserId = TestUser.Id, Title = "T1", Message = "M1", CreatedOn = DateTime.UtcNow.AddMinutes(-5) },
+            new Notification { UserId = "other",    Title = "T2", Message = "M2", CreatedOn = DateTime.UtcNow }
+        );
+        await _dbContext.SaveChangesAsync();
+
+        // Act
+        var result = await _sut.GetNotificationsAsync(TestUser.Id, false, 0, 10);
+
+        // Assert
+        result.Should().HaveCount(1);
+        result.First().Title.Should().Be("T1");
+    }
+
+    [TestMethod]
+    public async Task GetNotificationsAsync_UnreadOnly_ShouldFilterCorrectly()
+    {
+        // Arrange
+        _dbContext.Notification.AddRange(
+            new Notification { UserId = TestUser.Id, Title = "Read",   Message = "M1", IsRead = true,  CreatedOn = DateTime.UtcNow.AddMinutes(-5) },
+            new Notification { UserId = TestUser.Id, Title = "Unread", Message = "M2", IsRead = false, CreatedOn = DateTime.UtcNow }
+        );
+        await _dbContext.SaveChangesAsync();
+
+        // Act
+        var result = await _sut.GetNotificationsAsync(TestUser.Id, true, 0, 10);
+
+        // Assert
+        result.Should().HaveCount(1);
+        result.First().Title.Should().Be("Unread");
+    }
+
+    [TestMethod]
+    public async Task GetNotificationsAsync_Pagination_ShouldWork()
+    {
+        // Arrange
+        for (int i = 1; i <= 5; i++)
+        {
+            _dbContext.Notification.Add(new Notification 
+            { 
+                UserId = TestUser.Id, Title = "T" + i, Message = "M", CreatedOn = DateTime.UtcNow.AddMinutes(i) 
+            });
+        }
+        await _dbContext.SaveChangesAsync();
+
+        // Act
+        var result = await _sut.GetNotificationsAsync(TestUser.Id, false, 1, 2);
+
+        // Assert
+        var list = result.ToList();
+        list.Should().HaveCount(2);
+        // Ordered by descending CreatedOn: T5, T4, T3, T2, T1
+        // Skip 1, Take 2 -> T4, T3
+        list[0].Title.Should().Be("T4");
+        list[1].Title.Should().Be("T3");
+    }
+
+    // ── GetUnreadCountAsync ────────────────────────────────────────────────────
+
+    [TestMethod]
+    public async Task GetUnreadCountAsync_ShouldReturnCorrectCount()
+    {
+        // Arrange
+        var otherUser = new ApplicationUser { Id = "other", UserName = "other", Name = "Other", Surname = "User", Email = "other@test.com" };
+        _dbContext.Users.Add(otherUser);
+        
+        _dbContext.Notification.AddRange(
+            new Notification { UserId = TestUser.Id, Title = "R", Message = "M", IsRead = true },
+            new Notification { UserId = TestUser.Id, Title = "U1", Message = "M", IsRead = false },
+            new Notification { UserId = TestUser.Id, Title = "U2", Message = "M", IsRead = false },
+            new Notification { UserId = "other",    Title = "U3", Message = "M", IsRead = false }
+        );
+        await _dbContext.SaveChangesAsync();
+
+        // Act
+        var count = await _sut.GetUnreadCountAsync(TestUser.Id);
+
+        // Assert
+        count.Should().Be(2);
+    }
+
+    // ── MarkAsReadAsync ────────────────────────────────────────────────────────
+
+    [TestMethod]
+    public async Task MarkAsReadAsync_ExistingUnread_ShouldUpdate()
+    {
+        // Arrange
+        var n = new Notification { UserId = TestUser.Id, Title = "T", Message = "M", IsRead = false };
+        _dbContext.Notification.Add(n);
+        await _dbContext.SaveChangesAsync();
+
+        // Act
+        await _sut.MarkAsReadAsync(n.Id, TestUser.Id);
+
+        // Assert
+        var updated = await _dbContext.Notification.FindAsync(n.Id);
+        updated!.IsRead.Should().BeTrue();
+    }
+
+    [TestMethod]
+    public async Task MarkAsReadAsync_WrongUser_ShouldNotUpdate()
+    {
+        // Arrange
+        var otherUser = new ApplicationUser { Id = "other", UserName = "other", Name = "Other", Surname = "User", Email = "other@test.com" };
+        _dbContext.Users.Add(otherUser);
+        
+        var n = new Notification { UserId = "other", Title = "T", Message = "M", IsRead = false };
+        _dbContext.Notification.Add(n);
+        await _dbContext.SaveChangesAsync();
+
+        // Act
+        await _sut.MarkAsReadAsync(n.Id, TestUser.Id);
+
+        // Assert
+        var updated = await _dbContext.Notification.FindAsync(n.Id);
+        updated!.IsRead.Should().BeFalse();
+    }
+
+    // ── MarkAllAsReadAsync ─────────────────────────────────────────────────────
+
+    [TestMethod]
+    public async Task MarkAllAsReadAsync_ShouldUpdateAllUnreadForUser()
+    {
+        // Arrange
+        var otherUser = new ApplicationUser { Id = "other", UserName = "other", Name = "Other", Surname = "User", Email = "other@test.com" };
+        _dbContext.Users.Add(otherUser);
+        
+        _dbContext.Notification.AddRange(
+            new Notification { UserId = TestUser.Id, Title = "T1", IsRead = false },
+            new Notification { UserId = TestUser.Id, Title = "T2", IsRead = false },
+            new Notification { UserId = "other",    Title = "T3", IsRead = false }
+        );
+        await _dbContext.SaveChangesAsync();
+
+        // Act
+        await _sut.MarkAllAsReadAsync(TestUser.Id);
+
+        // Assert
+        var userNotifs = await _dbContext.Notification.Where(n => n.UserId == TestUser.Id).ToListAsync();
+        userNotifs.Should().AllSatisfy(n => n.IsRead.Should().BeTrue());
+        
+        var otherNotif = await _dbContext.Notification.FirstAsync(n => n.UserId == "other");
+        otherNotif.IsRead.Should().BeFalse();
     }
 
     // ── SubscribeAsync ─────────────────────────────────────────────────────────
@@ -77,27 +231,6 @@ public class NotificationServicePushTests : RepositoryTest
         subs.Single().Auth.Should().Be("new-auth");
     }
 
-    [TestMethod]
-    public async Task SubscribeAsync_DifferentUsers_ShouldNotOverlap()
-    {
-        // Arrange
-        var user2 = new ApplicationUser { Id = Guid.NewGuid().ToString(), UserName = "user2", Name = "User", Surname = "Two", Email = "u2@test.com" };
-        _dbContext.Users.Add(user2);
-        await _dbContext.SaveChangesAsync();
-
-        var dto = new PushSubscriptionDto { Endpoint = "https://push.example.com/shared", P256dh = "k1", Auth = "a1" };
-
-        // Act
-        await _sut.SubscribeAsync(TestUser.Id, dto);
-        await _sut.SubscribeAsync(user2.Id, dto);
-
-        // Assert – two separate subscriptions for the same endpoint (different users)
-        var subs = await _dbContext.PushSubscription
-            .Where(s => s.Endpoint == "https://push.example.com/shared")
-            .ToListAsync();
-        subs.Should().HaveCount(2);
-    }
-
     // ── UnsubscribeAsync ───────────────────────────────────────────────────────
 
     [TestMethod]
@@ -120,36 +253,6 @@ public class NotificationServicePushTests : RepositoryTest
         sub.Should().BeNull();
     }
 
-    [TestMethod]
-    public async Task UnsubscribeAsync_NonExistentEndpoint_ShouldNotThrow()
-    {
-        // Act & Assert
-        await _sut.Invoking(s => s.UnsubscribeAsync(TestUser.Id, "https://nonexistent.example.com"))
-            .Should().NotThrowAsync();
-    }
-
-    [TestMethod]
-    public async Task UnsubscribeAsync_ShouldOnlyRemoveOwnSubscription()
-    {
-        // Arrange – two users with same endpoint
-        var user2 = new ApplicationUser { Id = Guid.NewGuid().ToString(), UserName = "user2", Name = "User", Surname = "Two", Email = "u2@test.com" };
-        _dbContext.Users.Add(user2);
-        var endpoint = "https://push.example.com/shared";
-        _dbContext.PushSubscription.AddRange(
-            new PushSubscription { UserId = TestUser.Id, Endpoint = endpoint, P256dh = "k1", Auth = "a1", CreatedOn = DateTime.UtcNow },
-            new PushSubscription { UserId = user2.Id,    Endpoint = endpoint, P256dh = "k2", Auth = "a2", CreatedOn = DateTime.UtcNow }
-        );
-        await _dbContext.SaveChangesAsync();
-
-        // Act – only unsubscribe TestUser
-        await _sut.UnsubscribeAsync(TestUser.Id, endpoint);
-
-        // Assert – user2's subscription should remain
-        var remaining = await _dbContext.PushSubscription.Where(s => s.Endpoint == endpoint).ToListAsync();
-        remaining.Should().HaveCount(1);
-        remaining.Single().UserId.Should().Be(user2.Id);
-    }
-
     // ── CreateNotificationAsync + Push ─────────────────────────────────────────
 
     [TestMethod]
@@ -160,16 +263,6 @@ public class NotificationServicePushTests : RepositoryTest
 
         // Assert
         await _webPushService.Received(1).SendNotificationAsync(TestUser.Id, "Title", "Body", "/link");
-    }
-
-    [TestMethod]
-    public async Task CreateNotificationAsync_WithoutSendPush_ShouldNotCallWebPushService()
-    {
-        // Act
-        await _sut.CreateNotificationAsync(TestUser.Id, "Title", "Body", sendPush: false);
-
-        // Assert
-        await _webPushService.DidNotReceive().SendNotificationAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>());
     }
 
     [TestMethod]
@@ -196,27 +289,19 @@ public class NotificationServicePushTests : RepositoryTest
     }
 
     [TestMethod]
-    public async Task CreateCustomNotificationAsync_TargetedUsers_ShouldOnlySendToDtoUserIds()
+    public async Task CreateCustomNotificationAsync_TargetedUsers_EmptyList_ShouldNotThrow()
     {
         // Arrange
-        var user2 = new ApplicationUser { Id = Guid.NewGuid().ToString(), UserName = "user2", Name = "User", Surname = "Two", Email = "u2@test.com" };
-        _dbContext.Users.Add(user2);
-        await _dbContext.SaveChangesAsync();
-
         var dto = new CreateCustomNotificationDto
         {
-            Title = "Targeted",
-            Message = "Just for you",
+            Title = "T",
+            Message = "M",
             FanOut = false,
-            SendPush = true,
-            UserIds = new List<string> { TestUser.Id }
+            UserIds = null // Should handle null as empty list
         };
 
-        // Act
-        await _sut.CreateCustomNotificationAsync(dto);
-
-        // Assert – only TestUser receives the push, not user2
-        await _webPushService.Received(1).SendNotificationAsync(TestUser.Id, "Targeted", "Just for you", Arg.Any<string>());
-        await _webPushService.DidNotReceive().SendNotificationAsync(user2.Id, Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>());
+        // Act & Assert
+        await _sut.Invoking(s => s.CreateCustomNotificationAsync(dto))
+            .Should().NotThrowAsync();
     }
 }

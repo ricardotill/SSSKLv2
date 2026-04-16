@@ -1,9 +1,13 @@
 using Lib.Net.Http.WebPush;
+using System.Runtime.CompilerServices;
 using Lib.Net.Http.WebPush.Authentication;
 using Microsoft.EntityFrameworkCore;
 using SSSKLv2.Data;
 using SSSKLv2.Services.Interfaces;
 using Newtonsoft.Json;
+
+[assembly: InternalsVisibleTo("SSSKLv2.Test")]
+[assembly: InternalsVisibleTo("DynamicProxyGenAssembly2")]
 
 namespace SSSKLv2.Services;
 
@@ -86,7 +90,7 @@ public class WebPushService : IWebPushService
                     }
                 };
 
-                await _pushServiceClient.RequestPushMessageDeliveryAsync(pushSubscription, pushMessage);
+                await RequestPushMessageAsync(pushSubscription, pushMessage);
             }
             catch (PushServiceClientException ex)
             {
@@ -108,5 +112,10 @@ public class WebPushService : IWebPushService
         }
 
         await _context.SaveChangesAsync();
+    }
+
+    internal virtual async Task RequestPushMessageAsync(Lib.Net.Http.WebPush.PushSubscription subscription, PushMessage message)
+    {
+        await _pushServiceClient.RequestPushMessageDeliveryAsync(subscription, message);
     }
 }

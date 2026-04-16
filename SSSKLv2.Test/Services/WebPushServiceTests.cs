@@ -8,6 +8,7 @@ using Newtonsoft.Json.Linq;
 using SSSKLv2.Data;
 using SSSKLv2.Services;
 using SSSKLv2.Test.Util;
+using Lib.Net.Http.WebPush;
 
 namespace SSSKLv2.Test.Services;
 
@@ -198,9 +199,9 @@ public class WebPushServiceTests : RepositoryTest
         });
     }
 
-    private PushSubscription AddSubscriptionForUser(string userId, string endpoint = "https://push.example.com/endpoint")
+    private SSSKLv2.Data.PushSubscription AddSubscriptionForUser(string userId, string endpoint = "https://push.example.com/endpoint")
     {
-        var sub = new PushSubscription
+        var sub = new SSSKLv2.Data.PushSubscription
         {
             UserId    = userId,
             Endpoint  = endpoint,
@@ -213,10 +214,51 @@ public class WebPushServiceTests : RepositoryTest
         return sub;
     }
 
-    private WebPushService CreateSut(List<string>? payloadCapture = null)
+    private WebPushService CreateSut(HttpClient? httpClient = null, bool partialMock = false)
     {
-        // Use real HttpClient but with no real endpoint reachable (subscriptions point to fake URLs)
-        // For unit tests we focus on DB/payload logic; HTTP calls would 404 harmlessly.
-        return new WebPushService(_configuration, _dbContext, new HttpClient(), _logger);
+        if (partialMock)
+        {
+            return Substitute.ForPartsOf<WebPushService>(_configuration, _dbContext, httpClient ?? new HttpClient(), _logger);
+        }
+        return new WebPushService(_configuration, _dbContext, httpClient ?? new HttpClient(), _logger);
+    }
+
+    [TestMethod]
+    public async Task SendNotificationAsync_PushServiceReturnsGone_ShouldRemoveSubscription()
+    {
+        // Arrange
+        var user = TestUser.Id;
+        var sub = AddSubscriptionForUser(user, "https://push.example.com/expired");
+        await _dbContext.SaveChangesAsync();
+
+        var sut = CreateSut(partialMock: true);
+        
+        // Setup the partial mock to throw PushServiceClientException with 410 Gone
+        // We need to use a trick to instantiate the exception if it doesn't have a public constructor,
+        // but typically it does. 
+        var ex = new PushServiceClientException("Gone", System.Net.HttpStatusCode.Gone);
+
+        sut.When(s => s.RequestPushMessageAsync(Arg.Any<Lib.Net.Http.WebPush.PushSubscription>(), Arg.Any<PushMessage>()))
+           .Do(x => throw ex);
+
+        // Act
+        await sut.SendNotificationAsync(user, "Title", "Message");
+
+        // Assert
+        var resultSub = await _dbContext.PushSubscription.FirstOrDefaultAsync(s => s.Id == sub.Id);
+        resultSub.Should().BeNull();
+    }
+
+    private class MockHttpMessageHandler : HttpMessageHandler
+    {
+        private readonly System.Net.HttpStatusCode _statusCode;
+        public MockHttpMessageHandler(System.Net.HttpStatusCode statusCode) => _statusCode = statusCode;
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, System.Threading.CancellationToken cancellationToken)
+        {
+            // Lib.Net.Http.WebPush.PushServiceClient expects specific headers or it might throw differently,
+            // but we want it to throw PushServiceClientException which usually happens on non-success status codes.
+            return Task.FromResult(new HttpResponseMessage(_statusCode));
+        }
     }
 }

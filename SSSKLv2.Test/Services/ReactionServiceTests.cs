@@ -161,6 +161,84 @@ public class ReactionServiceTests : RepositoryTest
     }
 
     [TestMethod]
+    public async Task ToggleReaction_OnEvent_ShouldNotifyCreator()
+    {
+        // Arrange
+        var creatorId = Guid.NewGuid().ToString();
+        await CreateUser(creatorId);
+        
+        var evt = new Event 
+        { 
+            Id = Guid.NewGuid(), 
+            Title = "Party", 
+            Description = "D", 
+            CreatorId = creatorId,
+            StartDateTime = DateTime.UtcNow,
+            EndDateTime = DateTime.UtcNow.AddHours(2)
+        };
+        _dbContext.Event.Add(evt);
+        await _dbContext.SaveChangesAsync();
+
+        // Act
+        await _sut.ToggleReaction(evt.Id, "Event", "👍", TestUser.Id);
+
+        // Assert
+        await _notificationService.Received(1).CreateNotificationAsync(
+            creatorId,
+            "Nieuwe reactie",
+            Arg.Is<string>(s => s.Contains("Party")),
+            Arg.Is<string>(s => s.Contains(evt.Id.ToString())),
+            true
+        );
+    }
+
+    [TestMethod]
+    public async Task ToggleReaction_OnReaction_ShouldNotifyAuthor()
+    {
+        // Arrange
+        var evt = await CreateTestEvent();
+        var authorId = Guid.NewGuid().ToString();
+        await CreateUser(authorId);
+
+        var rootReaction = new Reaction 
+        { 
+            Id = Guid.NewGuid(), 
+            TargetId = evt.Id, 
+            TargetType = ReactionTargetType.Event, 
+            UserId = authorId, 
+            Content = "Nice!" 
+        };
+        _dbContext.Reaction.Add(rootReaction);
+        await _dbContext.SaveChangesAsync();
+
+        // Act
+        await _sut.ToggleReaction(rootReaction.Id, "Reaction", "Reply", TestUser.Id);
+
+        // Assert
+        await _notificationService.Received(1).CreateNotificationAsync(
+            authorId,
+            "Nieuw antwoord",
+            Arg.Any<string>(),
+            Arg.Any<string>(),
+            true
+        );
+    }
+
+    [TestMethod]
+    public async Task ToggleReaction_ByOwner_ShouldNotNotify()
+    {
+        // Arrange
+        var evt = await CreateTestEvent(); // Creator is TestUser.Id
+
+        // Act
+        await _sut.ToggleReaction(evt.Id, "Event", "👍", TestUser.Id);
+
+        // Assert
+        await _notificationService.DidNotReceive().CreateNotificationAsync(
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<bool>());
+    }
+
+    [TestMethod]
     public async Task ToggleReaction_ReactionOnReaction_ShouldWork()
     {
         // Arrange

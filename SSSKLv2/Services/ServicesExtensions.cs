@@ -16,7 +16,11 @@ public static class ServicesExtensions
             .AddTransient<IAnnouncementService, AnnouncementService>()
             .AddTransient<IAchievementService, AchievementService>()
             .AddTransient<IEventService, EventService>()
+            .AddTransient<IReactionService, ReactionService>()
+            .AddTransient<INotificationService, NotificationService>()
+            .AddTransient<IWebPushService, WebPushService>()
             .AddSingleton<IPurchaseNotifier, PurchaseNotifier>()
-            .AddSingleton<IEventNotifier, EventNotifier>();
+            .AddSingleton<IEventNotifier, EventNotifier>()
+            .AddHttpClient();
     }
 }

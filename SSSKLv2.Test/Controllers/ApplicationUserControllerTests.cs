@@ -129,6 +129,39 @@ public class ApplicationUserControllerTests
     }
 
     [TestMethod]
+    public async Task GetProfileById_WhenFound_ReturnsOk()
+    {
+        var id = "user-profile-1";
+        var user = new ApplicationUser { Id = id, UserName = "profileuser", Description = "Test Description" };
+        _mockService.GetUserById(id).Returns(Task.FromResult(user));
+
+        var result = await _sut.GetProfileById(id);
+
+        var expected = new ApplicationUserDto
+        {
+            Id = user.Id,
+            UserName = user.UserName ?? string.Empty,
+            FullName = user.FullName ?? string.Empty,
+            Saldo = user.Saldo,
+            LastOrdered = user.LastOrdered,
+            ProfilePictureUrl = null,
+            Description = user.Description
+        };
+        result.Result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeEquivalentTo(expected);
+    }
+
+    [TestMethod]
+    public async Task GetProfileById_WhenNotFound_ReturnsNotFound()
+    {
+        var id = "missing-profile";
+        _mockService.GetUserById(id).Returns(Task.FromException<ApplicationUser>(new NotFoundException("User not found")));
+
+        var result = await _sut.GetProfileById(id);
+
+        result.Result.Should().BeOfType<NotFoundResult>();
+    }
+
+    [TestMethod]
     public async Task GetAll_ReturnsOkWithItems()
     {
         var list = new List<ApplicationUser>

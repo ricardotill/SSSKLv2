@@ -21,6 +21,9 @@ public class ApplicationUserDetailedDto
     // Profile picture URL (nullable)
     public string? ProfilePictureUrl { get; set; }
 
+    // User Profile description
+    public string? Description { get; set; }
+
     // Roles assigned to the user
     public IList<string> Roles { get; set; } = new List<string>();
 }

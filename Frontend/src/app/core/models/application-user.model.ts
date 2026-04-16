@@ -6,6 +6,7 @@ export interface ApplicationUserDto {
   lastOrdered?: string;
   roles: string[];
   profilePictureUrl?: string;
+  description?: string;
 }
 
 export interface ApplicationUserDetailedDto {
@@ -22,6 +23,7 @@ export interface ApplicationUserDetailedDto {
   lastOrdered?: string;
   profilePictureUrl?: string;
   roles: string[];
+  description?: string;
 }
 
 export interface ApplicationUserUpdateDto {
@@ -35,9 +37,17 @@ export interface ApplicationUserUpdateDto {
   surname?: string;
   password?: string;
   roles?: string[];
+  description?: string;
 }
 
 export interface PaginatedUsers {
   items: ApplicationUserDto[];
   totalCount: number;
+}
+
+export interface ApplicationUserSelfUpdateDto {
+  phoneNumber?: string;
+  name?: string;
+  surname?: string;
+  description?: string;
 }

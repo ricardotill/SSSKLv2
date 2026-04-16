@@ -33,7 +33,8 @@ public class ApplicationUserController : ControllerBase
         FullName = u.FullName,
         Saldo = u.Saldo,
         LastOrdered = u.LastOrdered,
-        ProfilePictureUrl = u.ProfileImageId != null ? $"/api/v1/blob/profilepicture/image/{u.ProfileImageId}" : null
+        ProfilePictureUrl = u.ProfileImageId != null ? $"/api/v1/blob/profilepicture/image/{u.ProfileImageId}" : null,
+        Description = u.Description
     };
 
     // New: map to the more detailed DTO (does NOT include password)
@@ -51,6 +52,7 @@ public class ApplicationUserController : ControllerBase
         Saldo = u.Saldo,
         LastOrdered = u.LastOrdered,
         ProfilePictureUrl = u.ProfileImageId != null ? $"/api/v1/blob/profilepicture/image/{u.ProfileImageId}" : null,
+        Description = u.Description,
         Roles = roles
     };
 
@@ -98,6 +100,22 @@ public class ApplicationUserController : ControllerBase
             var user = await _applicationUserService.GetUserById(id);
             var roles = await _applicationUserService.GetUserRoles(user.Id);
             return Ok(MapToDetailedDto(user, roles));
+        }
+        catch (NotFoundException)
+        {
+            return NotFound();
+        }
+    }
+
+    [Authorize]
+    [HttpGet("{id}/profile")]
+    public async Task<ActionResult<ApplicationUserDto>> GetProfileById(string id)
+    {
+        _logger.LogInformation("{Controller}: Get user profile by id {Id}", nameof(ApplicationUserController), id);
+        try
+        {
+            var user = await _applicationUserService.GetUserById(id);
+            return Ok(MapToDto(user));
         }
         catch (NotFoundException)
         {
@@ -233,7 +251,8 @@ public class ApplicationUserController : ControllerBase
                 Id = existing.Id,
                 PhoneNumber = dto.PhoneNumber,
                 Name = dto.Name,
-                Surname = dto.Surname
+                Surname = dto.Surname,
+                Description = dto.Description
             };
 
             var updated = await _applicationUserService.UpdateUser(existing.Id, updateDto);

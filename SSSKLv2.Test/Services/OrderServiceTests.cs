@@ -25,6 +25,7 @@ public class OrderServiceTests
     private IAchievementService _achievementService = null!;
     private IProductService _productService = null!;
     private IApplicationUserService _applicationUserService = null!;
+    private INotificationService _notificationService = null!;
     private ILogger<OrderService> _mockLogger = null!;
     private OrderService _sut = null!;
 
@@ -36,12 +37,14 @@ public class OrderServiceTests
         _achievementService = Substitute.For<IAchievementService>();
         _productService = Substitute.For<IProductService>();
         _applicationUserService = Substitute.For<IApplicationUserService>();
+        _notificationService = Substitute.For<INotificationService>();
         _mockLogger = Substitute.For<ILogger<OrderService>>();
         _sut = new OrderService(_mockOrderRepository,
             _achievementService,
             _purchaseNotifier,
             _productService,
             _applicationUserService,
+            _notificationService,
             _mockLogger);
     }
 
@@ -386,7 +389,7 @@ public class OrderServiceTests
     public async Task CreateOrder_WithNullDto_ShouldThrowArgumentNullException()
     {
         // Act
-        Func<Task> act = async () => await _sut.CreateOrder(null!);
+        Func<Task> act = async () => await _sut.CreateOrder(null!, null);
 
         // Assert
         await act.Should().ThrowAsync<ArgumentNullException>();
@@ -413,7 +416,7 @@ public class OrderServiceTests
         _productService.GetProductById(productId).Returns(product);
 
         // Act
-        await _sut.CreateOrder(dto);
+        await _sut.CreateOrder(dto, userId.ToString());
 
         // Assert
         await _mockOrderRepository.Received(1).CreateRange(Arg.Is<IEnumerable<Order>>(
@@ -448,7 +451,7 @@ public class OrderServiceTests
         _productService.GetProductById(productId).Returns(product);
 
         // Act
-        await _sut.CreateOrder(dto);
+        await _sut.CreateOrder(dto, user1Id.ToString());
 
         // Assert
         // Decimal.Round(9.99 / 2, 2, ToPositiveInfinity) = 5.00
@@ -481,7 +484,7 @@ public class OrderServiceTests
         _productService.GetProductById(productId).Returns(product);
 
         // Act
-        await _sut.CreateOrder(dto);
+        await _sut.CreateOrder(dto, user1Id.ToString());
 
         // Assert
         await _mockOrderRepository.Received(1).CreateRange(Arg.Is<IEnumerable<Order>>(
@@ -512,7 +515,7 @@ public class OrderServiceTests
         _productService.GetProductById(productId).Throws(new NotFoundException("Product not found"));
 
         // Act
-        Func<Task> act = async () => await _sut.CreateOrder(dto);
+        Func<Task> act = async () => await _sut.CreateOrder(dto, userId.ToString());
 
         // Assert
         await act.Should().ThrowAsync<NotFoundException>().WithMessage("Product not found");
@@ -538,11 +541,134 @@ public class OrderServiceTests
         _applicationUserService.GetUserById(userId.ToString()).Throws(new NotFoundException("User not found"));
 
         // Act
-        Func<Task> act = async () => await _sut.CreateOrder(dto);
+        Func<Task> act = async () => await _sut.CreateOrder(dto, userId.ToString());
 
         // Assert
         await act.Should().ThrowAsync<NotFoundException>().WithMessage("User not found");
         await _mockOrderRepository.DidNotReceiveWithAnyArgs().CreateRange(null!);
+    }
+
+    [TestMethod]
+    public async Task CreateOrder_OnBehalfOf_ShouldSendNotification()
+    {
+        // Arrange
+        var actingUserId = Guid.NewGuid();
+        var targetUserId = Guid.NewGuid();
+        var productId = Guid.NewGuid();
+        
+        var actingUser = CreateUser("actor");
+        actingUser.Id = actingUserId.ToString();
+        actingUser.Name = "Ricardo";
+        actingUser.Surname = "Till";
+        
+        var targetUser = CreateUser("target");
+        targetUser.Id = targetUserId.ToString();
+        
+        var product = CreateProduct(productId, "Beer", 1.50m);
+        
+        var dto = new OrderSubmitDto
+        {
+            Users = new List<Guid> { actingUserId, targetUserId },
+            Products = new List<Guid> { productId },
+            Amount = 1,
+            Split = false
+        };
+
+        _applicationUserService.GetUserById(actingUserId.ToString()).Returns(actingUser);
+        _applicationUserService.GetUserById(targetUserId.ToString()).Returns(targetUser);
+        _productService.GetProductById(productId).Returns(product);
+
+        // Act
+        await _sut.CreateOrder(dto, actingUserId.ToString());
+
+        // Assert
+        // Target user should get a notification
+        await _notificationService.Received(1).CreateNotificationAsync(
+            targetUserId.ToString(),
+            "Nieuwe bestelling!",
+            Arg.Is<string>(s => s.Contains("Ricardo T") && s.Contains("Beer")),
+            "/personal",
+            sendPush: true);
+            
+        // Acting user should NOT get a notification
+        await _notificationService.DidNotReceive().CreateNotificationAsync(
+            actingUserId.ToString(),
+            Arg.Any<string>(),
+            Arg.Any<string>(),
+            Arg.Any<string>(),
+            Arg.Any<bool>());
+    }
+
+    [TestMethod]
+    public async Task CreateOrder_OnBehalfOf_MissingActingUser_ShouldUseFallbackName()
+    {
+        // Arrange
+        var actingUserId = Guid.NewGuid();
+        var targetUserId = Guid.NewGuid();
+        
+        var targetUser = CreateUser("target");
+        targetUser.Id = targetUserId.ToString();
+        var product = CreateProduct(Guid.NewGuid(), "Cola", 1.00m);
+        
+        var dto = new OrderSubmitDto
+        {
+            Users = new List<Guid> { targetUserId },
+            Products = new List<Guid> { product.Id },
+            Amount = 1
+        };
+
+        _applicationUserService.GetUserById(actingUserId.ToString()).Returns((ApplicationUser)null!);
+        _applicationUserService.GetUserById(targetUserId.ToString()).Returns(targetUser);
+        _productService.GetProductById(product.Id).Returns(product);
+
+        // Act
+        await _sut.CreateOrder(dto, actingUserId.ToString());
+
+        // Assert
+        await _notificationService.Received(1).CreateNotificationAsync(
+            targetUserId.ToString(),
+            "Nieuwe bestelling!",
+            Arg.Is<string>(s => s.Contains("Iemand") && s.Contains("Cola")),
+            "/personal",
+            sendPush: true);
+    }
+
+    [TestMethod]
+    public async Task CreateOrder_OnBehalfOf_MultipleTargetUsers_ShouldNotifyAllExceptActor()
+    {
+        // Arrange
+        var actingUserId = Guid.NewGuid();
+        var target1Id = Guid.NewGuid();
+        var target2Id = Guid.NewGuid();
+        
+        var actingUser = CreateUser("actor");
+        actingUser.Id = actingUserId.ToString();
+        var target1 = CreateUser("target1");
+        target1.Id = target1Id.ToString();
+        var target2 = CreateUser("target2");
+        target2.Id = target2Id.ToString();
+        
+        var product = CreateProduct(Guid.NewGuid(), "Snack", 2.00m);
+        
+        var dto = new OrderSubmitDto
+        {
+            Users = new List<Guid> { actingUserId, target1Id, target2Id },
+            Products = new List<Guid> { product.Id },
+            Amount = 1
+        };
+
+        _applicationUserService.GetUserById(actingUserId.ToString()).Returns(actingUser);
+        _applicationUserService.GetUserById(target1Id.ToString()).Returns(target1);
+        _applicationUserService.GetUserById(target2Id.ToString()).Returns(target2);
+        _productService.GetProductById(product.Id).Returns(product);
+
+        // Act
+        await _sut.CreateOrder(dto, actingUserId.ToString());
+
+        // Assert
+        await _notificationService.Received(1).CreateNotificationAsync(target1Id.ToString(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), true);
+        await _notificationService.Received(1).CreateNotificationAsync(target2Id.ToString(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), true);
+        await _notificationService.DidNotReceive().CreateNotificationAsync(actingUserId.ToString(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), true);
     }
 
     #endregion

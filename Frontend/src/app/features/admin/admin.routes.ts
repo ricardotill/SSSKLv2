@@ -55,6 +55,13 @@ export const routes: Routes = [
         title: 'Rollen Beheren - SSSKL'
       },
       {
+        path: 'notifications',
+        loadComponent: () => import('./notifications/admin-notifications.component'),
+        canActivate: [roleGuard],
+        data: { roles: ['Admin'] },
+        title: 'Notificaties Beheren - SSSKL'
+      },
+      {
         path: 'global-settings',
         loadComponent: () => import('./global-settings/admin-global-settings.component'),
         canActivate: [roleGuard],

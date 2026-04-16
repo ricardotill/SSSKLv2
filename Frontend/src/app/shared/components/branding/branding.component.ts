@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, inject } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, input } from '@angular/core';
 import { Router } from '@angular/router';
 import { TagModule } from 'primeng/tag';
 import { AuthService } from '../../../core/auth/auth.service';
@@ -17,7 +17,9 @@ import { AuthService } from '../../../core/auth/auth.service';
       [attr.tabindex]="authService.isAuthenticated() ? 0 : null"
     >
       <h2 class="text-xl font-bold m-0">SSSKL</h2>
-      <p-tag class="ml-2" value="v3.6.0" />
+      @if (showVersion()) {
+        <p-tag class="ml-2" value="v3.7.0" />
+      }
     </div>
   `,
   styles: `
@@ -30,6 +32,8 @@ import { AuthService } from '../../../core/auth/auth.service';
 export class BrandingComponent {
   authService = inject(AuthService);
   private router = inject(Router);
+
+  showVersion = input<boolean>(true);
 
   onClick() {
     if (this.authService.isAuthenticated()) {

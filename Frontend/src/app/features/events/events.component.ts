@@ -15,6 +15,7 @@ import { FormsModule } from '@angular/forms';
 import { AvatarModule } from 'primeng/avatar';
 import { ResolveApiUrlPipe } from '../../shared/pipes/resolve-api-url.pipe';
 import { ProcessedContentPipe } from '../../shared/pipes/processed-content.pipe';
+import { UserProfileDrawerService } from '../../core/services/user-profile-drawer.service';
 
 @Component({
   selector: 'app-events',
@@ -30,8 +31,7 @@ import { ProcessedContentPipe } from '../../shared/pipes/processed-content.pipe'
     ToggleButtonModule,
     FormsModule,
     AvatarModule,
-    ResolveApiUrlPipe,
-    ProcessedContentPipe
+    ResolveApiUrlPipe
   ],
   template: `
     <div class="flex flex-col gap-6">
@@ -131,8 +131,9 @@ import { ProcessedContentPipe } from '../../shared/pipes/processed-content.pipe'
                               [label]="!user.profilePictureUrl ? user.userName?.substring(0,1) : undefined"
                               shape="circle" 
                               size="normal"
-                              styleClass="ring-2 ring-surface-0 dark:ring-surface-900"
+                              styleClass="ring-2 ring-surface-0 dark:ring-surface-900 cursor-pointer"
                               [title]="user.userName"
+                              (click)="$event.stopPropagation(); $event.preventDefault(); drawerService.open(user.userId)"
                            ></p-avatar>
                          }
                          @if (event.acceptedUsers.length > 3) {
@@ -170,6 +171,7 @@ import { ProcessedContentPipe } from '../../shared/pipes/processed-content.pipe'
 export default class EventsComponent implements OnInit {
   private readonly eventService = inject(EventService);
   private readonly authService = inject(AuthService);
+  drawerService = inject(UserProfileDrawerService);
   ls = inject(LanguageService);
 
   events = signal<EventDto[]>([]);

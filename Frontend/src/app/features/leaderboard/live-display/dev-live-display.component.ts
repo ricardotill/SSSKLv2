@@ -400,7 +400,8 @@ export class DevLiveDisplayComponent implements OnInit, OnDestroy {
       fullName: `User ${i + 1}`,
       productName: 'Mock Product',
       amount: Math.floor(Math.random() * 100) + 1,
-      profilePictureUrl: undefined
+      profilePictureUrl: undefined,
+      userId: `fake-user-${i + 1}`
     }));
 
     const mockProducts: ProductDto[] = [
@@ -415,6 +416,7 @@ export class DevLiveDisplayComponent implements OnInit, OnDestroy {
       startDateTime: new Date().toISOString(),
       endDateTime: new Date().toISOString(),
       creatorName: 'Dev',
+      creatorId: 'dev-123',
       createdOn: new Date().toISOString(),
       acceptedUsers: [],
       declinedUsers: [],

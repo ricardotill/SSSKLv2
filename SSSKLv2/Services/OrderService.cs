@@ -13,6 +13,7 @@ public class OrderService(
     IPurchaseNotifier purchaseNotifier,
     IProductService productService,
     IApplicationUserService applicationUserService,
+    INotificationService notificationService,
     ILogger<OrderService> logger) : IOrderService
 {
     public Task<int> GetCount() => orderRepository.GetCount();
@@ -56,7 +57,7 @@ public class OrderService(
     
 
     // New overload: accept API DTO directly
-    public async Task CreateOrder(OrderSubmitDto order)
+    public async Task CreateOrder(OrderSubmitDto order, string? actingUserId)
     {
         if (order == null) throw new ArgumentNullException(nameof(order));
 
@@ -89,6 +90,28 @@ public class OrderService(
         await orderRepository.CreateRange(orders);
         await NotifyPurchase(orders);
         await achievementService.CheckOrdersForAchievements(orders);
+
+        // Notify users if someone ordered on their behalf
+        if (!string.IsNullOrEmpty(actingUserId))
+        {
+            var actingUser = await applicationUserService.GetUserById(actingUserId);
+            var actingUserName = actingUser?.FullName ?? "Iemand";
+            var productNames = string.Join(", ", products.Select(p => p.Name));
+
+            foreach (var u in users)
+            {
+                if (u.Id != actingUserId)
+                {
+                    await notificationService.CreateNotificationAsync(
+                        u.Id,
+                        "Nieuwe bestelling!",
+                        $"{actingUserName} heeft {productNames} voor je besteld!",
+                        "/personal",
+                        sendPush: true);
+                }
+            }
+        }
+
         foreach (var u in users)
         {
             await achievementService.CheckUserForAchievements(u.UserName!);

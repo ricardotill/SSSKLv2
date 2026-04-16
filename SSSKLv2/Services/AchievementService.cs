@@ -13,7 +13,8 @@ public class AchievementService(
     ITopUpRepository topUpRepository,
     IApplicationUserRepository applicationUserRepository,
     IPurchaseNotifier purchaseNotifier,
-    IBlobStorageAgent blobStorageAgent) : IAchievementService
+    IBlobStorageAgent blobStorageAgent,
+    INotificationService notificationService) : IAchievementService
 {
     public Task<int> GetCount() => achievementRepository.GetCount();
     
@@ -414,6 +415,14 @@ public class AchievementService(
                  achievement.User.FullName,
                  achievement.Achievement.Image != null ? $"/api/v1/blob/achievement/image/{achievement.Achievement.Image.Id}" : null
              ));
+
+             await notificationService.CreateNotificationAsync(
+                 achievement.User.Id,
+                 "Nieuwe prestatie ontgrendeld!",
+                 $"Gefeliciteerd! Je hebt de prestatie '{achievement.Achievement.Name}' ontgrendeld.",
+                 "/achievements",
+                 true
+             );
          }
      }
     

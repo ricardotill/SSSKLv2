@@ -7,4 +7,5 @@ public class LeaderboardEntryDto
     public required string ProductName { get; set; }
     public int Amount { get; set; }
     public string? ProfilePictureUrl { get; set; }
+    public string? UserId { get; set; }
 }

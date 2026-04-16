@@ -29,6 +29,7 @@ export interface EventDto {
   endDateTime: string;
   creatorName: string;
   creatorProfilePictureUrl?: string;
+  creatorId: string;
   createdOn: string;
   acceptedUsers: EventResponseUserDto[];
   declinedUsers: EventResponseUserDto[];

@@ -72,7 +72,8 @@ public class ApplicationUserService(
                     Amount = count,
                     FullName = $"{u.Name} {u.Surname.First()}",
                     ProductName = product.Name,
-                    ProfilePictureUrl = u.ProfileImageId != null ? $"/api/v1/blob/profilepicture/image/{u.ProfileImageId}" : null
+                    ProfilePictureUrl = u.ProfileImageId != null ? $"/api/v1/blob/profilepicture/image/{u.ProfileImageId}" : null,
+                    UserId = u.Id
                 });
             }
         }
@@ -112,7 +113,8 @@ public class ApplicationUserService(
                     Amount = count,
                     FullName = $"{u.Name} {u.Surname.First()}",
                     ProductName = product.Name,
-                    ProfilePictureUrl = u.ProfileImageId != null ? $"/api/v1/blob/profilepicture/image/{u.ProfileImageId}" : null
+                    ProfilePictureUrl = u.ProfileImageId != null ? $"/api/v1/blob/profilepicture/image/{u.ProfileImageId}" : null,
+                    UserId = u.Id
                 });
             }
         }
@@ -148,7 +150,8 @@ public class ApplicationUserService(
                     Amount = count,
                     FullName = $"{u.Name} {u.Surname.First()}",
                     ProductName = product.Name,
-                    ProfilePictureUrl = u.ProfileImageId != null ? $"/api/v1/blob/profilepicture/image/{u.ProfileImageId}" : null
+                    ProfilePictureUrl = u.ProfileImageId != null ? $"/api/v1/blob/profilepicture/image/{u.ProfileImageId}" : null,
+                    UserId = u.Id
                 });
             }
         }
@@ -185,7 +188,8 @@ public class ApplicationUserService(
                     Amount = count,
                     FullName = $"{u.Name} {u.Surname.First()}",
                     ProductName = product.Name,
-                    ProfilePictureUrl = u.ProfileImageId != null ? $"/api/v1/blob/profilepicture/image/{u.ProfileImageId}" : null
+                    ProfilePictureUrl = u.ProfileImageId != null ? $"/api/v1/blob/profilepicture/image/{u.ProfileImageId}" : null,
+                    UserId = u.Id
                 });
             }
         }
@@ -241,6 +245,12 @@ public class ApplicationUserService(
         if (dto.Surname != null && dto.Surname != user.Surname)
         {
             user.Surname = dto.Surname;
+            needsUpdate = true;
+        }
+
+        if (dto.Description != null && dto.Description != user.Description)
+        {
+            user.Description = dto.Description;
             needsUpdate = true;
         }
 

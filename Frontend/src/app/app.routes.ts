@@ -116,6 +116,12 @@ export const routes: Routes = [
         title: 'Achievements - SSSKL'
       },
       {
+        path: 'notifications',
+        loadComponent: () => import('./features/notifications/notifications.component').then(m => m.NotificationsComponent),
+        canActivate: [authGuard],
+        title: 'Notifications - SSSKL'
+      },
+      {
         path: 'achievements/:id',
         loadComponent: () => import('./features/achievements/achievement-detail/achievement-detail.component'),
         canActivate: [authGuard],

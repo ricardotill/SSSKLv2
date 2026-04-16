@@ -15,6 +15,8 @@ public class ApplicationUserUpdateDto
     public string? Name { get; set; }
     public string? Surname { get; set; }
 
+    public string? Description { get; set; }
+
     // Acceptable to include password on update, but it will be handled securely by Identity
     // If null or empty, password will not be changed.
     public string? Password { get; set; }

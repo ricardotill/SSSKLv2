@@ -277,6 +277,12 @@ import { AutoScrollDirective } from '../../../shared/directives/auto-scroll.dire
                                   </div>
                                   <h3 class="font-bold m-0 text-white leading-tight tracking-tight"
                                       [ngClass]="isFirst ? 'text-3xl' : 'text-2xl'">{{ event.title }}</h3>
+                                  @if (event.locationName) {
+                                    <div class="flex items-center gap-2 text-primary-400/80" [ngClass]="isFirst ? 'text-xl mt-1' : 'text-lg mt-0.5'">
+                                      <i class="pi pi-map-marker"></i>
+                                      <span class="truncate font-medium italic">{{ event.locationName }}</span>
+                                    </div>
+                                  }
                                 </div>
                               </div>
                               

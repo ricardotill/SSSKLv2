@@ -36,6 +36,7 @@ export interface ApplicationUserSelfUpdateDto {
     phoneNumber?: string | null;
     name?: string | null;
     surname?: string | null;
+    description?: string | null;
 }
 
 export interface InfoRequest {

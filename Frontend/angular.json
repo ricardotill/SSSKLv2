@@ -29,7 +29,8 @@
             "styles": ["src/styles.css"],
             "define": {
               "CUSTOM_API_URL": "''"
-            }
+            },
+            "serviceWorker": "ngsw-config.json"
           },
           "configurations": {
             "production": {

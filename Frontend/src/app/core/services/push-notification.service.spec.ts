@@ -151,6 +151,7 @@ describe('PushNotificationService', () => {
   });
 
   it('subscribe should re-throw on error from requestSubscription', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
     swPushMock.requestSubscription.mockRejectedValue(new Error('User denied permission'));
 
     const subscribePromise = service.subscribe();

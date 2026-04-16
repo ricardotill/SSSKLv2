@@ -99,6 +99,7 @@ describe('PushPermissionDialogComponent', () => {
   });
 
   it('enable() should keep dialog open on error', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
     pushServiceMock.subscribe.mockRejectedValue(new Error('Permission denied'));
     await component.enable();
     // Dialog stays open so user can dismiss manually
@@ -106,6 +107,7 @@ describe('PushPermissionDialogComponent', () => {
   });
 
   it('enable() should reset loading to false after error', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
     pushServiceMock.subscribe.mockRejectedValue(new Error('Denied'));
     await component.enable();
     expect(component.loading()).toBe(false);

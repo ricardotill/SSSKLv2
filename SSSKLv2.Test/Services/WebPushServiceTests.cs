@@ -58,13 +58,13 @@ public class WebPushServiceTests : RepositoryTest
     }
 
     [TestMethod]
-    public void SendNotificationAsync_ShouldUseCorrectTitle_WithBrandingPrefix()
+    public void SendNotificationAsync_ShouldUseCorrectTitle()
     {
-        // Assert – verify the static payload builder applies "SSSKL: " prefix
+        // Assert – verify the static payload builder applies the correct title without prefix
         var payloadJson = BuildExpectedPayload("My Event", "Someone reacted", "/events/1");
         var notification = JObject.Parse(payloadJson)["notification"]!;
 
-        notification["title"]!.Value<string>().Should().Be("SSSKL: My Event");
+        notification["title"]!.Value<string>().Should().Be("My Event");
         notification["body"]!.Value<string>().Should().Be("Someone reacted");
         notification["icon"]!.Value<string>().Should().Be("/assets/icons/icon-192x192.png");
         notification["badge"]!.Value<string>().Should().Be("/assets/icons/icon-72x72.png");
@@ -182,7 +182,7 @@ public class WebPushServiceTests : RepositoryTest
         {
             notification = new
             {
-                title = $"SSSKL: {title}",
+                title = title,
                 body,
                 icon  = "/assets/icons/icon-192x192.png",
                 badge = "/assets/icons/icon-72x72.png",

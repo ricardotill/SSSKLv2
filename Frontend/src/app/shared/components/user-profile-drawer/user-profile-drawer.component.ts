@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, inject, signal, effect, ViewChild } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal, effect, ViewChild, HostListener, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { DrawerModule } from 'primeng/drawer';
@@ -37,9 +37,11 @@ import { Router } from '@angular/router';
       (visibleChange)="onVisibleChange($event)"
       position="bottom"
       [style]="{ height: 'auto', maxHeight: '80vh' }"
-      styleClass="rounded-t-3xl shadow-2xl"
+      styleClass="user-profile-drawer rounded-t-3xl shadow-2xl"
       [baseZIndex]="10000"
-      [modal]="true"
+      [modal]="false"
+      [blockScroll]="false"
+      [appendTo]="'body'"
     >
       <ng-template pTemplate="header">
         <div class="flex items-center gap-3">
@@ -192,6 +194,30 @@ export class UserProfileDrawerComponent {
         this.editMode.set(false);
       }
     });
+  }
+
+  @HostListener('document:mousedown', ['$event'])
+  onDocumentClick(event: MouseEvent) {
+    if (!this.drawerService.drawerVisible()) return;
+
+    const target = event.target as HTMLElement;
+    
+    // Check if click is inside the drawer (appended to body)
+    const isInsideDrawer = !!target.closest('.user-profile-drawer');
+    
+    // Safety check: clicking the trigger (like leaderboard name or avatar) should be handled by the trigger itself.
+    // If we're clicking outside the drawer, we close it.
+    // Since profile drawer can be opened from many places, we mostly rely on checking if it's NOT in the drawer.
+    // We also check for PrimeNG overlays (like confirmation dialogs) to avoid closing when a dialog is open.
+    const isOverlay = !!target.closest('.p-dialog-mask') || !!target.closest('.p-confirm-dialog');
+
+    if (!isInsideDrawer && !isOverlay) {
+      // Small delay to allow potential trigger clicks to finish
+      // but actually, mousedown happens first. 
+      // If we clicked a trigger, it will set visible=true again anyway if using a toggle, 
+      // but profile drawer is usually just "open".
+      this.drawerService.close();
+    }
   }
 
   isCurrentUser(): boolean {

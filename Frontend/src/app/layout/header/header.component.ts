@@ -11,6 +11,7 @@ import { LanguageService } from '../../core/services/language.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { NotificationDrawerComponent } from '../../shared/components/notification-drawer/notification-drawer.component';
 import { BrandingComponent } from '../../shared/components/branding/branding.component';
+import { NotificationDrawerService } from '../../core/services/notification-drawer.service';
 
 @Component({
   selector: 'app-header',
@@ -33,7 +34,7 @@ import { BrandingComponent } from '../../shared/components/branding/branding.com
                 [text]="true" 
                 [rounded]="true" 
                 severity="secondary" 
-                (onClick)="isNotificationDrawerOpen = true"
+                (onClick)="notificationDrawerService.open()"
                 styleClass="!overflow-visible relative text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors">
                 @if (notificationService.unreadCount() > 0) {
                   <p-badge 
@@ -57,7 +58,7 @@ import { BrandingComponent } from '../../shared/components/branding/branding.com
         </ng-template>
       </p-toolbar>
 
-      <app-notification-drawer [(visible)]="isNotificationDrawerOpen" />
+      <app-notification-drawer />
     </header>
   `,
   styles: `
@@ -80,12 +81,11 @@ export class HeaderComponent implements OnInit {
   authService = inject(AuthService);
   ls = inject(LanguageService);
   notificationService = inject(NotificationService);
+  notificationDrawerService = inject(NotificationDrawerService);
   public router = inject(Router);
 
   isSidebarOpen = input<boolean>(false);
   menuToggled = output<void>();
-
-  isNotificationDrawerOpen = false;
 
 
 
@@ -97,6 +97,7 @@ export class HeaderComponent implements OnInit {
     this.router.events.pipe(
       filter(event => event instanceof NavigationEnd)
     ).subscribe(() => {
+      this.notificationDrawerService.close();
       if (this.authService.isAuthenticated()) {
         this.notificationService.fetchUnreadCount().subscribe();
         this.authService.refreshCurrentUser();

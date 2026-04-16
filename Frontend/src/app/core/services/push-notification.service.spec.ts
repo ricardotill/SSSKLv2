@@ -5,6 +5,8 @@ import { SwPush } from '@angular/service-worker';
 import { BehaviorSubject } from 'rxjs';
 import { vi } from 'vitest';
 import { PushNotificationService } from './push-notification.service';
+import { AuthService } from '../auth/auth.service';
+import { signal } from '@angular/core';
 
 // ── Polyfill Notification for JSDOM ───────────────────────────────────────────
 
@@ -33,6 +35,10 @@ const swPushMock = {
   unsubscribe: vi.fn().mockResolvedValue(undefined),
 };
 
+const authServiceMock = {
+  isAuthenticated: signal<boolean>(true),
+};
+
 // ── Tests ──────────────────────────────────────────────────────────────────────
 
 describe('PushNotificationService', () => {
@@ -44,6 +50,7 @@ describe('PushNotificationService', () => {
     vi.clearAllMocks();
     subscriptionSubject.next(null);
     swPushMock.unsubscribe = vi.fn().mockResolvedValue(undefined);
+    authServiceMock.isAuthenticated.set(true);
     Object.defineProperty((globalThis as any).Notification, 'permission', {
       value: 'default',
       configurable: true,
@@ -56,6 +63,7 @@ describe('PushNotificationService', () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: SwPush, useValue: swPushMock },
+        { provide: AuthService, useValue: authServiceMock },
       ],
     });
 
@@ -79,8 +87,14 @@ describe('PushNotificationService', () => {
 
   // ── showPrompt Signal ──────────────────────────────────────────────────────
 
-  it('showPrompt should be true when permission is default and not shown before', () => {
+  it('showPrompt should be true when permission is default, not shown before, and authenticated', () => {
+    authServiceMock.isAuthenticated.set(true);
     expect(service.showPrompt()).toBe(true);
+  });
+
+  it('showPrompt should be false when not authenticated', () => {
+    authServiceMock.isAuthenticated.set(false);
+    expect(service.showPrompt()).toBe(false);
   });
 
   it('showPrompt should be false when push_prompt_shown is in localStorage', () => {

@@ -54,7 +54,7 @@ public class WebPushService : IWebPushService
         {
             notification = new
             {
-                title = $"SSSKL: {title}",
+                title = title,
                 body = message,
                 icon = "/assets/icons/icon-192x192.png",
                 badge = "/assets/icons/icon-72x72.png",

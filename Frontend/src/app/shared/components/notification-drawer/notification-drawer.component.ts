@@ -1,4 +1,5 @@
-import { Component, ChangeDetectionStrategy, inject, signal, effect, input, output } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal, effect, HostListener, ElementRef } from '@angular/core';
+import { trigger, transition, style, animate, group } from '@angular/animations';
 import { CommonModule, DatePipe } from '@angular/common';
 import { DrawerModule } from 'primeng/drawer';
 import { ButtonModule } from 'primeng/button';
@@ -6,6 +7,7 @@ import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { Router } from '@angular/router';
 import { NotificationService } from '../../../core/services/notification.service';
 import { LanguageService } from '../../../core/services/language.service';
+import { NotificationDrawerService } from '../../../core/services/notification-drawer.service';
 import { NotificationDto } from '../../../core/models/notification.model';
 import { finalize } from 'rxjs';
 
@@ -14,8 +16,26 @@ import { finalize } from 'rxjs';
   standalone: true,
   imports: [CommonModule, DrawerModule, ButtonModule, ProgressSpinnerModule],
   providers: [DatePipe],
+  animations: [
+    trigger('notificationItem', [
+      transition(':leave', [
+        style({ overflow: 'hidden' }),
+        group([
+          animate('300ms cubic-bezier(0.4, 0, 0.2, 1)', style({ transform: 'translateX(100%)', opacity: 0 })),
+          animate('300ms 100ms ease-out', style({ height: 0, marginBottom: 0, marginTop: 0, paddingTop: 0, paddingBottom: 0 }))
+        ])
+      ])
+    ])
+  ],
   template: `
-    <p-drawer [(visible)]="isOpen" position="top" [showCloseIcon]="true" styleClass="notification-drawer !h-auto w-full flex flex-col bg-surface-0 dark:bg-surface-900 border-none rounded-b-2xl shadow-xl max-h-[90vh]">
+    <p-drawer [visible]="drawerService.drawerVisible()"
+              (visibleChange)="onVisibleChange($event)"
+              position="top" 
+              [showCloseIcon]="true" 
+              [modal]="false"
+              [blockScroll]="false"
+              [appendTo]="'body'"
+              styleClass="notification-drawer !h-auto w-full flex flex-col bg-surface-0 dark:bg-surface-900 border-none rounded-b-2xl shadow-xl max-h-[90vh]">
       <ng-template pTemplate="header">
         <div class="flex items-center justify-between w-full pr-2">
           <h2 class="text-xl font-bold m-0 text-surface-900 dark:text-surface-0">Notificaties</h2>
@@ -38,7 +58,8 @@ import { finalize } from 'rxjs';
         } @else {
           <div class="flex flex-col gap-2">
             @for (notification of notifications(); track notification.id) {
-              <div class="group flex items-center gap-4 p-4 rounded-xl hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors border border-transparent hover:border-surface-200 dark:hover:border-surface-700 cursor-pointer"
+              <div [@notificationItem]
+                   class="group flex items-center gap-4 p-4 rounded-xl hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors border border-transparent hover:border-surface-200 dark:hover:border-surface-700 cursor-pointer"
                    (click)="onNotificationClick(notification)">
                  <div class="bg-primary-100 dark:bg-primary-900/30 w-11 h-11 flex items-center justify-center rounded-full text-primary-600 dark:text-primary-400 flex-shrink-0">
                     <i class="pi pi-bell text-lg"></i>
@@ -83,30 +104,46 @@ import { finalize } from 'rxjs';
 })
 export class NotificationDrawerComponent {
   public notificationService = inject(NotificationService);
+  public drawerService = inject(NotificationDrawerService);
   public ls = inject(LanguageService);
   private router = inject(Router);
   public datePipe = inject(DatePipe);
-
-  visible = input<boolean>(false);
-  visibleChange = output<boolean>();
+  private elementRef = inject(ElementRef);
 
   notifications = signal<NotificationDto[]>([]);
   loading = signal(false);
   markingAll = signal(false);
 
-  set isOpen(val: boolean) {
-    this.visibleChange.emit(val);
-  }
-  get isOpen() {
-    return this.visible();
-  }
-
   constructor() {
     effect(() => {
-      if (this.visible()) {
+      if (this.drawerService.drawerVisible()) {
         this.loadNotifications();
       }
     });
+  }
+
+  @HostListener('document:mousedown', ['$event'])
+  onDocumentClick(event: MouseEvent) {
+    if (!this.drawerService.drawerVisible()) return;
+
+    const target = event.target as HTMLElement;
+    
+    // Check if click is inside the drawer (which is appended to body)
+    const isInsideDrawer = !!target.closest('.notification-drawer');
+    
+    // Check if click is on the bell button in the header (to avoid immediate close/open toggle)
+    // We target the button via its class or close association in app-header
+    const isBellButton = !!target.closest('app-header');
+
+    if (!isInsideDrawer && !isBellButton) {
+      this.drawerService.close();
+    }
+  }
+
+  onVisibleChange(visible: boolean) {
+    if (!visible) {
+      this.drawerService.close();
+    }
   }
 
   loadNotifications() {
@@ -135,14 +172,15 @@ export class NotificationDrawerComponent {
 
   onNotificationClick(notification: NotificationDto) {
     this.markAsRead(notification);
-    if (notification.linkUri) {
-      this.isOpen = false;
-      this.router.navigateByUrl(notification.linkUri);
+    const linkUri = notification.linkUri;
+    if (linkUri) {
+      this.drawerService.close();
+      this.router.navigateByUrl(linkUri);
     }
   }
 
   viewAll() {
-    this.isOpen = false;
+    this.drawerService.close();
     this.router.navigate(['/notifications']);
   }
 }

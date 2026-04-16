@@ -1,8 +1,9 @@
-import { Injectable, inject, signal, effect } from '@angular/core';
+import { Injectable, inject, signal, computed } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { SwPush } from '@angular/service-worker';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../environments/environment';
+import { AuthService } from '../auth/auth.service';
 
 @Injectable({
   providedIn: 'root'
@@ -10,36 +11,29 @@ import { environment } from '../../../environments/environment';
 export class PushNotificationService {
   private http = inject(HttpClient);
   private swPush = inject(SwPush);
+  private authService = inject(AuthService);
   private apiUrl = `${environment.apiUrl}/api/v1/notifications`;
+
+  private promptDismissed = signal<boolean>(localStorage.getItem('push_prompt_shown') === 'true');
 
   isEnabled = signal<boolean>(false);
   isSupported = signal<boolean>(this.swPush.isEnabled);
 
   // Signal for prompt visibility
-  showPrompt = signal<boolean>(false);
+  showPrompt = computed(() => {
+    return !this.promptDismissed() &&
+           this.authService.isAuthenticated() &&
+           this.isSupported() && 
+           Notification.permission === 'default' && 
+           !this.isEnabled();
+  });
 
   constructor() {
     // Sync status if supported
     if (this.isSupported()) {
       this.swPush.subscription.subscribe(sub => {
         this.isEnabled.set(!!sub);
-        this.updatePromptVisibility();
       });
-    }
-
-    this.updatePromptVisibility();
-  }
-
-  private updatePromptVisibility() {
-    const shownInStorage = localStorage.getItem('push_prompt_shown') === 'true';
-    const shouldShow = this.isSupported() && 
-                       Notification.permission === 'default' && 
-                       !shownInStorage && 
-                       !this.isEnabled();
-    
-    // Only update if it actually changes to avoid redundant cycles
-    if (this.showPrompt() !== shouldShow) {
-      this.showPrompt.set(shouldShow);
     }
   }
 
@@ -93,7 +87,6 @@ export class PushNotificationService {
         await this.swPush.unsubscribe();
       }
       this.isEnabled.set(false);
-      this.updatePromptVisibility();
     } catch (err) {
       console.error('Could not unsubscribe from notifications', err);
       throw err;
@@ -102,6 +95,6 @@ export class PushNotificationService {
 
   setPrompted() {
     localStorage.setItem('push_prompt_shown', 'true');
-    this.showPrompt.set(false);
+    this.promptDismissed.set(true);
   }
 }

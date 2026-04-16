@@ -1,6 +1,7 @@
 {
   "name": "SSSKL",
   "short_name": "SSSKL",
+  "gcm_sender_id": "103953800507",
   "icons": [
     {
       "src": "icons/icon-48x48.png",

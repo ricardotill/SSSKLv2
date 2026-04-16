@@ -72,11 +72,12 @@ import { CardModule } from 'primeng/card';
                     [ngModel]="themeService.mode()" 
                     (ngModelChange)="themeService.setMode($event)" 
                     [allowEmpty]="false"
-                    size="small">
+                    size="small"
+                    styleClass="w-full">
                     <ng-template #item let-item>
-                        <div class="flex items-center gap-2 px-2">
+                        <div class="flex items-center justify-center gap-2 px-1 sm:px-2 min-w-0">
                             <i [class]="item.icon"></i>
-                            <span>{{item.label}}</span>
+                            <span class="truncate">{{item.label}}</span>
                         </div>
                     </ng-template>
                   </p-selectbutton>
@@ -91,8 +92,8 @@ import { CardModule } from 'primeng/card';
                     {{ ls.t().push_notifications }}
                   </h3>
                   <div class="flex items-center justify-between gap-4">
-                    <div class="flex flex-col gap-1">
-                      <p class="text-sm text-surface-500">
+                    <div class="flex flex-col gap-1 min-w-0 flex-1">
+                      <p class="text-sm text-surface-500 leading-tight">
                         {{ ls.t().push_notifications_desc }}
                       </p>
                       @if (!pushService.isSupported()) {
@@ -401,7 +402,20 @@ import { CardModule } from 'primeng/card';
       </p-card>
     </div>
   `,
-  styles: ``,
+  styles: `
+    :host ::ng-deep {
+      .p-selectbutton {
+        display: flex;
+        width: 100%;
+      }
+      .p-selectbutton .p-button {
+        flex: 1;
+        min-width: 0;
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+      }
+    }
+  `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export default class SettingsComponent {

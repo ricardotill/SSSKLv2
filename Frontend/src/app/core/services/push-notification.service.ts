@@ -12,7 +12,7 @@ export class PushNotificationService {
   private swPush = inject(SwPush);
   private apiUrl = `${environment.apiUrl}/api/v1/notifications`;
 
-  isEnabled = signal<boolean>(Notification.permission === 'granted');
+  isEnabled = signal<boolean>(false);
   isSupported = signal<boolean>(this.swPush.isEnabled);
 
   // Signal for prompt visibility
@@ -52,6 +52,12 @@ export class PushNotificationService {
 
     try {
       const vapidPublicKey = await this.getVapidPublicKey();
+      
+      if (!vapidPublicKey || vapidPublicKey.length < 20 || vapidPublicKey.includes('not configured')) {
+        console.error('Invalid VAPID Public Key received from server:', vapidPublicKey);
+        throw new Error('VAPID Public Key is not correctly configured on the server.');
+      }
+
       const sub = await this.swPush.requestSubscription({
         serverPublicKey: vapidPublicKey
       });
@@ -77,7 +83,13 @@ export class PushNotificationService {
     try {
       const sub = await firstValueFrom(this.swPush.subscription);
       if (sub) {
-        await firstValueFrom(this.http.post(`${this.apiUrl}/unsubscribe`, sub.endpoint));
+        // Wrap endpoint in an object to match the new backend DTO
+        try {
+          await firstValueFrom(this.http.post(`${this.apiUrl}/unsubscribe`, { endpoint: sub.endpoint }));
+        } catch (apiErr) {
+          // We proceed with browser unsubscription even if backend fails to ensure local UI is consistent
+        }
+        
         await this.swPush.unsubscribe();
       }
       this.isEnabled.set(false);

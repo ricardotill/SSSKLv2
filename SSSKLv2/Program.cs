@@ -245,11 +245,12 @@ builder.Services.AddServicesDI();
 builder.Services.AddDataDI();
 builder.Services.AddAgentsDI();
 
-builder.Services.AddResponseCompression(options =>
-{
-    options.EnableForHttps = true;
-    // Default safe MIME types are used by default.
-});
+// For now disabled, CPU-intensive
+// builder.Services.AddResponseCompression(options =>
+// {
+//     options.EnableForHttps = true;
+//     // Default safe MIME types are used by default.
+// });
 
 builder.Services.AddAntiforgery(o =>
 {
@@ -321,7 +322,7 @@ else
 
 
 
-app.UseResponseCompression();
+// app.UseResponseCompression();
 app.UseHttpsRedirection();
 // Apply cookie policy before authentication so cookie flags are enforced.
 app.UseCookiePolicy();

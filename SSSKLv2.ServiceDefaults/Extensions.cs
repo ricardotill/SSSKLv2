@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Azure.Monitor.OpenTelemetry.AspNetCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -63,7 +64,8 @@ public static class Extensions
                             !context.Request.Path.StartsWithSegments(HealthEndpointPath)
                             && !context.Request.Path.StartsWithSegments(AlivenessEndpointPath)
                     )
-                    .AddHttpClientInstrumentation();
+                    .AddHttpClientInstrumentation()
+                    .AddProcessor(new StatusCodeFilterProcessor());
             });
 
         builder.AddOpenTelemetryExporters();
@@ -114,5 +116,21 @@ public static class Extensions
         }
 
         return app;
+    }
+}
+
+internal sealed class StatusCodeFilterProcessor : BaseProcessor<Activity>
+{
+    public override void OnEnd(Activity activity)
+    {
+        // Standard tag names for HTTP status code
+        var statusCode = activity.GetTagItem("http.response.status_code")
+                      ?? activity.GetTagItem("http.status_code");
+
+        if (statusCode is int code && code == 401)
+        {
+            // Dropping the activity by clearing the recorded flag
+            activity.ActivityTraceFlags &= ~ActivityTraceFlags.Recorded;
+        }
     }
 }

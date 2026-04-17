@@ -72,8 +72,9 @@ public class WebPushService : IWebPushService
 
         var pushMessage = new PushMessage(payload)
         {
-            Topic = title.Replace(" ", "-").ToLower(),
-            Urgency = PushMessageUrgency.Normal
+            Topic = SanitizeTopic(title),
+            Urgency = PushMessageUrgency.Normal,
+            TimeToLive = 24 * 60 * 60 // 24 hours
         };
 
         foreach (var subscription in subscriptions)
@@ -102,7 +103,7 @@ public class WebPushService : IWebPushService
                 }
                 else
                 {
-                    _logger.LogError(ex, "Error sending push notification to user {UserId}", userId);
+                    _logger.LogError(ex, "Error sending push notification to user {UserId}. Status: {StatusCode}", userId, ex.StatusCode);
                 }
             }
             catch (Exception ex)
@@ -112,6 +113,27 @@ public class WebPushService : IWebPushService
         }
 
         await _context.SaveChangesAsync();
+    }
+
+    private string? SanitizeTopic(string title)
+    {
+        if (string.IsNullOrEmpty(title))
+            return null;
+
+        // Replace spaces with hyphens as per current logic
+        var input = title.Replace(" ", "-");
+
+        // RFC 8030: Topic must be max 32 chars and only use "unreserved" characters:
+        // ALPHA / DIGIT / "-" / "." / "_" / "~"
+        var sanitized = new string(input
+            .Where(c => (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '-' || c == '.' || c == '_' || c == '~')
+            .ToArray())
+            .ToLower();
+
+        if (string.IsNullOrEmpty(sanitized))
+            return null;
+
+        return sanitized.Length > 32 ? sanitized.Substring(0, 32) : sanitized;
     }
 
     internal virtual async Task RequestPushMessageAsync(Lib.Net.Http.WebPush.PushSubscription subscription, PushMessage message)

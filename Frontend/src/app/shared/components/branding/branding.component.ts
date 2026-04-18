@@ -18,7 +18,7 @@ import { AuthService } from '../../../core/auth/auth.service';
     >
       <h2 class="text-xl font-bold m-0">SSSKL</h2>
       @if (showVersion()) {
-        <p-tag class="ml-2" value="v3.7.3" />
+        <p-tag class="ml-2" value="v3.7.5" />
       }
     </div>
   `,

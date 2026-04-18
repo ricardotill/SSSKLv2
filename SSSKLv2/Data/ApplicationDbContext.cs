@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity;
 using SSSKLv2.Data;
 
 namespace SSSKLv2.Data
@@ -132,6 +133,15 @@ namespace SSSKLv2.Data
                 .IsRequired(false)
                 .HasForeignKey<Event>("ImageId")
                 .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<Event>()
+                .HasMany(e => e.RequiredRoles)
+                .WithMany()
+                .UsingEntity<Dictionary<string, object>>(
+                    "EventRequiredRoles",
+                    j => j.HasOne<IdentityRole>().WithMany().HasForeignKey("RoleId"),
+                    j => j.HasOne<Event>().WithMany().HasForeignKey("EventId")
+                );
 
             builder.Entity<EventResponse>()
                 .Property(s => s.CreatedOn)

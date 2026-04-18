@@ -587,7 +587,7 @@ public class OrderServiceTests
             targetUserId.ToString(),
             "Nieuwe bestelling!",
             Arg.Is<string>(s => s.Contains("Ricardo T") && s.Contains("Beer")),
-            "/personal",
+            "/orders/personal",
             sendPush: true);
             
         // Acting user should NOT get a notification
@@ -629,7 +629,7 @@ public class OrderServiceTests
             targetUserId.ToString(),
             "Nieuwe bestelling!",
             Arg.Is<string>(s => s.Contains("Iemand") && s.Contains("Cola")),
-            "/personal",
+            "/orders/personal",
             sendPush: true);
     }
 

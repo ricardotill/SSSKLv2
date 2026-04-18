@@ -105,8 +105,8 @@ public class OrderService(
                     await notificationService.CreateNotificationAsync(
                         u.Id,
                         "Nieuwe bestelling!",
-                        $"{actingUserName} heeft {productNames} voor je besteld!",
-                        "/personal",
+                                                $"{actingUserName} heeft {productNames} voor je besteld!",
+                        "/orders/personal",
                         sendPush: true);
                 }
             }

@@ -159,6 +159,7 @@ export const routes: Routes = [
       }
     ]
   },
+  { path: 'personal', redirectTo: 'orders/personal', pathMatch: 'full' },
   { path: '404', loadComponent: () => import('./features/error/error.component'), data: { code: '404' }, title: 'Pagina niet gevonden - SSSKL' },
   { path: '**', redirectTo: '404' }
 ];

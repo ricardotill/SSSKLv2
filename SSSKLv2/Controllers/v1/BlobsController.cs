@@ -24,6 +24,7 @@ public class BlobsController : ControllerBase
 
     [HttpGet("event/image/{id}")]
     [AllowAnonymous]
+    [ResponseCache(Duration = 2592000, Location = ResponseCacheLocation.Any)]
     public async Task<IActionResult> GetEventImage(Guid id)
     {
         var image = await _context.BlobStorageItem.FirstOrDefaultAsync(x => x.Id == id);
@@ -35,6 +36,7 @@ public class BlobsController : ControllerBase
 
     [HttpGet("achievement/image/{id}")]
     [AllowAnonymous]
+    [ResponseCache(Duration = 2592000, Location = ResponseCacheLocation.Any)]
     public async Task<IActionResult> GetAchievementImage(Guid id)
     {
         var image = await _context.BlobStorageItem.FirstOrDefaultAsync(x => x.Id == id);
@@ -46,6 +48,7 @@ public class BlobsController : ControllerBase
 
     [HttpGet("profilepicture/image/{id}")]
     [AllowAnonymous]
+    [ResponseCache(Duration = 2592000, Location = ResponseCacheLocation.Any)]
     public async Task<IActionResult> GetProfilePicture(Guid id)
     {
         var image = await _context.BlobStorageItem.FirstOrDefaultAsync(x => x.Id == id);
@@ -57,37 +60,71 @@ public class BlobsController : ControllerBase
 
     [HttpGet("event/image/{id}/social-preview.jpg")]
     [AllowAnonymous]
+    [ResponseCache(Duration = 2592000, Location = ResponseCacheLocation.Any)]
     public async Task<IActionResult> GetSocialPreview(Guid id)
     {
         var image = await _context.BlobStorageItem.FirstOrDefaultAsync(x => x.Id == id);
         if (image == null) return NotFound();
 
+        // Add binary headers to assist social crawler caching and verification
+        if (Response != null)
+        {
+            Response.Headers.AcceptRanges = "bytes";
+            Response.Headers.ETag = $"\"{id:N}\"";
+            Response.Headers.LastModified = image.CreatedOn.ToUniversalTime().ToString("R");
+        }
+
         using var stream = await _blobAgent.OpenDownloadStreamAsync(image.FileName);
         using var sourceImage = await Image.LoadAsync(stream);
 
-        // 1. Aspect Ratio check (max 4:1)
-        double aspectRatio = (double)sourceImage.Width / sourceImage.Height;
-        if (aspectRatio > 4.0)
+        // Target aspect ratio 1.91:1 (Industry standard for Open Graph images)
+        const double targetRatio = 1.91;
+        double currentRatio = (double)sourceImage.Width / sourceImage.Height;
+
+        if (Math.Abs(currentRatio - targetRatio) > 0.05)
         {
-            // Crop width to fit 4:1
-            int newWidth = sourceImage.Height * 4;
-            sourceImage.Mutate(x => x.Crop(new Rectangle((sourceImage.Width - newWidth) / 2, 0, newWidth, sourceImage.Height)));
+            // Perform center crop to match target ratio
+            int newWidth = sourceImage.Width;
+            int newHeight = sourceImage.Height;
+
+            if (currentRatio > targetRatio)
+            {
+                newWidth = Math.Max(1, (int)(sourceImage.Height * targetRatio));
+            }
+            else
+            {
+                newHeight = Math.Max(1, (int)(sourceImage.Width / targetRatio));
+            }
+
+            sourceImage.Mutate(x => x.Crop(new Rectangle(
+                (sourceImage.Width - newWidth) / 2,
+                (sourceImage.Height - newHeight) / 2,
+                newWidth,
+                newHeight)));
         }
 
-        // 2. Minimum width (300px)
-        if (sourceImage.Width < 300)
+        // Standardize dimensions: Minimum 300px for WhatsApp, maximum 1200px for performance.
+        if (sourceImage.Width > 1200)
+        {
+            sourceImage.Mutate(x => x.Resize(new ResizeOptions
+            {
+                Size = new Size(1200, 0),
+                Mode = ResizeMode.Max
+            }));
+        }
+        else if (sourceImage.Width < 300)
         {
             sourceImage.Mutate(x => x.Resize(new ResizeOptions
             {
                 Size = new Size(300, 0),
-                Mode = ResizeMode.Max
+                Mode = ResizeMode.BoxPad // Upscale safely
             }));
         }
 
         var outputStream = new MemoryStream();
-        // 3. Compression and size limit
-        // 85 quality is a good balance. For a 1200x630 (typical OG size) image, this should be ~100-200KB.
-        await sourceImage.SaveAsJpegAsync(outputStream, new JpegEncoder { Quality = 85 });
+        // WhatsApp is sensitive to file size (ideally < 300KB). 
+        // Quality 75 provides a great balance for social previews.
+        await sourceImage.SaveAsJpegAsync(outputStream, new JpegEncoder { Quality = 75 });
         
         outputStream.Position = 0;
         return File(outputStream, "image/jpeg");

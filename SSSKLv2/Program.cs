@@ -330,6 +330,13 @@ app.UseCookiePolicy();
 // Global middleware to provide the XSRF token to the frontend
 app.Use(async (context, next) =>
 {
+    // Skip antiforgery for blob image requests to avoid Set-Cookie headers that prevent CDN caching
+    if (context.Request.Path.StartsWithSegments("/api/v1/blob"))
+    {
+        await next(context);
+        return;
+    }
+
     var antiforgery = context.RequestServices.GetRequiredService<Microsoft.AspNetCore.Antiforgery.IAntiforgery>();
     var tokens = antiforgery.GetAndStoreTokens(context);
 

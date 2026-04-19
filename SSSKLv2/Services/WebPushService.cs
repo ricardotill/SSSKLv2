@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using SSSKLv2.Data;
 using SSSKLv2.Services.Interfaces;
 using Newtonsoft.Json;
+using SSSKLv2.Data.Constants;
 
 [assembly: InternalsVisibleTo("SSSKLv2.Test")]
 [assembly: InternalsVisibleTo("DynamicProxyGenAssembly2")]
@@ -23,9 +24,9 @@ public class WebPushService : IWebPushService
         _configuration = configuration;
         _context = context;
         _logger = logger;
-        
+
         _pushServiceClient = new PushServiceClient(httpClient);
-        
+
         var publicKey = _configuration["VAPID_PUBLIC_KEY"] ?? _configuration["VapidDetails:PublicKey"];
         var privateKey = _configuration["VAPID_PRIVATE_KEY"] ?? _configuration["VapidDetails:PrivateKey"];
         var subject = _configuration["VAPID_SUBJECT"] ?? _configuration["VapidDetails:Subject"] ?? "mailto:webmaster@scoutingwilo.nl";
@@ -39,7 +40,7 @@ public class WebPushService : IWebPushService
         }
     }
 
-    public async Task SendNotificationAsync(string userId, string title, string message, string? url = null)
+    public async Task SendNotificationAsync(string userId, string title, string message, string? url = null, string topic = PushTopics.General)
     {
         var subscriptions = await _context.PushSubscription
             .Where(s => s.UserId == userId)
@@ -72,7 +73,7 @@ public class WebPushService : IWebPushService
 
         var pushMessage = new PushMessage(payload)
         {
-            Topic = SanitizeTopic(title),
+            Topic = topic,
             Urgency = PushMessageUrgency.Normal,
             TimeToLive = 24 * 60 * 60 // 24 hours
         };
@@ -113,27 +114,6 @@ public class WebPushService : IWebPushService
         }
 
         await _context.SaveChangesAsync();
-    }
-
-    private string? SanitizeTopic(string title)
-    {
-        if (string.IsNullOrEmpty(title))
-            return null;
-
-        // Replace spaces with hyphens as per current logic
-        var input = title.Replace(" ", "-");
-
-        // RFC 8030: Topic must be max 32 chars and only use "unreserved" characters:
-        // ALPHA / DIGIT / "-" / "." / "_" / "~"
-        var sanitized = new string(input
-            .Where(c => (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '-' || c == '.' || c == '_' || c == '~')
-            .ToArray())
-            .ToLower();
-
-        if (string.IsNullOrEmpty(sanitized))
-            return null;
-
-        return sanitized.Length > 32 ? sanitized.Substring(0, 32) : sanitized;
     }
 
     internal virtual async Task RequestPushMessageAsync(Lib.Net.Http.WebPush.PushSubscription subscription, PushMessage message)

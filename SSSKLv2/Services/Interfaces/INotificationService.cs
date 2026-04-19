@@ -1,3 +1,4 @@
+using SSSKLv2.Data.Constants;
 using SSSKLv2.Dto;
 
 namespace SSSKLv2.Services.Interfaces;
@@ -8,7 +9,7 @@ public interface INotificationService
     Task<int> GetUnreadCountAsync(string userId);
     Task MarkAsReadAsync(Guid id, string userId);
     Task MarkAllAsReadAsync(string userId);
-    Task CreateNotificationAsync(string userId, string title, string message, string? linkUri = null, bool sendPush = false);
+    Task CreateNotificationAsync(string userId, string title, string message, string? linkUri = null, bool sendPush = false, string topic = PushTopics.General);
     Task CreateCustomNotificationAsync(CreateCustomNotificationDto dto);
     Task SubscribeAsync(string userId, PushSubscriptionDto dto);
     Task UnsubscribeAsync(string userId, string endpoint);

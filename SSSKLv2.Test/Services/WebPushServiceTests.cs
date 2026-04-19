@@ -9,6 +9,7 @@ using SSSKLv2.Data;
 using SSSKLv2.Services;
 using SSSKLv2.Test.Util;
 using Lib.Net.Http.WebPush;
+using SSSKLv2.Data.Constants;
 
 namespace SSSKLv2.Test.Services;
 
@@ -30,9 +31,9 @@ public class WebPushServiceTests : RepositoryTest
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
                 // Use valid-format ECDH P-256 VAPID keys (same as dev appsettings)
-                ["VapidDetails:PublicKey"]  = "BGXzpnAdCnSzcF1Ho4D7Ihtt23zgL4hXvSC3OhFhlK5WTN_Nm4leLgKqfliVPf5ci4hMzHIpqpMkySZLqFLsqsE",
+                ["VapidDetails:PublicKey"] = "BGXzpnAdCnSzcF1Ho4D7Ihtt23zgL4hXvSC3OhFhlK5WTN_Nm4leLgKqfliVPf5ci4hMzHIpqpMkySZLqFLsqsE",
                 ["VapidDetails:PrivateKey"] = "qy7mzAZGQL748CQtkGWZTU4UDCIwmexuXRUgj7AdIAk",
-                ["VapidDetails:Subject"]    = "mailto:test@example.com"
+                ["VapidDetails:Subject"] = "mailto:test@example.com"
             })
             .Build();
     }
@@ -52,8 +53,7 @@ public class WebPushServiceTests : RepositoryTest
         // Arrange – No subscriptions in DB for this user
         var sut = CreateSut();
 
-        // Act & Assert – should complete without error
-        await sut.Invoking(s => s.SendNotificationAsync("unknown-user", "Title", "Body"))
+        await sut.Invoking(s => s.SendNotificationAsync("unknown-user", "Title", "Body", topic: PushTopics.General))
             .Should().NotThrowAsync();
     }
 
@@ -141,7 +141,7 @@ public class WebPushServiceTests : RepositoryTest
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["VapidDetails:PublicKey"] = "appsettings-key",
-                ["VAPID_PUBLIC_KEY"]        = "env-key"
+                ["VAPID_PUBLIC_KEY"] = "env-key"
             })
             .Build();
 
@@ -184,7 +184,7 @@ public class WebPushServiceTests : RepositoryTest
             {
                 title = title,
                 body,
-                icon  = "/assets/icons/icon-192x192.png",
+                icon = "/assets/icons/icon-192x192.png",
                 badge = "/assets/icons/icon-72x72.png",
                 vibrate = new int[] { 100, 50, 100 },
                 data = new
@@ -203,10 +203,10 @@ public class WebPushServiceTests : RepositoryTest
     {
         var sub = new SSSKLv2.Data.PushSubscription
         {
-            UserId    = userId,
-            Endpoint  = endpoint,
-            P256dh    = "dummyP256dh",
-            Auth      = "dummyAuth",
+            UserId = userId,
+            Endpoint = endpoint,
+            P256dh = "dummyP256dh",
+            Auth = "dummyAuth",
             CreatedOn = DateTime.UtcNow
         };
         _dbContext.PushSubscription.Add(sub);
@@ -232,7 +232,7 @@ public class WebPushServiceTests : RepositoryTest
         await _dbContext.SaveChangesAsync();
 
         var sut = CreateSut(partialMock: true);
-        
+
         // Setup the partial mock to throw PushServiceClientException with 410 Gone
         // We need to use a trick to instantiate the exception if it doesn't have a public constructor,
         // but typically it does. 
@@ -242,11 +242,35 @@ public class WebPushServiceTests : RepositoryTest
            .Do(x => throw ex);
 
         // Act
-        await sut.SendNotificationAsync(user, "Title", "Message");
+        await sut.SendNotificationAsync(user, "Title", "Message", topic: PushTopics.General);
 
         // Assert
         var resultSub = await _dbContext.PushSubscription.FirstOrDefaultAsync(s => s.Id == sub.Id);
         resultSub.Should().BeNull();
+    }
+
+    [TestMethod]
+    public async Task SendNotificationAsync_ShouldApplySpecifiedTopic()
+    {
+        // Arrange
+        var user = TestUser.Id;
+        AddSubscriptionForUser(user);
+        await _dbContext.SaveChangesAsync();
+
+        var sut = CreateSut(partialMock: true);
+        PushMessage? capturedMessage = null;
+
+        sut.When(s => s.RequestPushMessageAsync(Arg.Any<Lib.Net.Http.WebPush.PushSubscription>(), Arg.Any<PushMessage>()))
+           .Do(x => capturedMessage = x.Arg<PushMessage>());
+
+        var customTopic = PushTopics.Reaction;
+
+        // Act
+        await sut.SendNotificationAsync(user, "Title", "Message", topic: customTopic);
+
+        // Assert
+        capturedMessage.Should().NotBeNull();
+        capturedMessage!.Topic.Should().Be(customTopic);
     }
 
     private class MockHttpMessageHandler : HttpMessageHandler

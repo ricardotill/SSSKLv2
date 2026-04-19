@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using SSSKLv2.Data;
+using SSSKLv2.Data.Constants;
 using SSSKLv2.Dto;
 using SSSKLv2.Services.Interfaces;
 
@@ -80,7 +81,7 @@ public class NotificationService : INotificationService
         }
     }
 
-    public async Task CreateNotificationAsync(string userId, string title, string message, string? linkUri = null, bool sendPush = false)
+    public async Task CreateNotificationAsync(string userId, string title, string message, string? linkUri = null, bool sendPush = false, string topic = PushTopics.General)
     {
         var notification = new Notification
         {
@@ -97,7 +98,7 @@ public class NotificationService : INotificationService
 
         if (sendPush)
         {
-            await _webPushService.SendNotificationAsync(userId, title, message, linkUri);
+            await _webPushService.SendNotificationAsync(userId, title, message, linkUri, topic);
         }
     }
 
@@ -131,9 +132,7 @@ public class NotificationService : INotificationService
         {
             foreach (var userId in targetUserIds)
             {
-                // We could optimize this by sending to all subscriptions in one go in WebPushService
-                // but for now we reuse the SendNotificationAsync per user logic.
-                await _webPushService.SendNotificationAsync(userId, dto.Title, dto.Message, dto.LinkUri);
+                await _webPushService.SendNotificationAsync(userId, dto.Title, dto.Message, dto.LinkUri, PushTopics.General);
             }
         }
     }

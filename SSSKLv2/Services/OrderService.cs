@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text;
 using SSSKLv2.Data;
+using SSSKLv2.Data.Constants;
 using SSSKLv2.Data.DAL.Interfaces;
 using SSSKLv2.Dto.Api.v1;
 using SSSKLv2.Services.Interfaces;
@@ -23,38 +24,38 @@ public class OrderService(
         logger.LogInformation("{Type}: Get All Orders as Queryable", nameof(OrderService));
         return orderRepository.GetAllQueryable(dbContext);
     }
-    
+
     public async Task<IList<Order>> GetAll(int skip, int take)
     {
         logger.LogInformation("{Type}: Get All Orders (paged) skip={Skip} take={Take}", nameof(OrderService), skip, take);
         return await orderRepository.GetAll(skip, take);
     }
-    
+
     public IQueryable<Order> GetPersonalQueryable(string username, ApplicationDbContext dbContext)
     {
         logger.LogInformation("{Type}: Get Personal Orders as Queryable for user with username {Username}", nameof(OrderService), username);
         var output = orderRepository.GetPersonalQueryable(username, dbContext);
         return output;
     }
-    
+
     public async Task<IList<Order>> GetPersonal(string username, int skip, int take)
     {
         logger.LogInformation("{Type}: Get Personal Orders (paged) for {Username} skip={Skip} take={Take}", nameof(OrderService), username, skip, take);
         return await orderRepository.GetPersonal(username, skip, take);
     }
-    
+
     public async Task<IEnumerable<Order>> GetLatestOrders(int take = 10)
     {
         logger.LogInformation("{Type}: Get Latest Orders", nameof(OrderService));
         return await orderRepository.GetLatest(take);
     }
-    
+
     public async Task<Order> GetOrderById(Guid id)
     {
         logger.LogInformation("{Type}: Get Order with ID {Id}", nameof(OrderService), id);
         return await orderRepository.GetById(id);
     }
-    
+
 
     // New overload: accept API DTO directly
     public async Task CreateOrder(OrderSubmitDto order, string? actingUserId)
@@ -105,9 +106,10 @@ public class OrderService(
                     await notificationService.CreateNotificationAsync(
                         u.Id,
                         "Nieuwe bestelling!",
-                                                $"{actingUserName} heeft {productNames} voor je besteld!",
+                        $"{actingUserName} heeft {productNames} voor je besteld!",
                         "/orders/personal",
-                        sendPush: true);
+                        sendPush: true,
+                        topic: PushTopics.Order);
                 }
             }
         }
@@ -117,7 +119,7 @@ public class OrderService(
             await achievementService.CheckUserForAchievements(u.UserName!);
         }
     }
-    
+
     public async Task<string> ExportOrdersFromPastTwoYearsToCsvAsync()
     {
         var orders = await orderRepository.GetOrdersFromPastTwoYearsAsync(); // Returns IEnumerable<Order>
@@ -159,7 +161,7 @@ public class OrderService(
     {
         var paid = goingDutch ? Decimal.Round(p.Price / userList.Count, 2, MidpointRounding.ToPositiveInfinity) : p.Price;
         var sharedAmount = goingDutch ? amount / userList.Count : amount;
-        
+
         var list = new List<Order>();
         foreach (var u in userList)
         {
@@ -176,7 +178,7 @@ public class OrderService(
 
         return list;
     }
-    
+
     private async Task NotifyPurchase(IEnumerable<Order> orders)
     {
         var date = DateTime.Now;

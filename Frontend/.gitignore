@@ -267,3 +267,5 @@ fabric.properties
 SSSKLv2/*
 
 # End of https://www.toptal.com/developers/gitignore/api/angular,node,rider,visualstudiocode
+
+ssl/

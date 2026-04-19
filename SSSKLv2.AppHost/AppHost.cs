@@ -20,7 +20,7 @@ var backend = builder.AddProject<Projects.SSSKLv2>("sssklv2")
 builder.AddNpmApp("frontend", "../Frontend")
     .WithReference(backend)
     .WaitFor(backend)
-    .WithHttpEndpoint(port: 4200, env: "PORT")
+    .WithHttpsEndpoint(port: 4200, env: "PORT")
     .WithExternalHttpEndpoints()
     .PublishAsDockerFile();
 

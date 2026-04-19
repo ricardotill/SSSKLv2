@@ -4,6 +4,7 @@ using SSSKLv2.Data;
 using SSSKLv2.Data.DAL.Interfaces;
 using SSSKLv2.Services.Interfaces;
 using SSSKLv2.Util;
+using SSSKLv2.Data.Constants;
 
 namespace SSSKLv2.Services;
 
@@ -17,12 +18,12 @@ public class AchievementService(
     INotificationService notificationService) : IAchievementService
 {
     public Task<int> GetCount() => achievementRepository.GetCount();
-    
+
     public async Task<IList<AchievementListingDto>> GetPersonalAchievements(string userId)
     {
         var allAchievements = await achievementRepository.GetAll();
         var achievementEntries = await achievementRepository.GetAllEntriesOfUser(userId);
-        
+
         return allAchievements.Select(a =>
         {
             var entry = achievementEntries.SingleOrDefault(e => e.Achievement.Id == a.Id);
@@ -35,7 +36,7 @@ public class AchievementService(
                 entry != null
             );
         }
-            
+
         ).ToList();
     }
 
@@ -102,75 +103,75 @@ public class AchievementService(
     {
         return await achievementRepository.GetAll();
     }
-    
+
     public async Task<IList<Achievement>> GetAchievements(int skip, int take)
     {
         return await achievementRepository.GetAll(skip, take);
     }
-    
+
     public async Task<Achievement> GetAchievementById(Guid id)
     {
         return await achievementRepository.GetById(id);
     }
-    
+
     public async Task UpdateAchievement(Achievement achievement)
     {
         await achievementRepository.Update(achievement);
     }
-    
+
     public async Task DeleteAchievement(Guid id)
     {
         await achievementRepository.Delete(id);
     }
-    
+
     public async Task DeleteAchievementEntryRange(IEnumerable<AchievementEntry> entries)
     {
         await achievementRepository.DeleteAchievementEntryRange(entries);
     }
-    
+
     public IQueryable<Achievement> GetAchievementsQueryable(ApplicationDbContext context)
     {
         return achievementRepository.GetAllQueryable(context);
     }
-    
+
     public IQueryable<AchievementEntry> GetAchievementEntriesQueryable(ApplicationDbContext context)
     {
         return achievementRepository.GetAllEntriesQueryable(context);
     }
-    
+
     public async Task CheckOrdersForAchievements(IEnumerable<Order> orders)
     {
         foreach (var user in orders.Select(x => x.User))
         {
             var uncompletedAchievements = await achievementRepository.GetUncompletedAchievementsForUser(user.UserName!);
             var userOrders = await orderRepository.GetPersonal(user.UserName!);
-            
+
             var newAchievementEntries = new List<AchievementEntry>();
-            
+
             foreach (var achievement in uncompletedAchievements)
             {
-                if (!achievement.AutoAchieve) 
+                if (!achievement.AutoAchieve)
                     continue;
-                
+
                 bool shouldAward = false;
-                
+
                 switch (achievement.Action)
                 {
                     case Achievement.ActionOption.UserOrderAmountBought:
                         var userTotalBought = userOrders.Sum(o => o.Amount);
                         shouldAward = AchievementRulesUtil.CheckComparison(userTotalBought, achievement.ComparisonOperator, achievement.ComparisonValue);
                         break;
-                        
+
                     case Achievement.ActionOption.UserOrderAmountPaid:
                         var userTotalSpent = userOrders.Sum(o => o.Paid);
                         shouldAward = AchievementRulesUtil.CheckComparison((int)userTotalSpent, achievement.ComparisonOperator, achievement.ComparisonValue);
                         break;
-                    
+
                     case Achievement.ActionOption.OrdersWithinHour:
                         var ordersWithinHour = userOrders.Count(x => DateTime.Now.Subtract(x.CreatedOn).TotalHours <= 1);
                         shouldAward = AchievementRulesUtil.CheckComparison(ordersWithinHour, achievement.ComparisonOperator, achievement.ComparisonValue);
                         break;
-                    
+
                     case Achievement.ActionOption.MinutesBetweenOrders:
                         var lastTwoOrders = userOrders.Where(x => DateTime.Now.Subtract(x.CreatedOn).TotalHours <= 12)
                             .OrderByDescending(x => x.CreatedOn)
@@ -184,7 +185,7 @@ public class AchievementService(
                         }
                         break;
                 }
-                
+
                 if (shouldAward)
                 {
                     var achievementEntry = new AchievementEntry
@@ -195,11 +196,11 @@ public class AchievementService(
                         HasSeen = false,
                         CreatedOn = DateTime.Now
                     };
-                    
+
                     newAchievementEntries.Add(achievementEntry);
                 }
             }
-            
+
             // Save new achievement entries to database
             if (newAchievementEntries.Any())
             {
@@ -208,34 +209,34 @@ public class AchievementService(
             }
         }
     }
-    
+
     public async Task CheckTopUpForAchievements(TopUp topUp)
     {
         var userTopUps = await topUpRepository.GetPersonal(topUp.User.UserName!);
         var uncompletedAchievements = await achievementRepository.GetUncompletedAchievementsForUser(topUp.User.UserName!);
-        
+
         var newAchievementEntries = new List<AchievementEntry>();
-        
+
         foreach (var achievement in uncompletedAchievements)
         {
-            if (!achievement.AutoAchieve) 
+            if (!achievement.AutoAchieve)
                 continue;
-            
+
             bool shouldAward = false;
-            
+
             switch (achievement.Action)
             {
                 case Achievement.ActionOption.UserIndividualTopUp:
                     var roundedTopUpCount = (int)Math.Round(topUp.Saldo);
                     shouldAward = AchievementRulesUtil.CheckComparison(roundedTopUpCount, achievement.ComparisonOperator, achievement.ComparisonValue);
                     break;
-                    
+
                 case Achievement.ActionOption.UserTotalTopUp:
                     var sumTopUps = userTopUps.Sum(t => t.Saldo);
                     var roundedSumTopUps = (int)Math.Round(sumTopUps);
                     shouldAward = AchievementRulesUtil.CheckComparison(roundedSumTopUps, achievement.ComparisonOperator, achievement.ComparisonValue);
                     break;
-                
+
                 case Achievement.ActionOption.MinutesBetweenTopUp:
                     var lastTwoTopUps = userTopUps
                         .OrderByDescending(x => x.CreatedOn)
@@ -249,7 +250,7 @@ public class AchievementService(
                     }
                     break;
             }
-            
+
             if (shouldAward)
             {
                 var achievementEntry = new AchievementEntry
@@ -260,32 +261,32 @@ public class AchievementService(
                     HasSeen = false,
                     CreatedOn = DateTime.Now
                 };
-                
+
                 newAchievementEntries.Add(achievementEntry);
             }
         }
-        
+
         if (newAchievementEntries.Any())
         {
             await achievementRepository.CreateEntryRange(newAchievementEntries);
             await NotifyAchievement(newAchievementEntries);
         }
     }
-    
+
     public async Task CheckUserForAchievements(string username)
     {
         var uncompletedAchievements = await achievementRepository.GetUncompletedAchievementsForUser(username);
         var user = await applicationUserRepository.GetByUsername(username);
-        
+
         var newAchievementEntries = new List<AchievementEntry>();
-        
+
         foreach (var achievement in uncompletedAchievements)
         {
-            if (!achievement.AutoAchieve) 
+            if (!achievement.AutoAchieve)
                 continue;
-            
+
             bool shouldAward = AchievementRulesUtil.CheckSpecialAchievementRules(achievement, user);
-            
+
             if (shouldAward)
             {
                 var achievementEntry = new AchievementEntry
@@ -296,18 +297,18 @@ public class AchievementService(
                     HasSeen = false,
                     CreatedOn = DateTime.Now
                 };
-                
+
                 newAchievementEntries.Add(achievementEntry);
             }
         }
-        
+
         if (newAchievementEntries.Any())
         {
             await achievementRepository.CreateEntryRange(newAchievementEntries);
             await NotifyAchievement(newAchievementEntries);
         }
     }
-    
+
     public async Task<bool> AwardAchievementToUser(string userId, Guid achievementId)
     {
         var entries = await achievementRepository.GetAllEntriesOfUser(userId);
@@ -338,7 +339,7 @@ public class AchievementService(
         await NotifyAchievement(new List<AchievementEntry> { achievementEntry });
         return true;
     }
-    
+
     public async Task<int> AwardAchievementToAllUsers(Guid achievementId)
     {
         var users = await applicationUserRepository.GetAll();
@@ -367,7 +368,7 @@ public class AchievementService(
         await NotifyAchievement(newEntries);
         return newEntries.Count;
     }
-    
+
     public async Task AddAchievement(AchievementDto dto)
     {
         if (dto.ImageContentType == null || dto.ImageContent == null)
@@ -377,11 +378,11 @@ public class AchievementService(
 
         var extension = ContentTypeToExtensionMapper.GetExtension(dto.ImageContentType.MediaType);
         var name = $"{dto.Name}-{Guid.NewGuid()}.{extension}";
-        
+
         var blobItem = await blobStorageAgent.UploadFileToBlobAsync(name,
             dto.ImageContentType.MediaType,
             dto.ImageContent);
-        
+
         var achievement = new Achievement
         {
             Id = Guid.NewGuid(),
@@ -396,34 +397,35 @@ public class AchievementService(
         };
         await achievementRepository.Create(achievement);
     }
-    
+
     private async Task NotifyAchievement(IEnumerable<AchievementEntry> achievements)
-     {
-         if (purchaseNotifier == null)
-         {
-             // Nothing to do if there's no notifier configured (tests may not always set it up)
-             return;
-         }
+    {
+        if (purchaseNotifier == null)
+        {
+            // Nothing to do if there's no notifier configured (tests may not always set it up)
+            return;
+        }
 
-         foreach (var achievement in achievements)
-         {
-             if (achievement == null || achievement.Achievement == null || achievement.User == null)
-                 continue;
+        foreach (var achievement in achievements)
+        {
+            if (achievement == null || achievement.Achievement == null || achievement.User == null)
+                continue;
 
-             await purchaseNotifier.NotifyAchievementAsync(new AchievementEvent(
-                 achievement.Achievement.Name,
-                 achievement.User.FullName,
-                 achievement.Achievement.Image != null ? $"/api/v1/blob/achievement/image/{achievement.Achievement.Image.Id}" : null
-             ));
+            await purchaseNotifier.NotifyAchievementAsync(new AchievementEvent(
+                achievement.Achievement.Name,
+                achievement.User.FullName,
+                achievement.Achievement.Image != null ? $"/api/v1/blob/achievement/image/{achievement.Achievement.Image.Id}" : null
+            ));
 
-             await notificationService.CreateNotificationAsync(
-                 achievement.User.Id,
-                 "Nieuwe prestatie ontgrendeld!",
-                 $"Gefeliciteerd! Je hebt de prestatie '{achievement.Achievement.Name}' ontgrendeld.",
-                 "/achievements",
-                 true
-             );
-         }
-     }
-    
+            await notificationService.CreateNotificationAsync(
+                achievement.User.Id,
+                "Nieuwe prestatie ontgrendeld!",
+                $"Gefeliciteerd! Je hebt de prestatie '{achievement.Achievement.Name}' ontgrendeld.",
+                "/achievements",
+                true,
+                PushTopics.Achievement
+            );
+        }
+    }
+
 }

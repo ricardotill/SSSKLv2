@@ -42,6 +42,7 @@ public class WebPushService : IWebPushService
 
     public async Task SendNotificationAsync(string userId, string title, string message, string? url = null, string topic = PushTopics.General)
     {
+        topic = SanitizeTopic(topic);
         var subscriptions = await _context.PushSubscription
             .Where(s => s.UserId == userId)
             .ToListAsync();
@@ -96,15 +97,33 @@ public class WebPushService : IWebPushService
             }
             catch (PushServiceClientException ex)
             {
+                string? pushReason = null;
+                if (!string.IsNullOrEmpty(ex.Body))
+                {
+                    try
+                    {
+                        var errorBody = Newtonsoft.Json.Linq.JObject.Parse(ex.Body);
+                        // APNs uses "reason", FCM uses "error.message", Mozilla uses "message" or "error"
+                        pushReason = errorBody["reason"]?.ToString() 
+                                     ?? errorBody["error"]?["message"]?.ToString() 
+                                     ?? errorBody["message"]?.ToString() 
+                                     ?? errorBody["error"]?.ToString();
+                    }
+                    catch
+                    {
+                        // Ignore parsing errors, fallback to status code
+                    }
+                }
+
                 if (ex.StatusCode == System.Net.HttpStatusCode.NotFound || ex.StatusCode == System.Net.HttpStatusCode.Gone)
                 {
                     // Subscription is no longer valid, remove it
                     _context.PushSubscription.Remove(subscription);
-                    _logger.LogInformation("Removing invalid push subscription for user {UserId}", userId);
+                    _logger.LogInformation("Removing invalid push subscription for user {UserId}. Reason: {PushReason}", userId, pushReason ?? "Gone/NotFound");
                 }
                 else
                 {
-                    _logger.LogError(ex, "Error sending push notification to user {UserId}. Status: {StatusCode}", userId, ex.StatusCode);
+                    _logger.LogError(ex, "Error sending push notification to user {UserId}. Status: {StatusCode}, Topic: {Topic}, Reason: {PushReason}", userId, ex.StatusCode, topic, pushReason ?? "Unknown");
                 }
             }
             catch (Exception ex)
@@ -119,5 +138,31 @@ public class WebPushService : IWebPushService
     internal virtual async Task RequestPushMessageAsync(Lib.Net.Http.WebPush.PushSubscription subscription, PushMessage message)
     {
         await _pushServiceClient.RequestPushMessageDeliveryAsync(subscription, message);
+    }
+
+    private static string SanitizeTopic(string topic)
+    {
+        if (string.IsNullOrEmpty(topic))
+        {
+            return PushTopics.General;
+        }
+
+        // RFC 8030: Topic header must be up to 32 characters from URL-safe base64 alphabet [RFC4648]
+        // This includes a-z, A-Z, 0-9, -, _
+        // We will remove any other characters and truncate to 32 chars.
+        var sanitized = new string(topic.Where(c => 
+            (c >= 'a' && c <= 'z') || 
+            (c >= 'A' && c <= 'Z') || 
+            (c >= '0' && c <= '9') || 
+            c == '-' || 
+            c == '_'
+        ).ToArray());
+
+        if (sanitized.Length > 32)
+        {
+            sanitized = sanitized.Substring(0, 32);
+        }
+
+        return string.IsNullOrEmpty(sanitized) ? PushTopics.General : sanitized;
     }
 }

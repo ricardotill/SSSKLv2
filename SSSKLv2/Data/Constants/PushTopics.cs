@@ -2,8 +2,8 @@ namespace SSSKLv2.Data.Constants;
 
 public static class PushTopics
 {
-    public const string General = "general";
-    public const string Reaction = "reaction";
-    public const string Order = "order";
-    public const string Achievement = "achievement";
+    public const string General = "ssskl_general";
+    public const string Reaction = "ssskl_reaction";
+    public const string Order = "ssskl_order";
+    public const string Achievement = "ssskl_achievement";
 }

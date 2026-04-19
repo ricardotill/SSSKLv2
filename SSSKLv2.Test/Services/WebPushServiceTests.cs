@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
 using Newtonsoft.Json.Linq;
+using System.Reflection;
 using SSSKLv2.Data;
 using SSSKLv2.Services;
 using SSSKLv2.Test.Util;
@@ -271,6 +272,72 @@ public class WebPushServiceTests : RepositoryTest
         // Assert
         capturedMessage.Should().NotBeNull();
         capturedMessage!.Topic.Should().Be(customTopic);
+    }
+
+    [TestMethod]
+    public async Task SendNotificationAsync_ShouldSanitizeTopic()
+    {
+        // Arrange
+        var user = TestUser.Id;
+        AddSubscriptionForUser(user);
+        await _dbContext.SaveChangesAsync();
+
+        var sut = CreateSut(partialMock: true);
+        PushMessage? capturedMessage = null;
+
+        sut.When(s => s.RequestPushMessageAsync(Arg.Any<Lib.Net.Http.WebPush.PushSubscription>(), Arg.Any<PushMessage>()))
+           .Do(x => capturedMessage = x.Arg<PushMessage>());
+
+        var invalidTopic = "Invalid Topic With Spaces & @#$ And Is Too Long 12345678901234567890";
+
+        // Act
+        await sut.SendNotificationAsync(user, "Title", "Message", topic: invalidTopic);
+
+        // Assert
+        capturedMessage.Should().NotBeNull();
+        capturedMessage!.Topic.Should().NotContain(" ");
+        capturedMessage!.Topic.Should().NotContain("@");
+        capturedMessage!.Topic.Should().HaveLength(32);
+        capturedMessage!.Topic.Should().Be("InvalidTopicWithSpacesAndIsTooLo");
+    }
+
+    [TestMethod]
+    public async Task SendNotificationAsync_PushServiceReturnsErrorWithBody_ShouldLogDetailedReason()
+    {
+        // Arrange
+        var user = TestUser.Id;
+        AddSubscriptionForUser(user);
+        await _dbContext.SaveChangesAsync();
+
+        var sut = CreateSut(partialMock: true);
+
+        // Construct APNs-style error JSON
+        var errorJson = "{\"reason\": \"BadWebPushTopic\"}";
+        
+        // We use reflection to create the exception if the constructor is tricky, 
+        // but based on research we can use the 5-arg constructor or just mock it.
+        // Actually, let's just use reflection to be safe about non-public dependencies.
+        var ex = (PushServiceClientException)Activator.CreateInstance(
+            typeof(PushServiceClientException),
+            BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance,
+            null,
+            new object[] { "Error", System.Net.HttpStatusCode.BadRequest, null!, errorJson, null! },
+            null)!;
+
+        sut.When(s => s.RequestPushMessageAsync(Arg.Any<Lib.Net.Http.WebPush.PushSubscription>(), Arg.Any<PushMessage>()))
+           .Do(x => throw ex);
+
+        // Act
+        await sut.SendNotificationAsync(user, "Title", "Message");
+
+        // Assert
+        _logger.Received().Log(
+            LogLevel.Error,
+            Arg.Any<EventId>(),
+            Arg.Is<object>(v => v.ToString()!.Contains("BadWebPushTopic")),
+            Arg.Is(ex),
+            Arg.Any<Func<object, Exception?, string>>()
+        );
     }
 
     private class MockHttpMessageHandler : HttpMessageHandler

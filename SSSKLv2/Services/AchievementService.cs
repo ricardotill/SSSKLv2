@@ -4,7 +4,7 @@ using SSSKLv2.Data;
 using SSSKLv2.Data.DAL.Interfaces;
 using SSSKLv2.Services.Interfaces;
 using SSSKLv2.Util;
-using SSSKLv2.Data.Constants;
+
 
 namespace SSSKLv2.Services;
 
@@ -422,8 +422,7 @@ public class AchievementService(
                 "Nieuwe prestatie ontgrendeld!",
                 $"Gefeliciteerd! Je hebt de prestatie '{achievement.Achievement.Name}' ontgrendeld.",
                 "/achievements",
-                true,
-                PushTopics.Achievement
+                true
             );
         }
     }

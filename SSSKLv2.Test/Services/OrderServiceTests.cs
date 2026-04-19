@@ -14,7 +14,7 @@ using SSSKLv2.Data.DAL.Interfaces;
 using SSSKLv2.Dto.Api.v1;
 using SSSKLv2.Services;
 using SSSKLv2.Services.Interfaces;
-using SSSKLv2.Data.Constants;
+
 
 namespace SSSKLv2.Test.Services;
 
@@ -589,8 +589,7 @@ public class OrderServiceTests
             "Nieuwe bestelling!",
             Arg.Is<string>(s => s.Contains("Ricardo T") && s.Contains("Beer")),
             "/orders/personal",
-            sendPush: true,
-            topic: PushTopics.Order);
+            sendPush: true);
             
         // Acting user should NOT get a notification
         await _notificationService.DidNotReceive().CreateNotificationAsync(
@@ -632,8 +631,7 @@ public class OrderServiceTests
             "Nieuwe bestelling!",
             Arg.Is<string>(s => s.Contains("Iemand") && s.Contains("Cola")),
             "/orders/personal",
-            sendPush: true,
-            topic: PushTopics.Order);
+            sendPush: true);
     }
 
     [TestMethod]
@@ -669,9 +667,9 @@ public class OrderServiceTests
         await _sut.CreateOrder(dto, actingUserId.ToString());
 
         // Assert
-        await _notificationService.Received(1).CreateNotificationAsync(target1Id.ToString(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), true, PushTopics.Order);
-        await _notificationService.Received(1).CreateNotificationAsync(target2Id.ToString(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), true, PushTopics.Order);
-        await _notificationService.DidNotReceive().CreateNotificationAsync(actingUserId.ToString(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), true, Arg.Any<string>());
+        await _notificationService.Received(1).CreateNotificationAsync(target1Id.ToString(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), true);
+        await _notificationService.Received(1).CreateNotificationAsync(target2Id.ToString(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), true);
+        await _notificationService.DidNotReceive().CreateNotificationAsync(actingUserId.ToString(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), true);
     }
 
     #endregion

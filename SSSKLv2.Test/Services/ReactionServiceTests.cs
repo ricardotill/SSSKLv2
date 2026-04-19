@@ -188,8 +188,7 @@ public class ReactionServiceTests : RepositoryTest
             "Nieuwe reactie",
             Arg.Is<string>(s => s.Contains("Party")),
             Arg.Is<string>(s => s.Contains(evt.Id.ToString())),
-            true,
-            PushTopics.Reaction
+            true
         );
     }
 
@@ -221,8 +220,7 @@ public class ReactionServiceTests : RepositoryTest
             "Nieuw antwoord",
             Arg.Any<string>(),
             Arg.Any<string>(),
-            true,
-            PushTopics.Reaction
+            true
         );
     }
 

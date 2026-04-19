@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Text;
 using SSSKLv2.Data;
-using SSSKLv2.Data.Constants;
+
 using SSSKLv2.Data.DAL.Interfaces;
 using SSSKLv2.Dto.Api.v1;
 using SSSKLv2.Services.Interfaces;
@@ -108,8 +108,7 @@ public class OrderService(
                         "Nieuwe bestelling!",
                         $"{actingUserName} heeft {productNames} voor je besteld!",
                         "/orders/personal",
-                        sendPush: true,
-                        topic: PushTopics.Order);
+                        sendPush: true);
                 }
             }
         }

@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using SSSKLv2.Data;
-using SSSKLv2.Data.Constants;
+
 using SSSKLv2.Dto;
 using SSSKLv2.Services.Interfaces;
 
@@ -81,7 +81,7 @@ public class NotificationService : INotificationService
         }
     }
 
-    public async Task CreateNotificationAsync(string userId, string title, string message, string? linkUri = null, bool sendPush = false, string topic = PushTopics.General)
+    public async Task CreateNotificationAsync(string userId, string title, string message, string? linkUri = null, bool sendPush = false)
     {
         var notification = new Notification
         {
@@ -98,7 +98,7 @@ public class NotificationService : INotificationService
 
         if (sendPush)
         {
-            await _webPushService.SendNotificationAsync(userId, title, message, linkUri, topic);
+            await _webPushService.SendNotificationAsync(userId, title, message, linkUri);
         }
     }
 
@@ -132,7 +132,7 @@ public class NotificationService : INotificationService
         {
             foreach (var userId in targetUserIds)
             {
-                await _webPushService.SendNotificationAsync(userId, dto.Title, dto.Message, dto.LinkUri, PushTopics.General);
+                await _webPushService.SendNotificationAsync(userId, dto.Title, dto.Message, dto.LinkUri);
             }
         }
     }

@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using SSSKLv2.Data;
 using SSSKLv2.Services.Interfaces;
 using Newtonsoft.Json;
-using SSSKLv2.Data.Constants;
+
 
 [assembly: InternalsVisibleTo("SSSKLv2.Test")]
 [assembly: InternalsVisibleTo("DynamicProxyGenAssembly2")]
@@ -40,9 +40,8 @@ public class WebPushService : IWebPushService
         }
     }
 
-    public async Task SendNotificationAsync(string userId, string title, string message, string? url = null, string topic = PushTopics.General)
+    public async Task SendNotificationAsync(string userId, string title, string message, string? url = null)
     {
-        topic = SanitizeTopic(topic);
         var subscriptions = await _context.PushSubscription
             .Where(s => s.UserId == userId)
             .ToListAsync();
@@ -74,7 +73,6 @@ public class WebPushService : IWebPushService
 
         var pushMessage = new PushMessage(payload)
         {
-            Topic = topic,
             Urgency = PushMessageUrgency.Normal,
             TimeToLive = 24 * 60 * 60 // 24 hours
         };
@@ -123,7 +121,7 @@ public class WebPushService : IWebPushService
                 }
                 else
                 {
-                    _logger.LogError(ex, "Error sending push notification to user {UserId}. Status: {StatusCode}, Topic: {Topic}, Reason: {PushReason}", userId, ex.StatusCode, topic, pushReason ?? "Unknown");
+                    _logger.LogError(ex, "Error sending push notification to user {UserId}. Status: {StatusCode}, Reason: {PushReason}", userId, ex.StatusCode, pushReason ?? "Unknown");
                 }
             }
             catch (Exception ex)
@@ -138,31 +136,5 @@ public class WebPushService : IWebPushService
     internal virtual async Task RequestPushMessageAsync(Lib.Net.Http.WebPush.PushSubscription subscription, PushMessage message)
     {
         await _pushServiceClient.RequestPushMessageDeliveryAsync(subscription, message);
-    }
-
-    private static string SanitizeTopic(string topic)
-    {
-        if (string.IsNullOrEmpty(topic))
-        {
-            return PushTopics.General;
-        }
-
-        // RFC 8030: Topic header must be up to 32 characters from URL-safe base64 alphabet [RFC4648]
-        // This includes a-z, A-Z, 0-9, -, _
-        // We will remove any other characters and truncate to 32 chars.
-        var sanitized = new string(topic.Where(c => 
-            (c >= 'a' && c <= 'z') || 
-            (c >= 'A' && c <= 'Z') || 
-            (c >= '0' && c <= '9') || 
-            c == '-' || 
-            c == '_'
-        ).ToArray());
-
-        if (sanitized.Length > 32)
-        {
-            sanitized = sanitized.Substring(0, 32);
-        }
-
-        return string.IsNullOrEmpty(sanitized) ? PushTopics.General : sanitized;
     }
 }

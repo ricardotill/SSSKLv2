@@ -63,8 +63,7 @@ public class ReactionService : IReactionService
                         "Nieuwe reactie",
                         $"{actorName} heeft gereageerd op jouw evenement '{evt.Title}'.",
                         $"/events/{evt.Id}",
-                        true,
-                        PushTopics.Reaction
+                        true
                     );
                 }
             }
@@ -89,8 +88,7 @@ public class ReactionService : IReactionService
                         "Nieuw antwoord",
                         $"{actorName} heeft geantwoord op je reactie.",
                         link,
-                        true,
-                        PushTopics.Reaction
+                        true
                     );
                 }
             }

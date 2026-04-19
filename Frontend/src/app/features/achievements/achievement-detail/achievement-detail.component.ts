@@ -14,6 +14,7 @@ import { AuthService } from '../../../core/auth/auth.service';
 import { LanguageService } from '../../../core/services/language.service';
 import { AchievementEntry, AchievementListing } from '../../../core/models/achievement.model';
 import { ResolveApiUrlPipe } from '../../../shared/pipes/resolve-api-url.pipe';
+import { UserProfileDrawerService } from '../../../core/services/user-profile-drawer.service';
 
 @Component({
   selector: 'app-achievement-detail',
@@ -102,7 +103,10 @@ import { ResolveApiUrlPipe } from '../../../shared/pipes/resolve-api-url.pipe';
             <div class="grid grid-cols-12 gap-3">
               @for (earner of sortedEarners(); track earner.id) {
                 <div class="col-span-12 sm:col-span-6 lg:col-span-4">
-                  <div class="earner-card flex items-center gap-3 p-3 rounded-xl bg-surface-50 dark:bg-surface-800 border border-surface-200 dark:border-surface-700 hover:border-primary-300 dark:hover:border-primary-700 transition-all duration-200">
+                  <div 
+                    (click)="drawerService.open(earner.userId)"
+                    class="earner-card flex items-center gap-3 p-3 rounded-xl bg-surface-50 dark:bg-surface-800 border border-surface-200 dark:border-surface-700 hover:border-primary-300 dark:hover:border-primary-700 transition-all duration-200 cursor-pointer"
+                  >
 
                     <!-- Avatar -->
                     <p-avatar
@@ -150,7 +154,7 @@ import { ResolveApiUrlPipe } from '../../../shared/pipes/resolve-api-url.pipe';
   `,
   styles: [`
     .earner-card {
-      cursor: default;
+      cursor: pointer;
     }
     .achievement-badge {
       box-shadow: 0 4px 24px -4px var(--p-primary-color, rgba(0,0,0,0.15));
@@ -162,6 +166,7 @@ export default class AchievementDetailComponent implements OnInit {
   private readonly achievementService = inject(AchievementService);
   private readonly authService = inject(AuthService);
   private readonly activatedRoute = inject(ActivatedRoute);
+  protected readonly drawerService = inject(UserProfileDrawerService);
   ls = inject(LanguageService);
 
   earners = signal<AchievementEntry[]>([]);

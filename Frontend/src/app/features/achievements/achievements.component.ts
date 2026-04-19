@@ -1,6 +1,6 @@
 import { Component, ChangeDetectionStrategy, inject, signal, OnInit, computed, effect } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { ActivatedRoute, RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { SelectModule } from 'primeng/select';
 import { CardModule } from 'primeng/card';
@@ -170,6 +170,7 @@ export default class AchievementsComponent implements OnInit {
   private readonly achievementService = inject(AchievementService);
   private readonly userService = inject(ApplicationUserService);
   private readonly authService = inject(AuthService);
+  private readonly activatedRoute = inject(ActivatedRoute);
   ls = inject(LanguageService);
 
   users = signal<ApplicationUserDto[]>([]);
@@ -180,12 +181,16 @@ export default class AchievementsComponent implements OnInit {
 
   constructor() {
     effect(() => {
+      const queryUserId = this.activatedRoute.snapshot.queryParamMap.get('userId');
       const currentUser = this.authService.currentUser();
       const usersList = this.users();
 
-      if (currentUser && usersList.length > 0 && !this.hasInitializedSelection) {
+      if (usersList.length > 0 && !this.hasInitializedSelection) {
         this.hasInitializedSelection = true;
-        this.selectedUser = usersList.find(u => u.id === currentUser.id) || null;
+        
+        const targetId = queryUserId || currentUser?.id;
+        this.selectedUser = usersList.find(u => u.id === targetId) || null;
+        
         if (this.selectedUser) {
           this.loadAchievements(this.selectedUser.id);
         }

@@ -15,7 +15,10 @@ import { FormsModule } from '@angular/forms';
 import { ProcessedContentPipe } from '../../pipes/processed-content.pipe';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ConfirmationService, MessageService } from 'primeng/api';
-import { Router } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
+import { AchievementService } from '../../../features/achievements/services/achievement.service';
+import { AchievementEntry } from '../../../core/models/achievement.model';
+import { TooltipModule } from 'primeng/tooltip';
 
 @Component({
   selector: 'app-user-profile-drawer',
@@ -29,14 +32,16 @@ import { Router } from '@angular/router';
     EditorModule,
     FormsModule,
     ProcessedContentPipe,
-    ConfirmDialogModule
+    ConfirmDialogModule,
+    RouterModule,
+    TooltipModule
   ],
   template: `
     <p-drawer 
       [visible]="drawerService.drawerVisible()"
       (visibleChange)="onVisibleChange($event)"
       position="bottom"
-      [style]="{ height: 'auto', maxHeight: '80vh' }"
+      [style]="{ height: 'auto', maxHeight: '90vh' }"
       styleClass="user-profile-drawer rounded-t-3xl shadow-2xl"
       [baseZIndex]="10000"
       [modal]="false"
@@ -112,48 +117,91 @@ import { Router } from '@angular/router';
             }
           </div>
 
-          <div class="flex-1 border-t md:border-t-0 md:border-l border-surface-200 dark:border-surface-700 pt-6 md:pt-0 md:pl-6">
-            <div class="flex justify-between items-center mb-4">
-              <h4 class="text-xl font-semibold m-0 flex items-center gap-2">
-                <i class="pi pi-info-circle text-primary"></i> 
-                {{ ls.t().description || 'Over mij' }}
-              </h4>
-              @if (isCurrentUser()) {
-                @if (!editMode()) {
-                  <p-button icon="pi pi-pencil" [rounded]="true" [text]="true" (onClick)="startEdit()"></p-button>
+          <div class="flex-1 border-t md:border-t-0 md:border-l border-surface-200 dark:border-surface-700 pt-6 md:pt-0 md:pl-6 flex flex-col gap-6">
+            <!-- Description Section -->
+            <section>
+              <div class="flex justify-between items-center mb-4">
+                <h4 class="text-xl font-semibold m-0 flex items-center gap-2">
+                  <i class="pi pi-info-circle text-primary"></i> 
+                  {{ ls.t().description || 'Over mij' }}
+                </h4>
+                @if (isCurrentUser()) {
+                  @if (!editMode()) {
+                    <p-button icon="pi pi-pencil" [rounded]="true" [text]="true" (onClick)="startEdit()"></p-button>
+                  } @else {
+                    <div class="flex gap-2">
+                      <p-button icon="pi pi-times" severity="secondary" [rounded]="true" [text]="true" (onClick)="cancelEdit()"></p-button>
+                      <p-button icon="pi pi-check" [rounded]="true" [text]="true" (onClick)="saveDescription()" [loading]="saving()"></p-button>
+                    </div>
+                  }
+                }
+              </div>
+              
+              @if (editMode()) {
+                <p-editor [(ngModel)]="editDescription" [style]="{ height: '180px' }">
+                  <ng-template pTemplate="header">
+                    <span class="ql-formats">
+                        <button type="button" class="ql-bold" aria-label="Bold"></button>
+                        <button type="button" class="ql-italic" aria-label="Italic"></button>
+                        <button type="button" class="ql-underline" aria-label="Underline"></button>
+                    </span>
+                    <span class="ql-formats">
+                        <button type="button" class="ql-list" value="ordered" aria-label="Ordered List"></button>
+                        <button type="button" class="ql-list" value="bullet" aria-label="Bullet List"></button>
+                    </span>
+                  </ng-template>
+                </p-editor>
+              } @else {
+                @if (u.description) {
+                  <div class="prose dark:prose-invert max-w-none text-surface-700 dark:text-surface-300 bg-surface-50 dark:bg-surface-800/50 p-4 rounded-xl" [innerHTML]="u.description | processedContent"></div>
                 } @else {
-                  <div class="flex gap-2">
-                    <p-button icon="pi pi-times" severity="secondary" [rounded]="true" [text]="true" (onClick)="cancelEdit()"></p-button>
-                    <p-button icon="pi pi-check" [rounded]="true" [text]="true" (onClick)="saveDescription()" [loading]="saving()"></p-button>
-                  </div>
+                   <div class="p-8 text-center bg-surface-50 dark:bg-surface-800/50 rounded-xl border border-dashed border-surface-200 dark:border-surface-700">
+                      <i class="pi pi-id-card text-4xl text-surface-400 mb-3 opacity-50"></i>
+                      <p class="text-surface-500 m-0 italic">{{ isCurrentUser() ? 'Voeg een beschrijving toe over jezelf.' : 'Deze gebruiker heeft nog geen beschrijving toegevoegd.' }}</p>
+                   </div>
                 }
               }
-            </div>
-            
-            @if (editMode()) {
-              <p-editor [(ngModel)]="editDescription" [style]="{ height: '240px' }">
-                <ng-template pTemplate="header">
-                  <span class="ql-formats">
-                      <button type="button" class="ql-bold" aria-label="Bold"></button>
-                      <button type="button" class="ql-italic" aria-label="Italic"></button>
-                      <button type="button" class="ql-underline" aria-label="Underline"></button>
-                  </span>
-                  <span class="ql-formats">
-                      <button type="button" class="ql-list" value="ordered" aria-label="Ordered List"></button>
-                      <button type="button" class="ql-list" value="bullet" aria-label="Bullet List"></button>
-                  </span>
-                </ng-template>
-              </p-editor>
-            } @else {
-              @if (u.description) {
-                <div class="prose dark:prose-invert max-w-none text-surface-700 dark:text-surface-300 bg-surface-50 dark:bg-surface-800/50 p-4 rounded-xl" [innerHTML]="u.description | processedContent"></div>
+            </section>
+
+            <!-- Achievements Section -->
+            <section class="border-t border-surface-200 dark:border-surface-700 pt-6">
+              <div class="flex justify-between items-center mb-4">
+                <h4 
+                  (click)="navigateToAchievements()" 
+                  class="text-xl font-semibold m-0 flex items-center gap-2 cursor-pointer hover:text-primary transition-colors group"
+                >
+                  <i class="pi pi-trophy text-primary"></i> 
+                  {{ ls.t().achievements }}
+                  <i class="pi pi-chevron-right text-sm opacity-0 group-hover:opacity-100 transition-opacity"></i>
+                </h4>
+              </div>
+
+              @if (achievements().length > 0) {
+                <div class="flex flex-wrap gap-4">
+                  @for (ach of achievements(); track ach.id) {
+                    <div 
+                      (click)="navigateToAchievementDetail(ach.achievementId)"
+                      [pTooltip]="ach.achievementName"
+                      tooltipPosition="top"
+                      class="flex flex-col items-center gap-1 cursor-pointer hover:scale-105 transition-transform"
+                    >
+                      <div class="w-14 h-14 rounded-xl bg-surface-100 dark:bg-surface-800 flex items-center justify-center overflow-hidden border border-surface-200 dark:border-surface-700 shadow-sm">
+                        @if (ach.imageUrl) {
+                          <img [src]="ach.imageUrl | resolveApiUrl" class="w-full h-full object-contain p-1" [alt]="ach.achievementName" />
+                        } @else {
+                          <i class="pi pi-verified text-2xl text-primary"></i>
+                        }
+                      </div>
+                      <span class="text-[10px] font-medium text-surface-500 dark:text-surface-400 max-w-[56px] truncate text-center">{{ ach.achievementName }}</span>
+                    </div>
+                  }
+                </div>
               } @else {
-                 <div class="p-8 text-center bg-surface-50 dark:bg-surface-800/50 rounded-xl border border-dashed border-surface-200 dark:border-surface-700">
-                    <i class="pi pi-id-card text-4xl text-surface-400 mb-3 opacity-50"></i>
-                    <p class="text-surface-500 m-0 italic">{{ isCurrentUser() ? 'Voeg een beschrijving toe over jezelf.' : 'Deze gebruiker heeft nog geen beschrijving toegevoegd.' }}</p>
-                 </div>
+                <div class="p-6 text-center bg-surface-50 dark:bg-surface-800/50 rounded-xl border border-dashed border-surface-200 dark:border-surface-700">
+                  <p class="text-surface-500 m-0 italic text-sm">{{ ls.t().no_achievements }}</p>
+                </div>
               }
-            }
+            </section>
           </div>
         </div>
       } @else {
@@ -164,6 +212,14 @@ import { Router } from '@angular/router';
       }
     </p-drawer>
   `,
+  styles: [`
+    .user-profile-drawer {
+      height: auto !important;
+    }
+    :host ::ng-deep .user-profile-drawer .p-drawer-content {
+      padding-top: 0;
+    }
+  `],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class UserProfileDrawerComponent {
@@ -174,8 +230,10 @@ export class UserProfileDrawerComponent {
   private messageService = inject(MessageService);
   private confirmationService = inject(ConfirmationService);
   private router = inject(Router);
+  private achievementService = inject(AchievementService);
 
   user = signal<ApplicationUserDto | null>(null);
+  achievements = signal<AchievementEntry[]>([]);
   loading = signal(false);
   editMode = signal(false);
   saving = signal(false);
@@ -191,6 +249,7 @@ export class UserProfileDrawerComponent {
         this.loadUser(id);
       } else {
         this.user.set(null);
+        this.achievements.set([]);
         this.editMode.set(false);
       }
     });
@@ -246,6 +305,16 @@ export class UserProfileDrawerComponent {
         this.loading.set(false);
       }
     });
+
+    // Fetch achievements
+    this.achievementService.getAchievementEntries(id).subscribe({
+      next: (data) => {
+        // Sort by dateAdded descending and take top 4
+        const sorted = [...data].sort((a, b) => new Date(b.dateAdded).getTime() - new Date(a.dateAdded).getTime());
+        this.achievements.set(sorted.slice(0, 4));
+      },
+      error: () => this.achievements.set([])
+    });
   }
 
   startEdit() {
@@ -281,6 +350,17 @@ export class UserProfileDrawerComponent {
   goToSettings() {
     this.drawerService.close();
     this.router.navigate(['/settings']);
+  }
+
+  navigateToAchievements() {
+    const userId = this.user()?.id;
+    this.drawerService.close();
+    this.router.navigate(['/achievements'], { queryParams: { userId } });
+  }
+
+  navigateToAchievementDetail(achievementId: string) {
+    this.drawerService.close();
+    this.router.navigate(['/achievements', achievementId]);
   }
 
   // Profile Picture Methods

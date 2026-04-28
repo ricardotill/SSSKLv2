@@ -70,7 +70,7 @@ import { UserProfileDrawerService } from '../../../../core/services/user-profile
                           >
                             {{ author.applicationUser?.fullName }}
                           </span>
-                          <span class="text-xs text-surface-500">{{ author.applicationUser?.userName }}</span>
+                          <span class="text-xs text-surface-500">@{{ author.applicationUser?.userName }}</span>
                         </div>
                       } @else {
                         <span class="text-lg font-bold text-surface-900 dark:text-surface-0">

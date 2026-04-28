@@ -236,8 +236,8 @@ builder.Services.Configure<IdentityPasskeyOptions>(options =>
     options.ServerDomain = websiteDomain;
 });
 
-// TODO: Implement a proper IEmailSender if needed for the API
-builder.Services.AddSingleton<IEmailSender<ApplicationUser>, NoOpEmailSender>();
+// Implement a proper IEmailSender using SMTP
+builder.Services.AddTransient<IEmailSender<ApplicationUser>, SmtpEmailSender>();
 
 builder.Services.AddServicesDI();
 builder.Services.AddDataDI();

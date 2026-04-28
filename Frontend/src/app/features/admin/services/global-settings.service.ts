@@ -17,4 +17,8 @@ export class GlobalSettingsService {
   updateSetting(key: string, dto: GlobalSettingUpdateDto): Observable<void> {
     return this.http.put<void>(`${this.apiUrl}/${key}`, dto);
   }
+
+  sendTestEmail(): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.apiUrl}/test-email`, {});
+  }
 }

@@ -30,7 +30,7 @@ import { finalize, forkJoin, of, catchError } from 'rxjs';
     MultiSelectModule
   ],
   template: `
-    <div class="flex flex-col gap-6 max-w-4xl mx-auto">
+    <div class="flex flex-col gap-6 max-w-4xl mx-auto pb-12">
       <div class="flex justify-between items-center">
         <h1 class="text-2xl font-bold m-0 text-surface-900 dark:text-surface-0">{{ ls.t().global_settings_admin }}</h1>
       </div>
@@ -66,6 +66,63 @@ import { finalize, forkJoin, of, catchError } from 'rxjs';
             </div>
           </div>
         </p-card>
+
+        <!-- Email Configuration -->
+        <p-card header="Email Configuratie (SMTP)" subheader="Configureer de SMTP server voor het versturen van emails.">
+          <div class="flex flex-col gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="flex flex-col gap-2">
+                <label for="emailSmtpServer" class="font-bold">SMTP Server</label>
+                <input pInputText id="emailSmtpServer" formControlName="emailSmtpServer" placeholder="smtp.gmail.com" />
+              </div>
+              <div class="flex flex-col gap-2">
+                <label for="emailSmtpPort" class="font-bold">SMTP Poort</label>
+                <input pInputText id="emailSmtpPort" formControlName="emailSmtpPort" placeholder="587" />
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="flex flex-col gap-2">
+                <label for="emailSmtpUsername" class="font-bold">Gebruikersnaam / Email</label>
+                <input pInputText id="emailSmtpUsername" formControlName="emailSmtpUsername" placeholder="info@domain.com" />
+              </div>
+              <div class="flex flex-col gap-2">
+                <label for="emailSmtpPassword" class="font-bold">Wachtwoord / App Password</label>
+                <p-password 
+                  id="emailSmtpPassword" 
+                  formControlName="emailSmtpPassword" 
+                  [toggleMask]="true" 
+                  [feedback]="false" 
+                  styleClass="w-full" 
+                  inputStyleClass="w-full"
+                ></p-password>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="flex flex-col gap-2">
+                <label for="emailSenderEmail" class="font-bold">Afzender Email</label>
+                <input pInputText id="emailSenderEmail" formControlName="emailSenderEmail" placeholder="no-reply@domain.com" />
+              </div>
+              <div class="flex flex-col gap-2">
+                <label for="emailSenderName" class="font-bold">Afzender Naam</label>
+                <input pInputText id="emailSenderName" formControlName="emailSenderName" placeholder="Scouting Wilo" />
+              </div>
+            </div>
+
+            <p-divider></p-divider>
+            
+            <div class="flex items-center justify-between">
+              <span class="text-surface-600 text-sm">Sla de instellingen eerst op voordat je een test-email verstuurt.</span>
+              <p-button 
+                label="Verstuur Test Email" 
+                icon="pi pi-envelope" 
+                severity="secondary" 
+                (onClick)="testEmail()" 
+                [loading]="sendingTestEmail()" />
+            </div>
+          </div>
+        </p-card>
         
         <!-- Quotes Feature Configuration -->
         <p-card header="Quotes Feature" subheader="Configureer wie de Quotes feature mag gebruiken.">
@@ -81,7 +138,7 @@ import { finalize, forkJoin, of, catchError } from 'rxjs';
               display="chip"
               class="w-full">
             </p-multiselect>
-            <small class="text-surface-500">Laat leeg om iedereen (behalve Guests indien gewenst) toegang te geven. De controller heeft zijn eigen check.</small>
+            <small class="text-surface-500">Laat leeg om iedereen toegang te geven. De controller heeft zijn eigen check.</small>
           </div>
         </p-card>
 
@@ -128,11 +185,19 @@ export default class AdminGlobalSettingsComponent implements OnInit {
   ls = inject(LanguageService);
 
   saving = signal<boolean>(false);
+  sendingTestEmail = signal<boolean>(false);
+
   globalSettingsForm = this.fb.nonNullable.group({
     whatsNewContent: ['', Validators.required],
     googleMapsApiKey: [''],
     googleMapsMapId: [''],
-    quotesAllowedRoles: [[] as string[]]
+    quotesAllowedRoles: [[] as string[]],
+    emailSmtpServer: [''],
+    emailSmtpPort: [''],
+    emailSmtpUsername: [''],
+    emailSmtpPassword: [''],
+    emailSenderEmail: [''],
+    emailSenderName: ['']
   });
 
   availableRoles = signal<Role[]>([]);
@@ -155,19 +220,50 @@ export default class AdminGlobalSettingsComponent implements OnInit {
       whatsNew: this.settingsService.getSetting('WhatsNewContent').pipe(catchError(() => of({ value: '' }))),
       mapsKey: this.settingsService.getSetting('GoogleMapsApiKey').pipe(catchError(() => of({ value: '' }))),
       mapId: this.settingsService.getSetting('GoogleMapsMapId').pipe(catchError(() => of({ value: '' }))),
-      quotesRoles: this.settingsService.getSetting('QuotesFeatureAllowedRoles').pipe(catchError(() => of({ value: '' })))
+      quotesRoles: this.settingsService.getSetting('QuotesFeatureAllowedRoles').pipe(catchError(() => of({ value: '' }))),
+      emailServer: this.settingsService.getSetting('EmailSmtpServer').pipe(catchError(() => of({ value: '' }))),
+      emailPort: this.settingsService.getSetting('EmailSmtpPort').pipe(catchError(() => of({ value: '' }))),
+      emailUser: this.settingsService.getSetting('EmailSmtpUsername').pipe(catchError(() => of({ value: '' }))),
+      emailPass: this.settingsService.getSetting('EmailSmtpPassword').pipe(catchError(() => of({ value: '' }))),
+      emailFrom: this.settingsService.getSetting('EmailSenderEmail').pipe(catchError(() => of({ value: '' }))),
+      emailFromName: this.settingsService.getSetting('EmailSenderName').pipe(catchError(() => of({ value: '' })))
     }).subscribe({
       next: (results) => {
         this.globalSettingsForm.patchValue({ 
           whatsNewContent: results.whatsNew.value,
           googleMapsApiKey: results.mapsKey.value,
           googleMapsMapId: results.mapId.value,
-          quotesAllowedRoles: results.quotesRoles.value ? results.quotesRoles.value.split(',').map(r => r.trim()) : []
+          quotesAllowedRoles: results.quotesRoles.value ? results.quotesRoles.value.split(',').map(r => r.trim()) : [],
+          emailSmtpServer: results.emailServer.value,
+          emailSmtpPort: results.emailPort.value,
+          emailSmtpUsername: results.emailUser.value,
+          emailSmtpPassword: results.emailPass.value,
+          emailSenderEmail: results.emailFrom.value,
+          emailSenderName: results.emailFromName.value
         });
         this.globalSettingsForm.markAsPristine();
       },
       error: () => {
         this.messageService.add({ severity: 'error', summary: this.ls.t().error, detail: this.ls.t().load_failed });
+      }
+    });
+  }
+
+  testEmail(): void {
+    if (this.globalSettingsForm.dirty) {
+      this.messageService.add({ severity: 'warn', summary: 'Sla eerst op', detail: 'Sla je wijzigingen op voordat je test.' });
+      return;
+    }
+
+    this.sendingTestEmail.set(true);
+    this.settingsService.sendTestEmail().pipe(
+      finalize(() => this.sendingTestEmail.set(false))
+    ).subscribe({
+      next: (res) => {
+        this.messageService.add({ severity: 'success', summary: 'Success', detail: res.message });
+      },
+      error: (err) => {
+        this.messageService.add({ severity: 'error', summary: 'Fout', detail: err.error?.message || 'Kon test email niet versturen' });
       }
     });
   }
@@ -179,17 +275,37 @@ export default class AdminGlobalSettingsComponent implements OnInit {
     const formValue = this.globalSettingsForm.getRawValue();
 
     const updates = [];
-    if (this.globalSettingsForm.get('whatsNewContent')?.dirty) {
+    const controls = this.globalSettingsForm.controls;
+
+    if (controls.whatsNewContent.dirty) {
       updates.push(this.settingsService.updateSetting('WhatsNewContent', { value: formValue.whatsNewContent }));
     }
-    if (this.globalSettingsForm.get('googleMapsApiKey')?.dirty) {
+    if (controls.googleMapsApiKey.dirty) {
       updates.push(this.settingsService.updateSetting('GoogleMapsApiKey', { value: formValue.googleMapsApiKey }));
     }
-    if (this.globalSettingsForm.get('googleMapsMapId')?.dirty) {
+    if (controls.googleMapsMapId.dirty) {
       updates.push(this.settingsService.updateSetting('GoogleMapsMapId', { value: formValue.googleMapsMapId }));
     }
-    if (this.globalSettingsForm.get('quotesAllowedRoles')?.dirty) {
+    if (controls.quotesAllowedRoles.dirty) {
       updates.push(this.settingsService.updateSetting('QuotesFeatureAllowedRoles', { value: formValue.quotesAllowedRoles.join(',') }));
+    }
+    if (controls.emailSmtpServer.dirty) {
+      updates.push(this.settingsService.updateSetting('EmailSmtpServer', { value: formValue.emailSmtpServer }));
+    }
+    if (controls.emailSmtpPort.dirty) {
+      updates.push(this.settingsService.updateSetting('EmailSmtpPort', { value: formValue.emailSmtpPort }));
+    }
+    if (controls.emailSmtpUsername.dirty) {
+      updates.push(this.settingsService.updateSetting('EmailSmtpUsername', { value: formValue.emailSmtpUsername }));
+    }
+    if (controls.emailSmtpPassword.dirty) {
+      updates.push(this.settingsService.updateSetting('EmailSmtpPassword', { value: formValue.emailSmtpPassword }));
+    }
+    if (controls.emailSenderEmail.dirty) {
+      updates.push(this.settingsService.updateSetting('EmailSenderEmail', { value: formValue.emailSenderEmail }));
+    }
+    if (controls.emailSenderName.dirty) {
+      updates.push(this.settingsService.updateSetting('EmailSenderName', { value: formValue.emailSenderName }));
     }
 
     if (updates.length === 0) {

@@ -55,7 +55,7 @@ public class QuoteServiceTests : RepositoryTest
         _userService.GetUserRoles(userId).Returns(new List<string> { Roles.User });
 
         _quoteRepository.GetAll(Arg.Any<int>(), Arg.Any<int>(), Arg.Any<IList<string>>(), Arg.Any<bool>())
-            .Returns(new List<Quote> { quote });
+            .Returns((new List<Quote> { quote }, 1));
 
         // Add a vote
         _dbContext.QuoteVote.Add(new QuoteVote { QuoteId = quoteId, UserId = userId });
@@ -75,7 +75,7 @@ public class QuoteServiceTests : RepositoryTest
         var result = await _sut.GetQuotesAsync(0, 10, userId);
 
         // Assert
-        var dto = result.First();
+        var dto = result.Items.First();
         dto.VoteCount.Should().Be(1);
         dto.CommentsCount.Should().Be(1);
         dto.HasVoted.Should().BeTrue();

@@ -19,8 +19,8 @@ public class QuoteController(IQuoteService quoteService, ILogger<QuoteController
         
         try
         {
-            var quotes = await quoteService.GetQuotesAsync(skip, take, userId, targetUserId);
-            return Ok(quotes);
+            var result = await quoteService.GetQuotesAsync(skip, take, userId, targetUserId);
+            return Ok(result);
         }
         catch (UnauthorizedAccessException ex)
         {

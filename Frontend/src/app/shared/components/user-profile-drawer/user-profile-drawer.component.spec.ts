@@ -12,6 +12,7 @@ import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { vi } from 'vitest';
 import { ApplicationUserDto } from '../../../core/models/application-user.model';
 import { AchievementService } from '../../../features/achievements/services/achievement.service';
+import { QuoteService } from '../../../features/quotes/services/quote.service';
 
 describe('UserProfileDrawerComponent', () => {
   let component: UserProfileDrawerComponent;
@@ -24,6 +25,7 @@ describe('UserProfileDrawerComponent', () => {
   let mockConfirmationService: any;
   let mockRouter: any;
   let mockAchievementService: any;
+  let mockQuoteService: any;
 
   const mockUser: ApplicationUserDto = {
     id: 'user-123',
@@ -84,6 +86,10 @@ describe('UserProfileDrawerComponent', () => {
       getAchievementEntries: vi.fn().mockReturnValue(of([]))
     };
 
+    mockQuoteService = {
+      getQuotes: vi.fn().mockReturnValue(of({ items: [], totalCount: 0 }))
+    };
+
     await TestBed.configureTestingModule({
       imports: [UserProfileDrawerComponent, NoopAnimationsModule],
       providers: [
@@ -95,7 +101,8 @@ describe('UserProfileDrawerComponent', () => {
         { provide: MessageService, useValue: mockMessageService },
         { provide: ConfirmationService, useValue: mockConfirmationService },
         { provide: Router, useValue: mockRouter },
-        { provide: AchievementService, useValue: mockAchievementService }
+        { provide: AchievementService, useValue: mockAchievementService },
+        { provide: QuoteService, useValue: mockQuoteService }
       ]
     })
     // No need for override if we provide it in TestBed

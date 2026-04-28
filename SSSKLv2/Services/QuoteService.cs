@@ -15,7 +15,7 @@ public class QuoteService(IQuoteRepository quoteRepository,
 {
     private const string GlobalSettingKey = "QuotesFeatureAllowedRoles";
 
-    public async Task<IEnumerable<QuoteDto>> GetQuotesAsync(int skip = 0, int take = 15, string? userId = null, string? targetUserId = null)
+    public async Task<PaginationObject<QuoteDto>> GetQuotesAsync(int skip = 0, int take = 15, string? userId = null, string? targetUserId = null)
     {
         await EnsureUserHasAccess(userId);
 
@@ -27,7 +27,7 @@ public class QuoteService(IQuoteRepository quoteRepository,
             isAdmin = userRoles.Contains(Roles.Admin);
         }
 
-        var quotes = await quoteRepository.GetAll(skip, take, userRoles, isAdmin, targetUserId);
+        var (quotes, totalCount) = await quoteRepository.GetAll(skip, take, userRoles, isAdmin, targetUserId);
         var quoteDtos = quotes.Select(MapToDto).ToList();
 
         var quoteIds = quoteDtos.Select(q => q.Id).ToList();
@@ -69,7 +69,11 @@ public class QuoteService(IQuoteRepository quoteRepository,
             }
         }
 
-        return quoteDtos;
+        return new PaginationObject<QuoteDto>
+        {
+            Items = quoteDtos,
+            TotalCount = totalCount
+        };
     }
 
     public async Task<QuoteDto?> GetQuoteByIdAsync(Guid id, string? userId = null)

@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { QuoteDto, QuoteCreateDto, QuoteUpdateDto } from '../../../core/models/quote.model';
+import { QuoteDto, QuoteCreateDto, QuoteUpdateDto, PaginationObject } from '../../../core/models/quote.model';
 
 @Injectable({
   providedIn: 'root'
@@ -10,12 +10,12 @@ export class QuoteService {
   private readonly http = inject(HttpClient);
   private readonly apiUrl = '/api/v1/Quote';
 
-  getQuotes(skip: number = 0, take: number = 15, targetUserId?: string): Observable<QuoteDto[]> {
+  getQuotes(skip: number = 0, take: number = 15, targetUserId?: string): Observable<PaginationObject<QuoteDto>> {
     const params: any = { skip, take };
     if (targetUserId) {
       params.targetUserId = targetUserId;
     }
-    return this.http.get<QuoteDto[]>(this.apiUrl, { params });
+    return this.http.get<PaginationObject<QuoteDto>>(this.apiUrl, { params });
   }
 
   getQuote(id: string): Observable<QuoteDto> {

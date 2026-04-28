@@ -146,11 +146,8 @@ export default class QuotesComponent implements OnInit {
     this.loading.set(true);
     this.quoteService.getQuotes(this.first, this.rows).subscribe({
       next: (response) => {
-        // Backend doesn't return PaginationObject for Quotes yet, just QuoteDto[]
-        // I'll adjust the backend or frontend later if needed.
-        // For now let's assume it returns QuoteDto[] as per current implementation.
-        this.quotes.set(response);
-        this.totalRecords.set(response.length); // Temporary
+        this.quotes.set(response.items);
+        this.totalRecords.set(response.totalCount);
         this.loading.set(false);
       },
       error: () => this.loading.set(false)

@@ -6,7 +6,7 @@ namespace SSSKLv2.Data.DAL;
 
 public class QuoteRepository(ApplicationDbContext dbContext) : IQuoteRepository
 {
-    public async Task<IEnumerable<Quote>> GetAll(int skip = 0, int take = 15, IList<string>? userRoles = null, bool isAdmin = false, string? targetUserId = null)
+    public async Task<(IEnumerable<Quote> Items, int TotalCount)> GetAll(int skip = 0, int take = 15, IList<string>? userRoles = null, bool isAdmin = false, string? targetUserId = null)
     {
         var query = dbContext.Quote
             .Include(q => q.CreatedBy)
@@ -26,11 +26,14 @@ public class QuoteRepository(ApplicationDbContext dbContext) : IQuoteRepository
             query = query.Where(q => q.Authors.Any(a => a.ApplicationUserId == targetUserId));
         }
 
-        return await query
+        var totalCount = await query.CountAsync();
+        var items = await query
             .OrderByDescending(q => q.DateSaid)
             .Skip(skip)
             .Take(take)
             .ToListAsync();
+
+        return (items, totalCount);
     }
 
     public async Task<Quote?> GetById(Guid id)

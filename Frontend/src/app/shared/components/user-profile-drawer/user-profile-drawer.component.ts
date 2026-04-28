@@ -374,7 +374,7 @@ export class UserProfileDrawerComponent {
     // Fetch quotes
     this.quoteService.getQuotes(0, 3, id).subscribe({
       next: (data) => {
-        this.quotes.set(data);
+        this.quotes.set(data.items);
         this.hasQuoteAccess.set(true);
       },
       error: (err) => {

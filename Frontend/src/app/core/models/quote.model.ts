@@ -1,5 +1,10 @@
 import { ApplicationUserDto } from './application-user.model';
 
+export interface PaginationObject<T> {
+  items: T[];
+  totalCount: number;
+}
+
 export interface QuoteDto {
   id: string;
   text: string;

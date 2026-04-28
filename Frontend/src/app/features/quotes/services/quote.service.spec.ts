@@ -29,14 +29,14 @@ describe('QuoteService', () => {
   });
 
   it('should fetch quotes', () => {
-    const mockQuotes: QuoteDto[] = [];
+    const mockResponse = { items: [], totalCount: 0 };
     service.getQuotes(0, 10).subscribe(res => {
-      expect(res).toEqual(mockQuotes);
+      expect(res).toEqual(mockResponse);
     });
 
     const req = httpMock.expectOne(r => r.url === '/api/v1/Quote' && r.params.get('skip') === '0');
     expect(req.request.method).toBe('GET');
-    req.flush(mockQuotes);
+    req.flush(mockResponse);
   });
 
   it('should toggle vote', () => {

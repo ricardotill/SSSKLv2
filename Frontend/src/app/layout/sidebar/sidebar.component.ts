@@ -1,13 +1,14 @@
-import { Component, ChangeDetectionStrategy, input, output, inject, computed } from '@angular/core';
+import { Component, ChangeDetectionStrategy, input, output, inject, computed, signal, OnInit, effect } from '@angular/core';
 import { MenuModule } from 'primeng/menu';
 import { MenuItem } from 'primeng/api';
 import { CommonModule } from '@angular/common';
 import { AvatarModule } from 'primeng/avatar';
 import { RouterModule, Router } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../core/auth/auth.service';
 import { LanguageService } from '../../core/services/language.service';
 import { BrandingComponent } from '../../shared/components/branding/branding.component';
-
+import { catchError, of } from 'rxjs';
 import { ResolveApiUrlPipe } from '../../shared/pipes/resolve-api-url.pipe';
 import { UserProfileDrawerService } from '../../core/services/user-profile-drawer.service';
 
@@ -164,9 +165,37 @@ export class SidebarComponent {
   authService = inject(AuthService);
   ls = inject(LanguageService);
   private readonly drawerService = inject(UserProfileDrawerService);
+  private readonly http = inject(HttpClient);
   public router = inject(Router);
   isOpen = input<boolean>(false);
   close = output<void>();
+
+  canAccessQuotes = signal<boolean>(false);
+
+  constructor() {
+    effect(() => {
+      const isAuth = this.authService.isAuthenticated();
+      if (isAuth) {
+        this.checkQuotesAccess();
+      } else {
+        this.canAccessQuotes.set(false);
+      }
+    });
+  }
+
+  private checkQuotesAccess() {
+    // Probe the quotes API to determine if this user has access.
+    // 200 = accessible, 403 = role-restricted, anything else = allow through.
+    this.http.get('/api/v1/quote', { params: { skip: '0', take: '1' } }).pipe(
+      catchError(err => {
+        if (err.status === 403) this.canAccessQuotes.set(false);
+        else this.canAccessQuotes.set(true); // network errors etc. — allow
+        return of(null);
+      })
+    ).subscribe(res => {
+      if (res !== null) this.canAccessQuotes.set(true);
+    });
+  }
 
   openOwnProfile() {
     const user = this.authService.currentUser();
@@ -196,7 +225,7 @@ export class SidebarComponent {
           items: [
             { label: t.order, icon: 'pi pi-shopping-cart', routerLink: '/pos' },
             { label: t.events, icon: 'pi pi-calendar', routerLink: '/events' },
-            { label: t.quotes, icon: 'pi pi-comment', routerLink: '/quotes' },
+            ...(this.canAccessQuotes() ? [{ label: t.quotes, icon: 'pi pi-comment', routerLink: '/quotes' }] : []),
             { label: t.my_orders, icon: 'pi pi-history', routerLink: '/orders/personal' },
             { label: t.my_saldo, icon: 'pi pi-wallet', routerLink: '/orders/saldo' },
             { label: t.achievements, icon: 'pi pi-verified', routerLink: '/achievements' },

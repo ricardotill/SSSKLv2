@@ -101,6 +101,7 @@ public class QuoteService(IQuoteRepository quoteRepository,
 
     public async Task<bool> ToggleVoteAsync(Guid quoteId, string userId)
     {
+        await EnsureUserHasAccess(userId);
         var existingVote = await dbContext.QuoteVote
             .FirstOrDefaultAsync(v => v.QuoteId == quoteId && v.UserId == userId);
 

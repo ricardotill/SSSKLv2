@@ -24,7 +24,7 @@ public class QuoteController(IQuoteService quoteService, ILogger<QuoteController
         }
         catch (UnauthorizedAccessException ex)
         {
-            return Forbid(ex.Message);
+            return StatusCode(403, new { message = ex.Message });
         }
     }
 
@@ -43,7 +43,7 @@ public class QuoteController(IQuoteService quoteService, ILogger<QuoteController
         }
         catch (UnauthorizedAccessException ex)
         {
-            return Forbid(ex.Message);
+            return StatusCode(403, new { message = ex.Message });
         }
     }
 
@@ -64,7 +64,7 @@ public class QuoteController(IQuoteService quoteService, ILogger<QuoteController
         }
         catch (UnauthorizedAccessException ex)
         {
-            return Forbid(ex.Message);
+            return StatusCode(403, new { message = ex.Message });
         }
     }
 
@@ -86,7 +86,7 @@ public class QuoteController(IQuoteService quoteService, ILogger<QuoteController
         }
         catch (UnauthorizedAccessException ex)
         {
-            return Forbid(ex.Message);
+            return StatusCode(403, new { message = ex.Message });
         }
     }
 
@@ -108,7 +108,7 @@ public class QuoteController(IQuoteService quoteService, ILogger<QuoteController
         }
         catch (UnauthorizedAccessException ex)
         {
-            return Forbid(ex.Message);
+            return StatusCode(403, new { message = ex.Message });
         }
     }
 
@@ -122,7 +122,14 @@ public class QuoteController(IQuoteService quoteService, ILogger<QuoteController
 
         logger.LogInformation("{Controller}: Toggle vote for quote {Id} by user {UserId}", nameof(QuoteController), id, userId);
 
-        var hasVoted = await quoteService.ToggleVoteAsync(id, userId);
-        return Ok(hasVoted);
+        try
+        {
+            var hasVoted = await quoteService.ToggleVoteAsync(id, userId);
+            return Ok(hasVoted);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(403, new { message = ex.Message });
+        }
     }
 }

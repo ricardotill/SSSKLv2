@@ -3,7 +3,8 @@ import { Routes } from '@angular/router';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { authGuard } from './core/auth/auth.guard';
 import { roleGuard } from './core/auth/role.guard';
-import { unauthGuard } from './core/auth/unauth.guard'; // Assume I will create this snippet
+import { unauthGuard } from './core/auth/unauth.guard';
+import { quotesGuard } from './core/auth/quotes.guard';
 
 const devRoutes = isDevMode() ? [
   {
@@ -163,13 +164,13 @@ export const routes: Routes = [
           {
             path: '',
             loadComponent: () => import('./features/quotes/quotes.component'),
-            canActivate: [authGuard],
+            canActivate: [authGuard, quotesGuard],
             title: 'Quotes - SSSKL'
           },
           {
             path: ':id',
             loadComponent: () => import('./features/quotes/pages/quote-detail/quote-detail.component').then(m => m.QuoteDetailComponent),
-            canActivate: [authGuard],
+            canActivate: [authGuard, quotesGuard],
             title: 'Quote Details - SSSKL'
           }
         ]

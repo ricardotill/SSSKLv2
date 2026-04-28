@@ -20,21 +20,21 @@ public class SmtpEmailSender : IEmailSender<ApplicationUser>
     }
 
     public async Task SendConfirmationLinkAsync(ApplicationUser user, string email, string confirmationLink) =>
-        await SendEmailAsync(email, "Bevestig je e-mailadres", 
-            GetHtmlTemplate("Welkom bij Scouting Wilo!", 
-                $"Bedankt voor het registreren. Klik op de onderstaande knop om je e-mailadres te bevestigen en je account te activeren.", 
+        await SendEmailAsync(email, "Bevestig je e-mailadres",
+            GetHtmlTemplate("Welkom bij SSSKL!",
+                $"Bedankt voor het registreren. Klik op de onderstaande knop om je e-mailadres te bevestigen en je account te activeren.",
                 confirmationLink, "E-mailadres bevestigen"));
 
     public async Task SendPasswordResetLinkAsync(ApplicationUser user, string email, string resetLink) =>
-        await SendEmailAsync(email, "Wachtwoord herstellen", 
-            GetHtmlTemplate("Wachtwoord herstellen", 
-                "Je hebt een verzoek ingediend om je wachtwoord te herstellen. Klik op de onderstaande knop om een nieuw wachtwoord in te stellen.", 
+        await SendEmailAsync(email, "Wachtwoord herstellen",
+            GetHtmlTemplate("Wachtwoord herstellen",
+                "Je hebt een verzoek ingediend om je wachtwoord te herstellen. Klik op de onderstaande knop om een nieuw wachtwoord in te stellen.",
                 resetLink, "Wachtwoord herstellen"));
 
     public async Task SendPasswordResetCodeAsync(ApplicationUser user, string email, string resetCode) =>
-        await SendEmailAsync(email, "Je verificatiecode", 
-            GetHtmlTemplate("Verificatiecode", 
-                $"Gebruik de onderstaande code om je wachtwoord te herstellen. Deze code is beperkt geldig.<br/><br/><div style='font-size: 24px; font-weight: bold; letter-spacing: 5px; color: #2563eb;'>{resetCode}</div>", 
+        await SendEmailAsync(email, "Je verificatiecode",
+            GetHtmlTemplate("Verificatiecode",
+                $"Gebruik de onderstaande code om je wachtwoord te herstellen. Deze code is beperkt geldig.<br/><br/><div style='font-size: 24px; font-weight: bold; letter-spacing: 5px; color: #2563eb;'>{resetCode}</div>",
                 null, null));
 
     private string GetHtmlTemplate(string title, string message, string? buttonUrl = null, string? buttonText = null)
@@ -137,17 +137,17 @@ public class SmtpEmailSender : IEmailSender<ApplicationUser>
             message.Body = bodyBuilder.ToMessageBody();
 
             using var client = new SmtpClient();
-            
+
             // Log connection attempt details (excluding password)
             _logger.LogInformation("Attempting to connect to SMTP server: {Host}:{Port} as {User}", smtpServer, smtpPort, username);
 
             var security = smtpPort == 465 ? SecureSocketOptions.SslOnConnect : SecureSocketOptions.StartTls;
-            
+
             await client.ConnectAsync(smtpServer, smtpPort, security);
             await client.AuthenticateAsync(username, password);
             await client.SendAsync(message);
             await client.DisconnectAsync(true);
-            
+
             _logger.LogInformation("Email sent successfully to {Email}", email);
         }
         catch (System.Net.Sockets.SocketException socketEx)

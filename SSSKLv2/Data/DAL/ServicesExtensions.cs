@@ -15,6 +15,7 @@ public static class ServicesExtensions
             .AddTransient<ITopUpRepository, TopUpRepository>()
             .AddTransient<IAnnouncementRepository, AnnouncementRepository>()
             .AddTransient<IAchievementRepository, AchievementRepository>()
-            .AddTransient<IEventRepository, EventRepository>();
+            .AddTransient<IEventRepository, EventRepository>()
+            .AddTransient<IQuoteRepository, QuoteRepository>();
     }
 }

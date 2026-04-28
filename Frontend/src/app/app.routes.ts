@@ -156,6 +156,23 @@ export const routes: Routes = [
             title: 'Evenement Bewerken - SSSKL'
           }
         ]
+      },
+      {
+        path: 'quotes',
+        children: [
+          {
+            path: '',
+            loadComponent: () => import('./features/quotes/quotes.component'),
+            canActivate: [authGuard],
+            title: 'Quotes - SSSKL'
+          },
+          {
+            path: ':id',
+            loadComponent: () => import('./features/quotes/pages/quote-detail/quote-detail.component').then(m => m.QuoteDetailComponent),
+            canActivate: [authGuard],
+            title: 'Quote Details - SSSKL'
+          }
+        ]
       }
     ]
   },

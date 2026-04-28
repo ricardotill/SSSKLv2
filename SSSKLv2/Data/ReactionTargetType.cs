@@ -4,5 +4,6 @@ public enum ReactionTargetType
 {
     Event,
     Announcement,
-    Reaction
+    Reaction,
+    Quote
 }

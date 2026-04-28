@@ -16,6 +16,7 @@ public static class ServicesExtensions
             .AddTransient<IAnnouncementService, AnnouncementService>()
             .AddTransient<IAchievementService, AchievementService>()
             .AddTransient<IEventService, EventService>()
+            .AddTransient<IQuoteService, QuoteService>()
             .AddTransient<IReactionService, ReactionService>()
             .AddTransient<INotificationService, NotificationService>()
             .AddTransient<IWebPushService, WebPushService>()

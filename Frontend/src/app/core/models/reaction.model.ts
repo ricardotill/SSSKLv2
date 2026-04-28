@@ -11,7 +11,7 @@ export interface ReactionDto {
   reactions?: ReactionDto[];
 }
 
-export type ReactionTargetType = 'Event' | 'Announcement' | 'Reaction';
+export type ReactionTargetType = 'Event' | 'Announcement' | 'Reaction' | 'Quote';
 
 export interface ToggleReactionRequest {
   targetId: string;

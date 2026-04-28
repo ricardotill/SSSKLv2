@@ -24,4 +24,4 @@ builder.AddNpmApp("frontend", "../Frontend")
     .WithExternalHttpEndpoints()
     .PublishAsDockerFile();
 
-builder.Build().Run();
+await builder.Build().RunAsync();

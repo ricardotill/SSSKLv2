@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using SSSKLv2.Data;
 using System.Globalization;
-using Microsoft.Extensions.Logging.ApplicationInsights;
 using Polly;
 using Polly.Contrib.WaitAndRetry;
 using Scalar.AspNetCore;
@@ -14,7 +13,6 @@ using Microsoft.OpenApi;
 using Microsoft.Azure.SignalR.Common;
 using Azure.Identity;
 using Microsoft.Extensions.Azure;
-using SSSKLv2.Util;
 using SSSKLv2.Data.Constants;
 
 var builder = WebApplication.CreateBuilder(args);

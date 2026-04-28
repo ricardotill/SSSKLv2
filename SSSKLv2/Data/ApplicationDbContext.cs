@@ -24,6 +24,9 @@ namespace SSSKLv2.Data
         public DbSet<SSSKLv2.Data.Reaction> Reaction { get; set; } = default!;
         public DbSet<SSSKLv2.Data.Notification> Notification { get; set; } = default!;
         public DbSet<SSSKLv2.Data.PushSubscription> PushSubscription { get; set; } = default!;
+        public DbSet<SSSKLv2.Data.Quote> Quote { get; set; } = default!;
+        public DbSet<SSSKLv2.Data.QuoteAuthor> QuoteAuthor { get; set; } = default!;
+        public DbSet<SSSKLv2.Data.QuoteVote> QuoteVote { get; set; } = default!;
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -232,6 +235,69 @@ namespace SSSKLv2.Data
                 .WithMany()
                 .HasForeignKey(e => e.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<Quote>()
+                .HasIndex(p => p.Id)
+                .IsUnique();
+            builder.Entity<Quote>()
+                .Property(s => s.CreatedOn)
+                .HasDefaultValueSql("GETUTCDATE()")
+                .HasConversion(v => v, v => DateTime.SpecifyKind(v, DateTimeKind.Utc));
+            builder.Entity<Quote>()
+                .Property(e => e.DateSaid)
+                .HasConversion(v => v, v => DateTime.SpecifyKind(v, DateTimeKind.Utc));
+            builder.Entity<Quote>()
+                .HasOne(e => e.CreatedBy)
+                .WithMany()
+                .HasForeignKey(e => e.CreatedById)
+                .OnDelete(DeleteBehavior.Restrict);
+            builder.Entity<Quote>()
+                .HasMany(e => e.Authors)
+                .WithOne(e => e.Quote)
+                .HasForeignKey(e => e.QuoteId)
+                .OnDelete(DeleteBehavior.Cascade);
+            builder.Entity<Quote>()
+                .HasMany(e => e.VisibleToRoles)
+                .WithMany()
+                .UsingEntity<Dictionary<string, object>>(
+                    "QuoteRequiredRoles",
+                    j => j.HasOne<IdentityRole>().WithMany().HasForeignKey("RoleId"),
+                    j => j.HasOne<Quote>().WithMany().HasForeignKey("QuoteId")
+                );
+
+            builder.Entity<QuoteAuthor>()
+                .HasIndex(p => p.Id)
+                .IsUnique();
+            builder.Entity<QuoteAuthor>()
+                .Property(s => s.CreatedOn)
+                .HasDefaultValueSql("GETUTCDATE()")
+                .HasConversion(v => v, v => DateTime.SpecifyKind(v, DateTimeKind.Utc));
+            builder.Entity<QuoteAuthor>()
+                .HasOne(e => e.ApplicationUser)
+                .WithMany()
+                .HasForeignKey(e => e.ApplicationUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<QuoteVote>()
+                .HasIndex(p => p.Id)
+                .IsUnique();
+            builder.Entity<QuoteVote>()
+                .Property(s => s.CreatedOn)
+                .HasDefaultValueSql("GETUTCDATE()")
+                .HasConversion(v => v, v => DateTime.SpecifyKind(v, DateTimeKind.Utc));
+            builder.Entity<QuoteVote>()
+                .HasOne(e => e.Quote)
+                .WithMany()
+                .HasForeignKey(e => e.QuoteId)
+                .OnDelete(DeleteBehavior.Cascade);
+            builder.Entity<QuoteVote>()
+                .HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+            builder.Entity<QuoteVote>()
+                .HasIndex(p => new { p.QuoteId, p.UserId })
+                .IsUnique();
         }
     }
 }

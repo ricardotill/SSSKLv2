@@ -10,6 +10,9 @@ import { DividerModule } from 'primeng/divider';
 import { MessageService } from 'primeng/api';
 import { GlobalSettingsService } from '../services/global-settings.service';
 import { LanguageService } from '../../../core/services/language.service';
+import { MultiSelectModule } from 'primeng/multiselect';
+import { RoleService } from '../../admin/services/role.service';
+import { Role } from '../../../core/models/role.model';
 import { finalize, forkJoin, of, catchError } from 'rxjs';
 
 @Component({
@@ -23,7 +26,8 @@ import { finalize, forkJoin, of, catchError } from 'rxjs';
     CardModule,
     InputTextModule,
     PasswordModule,
-    DividerModule
+    DividerModule,
+    MultiSelectModule
   ],
   template: `
     <div class="flex flex-col gap-6 max-w-4xl mx-auto">
@@ -60,6 +64,24 @@ import { finalize, forkJoin, of, catchError } from 'rxjs';
               />
               <small class="text-surface-500">Vereist voor moderne "Advanced Markers". Maak deze aan in de Google Maps Console.</small>
             </div>
+          </div>
+        </p-card>
+        
+        <!-- Quotes Feature Configuration -->
+        <p-card header="Quotes Feature" subheader="Configureer wie de Quotes feature mag gebruiken.">
+          <div class="flex flex-col gap-2">
+            <label for="quotesRoles" class="font-bold">Toegestane Rollen</label>
+            <p-multiselect 
+              id="quotesRoles" 
+              formControlName="quotesAllowedRoles" 
+              [options]="availableRoles()" 
+              optionLabel="name" 
+              optionValue="name" 
+              [placeholder]="'Selecteer rollen'" 
+              display="chip"
+              class="w-full">
+            </p-multiselect>
+            <small class="text-surface-500">Laat leeg om iedereen (behalve Guests indien gewenst) toegang te geven. De controller heeft zijn eigen check.</small>
           </div>
         </p-card>
 
@@ -109,24 +131,38 @@ export default class AdminGlobalSettingsComponent implements OnInit {
   globalSettingsForm = this.fb.nonNullable.group({
     whatsNewContent: ['', Validators.required],
     googleMapsApiKey: [''],
-    googleMapsMapId: ['']
+    googleMapsMapId: [''],
+    quotesAllowedRoles: [[] as string[]]
   });
+
+  availableRoles = signal<Role[]>([]);
+  private readonly roleService = inject(RoleService);
 
   ngOnInit(): void {
     this.loadContent();
+    this.loadRoles();
+  }
+
+  loadRoles(): void {
+    this.roleService.getAllRoles().subscribe({
+      next: (roles) => this.availableRoles.set(roles),
+      error: () => console.error('Failed to load roles')
+    });
   }
 
   loadContent(): void {
     forkJoin({
       whatsNew: this.settingsService.getSetting('WhatsNewContent').pipe(catchError(() => of({ value: '' }))),
       mapsKey: this.settingsService.getSetting('GoogleMapsApiKey').pipe(catchError(() => of({ value: '' }))),
-      mapId: this.settingsService.getSetting('GoogleMapsMapId').pipe(catchError(() => of({ value: '' })))
+      mapId: this.settingsService.getSetting('GoogleMapsMapId').pipe(catchError(() => of({ value: '' }))),
+      quotesRoles: this.settingsService.getSetting('QuotesFeatureAllowedRoles').pipe(catchError(() => of({ value: '' })))
     }).subscribe({
       next: (results) => {
         this.globalSettingsForm.patchValue({ 
           whatsNewContent: results.whatsNew.value,
           googleMapsApiKey: results.mapsKey.value,
-          googleMapsMapId: results.mapId.value
+          googleMapsMapId: results.mapId.value,
+          quotesAllowedRoles: results.quotesRoles.value ? results.quotesRoles.value.split(',').map(r => r.trim()) : []
         });
         this.globalSettingsForm.markAsPristine();
       },
@@ -151,6 +187,9 @@ export default class AdminGlobalSettingsComponent implements OnInit {
     }
     if (this.globalSettingsForm.get('googleMapsMapId')?.dirty) {
       updates.push(this.settingsService.updateSetting('GoogleMapsMapId', { value: formValue.googleMapsMapId }));
+    }
+    if (this.globalSettingsForm.get('quotesAllowedRoles')?.dirty) {
+      updates.push(this.settingsService.updateSetting('QuotesFeatureAllowedRoles', { value: formValue.quotesAllowedRoles.join(',') }));
     }
 
     if (updates.length === 0) {

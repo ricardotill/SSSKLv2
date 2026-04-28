@@ -23,6 +23,7 @@
     <PackageReference Include="FluentValidation.AspNetCore" />
     <PackageReference Include="HtmlSanitizer" />
     <PackageReference Include="Lib.Net.Http.WebPush" />
+    <PackageReference Include="MailKit" />
     <PackageReference Include="Microsoft.ApplicationInsights" />
     <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" />
     <PackageReference Include="Microsoft.ApplicationInsights.DependencyCollector" />

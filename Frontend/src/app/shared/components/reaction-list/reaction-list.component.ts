@@ -51,7 +51,7 @@ import { ReactionItemComponent } from './reaction-item.component';
             
             <div class="flex justify-between items-center border-t border-surface-100 dark:border-surface-700 pt-2 -mx-1">
               <div class="flex gap-1">
-                 @for (quick of quickReactions.slice(0, 5); track quick) {
+                 @for (quick of filteredQuickReactions().slice(0, 5); track quick) {
                    <p-button 
                      [label]="quick" 
                      [text]="true" 
@@ -106,6 +106,12 @@ export class ReactionListComponent implements OnInit {
   reactions = signal<ReactionDto[]>([]);
   customReaction = '';
   quickReactions = ['👍', '❤️', '😂', '🎉', '🔥', '🤔', '😢'];
+  filteredQuickReactions = computed(() => {
+    if (this.targetType === 'Quote') {
+      return this.quickReactions.filter(r => r !== '❤️');
+    }
+    return this.quickReactions;
+  });
 
   replyingTo: ReactionDto | null = null;
 

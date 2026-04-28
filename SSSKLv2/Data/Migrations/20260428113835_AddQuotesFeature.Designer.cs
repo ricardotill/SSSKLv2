@@ -3,17 +3,20 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SSSKLv2.Data;
 
 #nullable disable
 
-namespace SSSKLv2.Migrations
+namespace SSSKLv2.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260428113835_AddQuotesFeature")]
+    partial class AddQuotesFeature
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -812,37 +815,6 @@ namespace SSSKLv2.Migrations
                     b.ToTable("QuoteAuthor");
                 });
 
-            modelBuilder.Entity("SSSKLv2.Data.QuoteVote", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreatedOn")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("GETUTCDATE()");
-
-                    b.Property<Guid>("QuoteId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Id")
-                        .IsUnique();
-
-                    b.HasIndex("UserId");
-
-                    b.HasIndex("QuoteId", "UserId")
-                        .IsUnique();
-
-                    b.ToTable("QuoteVote");
-                });
-
             modelBuilder.Entity("SSSKLv2.Data.Reaction", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1207,25 +1179,6 @@ namespace SSSKLv2.Migrations
                     b.Navigation("ApplicationUser");
 
                     b.Navigation("Quote");
-                });
-
-            modelBuilder.Entity("SSSKLv2.Data.QuoteVote", b =>
-                {
-                    b.HasOne("SSSKLv2.Data.Quote", "Quote")
-                        .WithMany()
-                        .HasForeignKey("QuoteId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("SSSKLv2.Data.ApplicationUser", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Quote");
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("SSSKLv2.Data.Reaction", b =>

@@ -7,7 +7,6 @@ public static class ServicesExtensions
     public static IServiceCollection AddServicesDI(this IServiceCollection services)
     {
         return services
-            .AddScoped<IHeaderService, HeaderService>()
             .AddTransient<IApplicationUserService, ApplicationUserService>()
             .AddTransient<IOldUserMigrationService, OldUserMigrationService>()
             .AddTransient<IOrderService, OrderService>()
@@ -16,6 +15,7 @@ public static class ServicesExtensions
             .AddTransient<IAnnouncementService, AnnouncementService>()
             .AddTransient<IAchievementService, AchievementService>()
             .AddTransient<IEventService, EventService>()
+            .AddTransient<IQuoteService, QuoteService>()
             .AddTransient<IReactionService, ReactionService>()
             .AddTransient<INotificationService, NotificationService>()
             .AddTransient<IWebPushService, WebPushService>()

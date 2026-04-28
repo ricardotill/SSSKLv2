@@ -19,6 +19,8 @@ import { Router, RouterModule } from '@angular/router';
 import { AchievementService } from '../../../features/achievements/services/achievement.service';
 import { AchievementEntry } from '../../../core/models/achievement.model';
 import { TooltipModule } from 'primeng/tooltip';
+import { QuoteService } from '../../../features/quotes/services/quote.service';
+import { QuoteDto } from '../../../core/models/quote.model';
 
 @Component({
   selector: 'app-user-profile-drawer',
@@ -202,6 +204,54 @@ import { TooltipModule } from 'primeng/tooltip';
                 </div>
               }
             </section>
+
+            <!-- Quotes Section -->
+            @if (hasQuoteAccess()) {
+              <section class="border-t border-surface-200 dark:border-surface-700 pt-6">
+                <div class="flex justify-between items-center mb-4">
+                  <h4 
+                    (click)="navigateToQuotes()" 
+                    class="text-xl font-semibold m-0 flex items-center gap-2 cursor-pointer hover:text-primary transition-colors group"
+                  >
+                    <i class="pi pi-comment text-primary"></i> 
+                    {{ ls.t().quotes }}
+                    <i class="pi pi-chevron-right text-sm opacity-0 group-hover:opacity-100 transition-opacity"></i>
+                  </h4>
+                </div>
+  
+                @if (quotes().length > 0) {
+                  <div class="flex flex-col gap-3">
+                    @for (quote of quotes(); track quote.id) {
+                      <div 
+                        (click)="navigateToQuoteDetail(quote.id)"
+                        class="p-4 bg-surface-50 dark:bg-surface-800/50 rounded-xl border border-surface-200 dark:border-surface-700 cursor-pointer hover:border-primary transition-colors"
+                      >
+                        <p class="m-0 italic text-surface-900 dark:text-surface-0 line-clamp-2">"{{ quote.text }}"</p>
+                        <div class="flex justify-between items-center mt-2">
+                          <span class="text-xs text-surface-500">
+                            {{ quote.dateSaid | date:'dd MMM yyyy' }}
+                          </span>
+                          <div class="flex items-center gap-3">
+                            <div class="flex items-center gap-1 text-xs text-surface-500">
+                              <i class="pi pi-heart-fill text-red-400"></i>
+                              <span>{{ quote.voteCount || 0 }}</span>
+                            </div>
+                            <div class="flex items-center gap-1 text-xs text-surface-500">
+                              <i class="pi pi-comments text-primary-400"></i>
+                              <span>{{ quote.commentsCount || 0 }}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    }
+                  </div>
+                } @else {
+                  <div class="p-6 text-center bg-surface-50 dark:bg-surface-800/50 rounded-xl border border-dashed border-surface-200 dark:border-surface-700">
+                    <p class="text-surface-500 m-0 italic text-sm">Geen quotes gevonden.</p>
+                  </div>
+                }
+              </section>
+            }
           </div>
         </div>
       } @else {
@@ -231,9 +281,12 @@ export class UserProfileDrawerComponent {
   private confirmationService = inject(ConfirmationService);
   private router = inject(Router);
   private achievementService = inject(AchievementService);
+  private quoteService = inject(QuoteService);
 
   user = signal<ApplicationUserDto | null>(null);
   achievements = signal<AchievementEntry[]>([]);
+  quotes = signal<QuoteDto[]>([]);
+  hasQuoteAccess = signal(true);
   loading = signal(false);
   editMode = signal(false);
   saving = signal(false);
@@ -250,6 +303,8 @@ export class UserProfileDrawerComponent {
       } else {
         this.user.set(null);
         this.achievements.set([]);
+        this.quotes.set([]);
+        this.hasQuoteAccess.set(true);
         this.editMode.set(false);
       }
     });
@@ -315,6 +370,20 @@ export class UserProfileDrawerComponent {
       },
       error: () => this.achievements.set([])
     });
+
+    // Fetch quotes
+    this.quoteService.getQuotes(0, 3, id).subscribe({
+      next: (data) => {
+        this.quotes.set(data);
+        this.hasQuoteAccess.set(true);
+      },
+      error: (err) => {
+        this.quotes.set([]);
+        if (err.status === 403) {
+          this.hasQuoteAccess.set(false);
+        }
+      }
+    });
   }
 
   startEdit() {
@@ -361,6 +430,17 @@ export class UserProfileDrawerComponent {
   navigateToAchievementDetail(achievementId: string) {
     this.drawerService.close();
     this.router.navigate(['/achievements', achievementId]);
+  }
+
+  navigateToQuotes() {
+    const userId = this.user()?.id;
+    this.drawerService.close();
+    this.router.navigate(['/quotes'], { queryParams: { userId } });
+  }
+
+  navigateToQuoteDetail(quoteId: string) {
+    this.drawerService.close();
+    this.router.navigate(['/quotes', quoteId]);
   }
 
   // Profile Picture Methods

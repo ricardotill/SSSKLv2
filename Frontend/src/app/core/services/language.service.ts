@@ -313,13 +313,38 @@ export class LanguageService {
     'push_enabled': 'Ingeschakeld',
     'push_disabled': 'Uitgeschakeld',
     'push_unsupported': 'Niet ondersteund door je browser',
-    
+
     // Push Dialog
     'PUSH.DIALOG.TITLE': 'Blijf op de hoogte!',
     'PUSH.DIALOG.HEADING': 'Push Notificaties',
     'PUSH.DIALOG.DESCRIPTION': 'Wil je meldingen ontvangen voor nieuwe reacties, mededelingen en behaalde achievements? Je kunt dit altijd weer uitzetten in de instellingen.',
     'PUSH.DIALOG.ENABLE': 'Inschakelen',
     'PUSH.DIALOG.LATER': 'Misschien later',
+
+    // Quotes
+    'quotes': 'Quotes',
+    'quotes_comments': 'Reacties',
+    'quote_text': 'Quote',
+    'add_quote': 'Quote Toevoegen',
+    'edit_quote': 'Quote Bewerken',
+    'confirm_delete_quote': 'Weet je zeker dat je deze quote wilt verwijderen?',
+    'quotes_desc': 'Grappige dingen die mensen hebben gezegd.',
+    'when_was_it_said': 'Wanneer is dit gezegd?',
+    'who_said_it': 'Wie heeft het gezegd?',
+    'visible_to_roles': 'Wie kan dit zien?',
+    'visible_to_roles_help': 'Laat leeg om iedereen met toegang tot de quotes functie dit te laten zien.',
+    'send_notification_toggle': 'Notificatie verzenden?',
+    'send_notification_help': 'Stuur een push/in-app notificatie naar alle gebruikers met de geselecteerde rollen.',
+    'quote_added_success': 'Quote succesvol toegevoegd',
+    'quote_updated_success': 'Quote succesvol bijgewerkt',
+    'quote_deleted_success': 'Quote succesvol verwijderd',
+    'no_quotes_found': 'Nog geen quotes gevonden.',
+    'be_the_first_quote': 'Wees de eerste die er een toevoegt!',
+    'authors_required': 'Ten minste één auteur is verplicht',
+    'quote_text_required': 'Quote tekst is verplicht',
+    'select_user_or_custom': 'Selecteer een gebruiker of typ een aangepaste naam...',
+    'add_custom_name': 'Voeg "{name}" toe als aangepaste naam',
+    'added_by': 'Toegevoegd door',
   };
 
   // Signal for getting translations

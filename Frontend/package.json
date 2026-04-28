@@ -40,7 +40,7 @@
     "@angular/build": "^21.2.3",
     "@angular/cli": "^21.2.3",
     "@angular/compiler-cli": "^21.2.0",
-    "@azure/static-web-apps-cli": "^2.0.8",
+    "@azure/static-web-apps-cli": "^2.0.9",
     "@tailwindcss/postcss": "^4.1.12",
     "@types/canvas-confetti": "^1.9.0",
     "@types/google.maps": "^3.58.1",

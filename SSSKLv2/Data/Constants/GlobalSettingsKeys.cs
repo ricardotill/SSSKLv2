@@ -9,6 +9,10 @@ public static class GlobalSettingsKeys
     public const string EmailSmtpUsername = "EmailSmtpUsername";
     public const string EmailSmtpPassword = "EmailSmtpPassword";
 
+    /// <summary>
+    /// Keys that are sensitive: they can be stored and used internally, but
+    /// can only be retrieved by admins.
+    /// </summary>
     public static readonly IReadOnlyList<string> SensitiveKeys = new List<string>
     {
         EmailSmtpServer,
@@ -18,5 +22,14 @@ public static class GlobalSettingsKeys
         EmailSmtpUsername,
         EmailSmtpPassword,
         "GoogleMapsApiKey" // Existing sensitive key found in controller
+    };
+
+    /// <summary>
+    /// Keys that are write-only: they can be stored and used internally, but
+    /// must NEVER be returned via the API — not even to admins.
+    /// </summary>
+    public static readonly IReadOnlyList<string> WriteOnlyKeys = new List<string>
+    {
+        EmailSmtpPassword
     };
 }

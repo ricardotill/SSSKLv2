@@ -95,7 +95,11 @@ import { finalize, forkJoin, of, catchError } from 'rxjs';
                   [feedback]="false" 
                   styleClass="w-full" 
                   inputStyleClass="w-full"
+                  [placeholder]="passwordIsSet() ? '●●●●●●●● (reeds ingesteld)' : 'App wachtwoord invoeren'"
                 ></p-password>
+                @if (passwordIsSet() && !globalSettingsForm.controls.emailSmtpPassword.dirty) {
+                  <small class="text-emerald-600 flex items-center gap-1"><i class="pi pi-lock"></i> Wachtwoord is ingesteld. Laat leeg om het huidige wachtwoord te behouden.</small>
+                }
               </div>
             </div>
 
@@ -186,6 +190,7 @@ export default class AdminGlobalSettingsComponent implements OnInit {
 
   saving = signal<boolean>(false);
   sendingTestEmail = signal<boolean>(false);
+  passwordIsSet = signal<boolean>(false);
 
   globalSettingsForm = this.fb.nonNullable.group({
     whatsNewContent: ['', Validators.required],
@@ -224,11 +229,13 @@ export default class AdminGlobalSettingsComponent implements OnInit {
       emailServer: this.settingsService.getSetting('EmailSmtpServer').pipe(catchError(() => of({ value: '' }))),
       emailPort: this.settingsService.getSetting('EmailSmtpPort').pipe(catchError(() => of({ value: '' }))),
       emailUser: this.settingsService.getSetting('EmailSmtpUsername').pipe(catchError(() => of({ value: '' }))),
-      emailPass: this.settingsService.getSetting('EmailSmtpPassword').pipe(catchError(() => of({ value: '' }))),
+      // EmailSmtpPassword is write-only: we check if it exists but never load its value
+      emailPassExists: this.settingsService.settingExists('EmailSmtpPassword'),
       emailFrom: this.settingsService.getSetting('EmailSenderEmail').pipe(catchError(() => of({ value: '' }))),
       emailFromName: this.settingsService.getSetting('EmailSenderName').pipe(catchError(() => of({ value: '' })))
     }).subscribe({
       next: (results) => {
+        this.passwordIsSet.set(results.emailPassExists);
         this.globalSettingsForm.patchValue({ 
           whatsNewContent: results.whatsNew.value,
           googleMapsApiKey: results.mapsKey.value,
@@ -237,7 +244,7 @@ export default class AdminGlobalSettingsComponent implements OnInit {
           emailSmtpServer: results.emailServer.value,
           emailSmtpPort: results.emailPort.value,
           emailSmtpUsername: results.emailUser.value,
-          emailSmtpPassword: results.emailPass.value,
+          // password intentionally not patched — never retrieved from API
           emailSenderEmail: results.emailFrom.value,
           emailSenderName: results.emailFromName.value
         });
@@ -298,7 +305,7 @@ export default class AdminGlobalSettingsComponent implements OnInit {
     if (controls.emailSmtpUsername.dirty) {
       updates.push(this.settingsService.updateSetting('EmailSmtpUsername', { value: formValue.emailSmtpUsername }));
     }
-    if (controls.emailSmtpPassword.dirty) {
+    if (controls.emailSmtpPassword.dirty && formValue.emailSmtpPassword.trim() !== '') {
       updates.push(this.settingsService.updateSetting('EmailSmtpPassword', { value: formValue.emailSmtpPassword }));
     }
     if (controls.emailSenderEmail.dirty) {

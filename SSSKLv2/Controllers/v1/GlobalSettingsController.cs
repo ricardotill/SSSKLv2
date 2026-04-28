@@ -23,6 +23,12 @@ public class GlobalSettingsController : ControllerBase
     [HttpGet("{key}")]
     public async Task<ActionResult<GlobalSettingDto>> GetSetting(string key)
     {
+        // Write-only keys can never be retrieved via the API — not even by admins
+        if (GlobalSettingsKeys.WriteOnlyKeys.Contains(key))
+        {
+            return Forbid();
+        }
+
         // Check if the key is sensitive and requires admin role
         if (GlobalSettingsKeys.SensitiveKeys.Contains(key))
         {

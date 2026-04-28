@@ -66,6 +66,11 @@ import { TooltipModule } from 'primeng/tooltip';
           }
         </div>
 
+        <div class="flex items-center gap-2 text-sm text-surface-500">
+          <i class="pi pi-calendar"></i>
+          <span class="font-medium text-surface-700 dark:text-surface-200">{{ quote.dateSaid | date:'mediumDate' }}</span>
+        </div>
+
         <!-- Footer Info & Actions -->
         <div class="flex justify-between items-center pt-4 border-t border-surface-100 dark:border-surface-800">
           <div class="flex items-center gap-4">

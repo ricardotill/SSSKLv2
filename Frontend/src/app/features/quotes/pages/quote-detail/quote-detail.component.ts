@@ -86,7 +86,7 @@ import { UserProfileDrawerService } from '../../../../core/services/user-profile
                 <div class="flex items-center gap-6">
                   <div class="flex items-center gap-2">
                     <i class="pi pi-calendar"></i>
-                    <span>{{ q.dateSaid | date:'longDate' }}</span>
+                    <span class="font-medium">{{ q.dateSaid | date:'longDate' }}</span>
                   </div>
                   <!-- Vote Button -->
                   <p-button 

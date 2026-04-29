@@ -14,6 +14,7 @@ import { SwPush } from '@angular/service-worker';
 import { vi } from 'vitest';
 import { providePrimeNG } from 'primeng/config';
 import Aura from '@primeuix/themes/aura';
+import { AppUpdateService } from './core/services/app-update.service';
 
 describe('App', () => {
   beforeEach(async () => {
@@ -48,7 +49,8 @@ describe('App', () => {
         {
           provide: PushNotificationService,
           useValue: { showPrompt: signal(false), isSupported: signal(false), isEnabled: signal(false) }
-        }
+        },
+        { provide: AppUpdateService, useValue: {} }
       ]
     }).compileComponents();
   });

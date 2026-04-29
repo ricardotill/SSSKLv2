@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using NSubstitute;
 using SSSKLv2.Controllers.v1;
-using System.Threading.Tasks;
+using System.Text.RegularExpressions;
 
 namespace SSSKLv2.Test.Controllers;
 
@@ -66,5 +66,31 @@ public class PublicControllerTests
         // Assert
         var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
         okResult.Value.Should().Be("localhost");
+    }
+
+    [TestMethod]
+    public void GetVersion_ReturnsAssemblyVersion()
+    {
+        // Act
+        var result = _sut.GetVersion();
+
+        // Assert
+        var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
+        var version = okResult.Value.Should().BeOfType<VersionDto>().Subject;
+        version.Version.Should().Be("3.8.3");
+    }
+
+    [TestMethod]
+    public void GetVersion_ReturnsSemVer()
+    {
+        // Act
+        var result = _sut.GetVersion();
+
+        // Assert
+        var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
+        var version = okResult.Value.Should().BeOfType<VersionDto>().Subject;
+        Regex.IsMatch(version.Version, @"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$")
+            .Should()
+            .BeTrue();
     }
 }

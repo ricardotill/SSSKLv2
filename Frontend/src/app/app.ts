@@ -10,6 +10,7 @@ import { UserProfileDrawerComponent } from './shared/components/user-profile-dra
 import { PushPermissionDialogComponent } from './layout/push-permission-dialog/push-permission-dialog.component';
 import { PushNotificationService } from './core/services/push-notification.service';
 import { CommonModule } from '@angular/common';
+import { AppUpdateService } from './core/services/app-update.service';
 
 @Component({
   selector: 'app-root',
@@ -23,6 +24,7 @@ export class App {
   private primeng = inject(PrimeNG);
   private authService = inject(AuthService);
   private popupService = inject(AchievementPopupService);
+  private appUpdateService = inject(AppUpdateService);
   protected pushService = inject(PushNotificationService);
 
   constructor() {

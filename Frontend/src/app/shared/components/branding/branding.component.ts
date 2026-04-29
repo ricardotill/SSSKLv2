@@ -2,6 +2,7 @@ import { Component, ChangeDetectionStrategy, inject, input } from '@angular/core
 import { Router } from '@angular/router';
 import { TagModule } from 'primeng/tag';
 import { AuthService } from '../../../core/auth/auth.service';
+import { AppVersionService } from '../../../core/services/app-version.service';
 
 @Component({
   selector: 'app-branding',
@@ -18,7 +19,7 @@ import { AuthService } from '../../../core/auth/auth.service';
     >
       <h2 class="text-xl font-bold m-0">SSSKL</h2>
       @if (showVersion()) {
-        <p-tag class="ml-2" value="v3.8.3" />
+        <p-tag class="ml-2" [value]="'v' + versionService.version()" />
       }
     </div>
   `,
@@ -31,6 +32,7 @@ import { AuthService } from '../../../core/auth/auth.service';
 })
 export class BrandingComponent {
   authService = inject(AuthService);
+  versionService = inject(AppVersionService);
   private router = inject(Router);
 
   showVersion = input<boolean>(true);

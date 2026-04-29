@@ -1,0 +1,27 @@
+http://localhost:8080 {
+  @api path /api/*
+  handle @api {
+    reverse_proxy https://localhost:7193 {
+      header_up Host {upstream_hostport}
+      transport http {
+        tls_insecure_skip_verify
+      }
+    }
+  }
+
+  @hubs path /hubs/*
+  handle @hubs {
+    reverse_proxy https://localhost:7193 {
+      header_up Host {upstream_hostport}
+      transport http {
+        tls_insecure_skip_verify
+      }
+    }
+  }
+
+  handle {
+    root * ./Frontend/dist/SSSKLv2/browser
+    try_files {path} /index.html
+    file_server
+  }
+}

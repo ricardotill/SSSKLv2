@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using NSubstitute;
 using SSSKLv2.Controllers.v1;
+using System.Reflection;
 using System.Text.RegularExpressions;
 
 namespace SSSKLv2.Test.Controllers;
@@ -77,7 +78,10 @@ public class PublicControllerTests
         // Assert
         var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
         var version = okResult.Value.Should().BeOfType<VersionDto>().Subject;
-        version.Version.Should().Be("3.8.3");
+        var expectedVersion = typeof(Program).Assembly
+            .GetCustomAttribute<AssemblyInformationalVersionAttribute>()!
+            .InformationalVersion;
+        version.Version.Should().Be(expectedVersion);
     }
 
     [TestMethod]

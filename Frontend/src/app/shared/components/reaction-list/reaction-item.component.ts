@@ -23,7 +23,7 @@ import { FormsModule } from '@angular/forms';
         [label]="!reaction.profilePictureUrl ? reaction.userName[0] : ''"
         shape="circle" 
         size="normal"
-        class="cursor-pointer"
+        class="cursor-pointer shrink-0"
         (click)="drawerService.open(reaction.userId)"
       />
       
@@ -111,7 +111,7 @@ import { FormsModule } from '@angular/forms';
               [label]="!authService.currentUser()?.profilePictureUrl ? authService.currentUser()?.userName?.substring(0,1) : undefined"
               shape="circle" 
               size="normal"
-              class="w-7 h-7"
+              class="w-7 h-7 hidden md:flex shrink-0"
             />
             <div class="flex-1 flex flex-col gap-2">
               <div class="text-[11px] font-medium opacity-60 flex items-center gap-1 -mb-1">
@@ -146,7 +146,7 @@ import { FormsModule } from '@angular/forms';
                      [label]="!child.profilePictureUrl ? child.userName[0] : ''"
                      shape="circle" 
                      styleClass="w-6 h-6 mt-0.5"
-                     class="cursor-pointer"
+                     class="cursor-pointer shrink-0"
                      (click)="drawerService.open(child.userId)"
                    />
                    <div class="flex flex-col flex-1 gap-0.5">

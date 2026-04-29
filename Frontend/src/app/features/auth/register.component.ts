@@ -121,6 +121,10 @@ import { LanguageService } from '../../core/services/language.service';
           
           @if (successMessage()) {
              <p-message severity="success" [text]="successMessage()" styleClass="w-full mt-4"></p-message>
+             <p class="text-surface-500 mt-3 mb-0">
+               Geen mail ontvangen?
+               <a routerLink="/resend-confirmation-email" class="text-primary hover:underline cursor-pointer">Bevestigingsmail opnieuw versturen</a>
+             </p>
           }
 
           <div class="mt-4">
@@ -161,11 +165,14 @@ import { LanguageService } from '../../core/services/language.service';
     .mt-4 {
       margin-top: 1rem;
     }
-    .mt-1 {
-      margin-top: 0.25rem;
+    .mt-3 {
+      margin-top: 0.75rem;
     }
     .mb-0 {
-        margin-bottom: 0px !important;
+      margin-bottom: 0;
+    }
+    .mt-1 {
+      margin-top: 0.25rem;
     }
     .gap-4 {
         gap: 1rem;
@@ -210,8 +217,7 @@ export default class RegisterComponent {
     this.authService.register(userData).subscribe({
       next: () => {
         this.isLoading.set(false);
-        this.successMessage.set(this.lang.t().registration_successful);
-        setTimeout(() => this.router.navigate(['/login'], { queryParams: { returnUrl: this.route.snapshot.queryParams['returnUrl'] } }), 2000);
+        this.successMessage.set('Registratie succesvol! Controleer je mailbox om je e-mailadres te bevestigen.');
       },
       error: (err) => {
         this.isLoading.set(false);

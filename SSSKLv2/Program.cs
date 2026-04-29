@@ -26,8 +26,6 @@ builder.AddServiceDefaults();
 var isIntegrationLikeEnvironment = builder.Environment.IsDevelopment() || builder.Environment.IsEnvironment("IntegrationTest");
 var websiteDomain = builder.Configuration["WEBSITE_DOMAIN"] ?? (builder.Environment.IsDevelopment() ? "localhost" : "ssskl.scoutingwilo.nl");
 
-
-
 builder.Services.AddControllers();
 
 // Register all FluentValidation validators from this assembly
@@ -222,7 +220,7 @@ else if (!string.IsNullOrWhiteSpace(storageServiceUri))
 
 builder.Services.AddIdentityCore<ApplicationUser>(options =>
     {
-        options.SignIn.RequireConfirmedAccount = false;
+        options.SignIn.RequireConfirmedAccount = true;
         options.Stores.SchemaVersion = IdentitySchemaVersions.Version3;
     })
     .AddRoles<IdentityRole>()

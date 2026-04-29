@@ -1,6 +1,6 @@
 {
   "name": "sssklv2",
-  "version": "3.8.5",
+  "version": "3.8.6",
   "scripts": {
     "ng": "ng",
     "prestart": "node setup-ssl.js",

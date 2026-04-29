@@ -39,6 +39,22 @@ export const routes: Routes = [
     title: 'Registreren - SSSKL'
   },
   {
+    path: 'confirm-email',
+    loadComponent: () => import('./features/auth/confirm-email.component')
+  },
+  {
+    path: 'resend-confirmation-email',
+    loadComponent: () => import('./features/auth/resend-confirmation-email.component')
+  },
+  {
+    path: 'forgot-password',
+    loadComponent: () => import('./features/auth/forgot-password.component')
+  },
+  {
+    path: 'reset-password',
+    loadComponent: () => import('./features/auth/reset-password.component')
+  },
+  {
     path: 'leaderboard/livedisplay',
     loadComponent: () => import('./features/leaderboard/live-display/live-display.component').then(m => m.LiveDisplayComponent),
     title: 'Live Leaderboard - SSSKL'

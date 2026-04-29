@@ -6,11 +6,11 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>aspnet-SSSKLv2-3b416739-57c6-4151-a2e5-8cfca6f4185b</UserSecretsId>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Version>3.8.5</Version>
-    <InformationalVersion>3.8.5</InformationalVersion>
+    <Version>3.8.6</Version>
+    <InformationalVersion>3.8.6</InformationalVersion>
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
-    <AssemblyVersion>3.8.5.0</AssemblyVersion>
-    <FileVersion>3.8.5.0</FileVersion>
+    <AssemblyVersion>3.8.6.0</AssemblyVersion>
+    <FileVersion>3.8.6.0</FileVersion>
   </PropertyGroup>
 
   <ItemGroup>

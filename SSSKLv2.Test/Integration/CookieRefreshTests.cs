@@ -28,7 +28,10 @@ namespace SSSKLv2.Test.Integration
                 builder.ConfigureAppConfiguration((context, configBuilder) =>
                 {
                     // Map "db" connection string to match Program.cs expectations
-                    var dict = new[] { new KeyValuePair<string, string?>("ConnectionStrings:db", "Filename=:memory:") };
+                    var dict = new[] { 
+                        new KeyValuePair<string, string?>("ConnectionStrings:db", "Filename=:memory:"),
+                        new KeyValuePair<string, string?>("WEBSITE_DOMAIN", "https://localhost")
+                    };
                     configBuilder.AddInMemoryCollection(dict);
                 });
 
@@ -90,6 +93,14 @@ namespace SSSKLv2.Test.Integration
             if (!regResponse.IsSuccessStatusCode)
             {
                 Assert.Fail($"Register failed: {(int)regResponse.StatusCode} {regResponse.ReasonPhrase}. Body: {regBody}");
+            }
+
+            using (var scope = factory.Services.CreateScope())
+            {
+                var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                var user = dbContext.Users.Single(u => u.Email == TestEmail);
+                user.EmailConfirmed = true;
+                dbContext.SaveChanges();
             }
 
             // Login using cookies

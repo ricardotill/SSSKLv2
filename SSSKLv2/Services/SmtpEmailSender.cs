@@ -53,35 +53,22 @@ public class SmtpEmailSender : IEmailSender<ApplicationUser>
         <head>
             <meta charset='utf-8'>
             <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-            <style>
-                body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f0fdf4; margin: 0; padding: 40px 20px; }}
-                .container {{ max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 24px -1px rgba(16, 185, 129, 0.12); }}
-                .header {{ background: linear-gradient(135deg, #065f46 0%, #059669 100%); padding: 36px 30px; text-align: center; }}
-                .header-badge {{ display: inline-block; background-color: rgba(255,255,255,0.15); color: white; font-size: 12px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; padding: 4px 12px; border-radius: 20px; margin-bottom: 12px; }}
-                .header h1 {{ color: white; margin: 0; font-size: 26px; font-weight: 700; letter-spacing: -0.025em; }}
-                .content {{ padding: 44px 40px; text-align: center; line-height: 1.7; color: #374151; }}
-                .content h2 {{ color: #065f46; margin-top: 0; margin-bottom: 12px; font-size: 22px; font-weight: 700; }}
-                .content p {{ margin: 0 0 16px; font-size: 15px; color: #4b5563; }}
-                .divider {{ height: 1px; background-color: #d1fae5; margin: 0; }}
-                .footer {{ padding: 24px; text-align: center; color: #9ca3af; font-size: 13px; background-color: #f9fafb; }}
-                .footer a {{ color: #059669; text-decoration: none; }}
-            </style>
         </head>
-        <body>
-            <div class='container'>
-                <div class='header'>
-                    <div class='header-badge'>Scouting Wilo</div>
-                    <h1>🌿 SSSKL</h1>
+        <body style=""font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f0fdf4; margin: 0; padding: 40px 20px;"">
+            <div style=""max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 24px -1px rgba(16, 185, 129, 0.12);"">
+                <div style=""background-color: #059669; background: linear-gradient(135deg, #065f46 0%, #059669 100%); padding: 36px 30px; text-align: center;"">
+                    <div style=""display: inline-block; background-color: rgba(255,255,255,0.15); color: white; font-size: 12px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; padding: 4px 12px; border-radius: 20px; margin-bottom: 12px;"">Scouting Wilo</div>
+                    <h1 style=""color: white; margin: 0; font-size: 26px; font-weight: 700; letter-spacing: -0.025em;"">🌿 SSSKL</h1>
                 </div>
-                <div class='content'>
-                    <h2>{title}</h2>
-                    <p>{message}</p>
+                <div style=""padding: 44px 40px; text-align: center; line-height: 1.7; color: #374151;"">
+                    <h2 style=""color: #065f46; margin-top: 0; margin-bottom: 12px; font-size: 22px; font-weight: 700;"">{title}</h2>
+                    <p style=""margin: 0 0 16px; font-size: 15px; color: #4b5563;"">{message}</p>
                     {buttonHtml}
                 </div>
-                <div class='divider'></div>
-                <div class='footer'>
+                <div style=""height: 1px; background-color: #d1fae5; margin: 0;""></div>
+                <div style=""padding: 24px; text-align: center; color: #9ca3af; font-size: 13px; background-color: #f9fafb;"">
                     &copy; {DateTime.UtcNow.Year} Scouting Wilo &mdash; Alle rechten voorbehouden.<br/>
-                    <a href='https://ssskl.scoutingwilo.nl'>ssskl.scoutingwilo.nl</a>
+                    <a href='https://ssskl.scoutingwilo.nl' style=""color: #059669; text-decoration: none;"">ssskl.scoutingwilo.nl</a>
                 </div>
             </div>
         </body>

@@ -81,6 +81,9 @@ import { BrandingComponent } from '../../shared/components/branding/branding.com
             <p-checkbox formControlName="rememberMe" [binary]="true" inputId="rememberMe"></p-checkbox>
             <label for="rememberMe" class="ml-2 font-medium text-surface-900 dark:text-surface-0 cursor-pointer">{{ lang.t().remember_me }}</label>
           </div>
+          <div class="mt-3">
+            <a routerLink="/forgot-password" class="text-primary hover:underline cursor-pointer">Wachtwoord vergeten?</a>
+          </div>
           } @else {
             <div class="field">
               <label for="twoFactorCode" class="block">{{ lang.t().tfa_code }}</label>
@@ -147,6 +150,9 @@ import { BrandingComponent } from '../../shared/components/branding/branding.com
     }
     .mt-4 {
       margin-top: 1rem;
+    }
+    .mt-3 {
+      margin-top: 0.75rem;
     }
     .mt-1 {
       margin-top: 0.25rem;

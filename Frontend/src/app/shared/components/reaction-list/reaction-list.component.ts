@@ -36,7 +36,7 @@ import { ReactionItemComponent } from './reaction-item.component';
             [label]="!authService.currentUser()?.profilePictureUrl ? authService.currentUser()?.userName?.substring(0,1) : undefined"
             shape="circle" 
             size="normal"
-            class="hidden sm:block"
+            class="hidden md:flex shrink-0"
           />
           <div class="flex-1 flex flex-col gap-3">
             <textarea 

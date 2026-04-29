@@ -7,16 +7,17 @@ import { catchError, filter, switchMap, take } from 'rxjs/operators';
 export const authInterceptor: HttpInterceptorFn = (req: HttpRequest<any>, next: HttpHandlerFn): Observable<HttpEvent<any>> => {
     const authService = inject(AuthService);
     const token = authService.getAccessToken();
+    const isPublicIdentityEndpoint = req.url.includes('/api/v1/identity/') && !req.url.includes('/manage/') && !req.url.includes('/PasskeyCreation');
 
     let authReq = req;
-    // Don't add token to identity endpoints like login/refresh/register
-    if (token && !req.url.includes(`/api/v1/identity/login`) && !req.url.includes(`/api/v1/identity/refresh`)) {
+    // Don't add token to public identity endpoints.
+    if (token && !isPublicIdentityEndpoint) {
         authReq = addTokenHeader(req, token);
     }
 
     return next(authReq).pipe(
         catchError(error => {
-            if (error instanceof HttpErrorResponse && error.status === 401 && !authReq.url.includes(`/api/v1/identity/login`)) {
+            if (error instanceof HttpErrorResponse && error.status === 401 && !isPublicIdentityEndpoint) {
                 return handle401Error(authReq, next, authService);
             }
             return throwError(() => error);

@@ -23,6 +23,7 @@ using System.Text.Json.Serialization;
 using SSSKLv2.Data;
 using SSSKLv2.Services;
 using SSSKLv2.Data.Constants;
+using Microsoft.Extensions.Configuration;
 
 namespace SSSKLv2.Registrations;
 
@@ -50,7 +51,7 @@ public static class IdentityApiEndpointRouteBuilderExtensions
         var timeProvider = endpoints.ServiceProvider.GetRequiredService<TimeProvider>();
         var bearerTokenOptions = endpoints.ServiceProvider.GetRequiredService<IOptionsMonitor<BearerTokenOptions>>();
         var emailSender = endpoints.ServiceProvider.GetRequiredService<IEmailSender<ApplicationUser>>();
-        var linkGenerator = endpoints.ServiceProvider.GetRequiredService<LinkGenerator>();
+        var configuration = endpoints.ServiceProvider.GetRequiredService<IConfiguration>();
 
         // We'll figure out a unique endpoint name based on the final route pattern during endpoint generation.
         string? confirmEmailEndpointName = null;
@@ -263,7 +264,13 @@ public static class IdentityApiEndpointRouteBuilderExtensions
                 var code = await userManager.GeneratePasswordResetTokenAsync(user);
                 code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
 
-                await emailSender.SendPasswordResetCodeAsync(user, resetRequest.Email, HtmlEncoder.Default.Encode(code));
+                var resetPasswordUrl = BuildFrontendUrl(configuration, "/reset-password", new Dictionary<string, string?>
+                {
+                    ["email"] = resetRequest.Email,
+                    ["resetCode"] = code,
+                });
+
+                await emailSender.SendPasswordResetLinkAsync(user, resetRequest.Email, HtmlEncoder.Default.Encode(resetPasswordUrl));
             }
 
             // Don't reveal that the user does not exist or is not confirmed, so don't return a 200 if we would have
@@ -461,8 +468,9 @@ public static class IdentityApiEndpointRouteBuilderExtensions
                 routeValues.Add("changedEmail", email);
             }
 
-            var confirmEmailUrl = linkGenerator.GetUriByName(context, confirmEmailEndpointName, routeValues)
-                ?? throw new NotSupportedException($"Could not find endpoint named '{confirmEmailEndpointName}'.");
+            var confirmEmailUrl = BuildFrontendUrl(configuration, "/confirm-email", routeValues.ToDictionary(
+                static pair => pair.Key,
+                static pair => pair.Value?.ToString()));
 
             await emailSender.SendConfirmationLinkAsync(user, email, HtmlEncoder.Default.Encode(confirmEmailUrl));
         }
@@ -609,6 +617,31 @@ public static class IdentityApiEndpointRouteBuilderExtensions
             { errorCode, [errorDescription] }
         });
 
+    private static string BuildFrontendUrl(IConfiguration configuration, string path, IReadOnlyDictionary<string, string?> queryValues)
+    {
+        var websiteDomain = configuration["WEBSITE_DOMAIN"] ?? "localhost";
+
+        var trimmedDomain = websiteDomain.Trim().TrimEnd('/');
+        if (!trimmedDomain.StartsWith("http://", StringComparison.OrdinalIgnoreCase) &&
+            !trimmedDomain.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+        {
+            trimmedDomain = trimmedDomain.StartsWith("localhost", StringComparison.OrdinalIgnoreCase)
+                ? $"http://{trimmedDomain}"
+                : $"https://{trimmedDomain}";
+        }
+
+        var query = new Dictionary<string, string?>();
+        foreach (var pair in queryValues)
+        {
+            if (!string.IsNullOrEmpty(pair.Value))
+            {
+                query[pair.Key] = pair.Value;
+            }
+        }
+
+        return QueryHelpers.AddQueryString($"{trimmedDomain}{path}", query);
+    }
+
     private static ValidationProblem CreateValidationProblem(IdentityResult result)
     {
         // We expect a single error code and description in the normal case.
@@ -752,8 +785,5 @@ public sealed class CreatePasskeyRequest
     [JsonPropertyName("name")]
     public string? Name { get; init; }
 }
-
-
-
 
 

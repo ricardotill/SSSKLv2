@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, input, output, inject, computed, signal, OnInit, effect } from '@angular/core';
+import { Component, ChangeDetectionStrategy, input, output, inject, computed, signal, effect } from '@angular/core';
 import { MenuModule } from 'primeng/menu';
 import { MenuItem } from 'primeng/api';
 import { CommonModule } from '@angular/common';
@@ -174,11 +174,17 @@ export class SidebarComponent {
 
   constructor() {
     effect(() => {
-      const isAuth = this.authService.isAuthenticated();
-      if (isAuth) {
-        this.checkQuotesAccess();
-      } else {
+      const isInitialized = this.authService.isInitialized();
+      const currentUser = this.authService.currentUser();
+      const isAuthenticated = this.authService.isAuthenticated();
+
+      if (!isAuthenticated || (isInitialized && !currentUser)) {
         this.canAccessQuotes.set(false);
+        return;
+      }
+
+      if (isInitialized && currentUser) {
+        this.checkQuotesAccess();
       }
     });
   }

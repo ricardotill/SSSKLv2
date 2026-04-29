@@ -26,9 +26,9 @@ describe('AppVersionService', () => {
 
     const req = httpMock.expectOne('/api/v1/public/version');
     expect(req.request.method).toBe('GET');
-    req.flush({ version: '3.8.4' });
+    req.flush({ version: '3.8.5' });
 
-    expect(service.version()).toBe('3.8.4');
+    expect(service.version()).toBe('3.8.5');
   });
 
   it('should fall back to the current known version when the endpoint fails', () => {
@@ -37,6 +37,6 @@ describe('AppVersionService', () => {
     const req = httpMock.expectOne('/api/v1/public/version');
     req.flush('Nope', { status: 500, statusText: 'Server Error' });
 
-    expect(service.version()).toBe('3.8.3');
+    expect(service.version()).toBe('3.8.5');
   });
 });

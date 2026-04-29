@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject, signal } from '@angular/core';
 import { Observable, catchError, of, tap } from 'rxjs';
 
-export const CURRENT_APP_VERSION = '3.8.3';
+export const CURRENT_APP_VERSION = '3.8.5';
 
 export interface AppVersionResponse {
   version: string;

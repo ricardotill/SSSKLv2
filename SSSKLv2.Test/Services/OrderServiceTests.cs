@@ -14,6 +14,7 @@ using SSSKLv2.Data.DAL.Interfaces;
 using SSSKLv2.Dto.Api.v1;
 using SSSKLv2.Services;
 using SSSKLv2.Services.Interfaces;
+using SSSKLv2.Events;
 
 
 namespace SSSKLv2.Test.Services;
@@ -27,6 +28,7 @@ public class OrderServiceTests
     private IProductService _productService = null!;
     private IApplicationUserService _applicationUserService = null!;
     private INotificationService _notificationService = null!;
+    private IDomainEventDispatcher _mockEventDispatcher = null!;
     private ILogger<OrderService> _mockLogger = null!;
     private OrderService _sut = null!;
 
@@ -39,6 +41,7 @@ public class OrderServiceTests
         _productService = Substitute.For<IProductService>();
         _applicationUserService = Substitute.For<IApplicationUserService>();
         _notificationService = Substitute.For<INotificationService>();
+        _mockEventDispatcher = Substitute.For<IDomainEventDispatcher>();
         _mockLogger = Substitute.For<ILogger<OrderService>>();
         _sut = new OrderService(_mockOrderRepository,
             _achievementService,
@@ -46,6 +49,7 @@ public class OrderServiceTests
             _productService,
             _applicationUserService,
             _notificationService,
+            _mockEventDispatcher,
             _mockLogger);
     }
 
@@ -425,7 +429,7 @@ public class OrderServiceTests
                       orders.First().ProductNaam == product.Name &&
                       orders.First().Paid == product.Price));
         await _purchaseNotifier.Received(1).NotifyUserPurchaseAsync(Arg.Any<UserPurchaseEvent>());
-        await _achievementService.Received(1).CheckOrdersForAchievements(Arg.Any<IEnumerable<Order>>());
+        await _mockEventDispatcher.Received(1).DispatchAsync(Arg.Any<OrderPlacedEvent>());
     }
 
     [TestMethod]
@@ -492,9 +496,7 @@ public class OrderServiceTests
             orders => orders.Count() == 2 && 
                       orders.All(o => o.Paid == 2.50m)));
         await _purchaseNotifier.Received(2).NotifyUserPurchaseAsync(Arg.Any<UserPurchaseEvent>());
-        await _achievementService.Received(1).CheckOrdersForAchievements(Arg.Any<IEnumerable<Order>>());
-        await _achievementService.Received(1).CheckUserForAchievements("user1");
-        await _achievementService.Received(1).CheckUserForAchievements("user2");
+        await _mockEventDispatcher.Received(2).DispatchAsync(Arg.Any<OrderPlacedEvent>());
     }
 
     [TestMethod]

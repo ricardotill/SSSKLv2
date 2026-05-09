@@ -2,6 +2,7 @@ import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { ApplicationUserDetailedDto, ApplicationUserDto, ApplicationUserUpdateDto, PaginatedUsers } from '../../../core/models/application-user.model';
+import { UserStat } from '../../../core/models/user-stat.model';
 
 @Injectable({
   providedIn: 'root'
@@ -40,5 +41,9 @@ export class ApplicationUserService {
     return this.http.get<PaginatedUsers>(`${this.baseUrl}/admin`, {
       params: { skip, take }
     });
+  }
+
+  getUserStats(id: string): Observable<UserStat> {
+    return this.http.get<UserStat>(`${this.baseUrl}/${id}/stats`);
   }
 }

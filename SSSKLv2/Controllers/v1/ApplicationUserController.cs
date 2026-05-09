@@ -4,6 +4,7 @@ using SSSKLv2.Services.Interfaces;
 using SSSKLv2.Data;
 using SSSKLv2.Dto;
 using SSSKLv2.Data.DAL.Exceptions;
+using SSSKLv2.Data.DAL.Interfaces;
 using SSSKLv2.Dto.Api.v1;
 using Microsoft.AspNetCore.Identity;
 using System.Text.Json;
@@ -18,12 +19,14 @@ public class ApplicationUserController : ControllerBase
     private readonly IApplicationUserService _applicationUserService;
     private readonly ILogger<ApplicationUserController> _logger;
     private readonly UserManager<ApplicationUser> _userManager;
+    private readonly IUserStatRepository _userStatRepository;
 
-    public ApplicationUserController(IApplicationUserService applicationUserService, ILogger<ApplicationUserController> logger, UserManager<ApplicationUser> userManager)
+    public ApplicationUserController(IApplicationUserService applicationUserService, ILogger<ApplicationUserController> logger, UserManager<ApplicationUser> userManager, IUserStatRepository userStatRepository)
     {
         _applicationUserService = applicationUserService;
         _logger = logger;
         _userManager = userManager;
+        _userStatRepository = userStatRepository;
     }
 
     private static ApplicationUserDto MapToDto(ApplicationUser u) => new ApplicationUserDto
@@ -385,5 +388,12 @@ public class ApplicationUserController : ControllerBase
             _logger.LogError(ex, "Failed to delete profile picture for user {Id}", id);
             return BadRequest(new { error = "Failed to delete profile picture" });
         }
+    }
+
+    [HttpGet("{id}/stats")]
+    public async Task<IActionResult> GetStats(string id)
+    {
+        var stats = await _userStatRepository.GetOrCreateByUserId(id);
+        return Ok(stats);
     }
 }

@@ -7,7 +7,18 @@ export enum ActionOption {
   YearsOfMembership = 'YearsOfMembership',
   OrdersWithinHour = 'OrdersWithinHour',
   MinutesBetweenOrders = 'MinutesBetweenOrders',
-  MinutesBetweenTopUp = 'MinutesBetweenTopUp'
+  MinutesBetweenTopUp = 'MinutesBetweenTopUp',
+  QuoteCount = 'QuoteCount',
+  QuoteVotesReceived = 'QuoteVotesReceived',
+  ReactionCount = 'ReactionCount',
+  CurrentStreak = 'CurrentStreak'
+}
+
+export enum AchievementTier {
+  Bronze = 'Bronze',
+  Silver = 'Silver',
+  Gold = 'Gold',
+  Platinum = 'Platinum'
 }
 
 export enum ComparisonOperatorOption {
@@ -27,6 +38,8 @@ export interface Achievement {
   comparisonOperator: ComparisonOperatorOption;
   comparisonValue: number;
   image?: AchievementImage;
+  tier: AchievementTier;
+  parentAchievementId?: string | null;
 }
 
 export interface AchievementEntry {
@@ -41,6 +54,7 @@ export interface AchievementEntry {
   userName?: string;
   userFullName?: string;
   userProfilePictureUrl?: string;
+  tier: AchievementTier;
 }
 
 export interface AchievementListing {
@@ -50,6 +64,7 @@ export interface AchievementListing {
   dateAdded?: string;
   imageUrl?: string;
   completed: boolean;
+  tier: AchievementTier;
 }
 
 export interface AchievementImage {
@@ -73,4 +88,6 @@ export interface AchievementUpdateDto {
   comparisonOperator: ComparisonOperatorOption;
   comparisonValue: number;
   image?: AchievementImage;
+  tier: AchievementTier;
+  parentAchievementId?: string | null;
 }

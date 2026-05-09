@@ -8,6 +8,7 @@ using SSSKLv2.Services;
 using SSSKLv2.Services.Interfaces;
 using SSSKLv2.Test.Util;
 using NSubstitute;
+using SSSKLv2.Events;
 using SSSKLv2.Data.Constants;
 
 namespace SSSKLv2.Test.Services;
@@ -19,6 +20,7 @@ public class ReactionServiceTests : RepositoryTest
     private ApplicationDbContext _dbContext = null!;
     private IApplicationUserService _userService = null!;
     private INotificationService _notificationService = null!;
+    private IDomainEventDispatcher _mockEventDispatcher = null!;
 
     [TestInitialize]
     public void TestInitialize()
@@ -27,7 +29,8 @@ public class ReactionServiceTests : RepositoryTest
         _dbContext = new ApplicationDbContext(GetOptions());
         _userService = Substitute.For<IApplicationUserService>();
         _notificationService = Substitute.For<INotificationService>();
-        _sut = new ReactionService(_dbContext, _userService, _notificationService);
+        _mockEventDispatcher = Substitute.For<IDomainEventDispatcher>();
+        _sut = new ReactionService(_dbContext, _userService, _notificationService, _mockEventDispatcher);
     }
 
     [TestCleanup]

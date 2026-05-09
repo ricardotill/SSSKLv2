@@ -11,7 +11,18 @@ public class Achievement : BaseModel
     public ActionOption Action { get; set; }
     public ComparisonOperatorOption ComparisonOperator { get; set; }
     public int ComparisonValue { get; set; }
+    public AchievementTier Tier { get; set; } = AchievementTier.Bronze;
+    public Guid? ParentAchievementId { get; set; }
+    public Achievement? ParentAchievement { get; set; }
     public IEnumerable<AchievementEntry> CompletedEntries { get; set; } = null!;
+    
+    public enum AchievementTier
+    {
+        Bronze = 0,
+        Silver = 1,
+        Gold = 2,
+        Platinum = 3
+    }
     
     [JsonConverter(typeof(JsonStringEnumConverter<ActionOption>))]
     public enum ActionOption
@@ -24,7 +35,11 @@ public class Achievement : BaseModel
         YearsOfMembership = 5,
         OrdersWithinHour = 6,
         MinutesBetweenOrders = 7,
-        MinutesBetweenTopUp = 8
+        MinutesBetweenTopUp = 8,
+        QuoteCount = 9,
+        QuoteVotesReceived = 10,
+        ReactionCount = 11,
+        CurrentStreak = 12
     }
     
     [JsonConverter(typeof(JsonStringEnumConverter<ComparisonOperatorOption>))]

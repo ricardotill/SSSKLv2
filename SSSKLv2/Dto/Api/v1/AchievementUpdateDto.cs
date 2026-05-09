@@ -21,6 +21,8 @@ public class AchievementUpdateDto
     public Achievement.ActionOption Action { get; set; } = Achievement.ActionOption.None;
     public Achievement.ComparisonOperatorOption ComparisonOperator { get; set; } = Achievement.ComparisonOperatorOption.None;
     public int ComparisonValue { get; set; }
+    public string? Tier { get; set; }
+    public Guid? ParentAchievementId { get; set; }
     public AchievementImageDto? Image { get; set; }
 }
 

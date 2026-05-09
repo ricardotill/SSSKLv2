@@ -16,6 +16,7 @@ namespace SSSKLv2.Data
         public DbSet<SSSKLv2.Data.AchievementImage> AchievementImage { get; set; } = default!;
         public DbSet<SSSKLv2.Data.Achievement> Achievement { get; set; } = default!;
         public DbSet<SSSKLv2.Data.AchievementEntry> AchievementEntry { get; set; } = default!;
+        public DbSet<SSSKLv2.Data.UserStat> UserStats { get; set; } = default!;
         public DbSet<SSSKLv2.Data.Event> Event { get; set; } = default!;
         public DbSet<SSSKLv2.Data.EventResponse> EventResponse { get; set; } = default!;
         public DbSet<SSSKLv2.Data.EventImage> EventImage { get; set; } = default!;
@@ -103,6 +104,23 @@ namespace SSSKLv2.Data
             builder.Entity<Achievement>()
                 .HasMany<AchievementEntry>(e => e.CompletedEntries)
                 .WithOne(e => e.Achievement)
+                .OnDelete(DeleteBehavior.Cascade);
+            builder.Entity<Achievement>()
+                .HasOne(e => e.ParentAchievement)
+                .WithMany()
+                .HasForeignKey(e => e.ParentAchievementId)
+                .OnDelete(DeleteBehavior.NoAction);
+            
+            builder.Entity<UserStat>()
+                .HasIndex(p => p.Id)
+                .IsUnique();
+            builder.Entity<UserStat>()
+                .HasIndex(p => p.UserId)
+                .IsUnique();
+            builder.Entity<UserStat>()
+                .HasOne(e => e.User)
+                .WithOne()
+                .HasForeignKey<UserStat>(e => e.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
             
             builder.Entity<AchievementEntry>()

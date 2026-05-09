@@ -1,4 +1,6 @@
 using SSSKLv2.Services.Interfaces;
+using SSSKLv2.Events;
+using SSSKLv2.Services.Handlers;
 
 namespace SSSKLv2.Services;
 
@@ -21,6 +23,12 @@ public static class ServicesExtensions
             .AddTransient<IWebPushService, WebPushService>()
             .AddSingleton<IPurchaseNotifier, PurchaseNotifier>()
             .AddSingleton<IEventNotifier, EventNotifier>()
+            .AddScoped<IDomainEventDispatcher, DomainEventDispatcher>()
+            .AddScoped<IDomainEventHandler<OrderPlacedEvent>, AchievementEventHandler>()
+            .AddScoped<IDomainEventHandler<TopUpEvent>, AchievementEventHandler>()
+            .AddScoped<IDomainEventHandler<QuoteCreatedEvent>, AchievementEventHandler>()
+            .AddScoped<IDomainEventHandler<QuoteVotedEvent>, AchievementEventHandler>()
+            .AddScoped<IDomainEventHandler<ReactionAddedEvent>, AchievementEventHandler>()
             .AddHttpClient();
     }
 }

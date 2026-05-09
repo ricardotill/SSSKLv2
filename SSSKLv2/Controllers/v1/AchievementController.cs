@@ -30,6 +30,8 @@ public class AchievementController : ControllerBase
         Action = a.Action,
         ComparisonOperator = a.ComparisonOperator,
         ComparisonValue = a.ComparisonValue,
+        Tier = a.Tier.ToString(),
+        ParentAchievementId = a.ParentAchievementId,
         Image = a.Image == null ? null : new AchievementImageDto
         {
             Id = a.Image.Id,
@@ -48,6 +50,7 @@ public class AchievementController : ControllerBase
         DateAdded = e.CreatedOn,
         ImageUrl = e.Achievement?.Image != null ? $"/api/v1/blob/achievement/image/{e.Achievement.Image.Id}" : null,
         HasSeen = e.HasSeen,
+        Tier = e.Tier.ToString(),
         UserId = e.User?.Id,
         UserName = e.User?.UserName,
         UserFullName = e.User?.FullName,
@@ -85,17 +88,14 @@ public class AchievementController : ControllerBase
     }
 
     // POST v1/achievement
-    // Accept multipart/form-data for image upload
     [Authorize(Roles = "Admin")]
     [HttpPost]
     [Consumes("multipart/form-data")]
     public async Task<IActionResult> Create([FromForm] AchievementDto dto, [FromForm] IFormFile? image)
     {
-        // Let [ApiController] + FluentValidation handle ModelState and automatic 400 responses.
-
         if (image == null)
         {
-            return BadRequest("Afbeelding is verplicht."); // "Image is required" in Dutch
+            return BadRequest("Afbeelding is verplicht.");
         }
 
         dto.ImageContentType = new ContentType(image.ContentType);
@@ -112,7 +112,6 @@ public class AchievementController : ControllerBase
     {
         try
         {
-            // Map DTO -> Achievement domain model
             var achievement = new Achievement
             {
                 Id = dto.Id,
@@ -121,7 +120,9 @@ public class AchievementController : ControllerBase
                 AutoAchieve = dto.AutoAchieve,
                 Action = dto.Action,
                 ComparisonOperator = dto.ComparisonOperator,
-                ComparisonValue = dto.ComparisonValue
+                ComparisonValue = dto.ComparisonValue,
+                Tier = Enum.Parse<Achievement.AchievementTier>(dto.Tier ?? "Bronze"),
+                ParentAchievementId = dto.ParentAchievementId
             };
 
             if (dto.Image != null)
@@ -253,5 +254,13 @@ public class AchievementController : ControllerBase
     {
         var count = await _achievementService.AwardAchievementToAllUsers(achievementId);
         return Ok(count);
+    }
+
+    // GET v1/achievement/rarity/{id}
+    [HttpGet("rarity/{id:guid}")]
+    public async Task<IActionResult> GetRarity(Guid id)
+    {
+        var entries = await _achievementService.GetEntriesForAchievement(id);
+        return Ok(new { Count = entries.Count });
     }
 }

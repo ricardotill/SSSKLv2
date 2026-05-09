@@ -165,7 +165,8 @@ if (builder.Environment.IsDevelopment())
 if (!builder.Environment.IsEnvironment("IntegrationTest"))
 {
     var connectionString = (builder.Environment.IsProduction() ? builder.Configuration["AZURE_SQL_CONNECTIONSTRING"] : null)
-                          ?? builder.Configuration.GetConnectionString("db");
+                          ?? builder.Configuration.GetConnectionString("db")
+                          ?? builder.Configuration.GetConnectionString("DefaultConnection");
 
     builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>
     {

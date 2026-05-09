@@ -19,7 +19,7 @@ import { ResolveApiUrlPipe } from '../../../shared/pipes/resolve-api-url.pipe';
 
 import { AchievementService } from '../../achievements/services/achievement.service';
 import { ApplicationUserService } from '../../users/services/application-user.service';
-import { Achievement, AchievementUpdateDto, ActionOption, ComparisonOperatorOption, PaginationObject } from '../../../core/models/achievement.model';
+import { Achievement, AchievementUpdateDto, ActionOption, ComparisonOperatorOption, PaginationObject, AchievementTier } from '../../../core/models/achievement.model';
 import { ApplicationUserDto } from '../../../core/models/application-user.model';
 import { LanguageService } from '../../../core/services/language.service';
 
@@ -69,6 +69,7 @@ interface PickListAchievement {
             <th class="w-16">Icoon</th>
             <th>Naam</th>
             <th>Beschrijving</th>
+            <th>Tier</th>
             <th>Automatisch</th>
             <th>Voorwaarde</th>
             <th class="w-40">Acties</th>
@@ -81,6 +82,16 @@ interface PickListAchievement {
             </td>
             <td>{{ ach.name }}</td>
             <td>{{ ach.description }}</td>
+            <td>
+              <span class="px-2 py-1 rounded text-xs font-bold" [ngClass]="{
+                'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400': ach.tier === 'Bronze',
+                'bg-slate-100 text-slate-700 dark:bg-slate-900/30 dark:text-slate-400': ach.tier === 'Silver',
+                'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400': ach.tier === 'Gold',
+                'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400': ach.tier === 'Platinum'
+              }">
+                {{ ach.tier }}
+              </span>
+            </td>
             <td>
               <i class="pi" [ngClass]="{'text-green-500 pi-check-circle': ach.autoAchieve, 'text-red-500 pi-times-circle': !ach.autoAchieve}"></i>
             </td>
@@ -128,11 +139,17 @@ interface PickListAchievement {
           <div class="flex flex-col gap-2">
             <label for="action">Actie Optie</label>
             <p-select id="action" [options]="actionOptions" formControlName="action" optionLabel="label" optionValue="value" class="w-full" appendTo="body"></p-select>
+            <small class="text-surface-500 italic" *ngIf="actionExplanations[achForm.get('action')?.value ?? 'None']">
+              {{ actionExplanations[achForm.get('action')?.value ?? 'None'] }}
+            </small>
           </div>
 
           <div class="flex flex-col gap-2">
             <label for="comparisonOperator">Vergelijkingsoperator</label>
             <p-select id="comparisonOperator" [options]="operatorOptions" formControlName="comparisonOperator" optionLabel="label" optionValue="value" class="w-full" appendTo="body"></p-select>
+            <small class="text-surface-500 italic" *ngIf="operatorExplanations[achForm.get('comparisonOperator')?.value ?? 'None']">
+              {{ operatorExplanations[achForm.get('comparisonOperator')?.value ?? 'None'] }}
+            </small>
           </div>
 
           <div class="flex flex-col gap-2">
@@ -140,6 +157,16 @@ interface PickListAchievement {
             <p-inputNumber id="comparisonValue" formControlName="comparisonValue" class="w-full" [useGrouping]="false"></p-inputNumber>
           </div>
         }
+
+        <div class="flex flex-col gap-2">
+          <label for="tier">Tier</label>
+          <p-select id="tier" [options]="tierOptions" formControlName="tier" optionLabel="label" optionValue="value" class="w-full" appendTo="body"></p-select>
+        </div>
+
+        <div class="flex flex-col gap-2">
+          <label for="parentAchievementId">Ouder Achievement (Optioneel)</label>
+          <p-select id="parentAchievementId" [options]="parentOptions()" formControlName="parentAchievementId" optionLabel="name" optionValue="id" class="w-full" appendTo="body" [showClear]="true" placeholder="Selecteer Ouder"></p-select>
+        </div>
 
         <div class="flex flex-col gap-2" *ngIf="!isEdit() || isEdit()">
           <label for="image">Afbeelding (.png, .jpg)</label>
@@ -205,6 +232,33 @@ export default class AchievementsComponent implements OnInit {
   // Enums for dropdowns
   actionOptions = Object.values(ActionOption).map(v => ({ label: v, value: v }));
   operatorOptions = Object.values(ComparisonOperatorOption).map(v => ({ label: v, value: v }));
+  tierOptions = Object.values(AchievementTier).map(v => ({ label: v, value: v }));
+
+  actionExplanations: Record<string, string> = {
+    [ActionOption.None]: 'Geen automatische actie.',
+    [ActionOption.UserOrderAmountBought]: 'Totaal aantal bestelde items (producten).',
+    [ActionOption.UserOrderAmountPaid]: 'Totaal uitgegeven bedrag in euro\'s.',
+    [ActionOption.UserIndividualTopUp]: 'Grootste individuele opwaardering.',
+    [ActionOption.UserTotalTopUp]: 'Totaal opgewaardeerd bedrag.',
+    [ActionOption.YearsOfMembership]: 'Aantal jaren dat de gebruiker lid is (gebaseerd op eerste bestelling).',
+    [ActionOption.OrdersWithinHour]: 'Maximaal aantal bestellingen binnen één uur.',
+    [ActionOption.MinutesBetweenOrders]: 'Minimaal aantal minuten tussen twee bestellingen.',
+    [ActionOption.MinutesBetweenTopUp]: 'Minimaal aantal minuten tussen twee opwaarderingen.',
+    [ActionOption.QuoteCount]: 'Totaal aantal geplaatste quotes.',
+    [ActionOption.QuoteVotesReceived]: 'Totaal aantal ontvangen stemmen op eigen quotes.',
+    [ActionOption.ReactionCount]: 'Totaal aantal geplaatste reacties.',
+    [ActionOption.CurrentStreak]: 'Huidige dagelijkse streak (aantal opeenvolgende dagen actief).'
+  };
+
+  operatorExplanations: Record<string, string> = {
+    [ComparisonOperatorOption.None]: 'Geen vergelijking.',
+    [ComparisonOperatorOption.LessThan]: 'Kleiner dan (<)',
+    [ComparisonOperatorOption.GreaterThan]: 'Groter dan (>)',
+    [ComparisonOperatorOption.LessThanOrEqual]: 'Kleiner dan of gelijk aan (<=)',
+    [ComparisonOperatorOption.GreaterThanOrEqual]: 'Groter dan of gelijk aan (>=)'
+  };
+
+  parentOptions = signal<{name: string, id: string}[]>([]);
 
   selectedFile: File | null = null;
 
@@ -214,7 +268,9 @@ export default class AchievementsComponent implements OnInit {
     autoAchieve: [false],
     action: [ActionOption.None],
     comparisonOperator: [ComparisonOperatorOption.None],
-    comparisonValue: [0]
+    comparisonValue: [0],
+    tier: [AchievementTier.Bronze],
+    parentAchievementId: [null as string | null]
   });
 
   // User Management Signals
@@ -247,6 +303,8 @@ export default class AchievementsComponent implements OnInit {
           imageUri: a.image?.uri
         })));
 
+        this.parentOptions.set(data.items.map(a => ({ name: a.name, id: a.id })));
+
         // If a user is currently selected in the dialog, refresh their lists
         if (this.selectedUser()) {
           this.refreshUserPickList(this.selectedUser()!);
@@ -270,7 +328,9 @@ export default class AchievementsComponent implements OnInit {
       autoAchieve: false,
       action: ActionOption.None,
       comparisonOperator: ComparisonOperatorOption.None,
-      comparisonValue: 0
+      comparisonValue: 0,
+      tier: AchievementTier.Bronze,
+      parentAchievementId: null
     });
     this.dialogVisible.set(true);
   }
@@ -286,7 +346,9 @@ export default class AchievementsComponent implements OnInit {
       autoAchieve: ach.autoAchieve,
       action: ach.action,
       comparisonOperator: ach.comparisonOperator,
-      comparisonValue: ach.comparisonValue
+      comparisonValue: ach.comparisonValue,
+      tier: ach.tier,
+      parentAchievementId: ach.parentAchievementId || null
     });
     this.dialogVisible.set(true);
   }
@@ -330,6 +392,10 @@ export default class AchievementsComponent implements OnInit {
       formData.append('Action', formValue.action);
       formData.append('ComparisonOperator', formValue.comparisonOperator);
       formData.append('ComparisonValue', String(formValue.comparisonValue));
+      formData.append('Tier', formValue.tier);
+      if (formValue.parentAchievementId) {
+        formData.append('ParentAchievementId', formValue.parentAchievementId);
+      }
 
       if (this.selectedFile) {
         formData.append('image', this.selectedFile);

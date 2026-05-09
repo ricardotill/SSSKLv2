@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using SSSKLv2.Data;
+using SSSKLv2.Events;
 using SSSKLv2.Data.Constants;
 using SSSKLv2.Dto;
 using SSSKLv2.Services.Interfaces;
@@ -11,12 +12,14 @@ public class ReactionService : IReactionService
     private readonly ApplicationDbContext _context;
     private readonly IApplicationUserService _userService;
     private readonly INotificationService _notificationService;
+    private readonly IDomainEventDispatcher _eventDispatcher;
 
-    public ReactionService(ApplicationDbContext context, IApplicationUserService userService, INotificationService notificationService)
+    public ReactionService(ApplicationDbContext context, IApplicationUserService userService, INotificationService notificationService, IDomainEventDispatcher eventDispatcher)
     {
         _context = context;
         _userService = userService;
         _notificationService = notificationService;
+        _eventDispatcher = eventDispatcher;
     }
 
     public async Task ToggleReaction(Guid targetId, string targetTypeStr, string content, string userId)
@@ -92,6 +95,8 @@ public class ReactionService : IReactionService
                     );
                 }
             }
+            
+            await _eventDispatcher.DispatchAsync(new ReactionAddedEvent(reaction));
         }
 
         await _context.SaveChangesAsync();

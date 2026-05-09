@@ -11,6 +11,7 @@ using SSSKLv2.Dto;
 using SSSKLv2.Dto.Api.v1;
 using SSSKLv2.Services.Interfaces;
 using SSSKLv2.Data.DAL.Exceptions;
+using SSSKLv2.Data.DAL.Interfaces;
 using Microsoft.Extensions.Logging;
 using System.Security.Claims;
 
@@ -22,6 +23,7 @@ public class ApplicationUserControllerTests
 {
     private IApplicationUserService _mockService = null!;
     private UserManager<ApplicationUser> _userManager = null!;
+    private IUserStatRepository _mockUserStatRepository = null!;
     private ApplicationUserController _sut = null!;
 
     [TestInitialize]
@@ -42,7 +44,9 @@ public class ApplicationUserControllerTests
             Substitute.For<IServiceProvider>(),
             Substitute.For<ILogger<UserManager<ApplicationUser>>>());
 
-        _sut = new ApplicationUserController(_mockService, logger, _userManager)
+        _mockUserStatRepository = Substitute.For<IUserStatRepository>();
+
+        _sut = new ApplicationUserController(_mockService, logger, _userManager, _mockUserStatRepository)
         {
             ControllerContext = new ControllerContext
             {
@@ -279,7 +283,7 @@ public class ApplicationUserControllerTests
 
         userManager.GetUserAsync(Arg.Any<System.Security.Claims.ClaimsPrincipal>()).Returns(user);
         userManager.GetUserIdAsync(user).Returns(user.Id);
-        var controller = new ApplicationUserController(_mockService, Substitute.For<ILogger<ApplicationUserController>>(), userManager)
+        var controller = new ApplicationUserController(_mockService, Substitute.For<ILogger<ApplicationUserController>>(), userManager, _mockUserStatRepository)
         {
             ControllerContext = new ControllerContext
             {
@@ -324,7 +328,7 @@ public class ApplicationUserControllerTests
         {
             HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim(ClaimTypes.Name, "testuser") }, "TestAuth")) }
         };
-        var sutWithNullUser = new ApplicationUserController(_mockService, Substitute.For<ILogger<ApplicationUserController>>(), userManager)
+        var sutWithNullUser = new ApplicationUserController(_mockService, Substitute.For<ILogger<ApplicationUserController>>(), userManager, _mockUserStatRepository)
         {
             ControllerContext = _sut.ControllerContext
         };
@@ -352,7 +356,7 @@ public class ApplicationUserControllerTests
         {
             HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim(ClaimTypes.Name, "testuser") }, "TestAuth")) }
         };
-        var sutWithUser = new ApplicationUserController(_mockService, Substitute.For<ILogger<ApplicationUserController>>(), userManager)
+        var sutWithUser = new ApplicationUserController(_mockService, Substitute.For<ILogger<ApplicationUserController>>(), userManager, _mockUserStatRepository)
         {
             ControllerContext = _sut.ControllerContext
         };

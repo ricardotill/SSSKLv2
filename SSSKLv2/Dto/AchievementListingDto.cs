@@ -6,5 +6,6 @@ public record AchievementListingDto(
     string Description,
     DateTime? DateAdded,
     string? ImageUrl,
-    bool Completed
+    bool Completed,
+    string Tier
 );

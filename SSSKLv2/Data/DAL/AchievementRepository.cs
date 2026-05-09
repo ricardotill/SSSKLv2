@@ -149,17 +149,11 @@ public class AchievementRepository(IDbContextFactory<ApplicationDbContext> dbCon
         existing.Action = achievement.Action;
         existing.ComparisonOperator = achievement.ComparisonOperator;
         existing.ComparisonValue = achievement.ComparisonValue;
+        existing.Tier = achievement.Tier;
+        existing.ParentAchievementId = achievement.ParentAchievementId;
 
-        // Handle image replacement/removal
-        if (achievement.Image == null)
-        {
-            // User wants to remove the image
-            if (existing.Image != null)
-            {
-                context.AchievementImage.Remove(existing.Image);
-            }
-        }
-        else
+        // Handle image replacement
+        if (achievement.Image != null)
         {
             // New image provided. Remove old image if present, then insert new AchievementImage
             if (existing.Image != null)
@@ -169,14 +163,9 @@ public class AchievementRepository(IDbContextFactory<ApplicationDbContext> dbCon
                 existing.Image.Uri = achievement.Image.Uri;
                 existing.Image.ContentType = achievement.Image.ContentType;
                 existing.Image.CreatedOn = achievement.Image.CreatedOn == default ? DateTime.Now : achievement.Image.CreatedOn;
-                // We've updated the existing image entity; no need to add/remove
-                // Save will persist these changes below
-                // Exit the image handling block early
-                await context.SaveChangesAsync();
-                return;
             }
-
-            // Create a new AchievementImage entity and set the shadow FK AchievementId to link it
+            else
+            {
             var newImage = new AchievementImage
             {
                 FileName = achievement.Image.FileName,
@@ -200,6 +189,7 @@ public class AchievementRepository(IDbContextFactory<ApplicationDbContext> dbCon
             if (newImage.Id != Guid.Empty)
             {
                 context.Entry(existing).Property("ImageId").CurrentValue = newImage.Id;
+            }
             }
         }
 

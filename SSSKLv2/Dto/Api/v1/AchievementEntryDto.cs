@@ -11,6 +11,7 @@ public class AchievementEntryDto
     public DateTime DateAdded { get; set; }
     public string? ImageUrl { get; set; }
     public bool HasSeen { get; set; }
+    public string Tier { get; set; } = string.Empty;
     public string? UserId { get; set; }
     public string? UserName { get; set; }
     public string? UserFullName { get; set; }

@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text;
+using SSSKLv2.Events;
 using SSSKLv2.Data;
 
 using SSSKLv2.Data.DAL.Interfaces;
@@ -15,6 +16,7 @@ public class OrderService(
     IProductService productService,
     IApplicationUserService applicationUserService,
     INotificationService notificationService,
+    IDomainEventDispatcher eventDispatcher,
     ILogger<OrderService> logger) : IOrderService
 {
     public Task<int> GetCount() => orderRepository.GetCount();
@@ -90,7 +92,11 @@ public class OrderService(
 
         await orderRepository.CreateRange(orders);
         await NotifyPurchase(orders);
-        await achievementService.CheckOrdersForAchievements(orders);
+        
+        foreach (var o in orders)
+        {
+            await eventDispatcher.DispatchAsync(new OrderPlacedEvent(o));
+        }
 
         // Notify users if someone ordered on their behalf
         if (!string.IsNullOrEmpty(actingUserId))
@@ -113,10 +119,7 @@ public class OrderService(
             }
         }
 
-        foreach (var u in users)
-        {
-            await achievementService.CheckUserForAchievements(u.UserName!);
-        }
+        // Achievements are now handled via events
     }
 
     public async Task<string> ExportOrdersFromPastTwoYearsToCsvAsync()

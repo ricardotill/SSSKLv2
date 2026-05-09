@@ -85,4 +85,8 @@ export class AchievementService {
   deleteAchievementEntries(ids: string[]): Observable<void> {
     return this.http.post<void>(`${this.baseUrl}/entries/delete`, ids);
   }
+
+  getRarity(achievementId: string): Observable<{ count: number }> {
+    return this.http.get<{ count: number }>(`${this.baseUrl}/rarity/${achievementId}`);
+  }
 }

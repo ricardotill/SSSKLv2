@@ -3,17 +3,20 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SSSKLv2.Data;
 
 #nullable disable
 
-namespace SSSKLv2.Migrations
+namespace SSSKLv2.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260509130738_AddAchievementSystem2_0")]
+    partial class AddAchievementSystem2_0
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -932,40 +935,13 @@ namespace SSSKLv2.Migrations
                     b.Property<DateTime?>("LastActivityDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<DateTime?>("LastOrderDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime?>("LastTopUpDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("MaxOrdersPerHour")
-                        .HasColumnType("int");
-
-                    b.Property<decimal>("MaxSingleTopUp")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<DateTime?>("MembershipStartDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("MinMinutesBetweenOrders")
-                        .HasColumnType("int");
-
-                    b.Property<int>("MinMinutesBetweenTopUp")
-                        .HasColumnType("int");
-
                     b.Property<int>("QuoteCount")
                         .HasColumnType("int");
 
                     b.Property<int>("QuoteVotesGiven")
                         .HasColumnType("int");
 
-                    b.Property<int>("QuoteVotesReceived")
-                        .HasColumnType("int");
-
                     b.Property<int>("ReactionCount")
-                        .HasColumnType("int");
-
-                    b.Property<int>("TotalItemsBought")
                         .HasColumnType("int");
 
                     b.Property<int>("TotalOrders")
@@ -989,7 +965,7 @@ namespace SSSKLv2.Migrations
                     b.HasIndex("UserId")
                         .IsUnique();
 
-                    b.ToTable("UserStats");
+                    b.ToTable("UserStat");
                 });
 
             modelBuilder.Entity("SSSKLv2.Data.AchievementImage", b =>

@@ -40,7 +40,7 @@ public class AchievementControllerTests
 
         var result = await _sut.GetAll();
 
-        var expected = items.Select(a => new AchievementResponseDto { Id = a.Id, Name = a.Name, Description = a.Description ?? string.Empty, AutoAchieve = a.AutoAchieve, Action = a.Action, ComparisonOperator = a.ComparisonOperator, ComparisonValue = a.ComparisonValue, Image = null }).ToList();
+        var expected = items.Select(a => new AchievementResponseDto { Id = a.Id, Name = a.Name, Description = a.Description ?? string.Empty, AutoAchieve = a.AutoAchieve, Action = a.Action, ComparisonOperator = a.ComparisonOperator, ComparisonValue = a.ComparisonValue, Image = null, Tier = "Bronze", ParentAchievementId = null }).ToList();
 
         // Expect a pagination object with items and total count
         result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeEquivalentTo(new PaginationObject<AchievementResponseDto> { Items = expected, TotalCount = items.Count });
@@ -55,7 +55,7 @@ public class AchievementControllerTests
 
         var result = await _sut.GetById(id);
 
-        var expected = new AchievementResponseDto { Id = achievement.Id, Name = achievement.Name, Description = achievement.Description ?? string.Empty, AutoAchieve = achievement.AutoAchieve, Action = achievement.Action, ComparisonOperator = achievement.ComparisonOperator, ComparisonValue = achievement.ComparisonValue, Image = null };
+        var expected = new AchievementResponseDto { Id = achievement.Id, Name = achievement.Name, Description = achievement.Description ?? string.Empty, AutoAchieve = achievement.AutoAchieve, Action = achievement.Action, ComparisonOperator = achievement.ComparisonOperator, ComparisonValue = achievement.ComparisonValue, Image = null, Tier = "Bronze", ParentAchievementId = null };
         result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeEquivalentTo(expected);
     }
 
@@ -109,7 +109,7 @@ public class AchievementControllerTests
     public async Task GetPersonal_ReturnsOk()
     {
         var username = "user1";
-        var list = new List<AchievementListingDto> { new AchievementListingDto(Guid.NewGuid(), "n", "d", null, null, false) };
+        var list = new List<AchievementListingDto> { new AchievementListingDto(Guid.NewGuid(), "n", "d", null, null, false, "Bronze") };
         _mockService.GetPersonalAchievementsByUsername(username).Returns(list);
 
         // Set authenticated user on controller
@@ -152,7 +152,7 @@ public class AchievementControllerTests
 
         var result = await _sut.GetPersonalEntries(userId);
 
-        var expected = entries.Select(e => new AchievementEntryDto { Id = e.Id, AchievementId = e.Achievement.Id, AchievementName = e.Achievement.Name, AchievementDescription = e.Achievement.Description ?? string.Empty, DateAdded = e.CreatedOn, ImageUrl = e.Achievement?.Image?.Uri, HasSeen = e.HasSeen, UserId = e.User?.Id });
+        var expected = entries.Select(e => new AchievementEntryDto { Id = e.Id, AchievementId = e.Achievement.Id, AchievementName = e.Achievement.Name, AchievementDescription = e.Achievement.Description ?? string.Empty, DateAdded = e.CreatedOn, ImageUrl = e.Achievement?.Image?.Uri, HasSeen = e.HasSeen, UserId = e.User?.Id, Tier = "Bronze" });
         result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeEquivalentTo(expected);
     }
 
@@ -165,7 +165,7 @@ public class AchievementControllerTests
 
         var result = await _sut.GetPersonalEntries(username);
 
-        var expected = entries.Select(e => new AchievementEntryDto { Id = e.Id, AchievementId = e.Achievement.Id, AchievementName = e.Achievement.Name, AchievementDescription = e.Achievement.Description ?? string.Empty, DateAdded = e.CreatedOn, ImageUrl = e.Achievement?.Image?.Uri, HasSeen = e.HasSeen, UserId = e.User?.Id });
+        var expected = entries.Select(e => new AchievementEntryDto { Id = e.Id, AchievementId = e.Achievement.Id, AchievementName = e.Achievement.Name, AchievementDescription = e.Achievement.Description ?? string.Empty, DateAdded = e.CreatedOn, ImageUrl = e.Achievement?.Image?.Uri, HasSeen = e.HasSeen, UserId = e.User?.Id, Tier = "Bronze" });
         result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeEquivalentTo(expected);
     }
 
@@ -240,7 +240,7 @@ public class AchievementControllerTests
 
         var result = await _sut.GetPersonalEntries();
 
-        var expected = entries.Select(e => new AchievementEntryDto { Id = e.Id, AchievementId = e.Achievement.Id, AchievementName = e.Achievement.Name, AchievementDescription = e.Achievement.Description ?? string.Empty, DateAdded = e.CreatedOn, ImageUrl = e.Achievement?.Image?.Uri, HasSeen = e.HasSeen, UserId = e.User?.Id });
+        var expected = entries.Select(e => new AchievementEntryDto { Id = e.Id, AchievementId = e.Achievement.Id, AchievementName = e.Achievement.Name, AchievementDescription = e.Achievement.Description ?? string.Empty, DateAdded = e.CreatedOn, ImageUrl = e.Achievement?.Image?.Uri, HasSeen = e.HasSeen, UserId = e.User?.Id, Tier = "Bronze" });
         result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeEquivalentTo(expected);
     }
 
@@ -265,7 +265,7 @@ public class AchievementControllerTests
 
         var result = await _sut.GetPersonalUnseenEntriesForCurrentUser();
 
-        var expected = entries.Select(e => new AchievementEntryDto { Id = e.Id, AchievementId = e.Achievement.Id, AchievementName = e.Achievement.Name, AchievementDescription = e.Achievement.Description ?? string.Empty, DateAdded = e.CreatedOn, ImageUrl = e.Achievement?.Image?.Uri, HasSeen = true, UserId = e.User?.Id });
+        var expected = entries.Select(e => new AchievementEntryDto { Id = e.Id, AchievementId = e.Achievement.Id, AchievementName = e.Achievement.Name, AchievementDescription = e.Achievement.Description ?? string.Empty, DateAdded = e.CreatedOn, ImageUrl = e.Achievement?.Image?.Uri, HasSeen = true, UserId = e.User?.Id, Tier = "Bronze" });
         result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeEquivalentTo(expected);
     }
 
@@ -305,14 +305,14 @@ public class AchievementControllerTests
 
         var result = await _sut.GetEarners(achievementId);
 
-        var expected = entries.Select(e => new AchievementEntryDto { Id = e.Id, AchievementId = achievementId, AchievementName = "ach1", AchievementDescription = string.Empty, DateAdded = e.CreatedOn, HasSeen = false, UserId = "u1", UserName = "un1", UserFullName = "fn1" });
+        var expected = entries.Select(e => new AchievementEntryDto { Id = e.Id, AchievementId = achievementId, AchievementName = "ach1", AchievementDescription = string.Empty, DateAdded = e.CreatedOn, HasSeen = false, UserId = "u1", UserName = "un1", UserFullName = "fn1", Tier = "Bronze" });
         result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeEquivalentTo(expected);
     }
     [TestMethod]
     public async Task GetAllForUser_ReturnsOk()
     {
         var userId = "u1";
-        var list = new List<AchievementListingDto> { new AchievementListingDto(Guid.NewGuid(), "n", "d", null, null, false) };
+        var list = new List<AchievementListingDto> { new AchievementListingDto(Guid.NewGuid(), "n", "d", null, null, false, "Bronze") };
         _mockService.GetPersonalAchievements(userId).Returns(list);
 
         var result = await _sut.GetAllForUser(userId);

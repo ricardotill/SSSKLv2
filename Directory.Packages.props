@@ -5,7 +5,7 @@
     <NoWarn>$(NoWarn);NU1507</NoWarn>
   </PropertyGroup>
   <ItemGroup>
-    <PackageVersion Include="Azure.Monitor.OpenTelemetry.AspNetCore" Version="1.4.0" />
+    <PackageVersion Include="Azure.Monitor.OpenTelemetry.AspNetCore" Version="1.5.0" />
     <PackageVersion Include="Azure.Storage.Blobs" Version="12.27.0" />
     <PackageVersion Include="Bogus" Version="35.6.5" />
     <PackageVersion Include="coverlet.collector" Version="10.0.0" />
@@ -15,8 +15,8 @@
     <PackageVersion Include="FluentValidation.AspNetCore" Version="11.3.1" />
     <PackageVersion Include="HtmlSanitizer" Version="9.0.892" />
     <PackageVersion Include="Lib.Net.Http.WebPush" Version="3.3.1" />
-    <PackageVersion Include="Microsoft.ApplicationInsights" Version="3.1.0" />
-    <PackageVersion Include="Microsoft.ApplicationInsights.AspNetCore" Version="3.1.0" />
+    <PackageVersion Include="Microsoft.ApplicationInsights" Version="3.1.1" />
+    <PackageVersion Include="Microsoft.ApplicationInsights.AspNetCore" Version="3.1.1" />
     <PackageVersion Include="Microsoft.ApplicationInsights.DependencyCollector" Version="2.23.0" />
     <PackageVersion Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="10.0.7" />
     <PackageVersion Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.7" />
@@ -33,21 +33,21 @@
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.5.1" />
     <PackageVersion Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="10.0.2" />
     <PackageVersion Include="NSubstitute" Version="5.3.0" />
-    <PackageVersion Include="MSTest.TestAdapter" Version="4.2.1" />
-    <PackageVersion Include="MSTest.TestFramework" Version="4.2.1" />
+    <PackageVersion Include="MSTest.TestAdapter" Version="4.2.2" />
+    <PackageVersion Include="MSTest.TestFramework" Version="4.2.2" />
     <PackageVersion Include="Polly" Version="8.6.6" />
     <PackageVersion Include="Polly.Contrib.WaitAndRetry" Version="1.1.1" />
     <PackageVersion Include="QRCoder" Version="1.8.0" />
-    <PackageVersion Include="Scalar.AspNetCore" Version="2.14.8" />
-    <PackageVersion Include="Scalar.AspNetCore.Microsoft" Version="2.14.8" />
+    <PackageVersion Include="Scalar.AspNetCore" Version="2.14.11" />
+    <PackageVersion Include="Scalar.AspNetCore.Microsoft" Version="2.14.11" />
     <PackageVersion Include="SendGrid" Version="9.29.3" />
     <PackageVersion Include="SixLabors.ImageSharp" Version="3.1.12" />
     <PackageVersion Include="System.ServiceModel.Syndication" Version="10.0.7" />
     <PackageVersion Include="Aspire.Hosting.NodeJs" Version="9.5.2" />
-    <PackageVersion Include="Aspire.Hosting.SqlServer" Version="13.2.4" />
-    <PackageVersion Include="Aspire.Hosting.Azure.Storage" Version="13.2.4" />
-    <PackageVersion Include="Aspire.Microsoft.EntityFrameworkCore.SqlServer" Version="13.2.4" />
-    <PackageVersion Include="Aspire.Azure.Storage.Blobs" Version="13.2.4" />
+    <PackageVersion Include="Aspire.Hosting.SqlServer" Version="13.3.0" />
+    <PackageVersion Include="Aspire.Hosting.Azure.Storage" Version="13.3.0" />
+    <PackageVersion Include="Aspire.Microsoft.EntityFrameworkCore.SqlServer" Version="13.3.0" />
+    <PackageVersion Include="Aspire.Azure.Storage.Blobs" Version="13.3.0" />
     <PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="10.5.0" />
     <PackageVersion Include="Microsoft.Extensions.ServiceDiscovery" Version="10.5.0" />
     <PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.15.3" />
@@ -55,7 +55,7 @@
     <PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.15.2" />
     <PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.15.1" />
     <PackageVersion Include="OpenTelemetry.Instrumentation.Runtime" Version="1.15.1" />
-    <PackageVersion Include="Microsoft.Extensions.Azure" Version="1.13.1" />
+    <PackageVersion Include="Microsoft.Extensions.Azure" Version="1.14.0" />
     <PackageVersion Include="MailKit" Version="4.16.0" />
   </ItemGroup>
 </Project>

@@ -76,6 +76,7 @@ import { LocationSelectorComponent, LocationResult } from '../../../shared/compo
               <p-datepicker 
                 id="endDateTime" 
                 formControlName="endDateTime" 
+                [minDate]="eventForm.get('startDateTime')?.value"
                 [showTime]="true" 
                 [showIcon]="true" 
                 appendTo="body"
@@ -193,6 +194,25 @@ export default class EventEditComponent implements OnInit {
       longitude: [null],
       requiredRoles: [[]]
     });
+
+    this.eventForm.get('startDateTime')?.valueChanges.subscribe((startDateVal) => {
+      if (!startDateVal) return;
+      const startDate = startDateVal instanceof Date ? startDateVal : new Date(startDateVal);
+      if (isNaN(startDate.getTime())) return;
+
+      const endDateVal = this.eventForm.get('endDateTime')?.value;
+      if (!endDateVal) {
+        const newEndDate = new Date(startDate.getTime() + 60 * 60 * 1000);
+        this.eventForm.patchValue({ endDateTime: newEndDate }, { emitEvent: false });
+        return;
+      }
+
+      const endDate = endDateVal instanceof Date ? endDateVal : new Date(endDateVal);
+      if (isNaN(endDate.getTime()) || endDate <= startDate) {
+        const newEndDate = new Date(startDate.getTime() + 60 * 60 * 1000);
+        this.eventForm.patchValue({ endDateTime: newEndDate }, { emitEvent: false });
+      }
+    });
   }
 
   ngOnInit(): void {
@@ -271,11 +291,18 @@ export default class EventEditComponent implements OnInit {
     this.submitting.set(true);
     const formValue = this.eventForm.value;
     
+    const startIso = formValue.startDateTime instanceof Date 
+      ? formValue.startDateTime.toISOString() 
+      : new Date(formValue.startDateTime).toISOString();
+    const endIso = formValue.endDateTime instanceof Date 
+      ? formValue.endDateTime.toISOString() 
+      : new Date(formValue.endDateTime).toISOString();
+
     const formData = new FormData();
     formData.append('Title', formValue.title);
     formData.append('Description', formValue.description);
-    formData.append('StartDateTime', formValue.startDateTime.toISOString());
-    formData.append('EndDateTime', formValue.endDateTime.toISOString());
+    formData.append('StartDateTime', startIso);
+    formData.append('EndDateTime', endIso);
 
     if (formValue.locationName) formData.append('LocationName', formValue.locationName);
     if (formValue.latitude) formData.append('Latitude', formValue.latitude.toString());

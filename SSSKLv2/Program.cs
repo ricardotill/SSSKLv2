@@ -11,9 +11,9 @@ using SSSKLv2.Registrations;
 using SSSKLv2.Services;
 using Microsoft.OpenApi;
 using Microsoft.Azure.SignalR.Common;
-using Azure.Identity;
 using Microsoft.Extensions.Azure;
 using SSSKLv2.Data.Constants;
+using Azure.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -29,7 +29,7 @@ var websiteDomain = builder.Configuration["WEBSITE_DOMAIN"] ?? (builder.Environm
 builder.Services.AddControllers();
 
 // Register all FluentValidation validators from this assembly
-builder.Services.AddFluentAssertionsRegistrations();
+builder.Services.AddFluentValidationsRegistrations();
 
 builder.Services.AddOpenApi(opt =>
 {

@@ -24,6 +24,10 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.x'
+          
+      - name: Decode and save SixLabors license
+        run: |
+          echo "${{ secrets.SixLaborsLicense }}" | base64 -d > ./sixlabors.lic
 
       - name: Restore dependencies
         run: dotnet restore

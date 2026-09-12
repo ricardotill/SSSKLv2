@@ -11,6 +11,7 @@
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <AssemblyVersion>3.8.8.0</AssemblyVersion>
     <FileVersion>3.8.8.0</FileVersion>
+    <SixLaborsLicenseFile>../../sixlabors.lic</SixLaborsLicenseFile>
   </PropertyGroup>
 
   <ItemGroup>
@@ -23,6 +24,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Azure.Identity">
+      <Aliases>AzureIdentity</Aliases>
+    </PackageReference>
     <PackageReference Include="Azure.Storage.Blobs" />
     <PackageReference Include="FluentValidation" />
     <PackageReference Include="FluentValidation.AspNetCore" />

@@ -8,6 +8,7 @@
     <File Path="docker-compose.yml" />
     <File Path="LICENSE.txt" />
     <File Path="README.md" />
+    <File Path="SIXLABORS_LICENSE_SETUP.md" />
   </Folder>
   <Project Path="SSSKLv2.AppHost/SSSKLv2.AppHost.csproj" />
   <Project Path="SSSKLv2.ServiceDefaults/SSSKLv2.ServiceDefaults.csproj" />

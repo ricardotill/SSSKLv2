@@ -23,6 +23,10 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
+    
+    - name: Decode and save SixLabors license
+      run: |
+        echo "${{ secrets.SixLaborsLicense }}" | base64 -d > ./sixlabors.lic
         
     - name: Restore dependencies
       run: dotnet restore
@@ -52,6 +56,10 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Decode and save SixLabors license
+        run: |
+          echo "${{ secrets.SixLaborsLicense }}" | base64 -d > ./sixlabors.lic
 
       - name: Cache SonarCloud packages
         uses: actions/cache@v4

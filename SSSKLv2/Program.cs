@@ -11,9 +11,9 @@ using SSSKLv2.Registrations;
 using SSSKLv2.Services;
 using Microsoft.OpenApi;
 using Microsoft.Azure.SignalR.Common;
-using Azure.Identity;
 using Microsoft.Extensions.Azure;
 using SSSKLv2.Data.Constants;
+using Azure.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
 

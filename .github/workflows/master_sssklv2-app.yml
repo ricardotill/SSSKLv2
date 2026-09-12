@@ -27,7 +27,12 @@ jobs:
           
       - name: Decode and save SixLabors license
         run: |
+          if [ -z "${{ secrets.SixLaborsLicense }}" ]; then
+            echo "SixLaborsLicense secret is missing or empty"
+            exit 1
+          fi
           echo "${{ secrets.SixLaborsLicense }}" | base64 -d > ./sixlabors.lic
+          cp ./sixlabors.lic ../sixlabors.lic
 
       - name: Restore dependencies
         run: dotnet restore

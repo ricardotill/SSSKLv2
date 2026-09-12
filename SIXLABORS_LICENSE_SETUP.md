@@ -24,7 +24,7 @@ For local development, you need to have a valid SixLabors license file in the re
    dotnet run
    ```
 
-The `SixLaborsLicenseFile` property in `SSSKLv2.csproj` is configured to look for the license at `../../sixlabors.lic` (relative to the project file location).
+The `SixLaborsLicenseFile` property in `SSSKLv2.csproj` is configured to look for the license at `../sixlabors.lic` relative to the project directory, which resolves to the repository root and keeps the CI setup consistent.
 
 ## Pipeline/CI Setup
 

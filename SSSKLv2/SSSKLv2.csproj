@@ -11,7 +11,7 @@
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <AssemblyVersion>3.8.9.0</AssemblyVersion>
     <FileVersion>3.8.9.0</FileVersion>
-    <SixLaborsLicenseFile>../../sixlabors.lic</SixLaborsLicenseFile>
+    <SixLaborsLicenseFile>$(MSBuildThisFileDirectory)..\sixlabors.lic</SixLaborsLicenseFile>
   </PropertyGroup>
 
   <ItemGroup>

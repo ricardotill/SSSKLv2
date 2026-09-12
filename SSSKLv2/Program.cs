@@ -29,7 +29,7 @@ var websiteDomain = builder.Configuration["WEBSITE_DOMAIN"] ?? (builder.Environm
 builder.Services.AddControllers();
 
 // Register all FluentValidation validators from this assembly
-builder.Services.AddFluentAssertionsRegistrations();
+builder.Services.AddFluentValidationsRegistrations();
 
 builder.Services.AddOpenApi(opt =>
 {

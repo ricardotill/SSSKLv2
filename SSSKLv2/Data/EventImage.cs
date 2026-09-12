@@ -6,7 +6,7 @@ public class EventImage : BlobStorageItem
 
     public static EventImage ToEventImage(BlobStorageItem item) => new()
     {
-        Id = item.Id,
+        Id = Guid.NewGuid(),
         FileName = item.FileName,
         Uri = item.Uri,
         ContentType = item.ContentType,

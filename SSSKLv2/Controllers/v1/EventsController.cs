@@ -89,6 +89,7 @@ public class EventsController : ControllerBase
 
     [Authorize(Roles = "User,Admin")]
     [HttpPut("{id:guid}")]
+    [HttpPost("{id:guid}")]
     [Consumes("multipart/form-data")]
     public async Task<IActionResult> Update(Guid id, [FromForm] EventCreateDto dto, [FromForm] IFormFile? image)
     {

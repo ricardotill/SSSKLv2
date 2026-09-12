@@ -88,7 +88,10 @@ public class EventRepository(ApplicationDbContext context) : IEventRepository
 
     public async Task Update(Event entity)
     {
-        context.Event.Update(entity);
+        if (context.Entry(entity).State == EntityState.Detached)
+        {
+            context.Event.Update(entity);
+        }
         await context.SaveChangesAsync();
     }
 

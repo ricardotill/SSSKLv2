@@ -31,7 +31,7 @@ export class EventService {
   }
 
   updateEvent(id: string, formData: FormData): Observable<void> {
-    return this.http.put<void>(`${this.apiUrl}/${id}`, formData);
+    return this.http.post<void>(`${this.apiUrl}/${id}`, formData);
   }
 
   deleteEvent(id: string): Observable<void> {

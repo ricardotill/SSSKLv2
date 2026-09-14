@@ -74,6 +74,7 @@ public class EventRepository(ApplicationDbContext context, ILogger<EventReposito
     public async Task<Event?> GetById(Guid id)
     {
         return await context.Event
+            .AsNoTracking()
             .Include(e => e.Creator)
             .Include(e => e.Image)
             .Include(e => e.RequiredRoles)
@@ -91,28 +92,15 @@ public class EventRepository(ApplicationDbContext context, ILogger<EventReposito
     public async Task Update(Event entity)
     {
         var trackedEntry = context.Entry(entity);
-        var eventState = trackedEntry.State;
-        var imageState = entity.Image is null ? "null" : context.Entry(entity.Image).State.ToString();
-        var requiredRoleCount = entity.RequiredRoles?.Count ?? 0;
-
-        _logger.LogInformation(
-            "EventRepository.Update start: EventId={EventId}, EventState={EventState}, ImageState={ImageState}, RequiredRoleCount={RequiredRoleCount}, ImageId={ImageId}, ImageNull={ImageNull}",
-            entity.Id,
-            eventState,
-            imageState,
-            requiredRoleCount,
-            entity.Image?.Id,
-            entity.Image is null);
-
         if (trackedEntry.State != EntityState.Detached)
         {
-            _logger.LogInformation(
-                "EventRepository.Update detaching already-tracked graph before update: EventId={EventId}, State={State}, ImageId={ImageId}, RequiredRoleCount={RequiredRoleCount}",
+            _logger.LogWarning(
+                "EventRepository.Update received already-tracked entity; detaching before refresh save. EventId={EventId}, EventState={EventState}, ImageState={ImageState}",
                 entity.Id,
                 trackedEntry.State,
-                entity.Image?.Id,
-                entity.RequiredRoles?.Count ?? 0);
+                entity.Image is null ? "null" : context.Entry(entity.Image).State.ToString());
 
+            context.Entry(entity).State = EntityState.Detached;
             if (entity.Image is not null)
             {
                 context.Entry(entity.Image).State = EntityState.Detached;
@@ -125,9 +113,6 @@ public class EventRepository(ApplicationDbContext context, ILogger<EventReposito
                     context.Entry(role).State = EntityState.Detached;
                 }
             }
-
-            context.Entry(entity).State = EntityState.Detached;
-            _logger.LogInformation("EventRepository.Update: event graph detached. EventId={EventId}", entity.Id);
         }
 
         var existing = await context.Event
@@ -137,21 +122,7 @@ public class EventRepository(ApplicationDbContext context, ILogger<EventReposito
             .SingleOrDefaultAsync(e => e.Id == entity.Id);
 
         if (existing == null)
-        {
-            _logger.LogError("EventRepository.Update failed: Event {EventId} not found for update.", entity.Id);
             throw new InvalidOperationException($"Event {entity.Id} could not be found for update.");
-        }
-
-        var existingEntry = context.Entry(existing);
-        var existingImageState = existing.Image is null ? "null" : context.Entry(existing.Image).State.ToString();
-
-        _logger.LogInformation(
-            "EventRepository.Update existing tracked state: EventId={EventId}, ExistingState={ExistingState}, ExistingImageState={ExistingImageState}, ExistingImageId={ExistingImageId}, ExistingRoleCount={ExistingRoleCount}",
-            existing.Id,
-            existingEntry.State,
-            existingImageState,
-            existing.Image?.Id,
-            existing.RequiredRoles?.Count ?? 0);
 
         context.Entry(existing).CurrentValues.SetValues(entity);
 
@@ -160,7 +131,6 @@ public class EventRepository(ApplicationDbContext context, ILogger<EventReposito
             if (existing.Image is null)
             {
                 existing.Image = entity.Image;
-                _logger.LogInformation("EventRepository.Update: assigned new image to existing event. EventId={EventId}, ImageId={ImageId}", existing.Id, entity.Image.Id);
             }
             else
             {
@@ -168,14 +138,12 @@ public class EventRepository(ApplicationDbContext context, ILogger<EventReposito
                 existing.Image.Uri = entity.Image.Uri;
                 existing.Image.ContentType = entity.Image.ContentType;
                 existing.Image.CreatedOn = entity.Image.CreatedOn == default ? DateTime.UtcNow : entity.Image.CreatedOn;
-                _logger.LogInformation("EventRepository.Update: updated existing image metadata. EventId={EventId}, ImageId={ImageId}", existing.Id, existing.Image.Id);
             }
         }
         else if (existing.Image is not null)
         {
             context.EventImage.Remove(existing.Image);
             existing.Image = null;
-            _logger.LogInformation("EventRepository.Update: removed existing image. EventId={EventId}, ImageId={ImageId}", existing.Id, existing.Image?.Id);
         }
 
         if (existing.RequiredRoles is not null)
@@ -195,16 +163,7 @@ public class EventRepository(ApplicationDbContext context, ILogger<EventReposito
 
                 existing.RequiredRoles.Add(role);
             }
-
-            _logger.LogInformation("EventRepository.Update: refreshed required roles. EventId={EventId}, FinalRoleCount={RoleCount}", existing.Id, existing.RequiredRoles.Count);
         }
-
-        _logger.LogInformation(
-            "EventRepository.Update before save: EventId={EventId}, EventState={EventState}, ImageState={ImageState}, RequiredRoles={RequiredRoleCount}",
-            existing.Id,
-            context.Entry(existing).State,
-            existing.Image is null ? "null" : context.Entry(existing.Image).State.ToString(),
-            existing.RequiredRoles?.Count ?? 0);
 
         await context.SaveChangesAsync();
     }

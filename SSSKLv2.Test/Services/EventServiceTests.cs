@@ -26,27 +26,29 @@ public class EventServiceTests : RepositoryTest
     private IBlobStorageAgent _blobStorageAgent = null!;
     private IApplicationUserService _applicationUserService = null!;
     private IEventNotifier _eventNotifier = null!;
+    private IDbContextFactory<ApplicationDbContext> _dbContextFactory = null!;
     private ApplicationDbContext _dbContext = null!;
 
     [TestInitialize]
     public void TestInitialize()
     {
         InitializeDatabase();
-        _dbContext = new ApplicationDbContext(GetOptions());
+        var options = GetOptions();
+        _dbContext = new ApplicationDbContext(options);
+        _dbContextFactory = new MockDbContextFactory(options);
         
         _eventRepository = Substitute.For<IEventRepository>();
         _blobStorageAgent = Substitute.For<IBlobStorageAgent>();
         _applicationUserService = Substitute.For<IApplicationUserService>();
         _eventNotifier = Substitute.For<IEventNotifier>();
 
-        _sut = new EventService(_eventRepository, _blobStorageAgent, _applicationUserService, _dbContext, _eventNotifier);
+        _sut = new EventService(_eventRepository, _blobStorageAgent, _applicationUserService, _dbContextFactory, _eventNotifier);
     }
 
     [TestCleanup]
     public void TestCleanup()
     {
         CleanupDatabase();
-        _dbContext.Dispose();
     }
 
     [TestMethod]

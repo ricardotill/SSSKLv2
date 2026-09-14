@@ -10,7 +10,7 @@ using Ganss.Xss;
 
 namespace SSSKLv2.Services;
 
-public class EventService(IEventRepository eventRepository, IBlobStorageAgent blobStorageAgent, IApplicationUserService applicationUserService, ApplicationDbContext dbContext, IEventNotifier eventNotifier) : IEventService
+public class EventService(IEventRepository eventRepository, IBlobStorageAgent blobStorageAgent, IApplicationUserService applicationUserService, IDbContextFactory<ApplicationDbContext> dbContextFactory, IEventNotifier eventNotifier) : IEventService
 {
     public async Task<IEnumerable<EventDto>> GetAllEvents(int skip = 0, int take = 15, bool futureOnly = false, string? userId = null, string? requiredRole = null)
     {
@@ -78,8 +78,9 @@ public class EventService(IEventRepository eventRepository, IBlobStorageAgent bl
         if (requiredRoles == null || !requiredRoles.Any())
             return;
 
+        await using var context = await dbContextFactory.CreateDbContextAsync();
         var rolesToFetch = requiredRoles.Except(Roles.AllProtected, StringComparer.OrdinalIgnoreCase);
-        var newRoles = await dbContext.Roles.Where(r => rolesToFetch.Contains(r.Name)).ToListAsync();
+        var newRoles = await context.Roles.Where(r => rolesToFetch.Contains(r.Name)).ToListAsync();
         foreach (var role in newRoles)
         {
             e.RequiredRoles.Add(role);
@@ -180,8 +181,9 @@ public class EventService(IEventRepository eventRepository, IBlobStorageAgent bl
         if (requiredRoles == null || !requiredRoles.Any())
             return;
 
+        await using var context = await dbContextFactory.CreateDbContextAsync();
         var rolesToFetch = requiredRoles.Except(Roles.AllProtected, StringComparer.OrdinalIgnoreCase);
-        var newRoles = await dbContext.Roles.Where(r => rolesToFetch.Contains(r.Name)).ToListAsync();
+        var newRoles = await context.Roles.Where(r => rolesToFetch.Contains(r.Name)).ToListAsync();
         foreach (var role in newRoles)
         {
             e.RequiredRoles.Add(role);

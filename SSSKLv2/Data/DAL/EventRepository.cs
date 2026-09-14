@@ -4,12 +4,14 @@ using SSSKLv2.Data.DAL.Interfaces;
 
 namespace SSSKLv2.Data.DAL;
 
-public class EventRepository(ApplicationDbContext context, ILogger<EventRepository> logger) : IEventRepository
+public class EventRepository(IDbContextFactory<ApplicationDbContext> dbContextFactory, ILogger<EventRepository> logger) : IEventRepository
 {
     private readonly ILogger<EventRepository> _logger = logger;
 
     public async Task<IList<Event>> GetAll(int skip = 0, int take = 15, bool futureOnly = false, IList<string>? userRoles = null, bool isAdmin = false, string? requiredRole = null)
     {
+        await using var context = await dbContextFactory.CreateDbContextAsync();
+
         var query = context.Event
             .Include(e => e.Creator)
             .Include(e => e.Image)
@@ -49,6 +51,8 @@ public class EventRepository(ApplicationDbContext context, ILogger<EventReposito
 
     public async Task<int> GetCount(bool futureOnly = false, IList<string>? userRoles = null, bool isAdmin = false, string? requiredRole = null)
     {
+        await using var context = await dbContextFactory.CreateDbContextAsync();
+
         var query = context.Event.AsQueryable();
         if (futureOnly)
         {
@@ -68,11 +72,14 @@ public class EventRepository(ApplicationDbContext context, ILogger<EventReposito
         {
             query = query.Where(e => e.RequiredRoles.Any(r => r.Name == requiredRole));
         }
+
         return await query.CountAsync();
     }
 
     public async Task<Event?> GetById(Guid id)
     {
+        await using var context = await dbContextFactory.CreateDbContextAsync();
+
         return await context.Event
             .AsNoTracking()
             .Include(e => e.Creator)
@@ -85,12 +92,15 @@ public class EventRepository(ApplicationDbContext context, ILogger<EventReposito
 
     public async Task Add(Event entity)
     {
+        await using var context = await dbContextFactory.CreateDbContextAsync();
+
         await context.Event.AddAsync(entity);
         await context.SaveChangesAsync();
     }
 
     public async Task Update(Event entity)
     {
+        await using var context = await dbContextFactory.CreateDbContextAsync();
         var trackedEntry = context.Entry(entity);
         if (trackedEntry.State != EntityState.Detached)
         {
@@ -170,6 +180,7 @@ public class EventRepository(ApplicationDbContext context, ILogger<EventReposito
 
     public async Task Delete(Guid id)
     {
+        await using var context = await dbContextFactory.CreateDbContextAsync();
         var entity = await context.Event.FindAsync(id);
         if (entity != null)
         {
@@ -180,24 +191,28 @@ public class EventRepository(ApplicationDbContext context, ILogger<EventReposito
 
     public async Task<EventResponse?> GetResponse(Guid eventId, string userId)
     {
+        await using var context = await dbContextFactory.CreateDbContextAsync();
         return await context.EventResponse
             .FirstOrDefaultAsync(r => r.EventId == eventId && r.UserId == userId);
     }
 
     public async Task AddResponse(EventResponse response)
     {
+        await using var context = await dbContextFactory.CreateDbContextAsync();
         await context.EventResponse.AddAsync(response);
         await context.SaveChangesAsync();
     }
 
     public async Task UpdateResponse(EventResponse response)
     {
+        await using var context = await dbContextFactory.CreateDbContextAsync();
         context.EventResponse.Update(response);
         await context.SaveChangesAsync();
     }
 
     public async Task DeleteResponse(EventResponse response)
     {
+        await using var context = await dbContextFactory.CreateDbContextAsync();
         context.EventResponse.Remove(response);
         await context.SaveChangesAsync();
     }

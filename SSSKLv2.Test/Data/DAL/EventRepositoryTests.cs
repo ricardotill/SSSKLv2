@@ -23,8 +23,9 @@ public class EventRepositoryTests : RepositoryTest
     public void Init()
     {
         InitializeDatabase();
-        _context = new ApplicationDbContext(GetOptions());
-        _repository = new EventRepository(_context, NullLogger<EventRepository>.Instance);
+        var options = GetOptions();
+        _context = new ApplicationDbContext(options);
+        _repository = new EventRepository(new MockDbContextFactory(options), NullLogger<EventRepository>.Instance);
     }
 
     [TestCleanup]
@@ -236,7 +237,8 @@ public class EventRepositoryTests : RepositoryTest
         await _repository.Delete(e.Id);
 
         // Assert
-        (await _context.Event.FindAsync(e.Id)).Should().BeNull();
+        await using var verificationContext = new ApplicationDbContext(GetOptions());
+        (await verificationContext.Event.FindAsync(e.Id)).Should().BeNull();
     }
 
     [TestMethod]

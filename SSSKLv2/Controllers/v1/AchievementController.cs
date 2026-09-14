@@ -6,6 +6,7 @@ using SSSKLv2.Dto.Api.v1;
 using SSSKLv2.Dto;
 using SSSKLv2.Data;
 using SSSKLv2.Data.DAL.Exceptions;
+using SSSKLv2.Util;
 
 namespace SSSKLv2.Controllers.v1;
 
@@ -98,7 +99,12 @@ public class AchievementController : ControllerBase
             return BadRequest("Afbeelding is verplicht."); // "Image is required" in Dutch
         }
 
-        dto.ImageContentType = new ContentType(image.ContentType);
+        if (!ContentTypeToExtensionMapper.IsAllowedContentType(image.ContentType))
+        {
+            return BadRequest("Unsupported image content type. Only JPEG, PNG, WebP, HEIC, and HEIF are allowed.");
+        }
+
+        dto.ImageContentType = new ContentType(ContentTypeToExtensionMapper.NormalizeContentType(image.ContentType)!);
         dto.ImageContent = image.OpenReadStream();
 
         await _achievementService.AddAchievement(dto);

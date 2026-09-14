@@ -6,6 +6,7 @@ using SSSKLv2.Dto.Api;
 using SSSKLv2.Dto.Api.v1;
 using System.Security.Claims;
 using SSSKLv2.Data;
+using SSSKLv2.Util;
 using System.Net.Mime;
 
 namespace SSSKLv2.Controllers.v1;
@@ -78,7 +79,12 @@ public class EventsController : ControllerBase
 
         if (image != null)
         {
-            dto.ImageContentType = new ContentType(image.ContentType);
+            if (!ContentTypeToExtensionMapper.IsAllowedContentType(image.ContentType))
+            {
+                return BadRequest("Unsupported image content type. Only JPEG, PNG, WebP, HEIC, and HEIF are allowed.");
+            }
+
+            dto.ImageContentType = new ContentType(ContentTypeToExtensionMapper.NormalizeContentType(image.ContentType)!);
             dto.ImageContent = image.OpenReadStream();
         }
 
@@ -100,7 +106,12 @@ public class EventsController : ControllerBase
 
         if (image != null)
         {
-            dto.ImageContentType = new ContentType(image.ContentType);
+            if (!ContentTypeToExtensionMapper.IsAllowedContentType(image.ContentType))
+            {
+                return BadRequest("Unsupported image content type. Only JPEG, PNG, WebP, HEIC, and HEIF are allowed.");
+            }
+
+            dto.ImageContentType = new ContentType(ContentTypeToExtensionMapper.NormalizeContentType(image.ContentType)!);
             dto.ImageContent = image.OpenReadStream();
         }
 

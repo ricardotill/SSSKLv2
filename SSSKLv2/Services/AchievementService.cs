@@ -376,11 +376,14 @@ public class AchievementService(
             throw new ArgumentException("Image content and type are required.");
         }
 
-        var extension = ContentTypeToExtensionMapper.GetExtension(dto.ImageContentType.MediaType);
+        var contentType = ContentTypeToExtensionMapper.NormalizeContentType(dto.ImageContentType.MediaType)
+            ?? throw new ArgumentException("Unsupported image content type. Only JPEG, PNG, WebP, HEIC, and HEIF are allowed.");
+
+        var extension = ContentTypeToExtensionMapper.GetExtension(contentType);
         var name = $"{dto.Name}-{Guid.NewGuid()}.{extension}";
 
         var blobItem = await blobStorageAgent.UploadFileToBlobAsync(name,
-            dto.ImageContentType.MediaType,
+            contentType,
             dto.ImageContent);
 
         var achievement = new Achievement

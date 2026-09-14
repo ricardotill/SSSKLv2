@@ -223,6 +223,64 @@ public class EventServiceTests : RepositoryTest
     }
 
     [TestMethod]
+    public async Task UpdateEvent_WithNewImage_WhenEventAlreadyHasImage_ShouldUpdateExistingImageEntity()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        var creatorId = "creator-id";
+        var existingImage = new EventImage
+        {
+            Id = Guid.NewGuid(),
+            FileName = "old-event-image.png",
+            Uri = "https://storage.example.com/old-event-image.png",
+            ContentType = "image/png",
+            CreatedOn = DateTime.UtcNow.AddDays(-1)
+        };
+
+        var e = new Event
+        {
+            Id = id,
+            CreatorId = creatorId,
+            Title = "Old Title",
+            Description = "Old Description",
+            StartDateTime = DateTime.UtcNow,
+            EndDateTime = DateTime.UtcNow.AddHours(2),
+            Image = existingImage
+        };
+
+        _eventRepository.GetById(id).Returns(e);
+        _blobStorageAgent.UploadFileToBlobAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<Stream>())
+            .Returns(new BlobStorageItem
+            {
+                Id = Guid.NewGuid(),
+                FileName = "new-event-image.png",
+                Uri = "https://storage.example.com/new-event-image.png",
+                ContentType = "image/png",
+                CreatedOn = DateTime.UtcNow
+            });
+
+        var dto = new EventCreateDto
+        {
+            Title = "New Title",
+            Description = "New Description",
+            StartDateTime = DateTime.UtcNow.AddDays(1),
+            EndDateTime = DateTime.UtcNow.AddDays(1).AddHours(2),
+            ImageContent = new MemoryStream(new byte[] { 1, 2, 3 }),
+            ImageContentType = new ContentType("image/png")
+        };
+
+        // Act
+        await _sut.UpdateEvent(id, dto, creatorId, false);
+
+        // Assert
+        e.Image.Should().NotBeNull();
+        e.Image!.Id.Should().Be(existingImage.Id);
+        e.Image.FileName.Should().Be("new-event-image.png");
+        e.Image.Uri.Should().Be("https://storage.example.com/new-event-image.png");
+        e.Image.ContentType.Should().Be("image/png");
+    }
+
+    [TestMethod]
     public async Task UpdateEvent_AsNonCreatorNonAdmin_ShouldThrowUnauthorized()
     {
         // Arrange
@@ -309,6 +367,48 @@ public class EventServiceTests : RepositoryTest
         // Assert
         await _eventRepository.Received(1).Add(Arg.Is<Event>(e => e.Image != null));
         await _blobStorageAgent.Received(1).UploadFileToBlobAsync(Arg.Any<string>(), "image/png", Arg.Any<Stream>());
+    }
+
+    [TestMethod]
+    public async Task CreateEvent_WithHeicImageContentType_ShouldUploadAndSetImage()
+    {
+        // Arrange
+        using var stream = new MemoryStream(new byte[] { 0, 1, 2 });
+        var dto = new EventCreateDto
+        {
+            Title = "Heic Event",
+            ImageContent = stream,
+            ImageContentType = new ContentType("image/heic")
+        };
+
+        _blobStorageAgent.UploadFileToBlobAsync(Arg.Any<string>(), "image/heic", Arg.Any<Stream>())
+            .Returns(new BlobStorageItem { Id = Guid.NewGuid(), FileName = "test.heic", Uri = "http://test.com/test.heic", ContentType = "image/heic" });
+
+        // Act
+        await _sut.CreateEvent(dto, "creator-id");
+
+        // Assert
+        await _eventRepository.Received(1).Add(Arg.Is<Event>(e => e.Image != null && e.Image.ContentType == "image/heic"));
+        await _blobStorageAgent.Received(1).UploadFileToBlobAsync(Arg.Any<string>(), "image/heic", Arg.Any<Stream>());
+    }
+
+    [TestMethod]
+    public async Task CreateEvent_WithUnsafeImageContentType_ShouldThrowArgumentException()
+    {
+        // Arrange
+        using var stream = new MemoryStream(new byte[] { 0, 1, 2 });
+        var dto = new EventCreateDto
+        {
+            Title = "Unsafe Image Event",
+            ImageContent = stream,
+            ImageContentType = new ContentType("text/html")
+        };
+
+        // Act
+        var act = () => _sut.CreateEvent(dto, "creator-id");
+
+        // Assert
+        await act.Should().ThrowAsync<ArgumentException>().WithMessage("*JPEG, PNG, WebP, HEIC, and HEIF*");
     }
 
     [TestMethod]

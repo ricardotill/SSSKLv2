@@ -8,7 +8,7 @@ namespace SSSKLv2.Test.Util;
 public class ContentTypeToExtensionMapperTests
 {
     [TestMethod]
-    [DataRow("image/jpeg", ".jpeg")]
+    [DataRow("image/jpeg", ".jpg")]
     [DataRow("image/jpg", ".jpg")]
     [DataRow("image/png", ".png")]
     public void GetExtension_KnownContentType_ReturnsExtension(string contentType, string expected)

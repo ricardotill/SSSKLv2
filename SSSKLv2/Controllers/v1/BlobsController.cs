@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SSSKLv2.Agents;
 using SSSKLv2.Data;
+using SSSKLv2.Util;
 using Microsoft.EntityFrameworkCore;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Processing;
@@ -30,8 +31,12 @@ public class BlobsController : ControllerBase
         var image = await _context.BlobStorageItem.FirstOrDefaultAsync(x => x.Id == id);
         if (image == null) return NotFound();
 
+        var contentType = ContentTypeToExtensionMapper.NormalizeContentType(image.ContentType);
+        if (contentType == null)
+            return BadRequest("Unsupported image content type.");
+
         var stream = await _blobAgent.OpenDownloadStreamAsync(image.FileName);
-        return File(stream, image.ContentType);
+        return File(stream, contentType);
     }
 
     [HttpGet("achievement/image/{id}")]
@@ -42,8 +47,12 @@ public class BlobsController : ControllerBase
         var image = await _context.BlobStorageItem.FirstOrDefaultAsync(x => x.Id == id);
         if (image == null) return NotFound();
 
+        var contentType = ContentTypeToExtensionMapper.NormalizeContentType(image.ContentType);
+        if (contentType == null)
+            return BadRequest("Unsupported image content type.");
+
         var stream = await _blobAgent.OpenDownloadStreamAsync(image.FileName);
-        return File(stream, image.ContentType);
+        return File(stream, contentType);
     }
 
     [HttpGet("profilepicture/image/{id}")]
@@ -54,8 +63,12 @@ public class BlobsController : ControllerBase
         var image = await _context.BlobStorageItem.FirstOrDefaultAsync(x => x.Id == id);
         if (image == null) return NotFound();
 
+        var contentType = ContentTypeToExtensionMapper.NormalizeContentType(image.ContentType);
+        if (contentType == null)
+            return BadRequest("Unsupported image content type.");
+
         var stream = await _blobAgent.OpenDownloadStreamAsync(image.FileName);
-        return File(stream, image.ContentType);
+        return File(stream, contentType);
     }
 
     [HttpGet("event/image/{id}/social-preview.jpg")]

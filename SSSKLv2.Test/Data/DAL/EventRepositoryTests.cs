@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SSSKLv2.Data;
 using SSSKLv2.Data.DAL;
@@ -23,7 +24,7 @@ public class EventRepositoryTests : RepositoryTest
     {
         InitializeDatabase();
         _context = new ApplicationDbContext(GetOptions());
-        _repository = new EventRepository(_context);
+        _repository = new EventRepository(_context, NullLogger<EventRepository>.Instance);
     }
 
     [TestCleanup]

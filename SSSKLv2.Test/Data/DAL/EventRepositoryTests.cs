@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SSSKLv2.Data;
@@ -161,6 +162,65 @@ public class EventRepositoryTests : RepositoryTest
         // Assert
         var updated = await _context.Event.FindAsync(e.Id);
         updated!.Title.Should().Be("Updated");
+    }
+
+    [TestMethod]
+    public async Task Update_WhenEventIsAlreadyTracked_UpdatesWithoutConcurrencyFailure()
+    {
+        // Arrange
+        var role = new IdentityRole("Admins");
+        var image = new EventImage
+        {
+            Id = Guid.NewGuid(),
+            FileName = "before.png",
+            Uri = "https://example.test/before.png",
+            ContentType = "image/png",
+            CreatedOn = DateTime.UtcNow
+        };
+
+        var e = new Event
+        {
+            Id = Guid.NewGuid(),
+            Title = "Original",
+            Description = "Desc",
+            StartDateTime = DateTime.UtcNow,
+            EndDateTime = DateTime.UtcNow.AddHours(1),
+            CreatorId = TestUser.Id,
+            Image = image,
+            RequiredRoles = new List<IdentityRole> { role }
+        };
+
+        await _context.Roles.AddAsync(role);
+        await _context.Event.AddAsync(e);
+        await _context.SaveChangesAsync();
+
+        _context.ChangeTracker.Clear();
+        var tracked = await _context.Event
+            .Include(x => x.Image)
+            .Include(x => x.RequiredRoles)
+            .SingleAsync(x => x.Id == e.Id);
+
+        tracked.Title = "Updated";
+        tracked.Description = "Updated description";
+        tracked.StartDateTime = DateTime.UtcNow.AddDays(1);
+        tracked.EndDateTime = DateTime.UtcNow.AddDays(1).AddHours(2);
+        tracked.Image!.FileName = "after.png";
+        tracked.Image.Uri = "https://example.test/after.png";
+        tracked.Image.ContentType = "image/jpeg";
+
+        // Act
+        var act = () => _repository.Update(tracked);
+
+        // Assert
+        await act.Should().NotThrowAsync();
+        var updated = await _context.Event
+            .Include(x => x.Image)
+            .Include(x => x.RequiredRoles)
+            .SingleAsync(x => x.Id == e.Id);
+
+        updated.Title.Should().Be("Updated");
+        updated.Image.Should().NotBeNull();
+        updated.Image!.FileName.Should().Be("after.png");
     }
 
     [TestMethod]

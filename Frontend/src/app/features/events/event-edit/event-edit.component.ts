@@ -101,14 +101,14 @@ import { LocationSelectorComponent, LocationResult } from '../../../shared/compo
           </div>
 
           <div class="flex flex-col gap-2">
-            <label for="image" class="font-bold">Afbeelding (.png, .jpg)</label>
+            <label class="font-bold">Afbeelding</label>
             @if (isEdit && currentImageUri()) {
               <div class="mb-2">
                 <span class="text-sm text-surface-500 block mb-1">Huidige afbeelding:</span>
                 <img [src]="currentImageUri() | resolveApiUrl" class="w-16 h-16 object-contain rounded-md border border-surface-200 dark:border-surface-700 bg-surface-100 dark:bg-surface-800" />
               </div>
             }
-            <input type="file" id="image" (change)="onFileSelected($event)" accept="image/png, image/jpeg" class="w-full p-2 border border-surface-200 dark:border-surface-700 rounded-md" />
+            <small class="text-surface-500">De afbeelding kan je vanaf de eventpagina uploaden.</small>
           </div>
 
           <div class="flex flex-col gap-2">
@@ -178,7 +178,6 @@ export default class EventEditComponent implements OnInit {
   eventId: string | null = null;
   submitting = signal<boolean>(false);
   currentImageUri = signal<string | null>(null);
-  selectedFile: File | null = null;
   availableRoles = signal<Role[]>([]);
 
   private readonly roleService = inject(RoleService);
@@ -262,13 +261,6 @@ export default class EventEditComponent implements OnInit {
     });
   }
 
-  onFileSelected(event: any): void {
-    const file = event.target.files[0];
-    if (file) {
-      this.selectedFile = file;
-    }
-  }
-
   onLocationChanged(location: LocationResult | null): void {
     if (location) {
       this.eventForm.patchValue({
@@ -312,10 +304,6 @@ export default class EventEditComponent implements OnInit {
       formValue.requiredRoles.forEach((role: string, index: number) => {
         formData.append(`RequiredRoles[${index}]`, role);
       });
-    }
-
-    if (this.selectedFile) {
-      formData.append('image', this.selectedFile);
     }
 
     const request: Observable<any> = this.isEdit && this.eventId

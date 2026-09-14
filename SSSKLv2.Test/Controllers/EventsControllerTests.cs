@@ -186,6 +186,23 @@ public class EventsControllerTests
     }
 
     [TestMethod]
+    public async Task UpdateImage_WhenValidImage_ReturnsNoContent()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        var image = Substitute.For<IFormFile>();
+        image.ContentType.Returns("image/png");
+        image.OpenReadStream().Returns(new System.IO.MemoryStream());
+
+        // Act
+        var result = await _sut.UpdateImage(id, image);
+
+        // Assert
+        result.Should().BeOfType<NoContentResult>();
+        await _mockService.Received(1).UpdateEventImage(id, _currentUserId, false, Arg.Any<Stream>(), "image/png");
+    }
+
+    [TestMethod]
     public async Task Update_ReturnsNoContent()
     {
         // Arrange
@@ -193,7 +210,7 @@ public class EventsControllerTests
         var dto = new EventCreateDto { Title = "Updated" };
 
         // Act
-        var result = await _sut.Update(id, dto, null);
+        var result = await _sut.Update(id, dto);
 
         // Assert
         result.Should().BeOfType<NoContentResult>();
@@ -208,7 +225,7 @@ public class EventsControllerTests
         _mockService.UpdateEvent(id, Arg.Any<EventCreateDto>(), _currentUserId, false).Returns(Task.FromException(new NotFoundException("Not found")));
 
         // Act
-        var result = await _sut.Update(id, new EventCreateDto(), null);
+        var result = await _sut.Update(id, new EventCreateDto());
 
         // Assert
         result.Should().BeOfType<NotFoundResult>();
@@ -222,7 +239,7 @@ public class EventsControllerTests
         _mockService.UpdateEvent(id, Arg.Any<EventCreateDto>(), _currentUserId, false).Returns(Task.FromException(new UnauthorizedAccessException()));
 
         // Act
-        var result = await _sut.Update(id, new EventCreateDto(), null);
+        var result = await _sut.Update(id, new EventCreateDto());
 
         // Assert
         result.Should().BeOfType<ForbidResult>();

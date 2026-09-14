@@ -1,5 +1,5 @@
-import { Component, ChangeDetectionStrategy, inject, signal, OnInit, computed, ElementRef, viewChild, AfterViewChecked, effect } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, ChangeDetectionStrategy, inject, signal, OnInit, computed, ElementRef, viewChild, effect } from '@angular/core';
+import { CommonModule, DOCUMENT } from '@angular/common';
 import { GoogleMapsService } from '../../../core/services/google-maps.service';
 import { ThemeService } from '../../../core/services/theme.service';
 import { take } from 'rxjs';
@@ -8,6 +8,7 @@ import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { TagModule } from 'primeng/tag';
 import { DividerModule } from 'primeng/divider';
+import { DialogModule } from 'primeng/dialog';
 import { EventService } from '../services/event.service';
 import { LanguageService } from '../../../core/services/language.service';
 import { AuthService } from '../../../core/auth/auth.service';
@@ -15,7 +16,6 @@ import { EventDto, EventResponseStatus } from '../../../core/models/event.model'
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { MessageService } from 'primeng/api';
 import { Meta, Title } from '@angular/platform-browser';
-import { DOCUMENT } from '@angular/common';
 import { AvatarModule } from 'primeng/avatar';
 import { ResolveApiUrlPipe } from '../../../shared/pipes/resolve-api-url.pipe';
 import { UrlService } from '../../../core/services/url.service';
@@ -37,10 +37,62 @@ import { ReactionListComponent } from '../../../shared/components/reaction-list/
     AvatarModule,
     ResolveApiUrlPipe,
     ProcessedContentPipe,
-    ReactionListComponent
+    ReactionListComponent,
+    DialogModule
   ],
   template: `
     <div class="max-w-4xl mx-auto">
+      <p-dialog
+        [visible]="imageDialogVisible()"
+        [modal]="true"
+        [dismissableMask]="true"
+        [draggable]="false"
+        [resizable]="false"
+        [showHeader]="true"
+        [header]="'Afbeelding wijzigen'"
+        [style]="{ width: 'min(92vw, 560px)' }"
+        [breakpoints]="{ '768px': '90vw' }"
+        (onHide)="closeImageModal()"
+      >
+        <div class="flex flex-col gap-4">
+          <div class="flex justify-center rounded-2xl border border-surface-200 dark:border-surface-700 bg-surface-100 dark:bg-surface-800 p-3 min-h-56">
+            @if (imagePreview()) {
+              <img [src]="imagePreview()" alt="Preview van eventafbeelding" class="max-h-64 w-full rounded-xl object-cover shadow-sm" />
+            } @else if (event()?.imageUrl) {
+              <img [src]="event()?.imageUrl | resolveApiUrl" alt="Huidige eventafbeelding" class="max-h-64 w-full rounded-xl object-cover shadow-sm" />
+            } @else {
+              <div class="flex min-h-56 w-full items-center justify-center rounded-xl border border-dashed border-surface-300 dark:border-surface-600 text-sm text-surface-500">
+                Geen afbeelding beschikbaar
+              </div>
+            }
+          </div>
+
+          <div class="flex items-center justify-center">
+            <label class="inline-flex cursor-pointer items-center gap-2 rounded-full border border-primary-500 bg-primary-500/10 px-4 py-2 text-sm font-medium text-primary-700 dark:text-primary-300 transition hover:bg-primary-500/20">
+              <i class="pi pi-upload"></i>
+              Kies afbeelding
+              <input #eventImageInput type="file" accept="image/png, image/jpeg, image/webp, image/heic, image/heif" class="hidden" (change)="onImageFileSelected($event)" />
+            </label>
+          </div>
+
+          @if (selectedImageFile()) {
+            <div class="rounded-lg border border-surface-200 bg-surface-50 px-3 py-2 text-xs text-surface-600 dark:border-surface-700 dark:bg-surface-900 dark:text-surface-300">
+              {{ selectedImageFile()?.name }}
+            </div>
+          }
+
+          <div class="flex justify-end gap-2 pt-2">
+            <p-button label="Annuleren" severity="secondary" [outlined]="true" (onClick)="closeImageModal()" />
+            <p-button
+              label="Opslaan"
+              icon="pi pi-check"
+              [disabled]="!selectedImageFile() || uploadingImage()"
+              [loading]="uploadingImage()"
+              (onClick)="uploadSelectedImage()"
+            />
+          </div>
+        </div>
+      </p-dialog>
       
       @if (loading()) {
         <div class="flex justify-center items-center p-12">
@@ -54,10 +106,11 @@ import { ReactionListComponent } from '../../../shared/components/reaction-list/
               <h1 class="text-3xl font-bold m-0 text-surface-900 dark:text-surface-0">{{ event()?.title }}</h1>
             </div>
             
-            <div class="flex gap-2">
+            <div class="flex gap-2 flex-wrap">
               <p-button [label]="ls.t().share" icon="pi pi-share-alt" [outlined]="true" severity="secondary" (onClick)="share()" />
               @if (canEdit()) {
                 <p-button [label]="ls.t().edit" icon="pi pi-pencil" severity="secondary" [routerLink]="['/events', event()?.id, 'edit']" />
+                <p-button label="Afbeelding wijzigen" icon="pi pi-image" severity="secondary" [outlined]="true" (onClick)="triggerImageUpload()" />
                 <p-button [label]="ls.t().delete" icon="pi pi-trash" severity="danger" (onClick)="deleteEvent()" />
               }
             </div>
@@ -325,9 +378,14 @@ export default class EventDetailComponent implements OnInit {
   drawerService = inject(UserProfileDrawerService);
 
   detailMapContainer = viewChild<ElementRef>('detailMapContainer');
+  private readonly eventImageInput = viewChild<ElementRef<HTMLInputElement>>('eventImageInput');
   private map?: google.maps.Map;
   private mapInitialized = false;
   apiLoaded = signal<boolean>(false);
+  imageDialogVisible = signal(false);
+  imagePreview = signal<string | null>(null);
+  selectedImageFile = signal<File | null>(null);
+  uploadingImage = signal(false);
 
   constructor() {
     // Handle map initialization and theme updates
@@ -335,7 +393,6 @@ export default class EventDetailComponent implements OnInit {
       const container = this.detailMapContainer()?.nativeElement;
       const evt = this.event();
       const apiLoaded = this.apiLoaded();
-      const isDark = this.themeService.isDark();
       const lat = this.sanitizeCoordinate(evt?.latitude);
       const lng = this.sanitizeCoordinate(evt?.longitude);
 
@@ -434,11 +491,12 @@ export default class EventDetailComponent implements OnInit {
         const markerLib = await google.maps.importLibrary("marker") as any;
         const AdvancedMarkerElement = markerLib.AdvancedMarkerElement;
 
-        new AdvancedMarkerElement({
+        const marker = new AdvancedMarkerElement({
           position: { lat, lng },
           map: this.map,
           title: name
         });
+        void marker;
       }, 100);
     });
   }
@@ -461,6 +519,68 @@ export default class EventDetailComponent implements OnInit {
       this.meta.updateTag({ property: 'og:image:width', content: '1200' });
       this.meta.updateTag({ property: 'og:image:height', content: '630' });
     }
+  }
+
+  triggerImageUpload(): void {
+    const imageUrl = this.event()?.imageUrl ?? null;
+    const resolvedImageUrl = imageUrl ? this.urlService.resolveApiUrl(imageUrl) ?? null : null;
+
+    this.imageDialogVisible.set(true);
+    this.selectedImageFile.set(null);
+    this.imagePreview.set(resolvedImageUrl);
+  }
+
+  closeImageModal(): void {
+    const imageUrl = this.event()?.imageUrl ?? null;
+    const resolvedImageUrl = imageUrl ? this.urlService.resolveApiUrl(imageUrl) ?? null : null;
+
+    this.imageDialogVisible.set(false);
+    this.selectedImageFile.set(null);
+    this.imagePreview.set(resolvedImageUrl);
+    const input = this.eventImageInput();
+    if (input) {
+      input.nativeElement.value = '';
+    }
+  }
+
+  onImageFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+
+    if (!file) {
+      const imageUrl = this.event()?.imageUrl ?? null;
+      const resolvedImageUrl = imageUrl ? this.urlService.resolveApiUrl(imageUrl) ?? null : null;
+
+      this.selectedImageFile.set(null);
+      this.imagePreview.set(resolvedImageUrl);
+      return;
+    }
+
+    this.selectedImageFile.set(file);
+    this.imagePreview.set(URL.createObjectURL(file));
+  }
+
+  uploadSelectedImage(): void {
+    const file = this.selectedImageFile();
+    const currentEvent = this.event();
+
+    if (!file || !currentEvent) {
+      return;
+    }
+
+    this.uploadingImage.set(true);
+    this.eventService.updateEventImage(currentEvent.id, file).subscribe({
+      next: () => {
+        this.messageService.add({ severity: 'success', summary: 'Succes', detail: 'Afbeelding bijgewerkt' });
+        this.uploadingImage.set(false);
+        this.closeImageModal();
+        this.loadEvent(currentEvent.id);
+      },
+      error: () => {
+        this.uploadingImage.set(false);
+        this.messageService.add({ severity: 'error', summary: 'Fout', detail: 'Afbeelding uploaden mislukt' });
+      }
+    });
   }
 
   share(): void {
@@ -525,7 +645,7 @@ export default class EventDetailComponent implements OnInit {
   }
 
   private sanitizeCoordinate(coord: number | undefined): number | undefined {
-    if (coord === undefined || coord === null || isNaN(coord)) return undefined;
+    if (coord === undefined || coord === null || Number.isNaN(coord)) return undefined;
     if (coord === 0) return 0;
 
     // Standard coordinates are between -180 and 180

@@ -34,6 +34,12 @@ export class EventService {
     return this.http.post<void>(`${this.apiUrl}/${id}`, formData);
   }
 
+  updateEventImage(id: string, file: File): Observable<void> {
+    const formData = new FormData();
+    formData.append('image', file);
+    return this.http.post<void>(`${this.apiUrl}/${id}/image`, formData);
+  }
+
   deleteEvent(id: string): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }

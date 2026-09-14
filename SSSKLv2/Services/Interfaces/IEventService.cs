@@ -10,6 +10,7 @@ public interface IEventService
     Task<EventDto> GetEventById(Guid id, string? userId = null);
     Task<Guid> CreateEvent(EventCreateDto dto, string creatorId);
     Task UpdateEvent(Guid id, EventCreateDto dto, string userId, bool isAdmin);
+    Task UpdateEventImage(Guid id, string userId, bool isAdmin, Stream imageContent, string contentType);
     Task DeleteEvent(Guid id, string userId, bool isAdmin);
     Task RespondToEvent(Guid id, string userId, EventResponseStatus status);
 }

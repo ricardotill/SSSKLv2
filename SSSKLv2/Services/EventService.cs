@@ -12,6 +12,8 @@ namespace SSSKLv2.Services;
 
 public class EventService(IEventRepository eventRepository, IBlobStorageAgent blobStorageAgent, IApplicationUserService applicationUserService, IDbContextFactory<ApplicationDbContext> dbContextFactory, IEventNotifier eventNotifier) : IEventService
 {
+    private const string EventNotFoundMessage = "Event not found";
+
     public async Task<IEnumerable<EventDto>> GetAllEvents(int skip = 0, int take = 15, bool futureOnly = false, string? userId = null, string? requiredRole = null)
     {
         var (userRoles, isAdmin) = await GetUserAccessAsync(userId);
@@ -28,7 +30,7 @@ public class EventService(IEventRepository eventRepository, IBlobStorageAgent bl
     public async Task<EventDto> GetEventById(Guid id, string? userId = null)
     {
         var e = await eventRepository.GetById(id);
-        if (e == null) throw new Data.DAL.Exceptions.NotFoundException("Event not found");
+        if (e == null) throw new Data.DAL.Exceptions.NotFoundException(EventNotFoundMessage);
         return MapToDto(e, userId);
     }
 
@@ -46,16 +48,45 @@ public class EventService(IEventRepository eventRepository, IBlobStorageAgent bl
     public async Task UpdateEvent(Guid id, EventCreateDto dto, string userId, bool isAdmin)
     {
         var e = await eventRepository.GetById(id);
-        if (e == null) throw new Data.DAL.Exceptions.NotFoundException("Event not found");
+        if (e == null) throw new Data.DAL.Exceptions.NotFoundException(EventNotFoundMessage);
 
         if (e.CreatorId != userId && !isAdmin)
             throw new UnauthorizedAccessException("Only the creator or an admin can update this event.");
 
         ApplyEventChanges(e, dto);
-        await UpdateRequiredRolesAsync(e, dto.RequiredRoles);
-        await UpdateEventImageAsync(e, dto);
+        await ApplyRequiredRolesAsync(e, dto.RequiredRoles);
 
         await eventRepository.Update(e);
+        await eventNotifier.NotifyEventChangedAsync();
+    }
+
+    public async Task UpdateEventImage(Guid id, string userId, bool isAdmin, Stream imageContent, string contentType)
+    {
+        if (imageContent == null) throw new ArgumentNullException(nameof(imageContent));
+
+        var e = await eventRepository.GetById(id);
+        if (e == null) throw new Data.DAL.Exceptions.NotFoundException(EventNotFoundMessage);
+
+        if (e.CreatorId != userId && !isAdmin)
+            throw new UnauthorizedAccessException("Only the creator or an admin can update this event image.");
+
+        var normalizedContentType = ContentTypeToExtensionMapper.NormalizeContentType(contentType)
+            ?? throw new ArgumentException("Unsupported image content type. Only JPEG, PNG, WebP, HEIC, and HEIF are allowed.");
+
+        var extension = ContentTypeToExtensionMapper.GetExtension(normalizedContentType);
+        var name = $"{e.Title}-{Guid.NewGuid()}.{extension}";
+
+        var blobItem = await blobStorageAgent.UploadFileToBlobAsync(name, normalizedContentType, imageContent);
+
+        if (e.Image != null)
+        {
+            await blobStorageAgent.DeleteFileToBlobAsync(e.Image.FileName);
+        }
+
+        var eventImage = BuildEventImage(null, blobItem);
+        e.Image = eventImage;
+
+        await eventRepository.UpdateImage(id, eventImage);
         await eventNotifier.NotifyEventChangedAsync();
     }
 
@@ -72,53 +103,22 @@ public class EventService(IEventRepository eventRepository, IBlobStorageAgent bl
         e.Longitude = dto.Longitude;
     }
 
-    private async Task UpdateRequiredRolesAsync(Event e, IEnumerable<string>? requiredRoles)
+    private static EventImage BuildEventImage(Guid? currentImageId, BlobStorageItem blobItem)
     {
-        e.RequiredRoles.Clear();
-        if (requiredRoles == null || !requiredRoles.Any())
-            return;
-
-        await using var context = await dbContextFactory.CreateDbContextAsync();
-        var rolesToFetch = requiredRoles.Except(Roles.AllProtected, StringComparer.OrdinalIgnoreCase);
-        var newRoles = await context.Roles.Where(r => rolesToFetch.Contains(r.Name)).ToListAsync();
-        foreach (var role in newRoles)
+        return new EventImage
         {
-            e.RequiredRoles.Add(role);
-        }
-    }
-
-    private async Task UpdateEventImageAsync(Event e, EventCreateDto dto)
-    {
-        if (dto.ImageContent == null || dto.ImageContentType == null)
-            return;
-
-        var contentType = ContentTypeToExtensionMapper.NormalizeContentType(dto.ImageContentType.MediaType)
-            ?? throw new ArgumentException("Unsupported image content type. Only JPEG, PNG, WebP, HEIC, and HEIF are allowed.");
-
-        var extension = ContentTypeToExtensionMapper.GetExtension(contentType);
-        var name = $"{dto.Title}-{Guid.NewGuid()}.{extension}";
-
-        var blobItem = await blobStorageAgent.UploadFileToBlobAsync(name,
-            contentType,
-            dto.ImageContent);
-
-        if (e.Image == null)
-        {
-            e.Image = EventImage.ToEventImage(blobItem);
-            return;
-        }
-
-        var existingImage = e.Image;
-        existingImage.FileName = blobItem.FileName;
-        existingImage.Uri = blobItem.Uri;
-        existingImage.ContentType = blobItem.ContentType;
-        existingImage.CreatedOn = blobItem.CreatedOn == default ? DateTime.UtcNow : blobItem.CreatedOn;
+            Id = currentImageId ?? Guid.NewGuid(),
+            FileName = blobItem.FileName,
+            Uri = blobItem.Uri,
+            ContentType = blobItem.ContentType,
+            CreatedOn = blobItem.CreatedOn == default ? DateTime.UtcNow : blobItem.CreatedOn
+        };
     }
 
     public async Task DeleteEvent(Guid id, string userId, bool isAdmin)
     {
         var e = await eventRepository.GetById(id);
-        if (e == null) throw new Data.DAL.Exceptions.NotFoundException("Event not found");
+        if (e == null) throw new Data.DAL.Exceptions.NotFoundException(EventNotFoundMessage);
 
         EnsureCanManageEvent(e, userId, isAdmin, "delete");
 
@@ -129,7 +129,7 @@ public class EventService(IEventRepository eventRepository, IBlobStorageAgent bl
     public async Task RespondToEvent(Guid id, string userId, EventResponseStatus status)
     {
         var e = await eventRepository.GetById(id);
-        if (e == null) throw new Data.DAL.Exceptions.NotFoundException("Event not found");
+        if (e == null) throw new Data.DAL.Exceptions.NotFoundException(EventNotFoundMessage);
 
         await EnsureUserCanRespondAsync(e, userId);
 

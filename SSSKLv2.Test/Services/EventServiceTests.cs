@@ -198,6 +198,37 @@ public class EventServiceTests : RepositoryTest
     }
 
     [TestMethod]
+    public async Task UpdateEventImage_AsCreator_ShouldUploadReplacementImageAndNotify()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        var creatorId = "creator-id";
+        var existing = new Event
+        {
+            Id = id,
+            CreatorId = creatorId,
+            Title = "Event Title",
+            Image = new EventImage { Id = Guid.NewGuid(), FileName = "old.png", ContentType = "image/png", Uri = "https://old.example/image.png" }
+        };
+
+        _eventRepository.GetById(id).Returns(existing);
+        _blobStorageAgent.UploadFileToBlobAsync(Arg.Any<string>(), "image/png", Arg.Any<Stream>())
+            .Returns(new BlobStorageItem { FileName = "new.png", ContentType = "image/png", Uri = "https://new.example/new.png" });
+
+        using var stream = new MemoryStream(new byte[] { 1, 2, 3, 4 });
+
+        // Act
+        await _sut.UpdateEventImage(id, creatorId, false, stream, "image/png");
+
+        // Assert
+        existing.Image.Should().NotBeNull();
+        existing.Image!.Uri.Should().Be("https://new.example/new.png");
+        await _eventRepository.Received(1).UpdateImage(id, Arg.Is<EventImage>(img =>
+            img.Uri == "https://new.example/new.png" && img.FileName == "new.png"));
+        await _eventNotifier.Received(1).NotifyEventChangedAsync();
+    }
+
+    [TestMethod]
     public async Task UpdateEvent_WithLocation_ShouldUpdateLocationFields()
     {
         // Arrange
@@ -225,7 +256,7 @@ public class EventServiceTests : RepositoryTest
     }
 
     [TestMethod]
-    public async Task UpdateEvent_WithNewImage_WhenEventAlreadyHasImage_ShouldUpdateExistingImageEntity()
+    public async Task UpdateEventImage_WhenImageAlreadyExists_ShouldReplaceImageEntityWithNewId()
     {
         // Arrange
         var id = Guid.NewGuid();
@@ -261,25 +292,23 @@ public class EventServiceTests : RepositoryTest
                 CreatedOn = DateTime.UtcNow
             });
 
-        var dto = new EventCreateDto
-        {
-            Title = "New Title",
-            Description = "New Description",
-            StartDateTime = DateTime.UtcNow.AddDays(1),
-            EndDateTime = DateTime.UtcNow.AddDays(1).AddHours(2),
-            ImageContent = new MemoryStream(new byte[] { 1, 2, 3 }),
-            ImageContentType = new ContentType("image/png")
-        };
+        using var stream = new MemoryStream(new byte[] { 1, 2, 3 });
 
         // Act
-        await _sut.UpdateEvent(id, dto, creatorId, false);
+        await _sut.UpdateEventImage(id, creatorId, false, stream, "image/png");
 
         // Assert
         e.Image.Should().NotBeNull();
-        e.Image!.Id.Should().Be(existingImage.Id);
+        e.Image!.Id.Should().NotBe(existingImage.Id);
         e.Image.FileName.Should().Be("new-event-image.png");
         e.Image.Uri.Should().Be("https://storage.example.com/new-event-image.png");
         e.Image.ContentType.Should().Be("image/png");
+        await _eventRepository.Received(1).UpdateImage(id, Arg.Is<EventImage>(img =>
+            img.Id != existingImage.Id &&
+            img.FileName == "new-event-image.png" &&
+            img.Uri == "https://storage.example.com/new-event-image.png" &&
+            img.ContentType == "image/png"));
+        await _blobStorageAgent.Received(1).DeleteFileToBlobAsync(existingImage.FileName);
     }
 
     [TestMethod]

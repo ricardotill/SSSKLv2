@@ -1,12 +1,13 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using SSSKLv2.Data;
 using SSSKLv2.Data.DAL.Interfaces;
 
 namespace SSSKLv2.Data.DAL;
 
-public class EventRepository(IDbContextFactory<ApplicationDbContext> dbContextFactory, ILogger<EventRepository> logger) : IEventRepository
+public class EventRepository(IDbContextFactory<ApplicationDbContext> dbContextFactory, ILogger<EventRepository>? logger = null) : IEventRepository
 {
-    private readonly ILogger<EventRepository> _logger = logger;
+    private readonly ILogger<EventRepository>? _logger = logger;
 
     public async Task<IList<Event>> GetAll(int skip = 0, int take = 15, bool futureOnly = false, IList<string>? userRoles = null, bool isAdmin = false, string? requiredRole = null)
     {
@@ -26,13 +27,10 @@ public class EventRepository(IDbContextFactory<ApplicationDbContext> dbContextFa
             query = query.Where(e => e.EndDateTime >= now);
         }
 
-        if (!isAdmin)
+        if (!isAdmin && string.IsNullOrEmpty(requiredRole))
         {
-            if (string.IsNullOrEmpty(requiredRole))
-            {
-                query = query.Where(e => !e.RequiredRoles.Any() || 
-                                         (userRoles != null && e.RequiredRoles.Any(r => userRoles.Contains(r.Name!))));
-            }
+            query = query.Where(e => !e.RequiredRoles.Any() ||
+                                     (userRoles != null && e.RequiredRoles.Any(r => userRoles.Contains(r.Name!))));
         }
 
         if (!string.IsNullOrEmpty(requiredRole))
@@ -58,14 +56,11 @@ public class EventRepository(IDbContextFactory<ApplicationDbContext> dbContextFa
         {
             query = query.Where(e => e.EndDateTime >= DateTime.UtcNow);
         }
-        
-        if (!isAdmin)
+
+        if (!isAdmin && string.IsNullOrEmpty(requiredRole))
         {
-            if (string.IsNullOrEmpty(requiredRole))
-            {
-                query = query.Where(e => !e.RequiredRoles.Any() || 
-                                         (userRoles != null && e.RequiredRoles.Any(r => userRoles.Contains(r.Name!))));
-            }
+            query = query.Where(e => !e.RequiredRoles.Any() ||
+                                     (userRoles != null && e.RequiredRoles.Any(r => userRoles.Contains(r.Name!))));
         }
 
         if (!string.IsNullOrEmpty(requiredRole))
@@ -101,70 +96,36 @@ public class EventRepository(IDbContextFactory<ApplicationDbContext> dbContextFa
     public async Task Update(Event entity)
     {
         await using var context = await dbContextFactory.CreateDbContextAsync();
-        var trackedEntry = context.Entry(entity);
-        if (trackedEntry.State != EntityState.Detached)
-        {
-            _logger.LogWarning(
-                "EventRepository.Update received already-tracked entity; detaching before refresh save. EventId={EventId}, EventState={EventState}, ImageState={ImageState}",
-                entity.Id,
-                trackedEntry.State,
-                entity.Image is null ? "null" : context.Entry(entity.Image).State.ToString());
-
-            context.Entry(entity).State = EntityState.Detached;
-            if (entity.Image is not null)
-            {
-                context.Entry(entity.Image).State = EntityState.Detached;
-            }
-
-            foreach (var role in entity.RequiredRoles ?? [])
-            {
-                if (role != null)
-                {
-                    context.Entry(role).State = EntityState.Detached;
-                }
-            }
-        }
 
         var existing = await context.Event
             .Include(e => e.Image)
             .Include(e => e.RequiredRoles)
-            .AsTracking()
             .SingleOrDefaultAsync(e => e.Id == entity.Id);
 
         if (existing == null)
             throw new InvalidOperationException($"Event {entity.Id} could not be found for update.");
 
-        context.Entry(existing).CurrentValues.SetValues(entity);
+        existing.Title = entity.Title;
+        existing.Description = entity.Description;
+        existing.StartDateTime = entity.StartDateTime;
+        existing.EndDateTime = entity.EndDateTime;
+        existing.LocationName = entity.LocationName;
+        existing.Latitude = entity.Latitude;
+        existing.Longitude = entity.Longitude;
 
-        if (entity.Image is not null)
-        {
-            if (existing.Image is null)
-            {
-                existing.Image = entity.Image;
-            }
-            else
-            {
-                existing.Image.FileName = entity.Image.FileName;
-                existing.Image.Uri = entity.Image.Uri;
-                existing.Image.ContentType = entity.Image.ContentType;
-                existing.Image.CreatedOn = entity.Image.CreatedOn == default ? DateTime.UtcNow : entity.Image.CreatedOn;
-            }
-        }
-        else if (existing.Image is not null)
-        {
-            context.EventImage.Remove(existing.Image);
-            existing.Image = null;
-        }
+        var incomingRoles = entity.RequiredRoles ?? [];
+        existing.RequiredRoles.Clear();
 
-        if (existing.RequiredRoles is not null)
+        if (incomingRoles.Count > 0)
         {
-            existing.RequiredRoles.Clear();
-            foreach (var role in entity.RequiredRoles ?? [])
+            foreach (var role in incomingRoles)
             {
                 if (role == null)
                     continue;
 
-                var trackedRole = await context.Roles.FindAsync(role.Id);
+                var trackedRole = await context.Roles
+                    .FirstOrDefaultAsync(r => r.Id == role.Id || r.Name == role.Name);
+
                 if (trackedRole != null)
                 {
                     existing.RequiredRoles.Add(trackedRole);
@@ -172,6 +133,47 @@ public class EventRepository(IDbContextFactory<ApplicationDbContext> dbContextFa
                 }
 
                 existing.RequiredRoles.Add(role);
+            }
+        }
+
+        await context.SaveChangesAsync();
+    }
+
+    public async Task UpdateImage(Guid eventId, EventImage image)
+    {
+        await using var context = await dbContextFactory.CreateDbContextAsync();
+
+        var existingEvent = await context.Event
+            .Include(e => e.Image)
+            .SingleOrDefaultAsync(e => e.Id == eventId);
+
+        if (existingEvent == null)
+            throw new InvalidOperationException($"Event {eventId} could not be found for image update.");
+
+        if (existingEvent.Image is null)
+        {
+            image.Event = existingEvent;
+            existingEvent.Image = image;
+            context.EventImage.Add(image);
+        }
+        else
+        {
+            var existingImage = existingEvent.Image;
+            var replacementImage = new EventImage
+            {
+                FileName = image.FileName,
+                Uri = image.Uri,
+                ContentType = image.ContentType,
+                CreatedOn = image.CreatedOn == default ? DateTime.UtcNow : image.CreatedOn,
+                Event = existingEvent
+            };
+
+            existingEvent.Image = replacementImage;
+            context.EventImage.Add(replacementImage);
+
+            if (existingImage.Id != Guid.Empty)
+            {
+                context.EventImage.Remove(existingImage);
             }
         }
 

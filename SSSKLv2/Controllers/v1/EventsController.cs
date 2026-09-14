@@ -97,23 +97,12 @@ public class EventsController : ControllerBase
     [HttpPut("{id:guid}")]
     [HttpPost("{id:guid}")]
     [Consumes("multipart/form-data")]
-    public async Task<IActionResult> Update(Guid id, [FromForm] EventCreateDto dto, [FromForm] IFormFile? image)
+    public async Task<IActionResult> Update(Guid id, [FromForm] EventCreateDto dto)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
         var isAdmin = User.IsInRole("Admin");
-
-        if (image != null)
-        {
-            if (!ContentTypeToExtensionMapper.IsAllowedContentType(image.ContentType))
-            {
-                return BadRequest("Unsupported image content type. Only JPEG, PNG, WebP, HEIC, and HEIF are allowed.");
-            }
-
-            dto.ImageContentType = new ContentType(ContentTypeToExtensionMapper.NormalizeContentType(image.ContentType)!);
-            dto.ImageContent = image.OpenReadStream();
-        }
 
         try
         {
@@ -127,6 +116,45 @@ public class EventsController : ControllerBase
         catch (UnauthorizedAccessException)
         {
             return Forbid();
+        }
+    }
+
+    [Authorize(Roles = "User,Admin")]
+    [HttpPost("{id:guid}/image")]
+    [Consumes("multipart/form-data")]
+    public async Task<IActionResult> UpdateImage(Guid id, [FromForm] IFormFile image)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+        if (image == null)
+        {
+            return BadRequest("Image file is required.");
+        }
+
+        if (!ContentTypeToExtensionMapper.IsAllowedContentType(image.ContentType))
+        {
+            return BadRequest("Unsupported image content type. Only JPEG, PNG, WebP, HEIC, and HEIF are allowed.");
+        }
+
+        var isAdmin = User.IsInRole("Admin");
+
+        try
+        {
+            await _eventService.UpdateEventImage(id, userId, isAdmin, image.OpenReadStream(), image.ContentType);
+            return NoContent();
+        }
+        catch (NotFoundException)
+        {
+            return NotFound();
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
+        catch (ArgumentException)
+        {
+            return BadRequest("Unsupported image content type. Only JPEG, PNG, WebP, HEIC, and HEIF are allowed.");
         }
     }
 

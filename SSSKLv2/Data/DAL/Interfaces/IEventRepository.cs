@@ -9,6 +9,7 @@ public interface IEventRepository
     Task<Event?> GetById(Guid id);
     Task Add(Event entity);
     Task Update(Event entity);
+    Task UpdateImage(Guid eventId, EventImage image);
     Task Delete(Guid id);
     Task<EventResponse?> GetResponse(Guid eventId, string userId);
     Task AddResponse(EventResponse response);

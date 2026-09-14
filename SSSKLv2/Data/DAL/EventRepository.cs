@@ -96,62 +96,13 @@ public class EventRepository(ApplicationDbContext context) : IEventRepository
         }
 
         var existing = await context.Event
-            .Include(e => e.Image)
-            .Include(e => e.RequiredRoles)
+            .AsTracking()
             .SingleOrDefaultAsync(e => e.Id == entity.Id);
 
         if (existing == null)
             throw new InvalidOperationException($"Event {entity.Id} could not be found for update.");
 
-        existing.Title = entity.Title;
-        existing.Description = entity.Description;
-        existing.StartDateTime = entity.StartDateTime;
-        existing.EndDateTime = entity.EndDateTime;
-        existing.LocationName = entity.LocationName;
-        existing.Latitude = entity.Latitude;
-        existing.Longitude = entity.Longitude;
-
-        if (entity.Image == null)
-        {
-            if (existing.Image != null)
-            {
-                context.EventImage.Remove(existing.Image);
-                existing.Image = null;
-            }
-        }
-        else if (existing.Image == null)
-        {
-            existing.Image = entity.Image;
-        }
-        else if (existing.Image.Id == entity.Image.Id)
-        {
-            existing.Image.FileName = entity.Image.FileName;
-            existing.Image.Uri = entity.Image.Uri;
-            existing.Image.ContentType = entity.Image.ContentType;
-            existing.Image.CreatedOn = entity.Image.CreatedOn == default ? DateTime.UtcNow : entity.Image.CreatedOn;
-        }
-        else
-        {
-            context.EventImage.Remove(existing.Image);
-            existing.Image = entity.Image;
-        }
-
-        existing.RequiredRoles.Clear();
-        foreach (var role in entity.RequiredRoles)
-        {
-            if (role == null)
-                continue;
-
-            var trackedRole = await context.Roles.FindAsync(role.Id);
-            if (trackedRole != null)
-            {
-                existing.RequiredRoles.Add(trackedRole);
-                continue;
-            }
-
-            existing.RequiredRoles.Add(role);
-        }
-
+        context.Entry(existing).CurrentValues.SetValues(entity);
         await context.SaveChangesAsync();
     }
 

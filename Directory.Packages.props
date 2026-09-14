@@ -11,7 +11,7 @@
     <PackageVersion Include="Bogus" Version="35.6.5" />
     <PackageVersion Include="coverlet.collector" Version="10.0.1" />
     <PackageVersion Include="coverlet.msbuild" Version="10.0.1" />
-    <PackageVersion Include="FluentAssertions" Version="8.10.0" />
+    <PackageVersion Include="FluentAssertions" Version="8.11.0" />
     <PackageVersion Include="FluentValidation" Version="12.1.1" />
     <PackageVersion Include="FluentValidation.AspNetCore" Version="11.3.1" />
     <PackageVersion Include="HtmlSanitizer" Version="9.2.1039" />
@@ -36,13 +36,13 @@
     <PackageVersion Include="NSubstitute" Version="6.2.0" />
     <PackageVersion Include="MSTest.TestAdapter" Version="4.4.0" />
     <PackageVersion Include="MSTest.TestFramework" Version="4.4.0" />
-    <PackageVersion Include="Polly" Version="8.7.0" />
+    <PackageVersion Include="Polly" Version="8.8.0" />
     <PackageVersion Include="Polly.Contrib.WaitAndRetry" Version="1.1.1" />
     <PackageVersion Include="QRCoder" Version="1.8.0" />
     <PackageVersion Include="Scalar.AspNetCore" Version="2.17.3" />
     <PackageVersion Include="Scalar.AspNetCore.Microsoft" Version="2.17.3" />
     <PackageVersion Include="SendGrid" Version="9.29.3" />
-    <PackageVersion Include="SixLabors.ImageSharp" Version="4.1.1" />
+    <PackageVersion Include="SixLabors.ImageSharp" Version="4.1.2" />
     <PackageVersion Include="System.ServiceModel.Syndication" Version="10.0.12" />
     <PackageVersion Include="Aspire.Hosting.NodeJs" Version="9.5.2" />
     <PackageVersion Include="Aspire.Hosting.SqlServer" Version="13.5.3" />
@@ -57,6 +57,6 @@
     <PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.18.0" />
     <PackageVersion Include="OpenTelemetry.Instrumentation.Runtime" Version="1.18.0" />
     <PackageVersion Include="Microsoft.Extensions.Azure" Version="1.14.1" />
-    <PackageVersion Include="MailKit" Version="4.17.0" />
+    <PackageVersion Include="MailKit" Version="4.18.0" />
   </ItemGroup>
 </Project>

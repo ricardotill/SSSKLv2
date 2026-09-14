@@ -4,8 +4,10 @@ using SSSKLv2.Data.DAL.Interfaces;
 
 namespace SSSKLv2.Data.DAL;
 
-public class EventRepository(ApplicationDbContext context) : IEventRepository
+public class EventRepository(ApplicationDbContext context, ILogger<EventRepository> logger) : IEventRepository
 {
+    private readonly ILogger<EventRepository> _logger = logger;
+
     public async Task<IList<Event>> GetAll(int skip = 0, int take = 15, bool futureOnly = false, IList<string>? userRoles = null, bool isAdmin = false, string? requiredRole = null)
     {
         var query = context.Event
@@ -89,20 +91,105 @@ public class EventRepository(ApplicationDbContext context) : IEventRepository
     public async Task Update(Event entity)
     {
         var trackedEntry = context.Entry(entity);
+        var eventState = trackedEntry.State;
+        var imageState = entity.Image is null ? "null" : context.Entry(entity.Image).State.ToString();
+        var requiredRoleCount = entity.RequiredRoles?.Count ?? 0;
+
+        _logger.LogInformation(
+            "EventRepository.Update start: EventId={EventId}, EventState={EventState}, ImageState={ImageState}, RequiredRoleCount={RequiredRoleCount}, ImageId={ImageId}, ImageNull={ImageNull}",
+            entity.Id,
+            eventState,
+            imageState,
+            requiredRoleCount,
+            entity.Image?.Id,
+            entity.Image is null);
+
         if (trackedEntry.State != EntityState.Detached)
         {
+            _logger.LogInformation(
+                "EventRepository.Update skipping reattach because Event already tracked: EventId={EventId}, State={State}",
+                entity.Id,
+                trackedEntry.State);
             await context.SaveChangesAsync();
             return;
         }
 
         var existing = await context.Event
+            .Include(e => e.Image)
+            .Include(e => e.RequiredRoles)
             .AsTracking()
             .SingleOrDefaultAsync(e => e.Id == entity.Id);
 
         if (existing == null)
+        {
+            _logger.LogError("EventRepository.Update failed: Event {EventId} not found for update.", entity.Id);
             throw new InvalidOperationException($"Event {entity.Id} could not be found for update.");
+        }
+
+        var existingEntry = context.Entry(existing);
+        var existingImageState = existing.Image is null ? "null" : context.Entry(existing.Image).State.ToString();
+
+        _logger.LogInformation(
+            "EventRepository.Update existing tracked state: EventId={EventId}, ExistingState={ExistingState}, ExistingImageState={ExistingImageState}, ExistingImageId={ExistingImageId}, ExistingRoleCount={ExistingRoleCount}",
+            existing.Id,
+            existingEntry.State,
+            existingImageState,
+            existing.Image?.Id,
+            existing.RequiredRoles?.Count ?? 0);
 
         context.Entry(existing).CurrentValues.SetValues(entity);
+
+        if (entity.Image is not null)
+        {
+            if (existing.Image is null)
+            {
+                existing.Image = entity.Image;
+                _logger.LogInformation("EventRepository.Update: assigned new image to existing event. EventId={EventId}, ImageId={ImageId}", existing.Id, entity.Image.Id);
+            }
+            else
+            {
+                existing.Image.FileName = entity.Image.FileName;
+                existing.Image.Uri = entity.Image.Uri;
+                existing.Image.ContentType = entity.Image.ContentType;
+                existing.Image.CreatedOn = entity.Image.CreatedOn == default ? DateTime.UtcNow : entity.Image.CreatedOn;
+                _logger.LogInformation("EventRepository.Update: updated existing image metadata. EventId={EventId}, ImageId={ImageId}", existing.Id, existing.Image.Id);
+            }
+        }
+        else if (existing.Image is not null)
+        {
+            context.EventImage.Remove(existing.Image);
+            existing.Image = null;
+            _logger.LogInformation("EventRepository.Update: removed existing image. EventId={EventId}, ImageId={ImageId}", existing.Id, existing.Image?.Id);
+        }
+
+        if (existing.RequiredRoles is not null)
+        {
+            existing.RequiredRoles.Clear();
+            foreach (var role in entity.RequiredRoles ?? [])
+            {
+                if (role == null)
+                    continue;
+
+                var trackedRole = await context.Roles.FindAsync(role.Id);
+                if (trackedRole != null)
+                {
+                    existing.RequiredRoles.Add(trackedRole);
+                    continue;
+                }
+
+                existing.RequiredRoles.Add(role);
+            }
+
+            _logger.LogInformation("EventRepository.Update: refreshed required roles. EventId={EventId}, FinalRoleCount={RoleCount}", existing.Id, existing.RequiredRoles.Count);
+        }
+
+        _logger.LogInformation(
+            "EventRepository.Update before save: EventId={EventId}, EventState={EventState}, ImageState={ImageState}, RequiredRoles={RequiredRoleCount}",
+            existing.Id,
+            context.Entry(existing).State,
+            existing.Image is null ? "null" : context.Entry(existing.Image).State.ToString(),
+            existing.RequiredRoles?.Count ?? 0);
+
         await context.SaveChangesAsync();
     }
 

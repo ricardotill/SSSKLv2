@@ -107,11 +107,27 @@ public class EventRepository(ApplicationDbContext context, ILogger<EventReposito
         if (trackedEntry.State != EntityState.Detached)
         {
             _logger.LogInformation(
-                "EventRepository.Update skipping reattach because Event already tracked: EventId={EventId}, State={State}",
+                "EventRepository.Update detaching already-tracked graph before update: EventId={EventId}, State={State}, ImageId={ImageId}, RequiredRoleCount={RequiredRoleCount}",
                 entity.Id,
-                trackedEntry.State);
-            await context.SaveChangesAsync();
-            return;
+                trackedEntry.State,
+                entity.Image?.Id,
+                entity.RequiredRoles?.Count ?? 0);
+
+            if (entity.Image is not null)
+            {
+                context.Entry(entity.Image).State = EntityState.Detached;
+            }
+
+            foreach (var role in entity.RequiredRoles ?? [])
+            {
+                if (role != null)
+                {
+                    context.Entry(role).State = EntityState.Detached;
+                }
+            }
+
+            context.Entry(entity).State = EntityState.Detached;
+            _logger.LogInformation("EventRepository.Update: event graph detached. EventId={EventId}", entity.Id);
         }
 
         var existing = await context.Event

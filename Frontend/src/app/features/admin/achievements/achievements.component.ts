@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, inject, signal, OnInit, ViewChild, ElementRef } from '@angular/core';
+import { Component, inject, signal, OnInit } from '@angular/core';
 import { finalize } from 'rxjs';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { TableModule } from 'primeng/table';
@@ -19,7 +19,7 @@ import { ResolveApiUrlPipe } from '../../../shared/pipes/resolve-api-url.pipe';
 
 import { AchievementService } from '../../achievements/services/achievement.service';
 import { ApplicationUserService } from '../../users/services/application-user.service';
-import { Achievement, AchievementUpdateDto, ActionOption, ComparisonOperatorOption, PaginationObject } from '../../../core/models/achievement.model';
+import { Achievement, AchievementUpdateDto, ActionOption, ComparisonOperatorOption } from '../../../core/models/achievement.model';
 import { ApplicationUserDto } from '../../../core/models/application-user.model';
 import { LanguageService } from '../../../core/services/language.service';
 

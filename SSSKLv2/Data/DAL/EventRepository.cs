@@ -1,14 +1,11 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 using SSSKLv2.Data;
 using SSSKLv2.Data.DAL.Interfaces;
 
 namespace SSSKLv2.Data.DAL;
 
-public class EventRepository(IDbContextFactory<ApplicationDbContext> dbContextFactory, ILogger<EventRepository>? logger = null) : IEventRepository
+public class EventRepository(IDbContextFactory<ApplicationDbContext> dbContextFactory) : IEventRepository
 {
-    private readonly ILogger<EventRepository>? _logger = logger;
-
     public async Task<IList<Event>> GetAll(int skip = 0, int take = 15, bool futureOnly = false, IList<string>? userRoles = null, bool isAdmin = false, string? requiredRole = null)
     {
         await using var context = await dbContextFactory.CreateDbContextAsync();

@@ -6,11 +6,11 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>aspnet-SSSKLv2-3b416739-57c6-4151-a2e5-8cfca6f4185b</UserSecretsId>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Version>3.8.10</Version>
-    <InformationalVersion>3.8.10</InformationalVersion>
+    <Version>3.8.11</Version>
+    <InformationalVersion>3.8.11</InformationalVersion>
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
-    <AssemblyVersion>3.8.10.0</AssemblyVersion>
-    <FileVersion>3.8.10.0</FileVersion>
+    <AssemblyVersion>3.8.11.0</AssemblyVersion>
+    <FileVersion>3.8.11.0</FileVersion>
     <SixLaborsLicenseFile>$(MSBuildThisFileDirectory)..\sixlabors.lic</SixLaborsLicenseFile>
   </PropertyGroup>
 

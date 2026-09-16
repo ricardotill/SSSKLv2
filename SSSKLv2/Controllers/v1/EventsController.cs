@@ -129,14 +129,20 @@ public class EventsController : ControllerBase
     [Authorize(Roles = "User,Admin")]
     [HttpPost("{id:guid}/image")]
     [Consumes("multipart/form-data")]
-    public async Task<IActionResult> UpdateImage(Guid id, [FromForm] IFormFile image)
+    public async Task<IActionResult> UpdateImage(Guid id, [FromForm] IFormFile? image)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
         if (image == null)
         {
-            _logger.LogWarning("Event image update rejected: no file was bound. EventId={EventId}, UserId={UserId}", id, userId);
+            _logger.LogWarning(
+                "Event image update rejected: no file was bound. EventId={EventId}, UserId={UserId}, RequestContentType={RequestContentType}, RequestContentLength={RequestContentLength}, TransferEncoding={TransferEncoding}",
+                id,
+                userId,
+                Request.ContentType,
+                Request.ContentLength,
+                Request.Headers.TransferEncoding.ToString());
             return BadRequest("Image file is required.");
         }
 

@@ -308,9 +308,8 @@ export default class AchievementsComponent implements OnInit {
       const updateDto: AchievementUpdateDto = {
         id: this.editingId()!,
         ...formValue
-        // image cannot be updated easily via JSON PUT. 
       };
-      this.achievementService.updateAchievement(updateDto).subscribe({
+      this.achievementService.updateAchievement(updateDto, this.selectedFile ?? undefined).subscribe({
         next: () => {
           this.messageService.add({ severity: 'success', summary: 'Succes', detail: 'Achievement bewerkt' });
           this.dialogVisible.set(false);
@@ -323,19 +322,21 @@ export default class AchievementsComponent implements OnInit {
         }
       });
     } else {
-      const formData = new FormData();
-      formData.append('Name', formValue.name);
-      formData.append('Description', formValue.description);
-      formData.append('AutoAchieve', String(formValue.autoAchieve));
-      formData.append('Action', formValue.action);
-      formData.append('ComparisonOperator', formValue.comparisonOperator);
-      formData.append('ComparisonValue', String(formValue.comparisonValue));
-
-      if (this.selectedFile) {
-        formData.append('image', this.selectedFile);
+      if (!this.selectedFile) {
+        this.messageService.add({ severity: 'error', summary: 'Fout', detail: 'Afbeelding is verplicht' });
+        this.saving.set(false);
+        return;
       }
 
-      this.achievementService.createAchievement(formData).subscribe({
+      this.achievementService.createAchievement({
+        name: formValue.name,
+        description: formValue.description,
+        autoAchieve: formValue.autoAchieve,
+        action: formValue.action,
+        comparisonOperator: formValue.comparisonOperator,
+        comparisonValue: formValue.comparisonValue,
+        image: this.selectedFile
+      }).subscribe({
         next: () => {
           this.messageService.add({ severity: 'success', summary: 'Succes', detail: 'Achievement toegevoegd' });
           this.dialogVisible.set(false);

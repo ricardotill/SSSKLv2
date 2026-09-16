@@ -190,9 +190,12 @@ public class EventsControllerTests
     {
         // Arrange
         var id = Guid.NewGuid();
-        var image = Substitute.For<IFormFile>();
-        image.ContentType.Returns("image/png");
-        image.OpenReadStream().Returns(new System.IO.MemoryStream());
+        var image = new Base64FileUploadDto
+        {
+            FileName = "photo.png",
+            ContentType = "image/png",
+            Base64Content = Convert.ToBase64String(new byte[] { 1, 2, 3, 4 })
+        };
 
         // Act
         var result = await _sut.UpdateImage(id, image);

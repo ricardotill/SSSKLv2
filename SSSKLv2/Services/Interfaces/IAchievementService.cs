@@ -17,6 +17,7 @@ public interface IAchievementService
     Task<IList<Achievement>> GetAchievements(int skip, int take);
     Task<Achievement> GetAchievementById(Guid id);
     Task UpdateAchievement(Achievement achievement);
+    Task UpdateAchievement(Achievement achievement, Stream newImageContent, string newImageContentType);
     Task DeleteAchievement(Guid id);
     Task DeleteAchievementEntryRange(IEnumerable<AchievementEntry> entries);
     IQueryable<Achievement> GetAchievementsQueryable(ApplicationDbContext context);

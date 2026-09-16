@@ -1,9 +1,10 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { BehaviorSubject, Observable, of, throwError } from 'rxjs';
-import { catchError, filter, map, switchMap, take, tap } from 'rxjs/operators';
+import { BehaviorSubject, from, Observable, switchMap, throwError } from 'rxjs';
+import { tap } from 'rxjs/operators';
 import { PasskeyDto } from '../models/passkey.model';
+import { fileToBase64 } from '../../shared/utils/file-to-base64';
 
 export interface AccessTokenResponse {
     tokenType: string | null;
@@ -194,9 +195,17 @@ export class AuthService {
     }
 
     uploadProfilePicture(projectId: string, file: File): Observable<any> {
-        const formData = new FormData();
-        formData.append('file', file);
-        return this.http.post(`${this.USER_API_URL}/me/profile-picture`, formData).pipe(
+        const fileName = file.name || 'profile-picture';
+        const contentType = file.type || 'application/octet-stream';
+
+        return from(fileToBase64(file)).pipe(
+            switchMap(base64Content =>
+                this.http.post(`${this.USER_API_URL}/me/profile-picture`, {
+                    fileName,
+                    contentType,
+                    base64Content
+                })
+            ),
             tap(() => this.refreshCurrentUser())
         );
     }

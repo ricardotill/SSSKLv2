@@ -119,6 +119,27 @@ public class AchievementService(
         await achievementRepository.Update(achievement);
     }
 
+    public async Task UpdateAchievement(Achievement achievement, Stream newImageContent, string newImageContentType)
+    {
+        var contentType = ContentTypeToExtensionMapper.NormalizeContentType(newImageContentType)
+            ?? throw new ArgumentException("Unsupported image content type. Only JPEG, PNG, WebP, HEIC, and HEIF are allowed.");
+
+        // Throws NotFoundException before uploading if the achievement no longer exists.
+        var existing = await achievementRepository.GetById(achievement.Id);
+
+        var extension = ContentTypeToExtensionMapper.GetExtension(contentType);
+        var name = $"{achievement.Name}-{Guid.NewGuid()}.{extension}";
+        var blobItem = await blobStorageAgent.UploadFileToBlobAsync(name, contentType, newImageContent);
+
+        achievement.Image = AchievementImage.ToAchievementImage(blobItem);
+        await achievementRepository.Update(achievement);
+
+        if (existing.Image != null)
+        {
+            await blobStorageAgent.DeleteFileToBlobAsync(existing.Image.FileName);
+        }
+    }
+
     public async Task DeleteAchievement(Guid id)
     {
         await achievementRepository.Delete(id);

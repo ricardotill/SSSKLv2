@@ -86,32 +86,45 @@ public class AchievementController : ControllerBase
     }
 
     // POST v1/achievement
-    // Accept multipart/form-data for image upload
+    // Accepts a JSON base64 payload rather than multipart/form-data: iOS PWAs with an
+    // active service worker are known to strip the body from multipart POST requests.
     [Authorize(Roles = "Admin")]
     [HttpPost]
-    [Consumes("multipart/form-data")]
-    public async Task<IActionResult> Create([FromForm] AchievementDto dto, [FromForm] IFormFile? image)
+    public async Task<IActionResult> Create([FromBody] AchievementCreateDto dto)
     {
         // Let [ApiController] + FluentValidation handle ModelState and automatic 400 responses.
 
-        if (image == null)
+        if (dto.Image == null || !Base64FileDecoder.TryDecode(dto.Image.Base64Content, out var bytes))
         {
             return BadRequest("Afbeelding is verplicht."); // "Image is required" in Dutch
         }
 
-        if (!ContentTypeToExtensionMapper.IsAllowedContentType(image.ContentType))
+        var contentType = ContentTypeToExtensionMapper.NormalizeContentType(dto.Image.ContentType, dto.Image.FileName);
+        if (contentType == null)
         {
             return BadRequest("Unsupported image content type. Only JPEG, PNG, WebP, HEIC, and HEIF are allowed.");
         }
 
-        dto.ImageContentType = new ContentType(ContentTypeToExtensionMapper.NormalizeContentType(image.ContentType)!);
-        dto.ImageContent = image.OpenReadStream();
+        using var stream = new MemoryStream(bytes);
+        var achievementDto = new AchievementDto
+        {
+            Name = dto.Name,
+            Description = dto.Description,
+            AutoAchieve = dto.AutoAchieve,
+            Action = dto.Action,
+            ComparisonOperator = dto.ComparisonOperator,
+            ComparisonValue = dto.ComparisonValue,
+            ImageContent = stream,
+            ImageContentType = new ContentType(contentType)
+        };
 
-        await _achievementService.AddAchievement(dto);
+        await _achievementService.AddAchievement(achievementDto);
         return StatusCode(StatusCodes.Status201Created);
     }
 
     // PUT v1/achievement/{id}
+    // Image replacement is sent as base64 rather than multipart/form-data: iOS PWAs with an
+    // active service worker are known to strip the body from multipart POST requests.
     [Authorize(Roles = "Admin")]
     [HttpPut]
     public async Task<IActionResult> Update([FromBody] AchievementUpdateDto dto)
@@ -129,6 +142,18 @@ public class AchievementController : ControllerBase
                 ComparisonOperator = dto.ComparisonOperator,
                 ComparisonValue = dto.ComparisonValue
             };
+
+            if (dto.NewImage != null)
+            {
+                if (!Base64FileDecoder.TryDecode(dto.NewImage.Base64Content, out var bytes))
+                {
+                    return BadRequest("Unsupported image content type. Only JPEG, PNG, WebP, HEIC, and HEIF are allowed.");
+                }
+
+                using var stream = new MemoryStream(bytes);
+                await _achievementService.UpdateAchievement(achievement, stream, dto.NewImage.ContentType);
+                return NoContent();
+            }
 
             if (dto.Image != null)
             {
@@ -148,6 +173,10 @@ public class AchievementController : ControllerBase
         catch (NotFoundException)
         {
             return NotFound();
+        }
+        catch (ArgumentException)
+        {
+            return BadRequest("Unsupported image content type. Only JPEG, PNG, WebP, HEIC, and HEIF are allowed.");
         }
     }
 

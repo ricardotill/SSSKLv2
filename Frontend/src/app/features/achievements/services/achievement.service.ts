@@ -1,8 +1,19 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, forkJoin } from 'rxjs';
+import { from, Observable, forkJoin, switchMap } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { Achievement, AchievementEntry, AchievementListing, PaginationObject, AchievementUpdateDto } from '../../../core/models/achievement.model';
+import { fileToBase64 } from '../../../shared/utils/file-to-base64';
+
+export interface AchievementCreateRequest {
+  name: string;
+  description: string;
+  autoAchieve: boolean;
+  action: string;
+  comparisonOperator: string;
+  comparisonValue: number;
+  image: File;
+}
 
 @Injectable({
   providedIn: 'root'
@@ -21,12 +32,40 @@ export class AchievementService {
     return this.http.get<Achievement>(`${this.baseUrl}/${id}`);
   }
 
-  createAchievement(formData: FormData): Observable<void> {
-    return this.http.post<void>(this.baseUrl, formData);
+  createAchievement(request: AchievementCreateRequest): Observable<void> {
+    const { image, ...rest } = request;
+
+    return from(fileToBase64(image)).pipe(
+      switchMap(base64Content =>
+        this.http.post<void>(this.baseUrl, {
+          ...rest,
+          image: {
+            fileName: image.name || 'achievement-image',
+            contentType: image.type || 'application/octet-stream',
+            base64Content
+          }
+        })
+      )
+    );
   }
 
-  updateAchievement(dto: AchievementUpdateDto): Observable<void> {
-    return this.http.put<void>(this.baseUrl, dto);
+  updateAchievement(dto: AchievementUpdateDto, newImage?: File): Observable<void> {
+    if (!newImage) {
+      return this.http.put<void>(this.baseUrl, dto);
+    }
+
+    return from(fileToBase64(newImage)).pipe(
+      switchMap(base64Content =>
+        this.http.put<void>(this.baseUrl, {
+          ...dto,
+          newImage: {
+            fileName: newImage.name || 'achievement-image',
+            contentType: newImage.type || 'application/octet-stream',
+            base64Content
+          }
+        })
+      )
+    );
   }
 
   deleteAchievement(id: string): Observable<void> {

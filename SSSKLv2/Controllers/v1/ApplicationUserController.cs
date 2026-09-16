@@ -5,6 +5,7 @@ using SSSKLv2.Data;
 using SSSKLv2.Dto;
 using SSSKLv2.Data.DAL.Exceptions;
 using SSSKLv2.Dto.Api.v1;
+using SSSKLv2.Util;
 using Microsoft.AspNetCore.Identity;
 using System.Text.Json;
 
@@ -316,18 +317,23 @@ public class ApplicationUserController : ControllerBase
     }
 
     // POST v1/applicationuser/me/profile-picture - upload profile picture
+    // Accepts a JSON base64 payload rather than multipart/form-data: iOS PWAs with an
+    // active service worker are known to strip the body from multipart POST requests.
     [HttpPost("me/profile-picture")]
-    public async Task<IActionResult> UploadProfilePicture([FromForm] IFormFile file)
+    public async Task<IActionResult> UploadProfilePicture([FromBody] Base64FileUploadDto? file)
     {
         var username = User.Identity?.Name;
         if (string.IsNullOrWhiteSpace(username)) return Unauthorized();
 
-        if (file == null || file.Length == 0) return BadRequest("File is empty");
+        if (file == null || !Base64FileDecoder.TryDecode(file.Base64Content, out var bytes))
+        {
+            return BadRequest("File is empty");
+        }
 
         try
         {
             var user = await _applicationUserService.GetUserByUsername(username);
-            using var stream = file.OpenReadStream();
+            using var stream = new MemoryStream(bytes);
             await _applicationUserService.UpdateProfilePictureAsync(user.Id, stream, file.ContentType);
             return Ok();
         }

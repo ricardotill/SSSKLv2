@@ -22,5 +22,7 @@ public class AchievementUpdateDto
     public Achievement.ComparisonOperatorOption ComparisonOperator { get; set; } = Achievement.ComparisonOperatorOption.None;
     public int ComparisonValue { get; set; }
     public AchievementImageDto? Image { get; set; }
+    // Base64 replacement image; set only when the admin picks a new file.
+    public Base64FileUploadDto? NewImage { get; set; }
 }
 

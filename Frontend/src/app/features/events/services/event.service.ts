@@ -1,7 +1,8 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { from, Observable, switchMap } from 'rxjs';
 import { EventDto, EventResponseStatus, PaginationObject } from '../../../core/models/event.model';
+import { fileToBase64 } from '../../../shared/utils/file-to-base64';
 
 @Injectable({
   providedIn: 'root'
@@ -35,20 +36,18 @@ export class EventService {
   }
 
   updateEventImage(id: string, file: File): Observable<void> {
-    const formData = new FormData();
     const fileName = file.name || 'event-image';
     const contentType = file.type || 'application/octet-stream';
-    const imageBlob = new Blob([file], { type: contentType });
 
-    console.info('[Event image upload]', {
-      fileName,
-      contentType,
-      fileSize: file.size,
-      blobSize: imageBlob.size
-    });
-
-    formData.append('image', imageBlob, fileName);
-    return this.http.post<void>(`${this.apiUrl}/${id}/image`, formData);
+    return from(fileToBase64(file)).pipe(
+      switchMap(base64Content =>
+        this.http.post<void>(`${this.apiUrl}/${id}/image`, {
+          fileName,
+          contentType,
+          base64Content
+        })
+      )
+    );
   }
 
   deleteEvent(id: string): Observable<void> {

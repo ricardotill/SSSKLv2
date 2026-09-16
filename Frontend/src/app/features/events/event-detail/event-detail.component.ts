@@ -412,7 +412,7 @@ export default class EventDetailComponent implements OnInit {
     const currentEvent = this.event();
     if (!user || !currentEvent) return false;
 
-    return user.roles.includes('Admin') || user.userName === currentEvent.creatorName;
+    return user.roles.includes('Admin') || user.id === currentEvent.creatorId;
   });
 
   canRsvp = computed(() => {

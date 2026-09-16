@@ -30,6 +30,10 @@
             "define": {
               "CUSTOM_API_URL": "''"
             },
+            "allowedCommonJsDependencies": [
+              "qrcode",
+              "quill-delta"
+            ],
             "serviceWorker": "ngsw-config.json"
           },
           "configurations": {

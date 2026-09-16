@@ -9,7 +9,9 @@ namespace SSSKLv2.Util
             { "image/png", ".png" },
             { "image/webp", ".webp" },
             { "image/heic", ".heic" },
-            { "image/heif", ".heif" }
+            { "image/heif", ".heif" },
+            { "image/heic-sequence", ".heic" },
+            { "image/heif-sequence", ".heif" }
         };
 
         private static readonly Dictionary<string, string> ExtensionToContentType = new(StringComparer.OrdinalIgnoreCase)
@@ -29,7 +31,9 @@ namespace SSSKLv2.Util
             "image/png",
             "image/webp",
             "image/heic",
-            "image/heif"
+            "image/heif",
+            "image/heic-sequence",
+            "image/heif-sequence"
         };
 
         public static string? GetExtension(string contentType)
@@ -59,8 +63,28 @@ namespace SSSKLv2.Util
             return trimmed.ToLowerInvariant() switch
             {
                 "image/jpg" => "image/jpeg",
+                "image/heic-sequence" => "image/heic",
+                "image/heif-sequence" => "image/heif",
                 _ => trimmed.ToLowerInvariant()
             };
+        }
+
+        public static string? NormalizeContentType(string? contentType, string? fileName)
+        {
+            var normalized = NormalizeContentType(contentType);
+            if (normalized is not null)
+                return normalized;
+
+            if (string.IsNullOrWhiteSpace(fileName) ||
+                (!string.IsNullOrWhiteSpace(contentType) &&
+                 !contentType.Equals("application/octet-stream", StringComparison.OrdinalIgnoreCase) &&
+                 !contentType.Equals("binary/octet-stream", StringComparison.OrdinalIgnoreCase)))
+            {
+                return null;
+            }
+
+            var extension = Path.GetExtension(fileName);
+            return GetContentType(extension);
         }
 
         public static bool IsAllowedContentType(string? contentType)

@@ -132,7 +132,8 @@ public class EventsController : ControllerBase
             return BadRequest("Image file is required.");
         }
 
-        if (!ContentTypeToExtensionMapper.IsAllowedContentType(image.ContentType))
+        var contentType = ContentTypeToExtensionMapper.NormalizeContentType(image.ContentType, image.FileName);
+        if (contentType == null)
         {
             return BadRequest("Unsupported image content type. Only JPEG, PNG, WebP, HEIC, and HEIF are allowed.");
         }
@@ -141,7 +142,7 @@ public class EventsController : ControllerBase
 
         try
         {
-            await _eventService.UpdateEventImage(id, userId, isAdmin, image.OpenReadStream(), image.ContentType);
+            await _eventService.UpdateEventImage(id, userId, isAdmin, image.OpenReadStream(), contentType);
             return NoContent();
         }
         catch (NotFoundException)

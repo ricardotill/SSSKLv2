@@ -79,12 +79,19 @@ public class EventsController : ControllerBase
 
         if (image != null)
         {
-            if (!ContentTypeToExtensionMapper.IsAllowedContentType(image.ContentType))
+            var contentType = ContentTypeToExtensionMapper.NormalizeContentType(image.ContentType, image.FileName);
+            if (contentType == null)
             {
+                _logger.LogWarning(
+                    "Event image create rejected: unsupported content type. UserId={UserId}, FileName={FileName}, RawContentType={RawContentType}, Length={Length}",
+                    userId, image.FileName, image.ContentType, image.Length);
                 return BadRequest("Unsupported image content type. Only JPEG, PNG, WebP, HEIC, and HEIF are allowed.");
             }
 
-            dto.ImageContentType = new ContentType(ContentTypeToExtensionMapper.NormalizeContentType(image.ContentType)!);
+            _logger.LogInformation(
+                "Event image create accepted: UserId={UserId}, FileName={FileName}, RawContentType={RawContentType}, NormalizedContentType={NormalizedContentType}, Length={Length}",
+                userId, image.FileName, image.ContentType, contentType, image.Length);
+            dto.ImageContentType = new ContentType(contentType);
             dto.ImageContent = image.OpenReadStream();
         }
 
@@ -129,16 +136,23 @@ public class EventsController : ControllerBase
 
         if (image == null)
         {
+            _logger.LogWarning("Event image update rejected: no file was bound. EventId={EventId}, UserId={UserId}", id, userId);
             return BadRequest("Image file is required.");
         }
 
         var contentType = ContentTypeToExtensionMapper.NormalizeContentType(image.ContentType, image.FileName);
         if (contentType == null)
         {
+            _logger.LogWarning(
+                "Event image update rejected: unsupported content type. EventId={EventId}, UserId={UserId}, FileName={FileName}, RawContentType={RawContentType}, Length={Length}",
+                id, userId, image.FileName, image.ContentType, image.Length);
             return BadRequest("Unsupported image content type. Only JPEG, PNG, WebP, HEIC, and HEIF are allowed.");
         }
 
         var isAdmin = User.IsInRole("Admin");
+        _logger.LogInformation(
+            "Event image update accepted for processing: EventId={EventId}, UserId={UserId}, IsAdmin={IsAdmin}, FileName={FileName}, RawContentType={RawContentType}, NormalizedContentType={NormalizedContentType}, Length={Length}",
+            id, userId, isAdmin, image.FileName, image.ContentType, contentType, image.Length);
 
         try
         {
@@ -153,8 +167,12 @@ public class EventsController : ControllerBase
         {
             return Forbid();
         }
-        catch (ArgumentException)
+        catch (ArgumentException ex)
         {
+            _logger.LogWarning(
+                ex,
+                "Event image update rejected by service: {Reason}. EventId={EventId}, UserId={UserId}, FileName={FileName}, RawContentType={RawContentType}, NormalizedContentType={NormalizedContentType}, Length={Length}",
+                ex.Message, id, userId, image.FileName, image.ContentType, contentType, image.Length);
             return BadRequest("Unsupported image content type. Only JPEG, PNG, WebP, HEIC, and HEIF are allowed.");
         }
     }

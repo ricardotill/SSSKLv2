@@ -36,7 +36,18 @@ export class EventService {
 
   updateEventImage(id: string, file: File): Observable<void> {
     const formData = new FormData();
-    formData.append('image', file, file.name || 'event-image');
+    const fileName = file.name || 'event-image';
+    const contentType = file.type || 'application/octet-stream';
+    const imageBlob = new Blob([file], { type: contentType });
+
+    console.info('[Event image upload]', {
+      fileName,
+      contentType,
+      fileSize: file.size,
+      blobSize: imageBlob.size
+    });
+
+    formData.append('image', imageBlob, fileName);
     return this.http.post<void>(`${this.apiUrl}/${id}/image`, formData);
   }
 

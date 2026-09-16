@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SSSKLv2.Data;
 using System.Globalization;
@@ -27,6 +28,33 @@ var isIntegrationLikeEnvironment = builder.Environment.IsDevelopment() || builde
 var websiteDomain = builder.Configuration["WEBSITE_DOMAIN"] ?? (builder.Environment.IsDevelopment() ? "localhost" : "ssskl.scoutingwilo.nl");
 
 builder.Services.AddControllers();
+builder.Services.Configure<ApiBehaviorOptions>(options =>
+{
+    options.InvalidModelStateResponseFactory = context =>
+    {
+        var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
+        var errors = context.ModelState
+            .Where(entry => entry.Value is not null && entry.Value.Errors.Count > 0)
+            .ToDictionary(
+                entry => entry.Key,
+                entry => entry.Value?.Errors.Select(error => error.ErrorMessage).ToArray() ?? []);
+
+        logger.LogWarning(
+            "Automatic 400 model validation response. Method={Method}, Path={Path}, ContentType={ContentType}, ContentLength={ContentLength}, Errors={Errors}",
+            context.HttpContext.Request.Method,
+            context.HttpContext.Request.Path,
+            context.HttpContext.Request.ContentType,
+            context.HttpContext.Request.ContentLength,
+            errors);
+
+        return new BadRequestObjectResult(new ValidationProblemDetails(context.ModelState)
+        {
+            Status = StatusCodes.Status400BadRequest,
+            Title = "Request validation failed",
+            Instance = context.HttpContext.Request.Path
+        });
+    };
+});
 
 // Register all FluentValidation validators from this assembly
 builder.Services.AddFluentValidationsRegistrations();
@@ -322,6 +350,29 @@ else
 app.UseHttpsRedirection();
 // Apply cookie policy before authentication so cookie flags are enforced.
 app.UseCookiePolicy();
+
+app.Use(async (context, next) =>
+{
+    try
+    {
+        await next(context);
+    }
+    finally
+    {
+        if (context.Response.StatusCode >= StatusCodes.Status400BadRequest)
+        {
+            var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
+            logger.LogWarning(
+                "HTTP client error completed. Method={Method}, Path={Path}, StatusCode={StatusCode}, ContentType={ContentType}, ContentLength={ContentLength}, TraceId={TraceId}",
+                context.Request.Method,
+                context.Request.Path,
+                context.Response.StatusCode,
+                context.Request.ContentType,
+                context.Request.ContentLength,
+                context.TraceIdentifier);
+        }
+    }
+});
 
 // Global middleware to provide the XSRF token to the frontend
 app.Use(async (context, next) =>

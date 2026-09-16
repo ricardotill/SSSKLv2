@@ -85,6 +85,30 @@ describe('PushNotificationService', () => {
     expect(service.isSupported()).toBe(true);
   });
 
+  it('isSupported should be false when the Notification API is unavailable', () => {
+    const notificationDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'Notification');
+    TestBed.resetTestingModule();
+    Reflect.deleteProperty(globalThis, 'Notification');
+
+    try {
+      TestBed.configureTestingModule({
+        providers: [
+          PushNotificationService,
+          provideHttpClient(),
+          provideHttpClientTesting(),
+          { provide: SwPush, useValue: swPushMock },
+          { provide: AuthService, useValue: authServiceMock },
+        ],
+      });
+
+      const unsupportedService = TestBed.inject(PushNotificationService);
+
+      expect(unsupportedService.isSupported()).toBe(false);
+    } finally {
+      Object.defineProperty(globalThis, 'Notification', notificationDescriptor!);
+    }
+  });
+
   // ── showPrompt Signal ──────────────────────────────────────────────────────
 
   it('showPrompt should be true when permission is default, not shown before, and authenticated', () => {

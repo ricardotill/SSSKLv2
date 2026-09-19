@@ -44,6 +44,30 @@ public class ApplicationUserController : ControllerBase
         Description = u.Description
     };
 
+    private static UserStatDto MapToDto(UserStat stats) => new UserStatDto
+    {
+        Id = stats.Id,
+        UserId = stats.UserId,
+        TotalSpent = stats.TotalSpent,
+        TotalOrders = stats.TotalOrders,
+        TotalItemsBought = stats.TotalItemsBought,
+        TotalTopUp = stats.TotalTopUp,
+        QuoteCount = stats.QuoteCount,
+        QuoteVotesGiven = stats.QuoteVotesGiven,
+        ReactionCount = stats.ReactionCount,
+        LastActivityDate = stats.LastActivityDate,
+        CurrentStreak = stats.CurrentStreak,
+        MembershipStartDate = stats.MembershipStartDate,
+        MaxOrdersPerHour = stats.MaxOrdersPerHour,
+        MinMinutesBetweenOrders = stats.MinMinutesBetweenOrders,
+        MinMinutesBetweenTopUp = stats.MinMinutesBetweenTopUp,
+        MaxSingleTopUp = stats.MaxSingleTopUp,
+        QuoteVotesReceived = stats.QuoteVotesReceived,
+        LastOrderDate = stats.LastOrderDate,
+        LastTopUpDate = stats.LastTopUpDate,
+        LastStatsRecalculatedAt = stats.LastStatsRecalculatedAt
+    };
+
     // New: map to the more detailed DTO (does NOT include password)
     private static ApplicationUserDetailedDto MapToDetailedDto(ApplicationUser u, IList<string> roles) => new ApplicationUserDetailedDto
     {
@@ -403,7 +427,7 @@ public class ApplicationUserController : ControllerBase
     public async Task<IActionResult> GetStats(string id)
     {
         var stats = await _userStatRepository.GetOrCreateByUserId(id);
-        return Ok(stats);
+        return Ok(MapToDto(stats));
     }
 
     // POST v1/applicationuser/stats/recalculate-all - starts a background job that recalculates stats for every user (Admin only)
@@ -472,6 +496,6 @@ public class ApplicationUserController : ControllerBase
             await _userStatRepository.Update(stats);
         }
 
-        return Ok(stats);
+        return Ok(MapToDto(stats));
     }
 }

@@ -117,9 +117,9 @@ public class OrderService(
         // Achievements are now handled via events
     }
 
-    public async Task<string> ExportOrdersFromPastTwoYearsToCsvAsync()
+    public async Task<string> ExportAllOrdersToCsvAsync()
     {
-        var orders = await orderRepository.GetOrdersFromPastTwoYearsAsync(); // Returns IEnumerable<Order>
+        var orders = await orderRepository.GetAllAsync();
         var csv = new StringBuilder();
 
         // Header

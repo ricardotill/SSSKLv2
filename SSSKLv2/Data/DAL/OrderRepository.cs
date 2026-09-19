@@ -53,18 +53,6 @@ public class OrderRepository(IDbContextFactory<ApplicationDbContext> dbContextFa
             .OrderByDescending(x => x.CreatedOn);
     }
     
-    public async Task<IList<Order>> GetOrdersFromPastTwoYearsAsync()
-    {
-        var cutoff = DateTime.Now.AddYears(-2);
-        await using var context = await dbContextFactory.CreateDbContextAsync();
-        return await context.Order
-            .Where(x => x.CreatedOn >= cutoff)
-            .Include(x => x.User)
-            .Include(x => x.Product)
-            .OrderByDescending(x => x.CreatedOn)
-            .ToListAsync();
-    }
-    
     public IQueryable<Order> GetPersonalQueryable(string username, ApplicationDbContext context)
     {
         return context.Order

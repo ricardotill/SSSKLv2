@@ -45,4 +45,19 @@ describe('OrderService', () => {
     expect(req.request.method).toBe('GET');
     req.flush(mockResponse);
   });
+
+  it('should start CSV export', () => {
+    service.startCsvExport().subscribe();
+    const req = httpMock.expectOne('/api/v1/Order/export/csv');
+    expect(req.request.method).toBe('POST');
+    req.flush({ id: 'job-1', status: 'Pending', startedAt: new Date().toISOString(), startedByUserId: 'user-1', fileName: 'Orders_Export.csv' });
+  });
+
+  it('should download generated CSV export', () => {
+    service.downloadCsvExport('job-1').subscribe();
+    const req = httpMock.expectOne('/api/v1/Order/export/csv/job-1/download');
+    expect(req.request.method).toBe('GET');
+    expect(req.request.responseType).toBe('blob');
+    req.flush(new Blob(['csv']));
+  });
 });

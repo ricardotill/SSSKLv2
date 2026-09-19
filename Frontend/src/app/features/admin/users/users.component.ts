@@ -475,8 +475,8 @@ export default class UsersComponent implements OnInit, OnDestroy {
   private checkForRunningRecalculateAllJob(): void {
     this.userService.getLatestRecalculateAllStatsStatus().subscribe({
       next: (job) => {
-        this.recalculateAllJob.set(job);
         if (job.status === 'Pending' || job.status === 'Running') {
+          this.recalculateAllJob.set(job);
           this.pollRecalculateAllStatus(job.id);
         }
       },
@@ -506,4 +506,3 @@ export default class UsersComponent implements OnInit, OnDestroy {
       });
   }
 }
-

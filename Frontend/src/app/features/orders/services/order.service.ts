@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { OrderDto, OrderInitializeDto, OrderSubmitDto, PaginatedOrders } from '../../../core/models/order.model';
+import { CsvExportJob } from '../../../core/models/recalculation-job.model';
 
 @Injectable({
   providedIn: 'root'
@@ -38,7 +39,15 @@ export class OrderService {
     return this.http.delete<void>(`${this.API_URL}/${id}`);
   }
 
-  exportCsv(): Observable<Blob> {
-    return this.http.get(`${this.API_URL}/export/csv`, { responseType: 'blob' });
+  startCsvExport(): Observable<CsvExportJob> {
+    return this.http.post<CsvExportJob>(`${this.API_URL}/export/csv`, {});
+  }
+
+  getCsvExportStatus(jobId: string): Observable<CsvExportJob> {
+    return this.http.get<CsvExportJob>(`${this.API_URL}/export/csv/${jobId}`);
+  }
+
+  downloadCsvExport(jobId: string): Observable<Blob> {
+    return this.http.get(`${this.API_URL}/export/csv/${jobId}/download`, { responseType: 'blob' });
   }
 }

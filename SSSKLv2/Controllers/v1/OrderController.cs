@@ -16,16 +16,19 @@ public class OrderController : ControllerBase
     private readonly ILogger<OrderController> _logger;
     private readonly IProductService _productService;
     private readonly IApplicationUserService _applicationUserService;
+    private readonly IOrderCsvExportJobService _orderCsvExportJobService;
 
     public OrderController(IOrderService orderService,
         ILogger<OrderController> logger,
         IProductService productService,
-        IApplicationUserService applicationUserService)
+        IApplicationUserService applicationUserService,
+        IOrderCsvExportJobService orderCsvExportJobService)
     {
         _orderService = orderService;
         _logger = logger;
         _productService = productService;
         _applicationUserService = applicationUserService;
+        _orderCsvExportJobService = orderCsvExportJobService;
     }
 
     // GET v1/order
@@ -158,15 +161,43 @@ public class OrderController : ControllerBase
         }
     }
 
-    // GET v1/order/export/csv
+    // POST v1/order/export/csv - starts a background job that exports all orders to CSV
     [Authorize(Roles = "Admin")]
-    [HttpGet("export/csv")]
-    public async Task<IActionResult> ExportCsv()
+    [HttpPost("export/csv")]
+    public IActionResult StartCsvExport()
     {
-        _logger.LogInformation("{Controller}: Export orders CSV", nameof(OrderController));
-        var csv = await _orderService.ExportOrdersFromPastTwoYearsToCsvAsync();
-        var bytes = System.Text.Encoding.UTF8.GetBytes(csv);
-        return File(bytes, "text/csv", "orders_last_2_years.csv");
+        _logger.LogInformation("{Controller}: Start orders CSV export", nameof(OrderController));
+        var requesterId = User.FindFirstValue(ClaimTypes.NameIdentifier)
+                          ?? User.FindFirstValue("sub")
+                          ?? string.Empty;
+        var (job, started) = _orderCsvExportJobService.StartExport(requesterId);
+        if (!started)
+        {
+            return StatusCode(StatusCodes.Status409Conflict, job);
+        }
+
+        return AcceptedAtAction(nameof(GetCsvExportStatus), new { jobId = job.Id }, job);
+    }
+
+    // GET v1/order/export/csv/{jobId} - status of a specific CSV export job
+    [Authorize(Roles = "Admin")]
+    [HttpGet("export/csv/{jobId:guid}")]
+    public IActionResult GetCsvExportStatus(Guid jobId)
+    {
+        var job = _orderCsvExportJobService.GetStatus(jobId);
+        if (job == null) return NotFound();
+        return Ok(job);
+    }
+
+    // GET v1/order/export/csv/{jobId}/download - download the generated CSV
+    [Authorize(Roles = "Admin")]
+    [HttpGet("export/csv/{jobId:guid}/download")]
+    public IActionResult DownloadCsvExport(Guid jobId)
+    {
+        var csv = _orderCsvExportJobService.GetCsv(jobId);
+        if (csv == null) return NotFound();
+
+        return File(csv.Value.Bytes, "text/csv", csv.Value.FileName);
     }
 
     // DELETE v1/order/{id}

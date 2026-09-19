@@ -24,6 +24,7 @@ public static class ServicesExtensions
             .AddSingleton<IPurchaseNotifier, PurchaseNotifier>()
             .AddSingleton<IEventNotifier, EventNotifier>()
             .AddSingleton<IStatsRecalculationJobService, StatsRecalculationJobService>()
+            .AddSingleton<IOrderCsvExportJobService, OrderCsvExportJobService>()
             .AddScoped<IDomainEventDispatcher, DomainEventDispatcher>()
             .AddScoped<IDomainEventHandler<OrderPlacedEvent>, AchievementEventHandler>()
             .AddScoped<IDomainEventHandler<TopUpEvent>, AchievementEventHandler>()

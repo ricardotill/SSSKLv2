@@ -278,10 +278,10 @@ public class OrderServiceTests
 
     #endregion
 
-    #region ExportOrdersToCsvAsync Tests
+    #region ExportAllOrdersToCsvAsync Tests
 
     [TestMethod]
-    public async Task ExportOrdersToCsvAsync_WithOrders_ShouldReturnValidCsv()
+    public async Task ExportAllOrdersToCsvAsync_WithOrders_ShouldReturnValidCsv()
     {
         // Arrange
         var orders = new List<Order>
@@ -290,10 +290,10 @@ public class OrderServiceTests
             CreateOrder(Guid.NewGuid(), "user2", "Product 2", 3, 15.00m, new DateTime(2025, 9, 2, 0, 0, 0, DateTimeKind.Utc))
         };
 
-        _mockOrderRepository.GetOrdersFromPastTwoYearsAsync().Returns(orders);
+        _mockOrderRepository.GetAllAsync().Returns(orders);
 
         // Act
-        var result = await _sut.ExportOrdersFromPastTwoYearsToCsvAsync();
+        var result = await _sut.ExportAllOrdersToCsvAsync();
 
         // Assert
         result.Should().NotBeNullOrWhiteSpace();
@@ -305,37 +305,37 @@ public class OrderServiceTests
             result.Should().Contain($"{order.Id},\"{order.User.UserName}\",{order.CreatedOn:yyyy-MM-dd HH:mm:ss},\"{order.ProductNaam}\",{order.Amount},{order.Paid.ToString(CultureInfo.InvariantCulture)}");
         }
 
-        await _mockOrderRepository.Received(1).GetOrdersFromPastTwoYearsAsync();
+        await _mockOrderRepository.Received(1).GetAllAsync();
     }
 
     [TestMethod]
-    public async Task ExportOrdersToCsvAsync_WithNoOrders_ShouldReturnHeaderOnly()
+    public async Task ExportAllOrdersToCsvAsync_WithNoOrders_ShouldReturnHeaderOnly()
     {
         // Arrange
-        _mockOrderRepository.GetOrdersFromPastTwoYearsAsync().Returns(new List<Order>());
+        _mockOrderRepository.GetAllAsync().Returns(new List<Order>());
 
         // Act
-        var result = await _sut.ExportOrdersFromPastTwoYearsToCsvAsync();
+        var result = await _sut.ExportAllOrdersToCsvAsync();
 
         // Assert
         result.Should().Be("OrderId,CustomerUsername,OrderDateTime,ProductName,ProductAmount,TotalPaid" + Environment.NewLine);
-        await _mockOrderRepository.Received(1).GetOrdersFromPastTwoYearsAsync();
+        await _mockOrderRepository.Received(1).GetAllAsync();
     }
 
     [TestMethod]
-    public async Task ExportOrdersToCsvAsync_WhenRepositoryThrowsException_ShouldPropagateException()
+    public async Task ExportAllOrdersToCsvAsync_WhenRepositoryThrowsException_ShouldPropagateException()
     {
         // Arrange
-        _mockOrderRepository.GetOrdersFromPastTwoYearsAsync().Returns(Task.FromException<IList<Order>>(
+        _mockOrderRepository.GetAllAsync().Returns(Task.FromException<IList<Order>>(
             new InvalidOperationException("Database error")));
 
         // Act
-        Func<Task> act = async () => await _sut.ExportOrdersFromPastTwoYearsToCsvAsync();
+        Func<Task> act = async () => await _sut.ExportAllOrdersToCsvAsync();
 
         // Assert
         await act.Should().ThrowAsync<InvalidOperationException>()
             .WithMessage("Database error");
-        await _mockOrderRepository.Received(1).GetOrdersFromPastTwoYearsAsync();
+        await _mockOrderRepository.Received(1).GetAllAsync();
     }
 
     #endregion

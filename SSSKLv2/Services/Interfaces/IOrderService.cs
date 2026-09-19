@@ -14,6 +14,6 @@ public interface IOrderService
     public Task<IList<Order>> GetPersonal(string username, int skip, int take);
     public Task<IEnumerable<Order>> GetLatestOrders(int take = 10);
     public Task CreateOrder(OrderSubmitDto order, string? actingUserId);
-    public Task<string> ExportOrdersFromPastTwoYearsToCsvAsync();
+    public Task<string> ExportAllOrdersToCsvAsync();
     public Task DeleteOrder(Guid id);
 }

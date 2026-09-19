@@ -1,15 +1,19 @@
-import { Component, ChangeDetectionStrategy, inject, signal, OnInit } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal, OnInit, OnDestroy } from '@angular/core';
 import { DatePipe, CurrencyPipe, DOCUMENT } from '@angular/common';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { MessageService, ConfirmationService } from 'primeng/api';
-import { finalize } from 'rxjs';
+import { catchError, finalize, interval, of, Subscription, switchMap, takeWhile } from 'rxjs';
+import { HttpErrorResponse } from '@angular/common/http';
 import { OrderService } from '../../orders/services/order.service';
 import { OrderDto } from '../../../core/models/order.model';
 import { LanguageService } from '../../../core/services/language.service';
 import { AuthService } from '../../../core/auth/auth.service';
+import { CsvExportJob } from '../../../core/models/recalculation-job.model';
+
+const CSV_EXPORT_POLL_INTERVAL_MS = 3000;
 
 @Component({
   selector: 'app-admin-orders',
@@ -81,7 +85,7 @@ import { AuthService } from '../../../core/auth/auth.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [ConfirmationService]
 })
-export default class OrdersComponent implements OnInit {
+export default class OrdersComponent implements OnInit, OnDestroy {
   private readonly orderService = inject(OrderService);
   private readonly messageService = inject(MessageService);
   private readonly confirmationService = inject(ConfirmationService);
@@ -93,6 +97,8 @@ export default class OrdersComponent implements OnInit {
   totalRecords = signal<number>(0);
   loading = signal<boolean>(false);
   deletingOrderId = signal<string | null>(null);
+  exporting = signal<boolean>(false);
+  private csvExportPollSubscription: Subscription | null = null;
 
   skip = 0;
   take = 15;
@@ -101,6 +107,10 @@ export default class OrdersComponent implements OnInit {
     // Initial load will be handled by onLazyLoad on table initialization if needed, 
     // but we can call it here too if not using lazy load correctly. 
     // With [lazy]="true", onLazyLoad is called on init.
+  }
+
+  ngOnDestroy(): void {
+    this.csvExportPollSubscription?.unsubscribe();
   }
 
   loadOrders(): void {
@@ -152,8 +162,6 @@ export default class OrdersComponent implements OnInit {
       });
   }
 
-  exporting = signal<boolean>(false);
-
   exportCsv(): void {
     this.confirmationService.confirm({
       message: this.ls.t().confirm_export_csv_message,
@@ -167,30 +175,98 @@ export default class OrdersComponent implements OnInit {
 
   private executeExport(): void {
     this.exporting.set(true);
-    this.orderService.exportCsv()
+    this.orderService.startCsvExport()
+      .pipe(
+        catchError((err: HttpErrorResponse) => {
+          if (err.status === 409 && err.error) {
+            return of(err.error as CsvExportJob);
+          }
+          throw err;
+        })
+      )
+      .subscribe({
+        next: (job) => {
+          this.messageService.add({ 
+            severity: job.status === 'Completed' ? 'success' : 'info',
+            summary: this.ls.t().success, 
+            detail: job.status === 'Completed'
+              ? this.ls.t().csv_export_ready
+              : this.ls.t().csv_export_started
+          });
+
+          if (job.status === 'Completed') {
+            this.downloadCsv(job);
+          } else {
+            this.pollCsvExportStatus(job.id);
+          }
+        },
+        error: () => {
+          this.exporting.set(false);
+          this.messageService.add({ 
+            severity: 'error', 
+            summary: this.ls.t().error, 
+            detail: this.ls.t().csv_export_failed
+          });
+        }
+      });
+  }
+
+  private pollCsvExportStatus(jobId: string): void {
+    this.csvExportPollSubscription?.unsubscribe();
+    this.csvExportPollSubscription = interval(CSV_EXPORT_POLL_INTERVAL_MS)
+      .pipe(
+        switchMap(() => this.orderService.getCsvExportStatus(jobId)),
+        takeWhile((job) => job.status === 'Pending' || job.status === 'Running', true)
+      )
+      .subscribe({
+        next: (job) => {
+          if (job.status === 'Completed') {
+            this.downloadCsv(job);
+          } else if (job.status === 'Failed') {
+            this.exporting.set(false);
+            this.messageService.add({
+              severity: 'error',
+              summary: this.ls.t().error,
+              detail: job.errorMessage || this.ls.t().csv_export_failed
+            });
+          }
+        },
+        error: () => {
+          this.exporting.set(false);
+          this.messageService.add({
+            severity: 'error',
+            summary: this.ls.t().error,
+            detail: this.ls.t().csv_export_failed
+          });
+        }
+      });
+  }
+
+  private downloadCsv(job: CsvExportJob): void {
+    this.orderService.downloadCsvExport(job.id)
       .pipe(finalize(() => this.exporting.set(false)))
       .subscribe({
         next: (blob) => {
           const url = window.URL.createObjectURL(blob);
           const a = this.document.createElement('a');
           a.href = url;
-          a.download = `Orders_Export_${new Date().toISOString().split('T')[0]}.csv`;
+          a.download = job.fileName || `Orders_Export_${new Date().toISOString().split('T')[0]}.csv`;
           this.document.body.appendChild(a);
           a.click();
           this.document.body.removeChild(a);
           window.URL.revokeObjectURL(url);
 
-          this.messageService.add({ 
-            severity: 'success', 
-            summary: this.ls.t().success, 
-            detail: this.ls.t().success 
+          this.messageService.add({
+            severity: 'success',
+            summary: this.ls.t().success,
+            detail: this.ls.t().csv_export_ready
           });
         },
         error: () => {
-          this.messageService.add({ 
-            severity: 'error', 
-            summary: this.ls.t().error, 
-            detail: this.ls.t().error 
+          this.messageService.add({
+            severity: 'error',
+            summary: this.ls.t().error,
+            detail: this.ls.t().csv_export_failed
           });
         }
       });

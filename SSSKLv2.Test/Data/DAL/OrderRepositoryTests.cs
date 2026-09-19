@@ -40,14 +40,16 @@ public class OrderRepositoryTests : RepositoryTest
         var order1 = CreateTestOrder(DateTime.Now.AddHours(-2));
         var order2 = CreateTestOrder(DateTime.Now.AddHours(-1));
         var order3 = CreateTestOrder(DateTime.Now);
+        var oldOrder = CreateTestOrder(DateTime.Now.AddYears(-3));
         
-        await SaveOrdersDirectly(order1, order2, order3);
+        await SaveOrdersDirectly(order1, order2, order3, oldOrder);
         
         // Act
         var result = await _sut.GetAllAsync();
 
         // Assert
-        Assert.AreEqual(3, result.Count);
+        Assert.AreEqual(4, result.Count);
+        Assert.IsTrue(result.Any(o => o.Id == oldOrder.Id));
         Assert.IsTrue(result[0].CreatedOn >= result[1].CreatedOn);
         Assert.IsTrue(result[1].CreatedOn >= result[2].CreatedOn);
         Assert.IsNotNull(result[0].User);
@@ -549,45 +551,4 @@ public class OrderRepositoryTests : RepositoryTest
     
     #endregion
 
-    #region GetOrdersFromPastTwoYearsAsync Tests
-
-    [TestMethod]
-    public async Task GetOrdersFromPastTwoYearsAsync_WithNoOrders_ReturnsEmptyList()
-    {
-        var result = await _sut.GetOrdersFromPastTwoYearsAsync();
-        Assert.AreEqual(0, result.Count);
-    }
-
-    [TestMethod]
-    public async Task GetOrdersFromPastTwoYearsAsync_WithAllOrdersOlderThanTwoYears_ReturnsEmptyList()
-    {
-        var order1 = CreateTestOrder(DateTime.Now.AddYears(-3));
-        var order2 = CreateTestOrder(DateTime.Now.AddYears(-5));
-        await SaveOrdersDirectly(order1, order2);
-        var result = await _sut.GetOrdersFromPastTwoYearsAsync();
-        Assert.AreEqual(0, result.Count);
-    }
-
-    [TestMethod]
-    public async Task GetOrdersFromPastTwoYearsAsync_WithAllOrdersWithinTwoYears_ReturnsAll()
-    {
-        var order1 = CreateTestOrder(DateTime.Now.AddMonths(-6));
-        var order2 = CreateTestOrder(DateTime.Now.AddMonths(-18));
-        await SaveOrdersDirectly(order1, order2);
-        var result = await _sut.GetOrdersFromPastTwoYearsAsync();
-        Assert.AreEqual(2, result.Count);
-        Assert.IsTrue(result.All(o => o.CreatedOn >= DateTime.Now.AddYears(-2)));
-    }
-
-    [TestMethod]
-    public async Task GetOrdersFromPastTwoYearsAsync_WithMixedOrders_ReturnsOnlyRecent()
-    {
-        var oldOrder = CreateTestOrder(DateTime.Now.AddYears(-3));
-        var recentOrder = CreateTestOrder(DateTime.Now.AddMonths(-3));
-        await SaveOrdersDirectly(oldOrder, recentOrder);
-        var result = await _sut.GetOrdersFromPastTwoYearsAsync();
-        Assert.AreEqual(1, result.Count);
-        Assert.AreEqual(recentOrder.Id, result[0].Id);
-    }
-    #endregion
 }

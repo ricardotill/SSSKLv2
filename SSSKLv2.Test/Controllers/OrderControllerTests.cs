@@ -21,6 +21,7 @@ public class OrderControllerTests
     private ILogger<OrderController> _logger = null!;
     private IProductService _productService = null!;
     private IApplicationUserService _applicationUserService = null!;
+    private IOrderCsvExportJobService _orderCsvExportJobService = null!;
     private OrderController _sut = null!;
 
     [TestInitialize]
@@ -30,8 +31,9 @@ public class OrderControllerTests
         _logger = Substitute.For<ILogger<OrderController>>();
         _productService = Substitute.For<IProductService>();
         _applicationUserService = Substitute.For<IApplicationUserService>();
+        _orderCsvExportJobService = Substitute.For<IOrderCsvExportJobService>();
 
-        _sut = new OrderController(_orderService, _logger, _productService, _applicationUserService);
+        _sut = new OrderController(_orderService, _logger, _productService, _applicationUserService, _orderCsvExportJobService);
     }
 
     [TestMethod]
@@ -259,6 +261,86 @@ public class OrderControllerTests
     }
 
     [TestMethod]
+    public void StartCsvExport_WhenNoJobRunning_ReturnsAcceptedJob()
+    {
+        var userId = Guid.NewGuid().ToString();
+        SetUserContext(userId, "admin", isAdmin: true);
+        var job = new CsvExportJobDto
+        {
+            Id = Guid.NewGuid(),
+            Status = CsvExportJobStatus.Pending,
+            StartedByUserId = userId,
+            FileName = "Orders_Export.csv"
+        };
+        _orderCsvExportJobService.StartExport(userId).Returns((job, true));
+
+        var result = _sut.StartCsvExport();
+
+        var accepted = result.Should().BeOfType<AcceptedAtActionResult>().Subject;
+        accepted.ActionName.Should().Be(nameof(OrderController.GetCsvExportStatus));
+        accepted.Value.Should().Be(job);
+        _orderCsvExportJobService.Received(1).StartExport(userId);
+    }
+
+    [TestMethod]
+    public void StartCsvExport_WhenJobAlreadyRunning_ReturnsConflictJob()
+    {
+        SetUserContext("admin-id", "admin", isAdmin: true);
+        var job = new CsvExportJobDto
+        {
+            Id = Guid.NewGuid(),
+            Status = CsvExportJobStatus.Running,
+            StartedByUserId = "other-admin",
+            FileName = "Orders_Export.csv"
+        };
+        _orderCsvExportJobService.StartExport("admin-id").Returns((job, false));
+
+        var result = _sut.StartCsvExport();
+
+        var conflict = result.Should().BeOfType<ObjectResult>().Subject;
+        conflict.StatusCode.Should().Be(StatusCodes.Status409Conflict);
+        conflict.Value.Should().Be(job);
+    }
+
+    [TestMethod]
+    public void GetCsvExportStatus_WhenFound_ReturnsOk()
+    {
+        var jobId = Guid.NewGuid();
+        var job = new CsvExportJobDto { Id = jobId, Status = CsvExportJobStatus.Completed };
+        _orderCsvExportJobService.GetStatus(jobId).Returns(job);
+
+        var result = _sut.GetCsvExportStatus(jobId);
+
+        result.Should().BeOfType<OkObjectResult>().Which.Value.Should().Be(job);
+    }
+
+    [TestMethod]
+    public void DownloadCsvExport_WhenCompleted_ReturnsCsvFile()
+    {
+        var jobId = Guid.NewGuid();
+        var bytes = "OrderId"u8.ToArray();
+        _orderCsvExportJobService.GetCsv(jobId).Returns((bytes, "Orders_Export.csv"));
+
+        var result = _sut.DownloadCsvExport(jobId);
+
+        var file = result.Should().BeOfType<FileContentResult>().Subject;
+        file.FileContents.Should().BeEquivalentTo(bytes);
+        file.ContentType.Should().Be("text/csv");
+        file.FileDownloadName.Should().Be("Orders_Export.csv");
+    }
+
+    [TestMethod]
+    public void DownloadCsvExport_WhenNotReadyOrMissing_ReturnsNotFound()
+    {
+        var jobId = Guid.NewGuid();
+        _orderCsvExportJobService.GetCsv(jobId).Returns(((byte[] Bytes, string FileName)?)null);
+
+        var result = _sut.DownloadCsvExport(jobId);
+
+        result.Should().BeOfType<NotFoundResult>();
+    }
+
+    [TestMethod]
     public async Task Create_WhenNullDto_ReturnsBadRequest()
     {
         // Act
@@ -301,18 +383,6 @@ public class OrderControllerTests
     }
 
     [TestMethod]
-    public async Task ExportCsv_ReturnsFile()
-    {
-        _orderService.ExportOrdersFromPastTwoYearsToCsvAsync().Returns("csv,content");
-
-        var result = await _sut.ExportCsv();
-
-        var fileResult = result.Should().BeOfType<FileContentResult>().Subject;
-        fileResult.ContentType.Should().Be("text/csv");
-        fileResult.FileDownloadName.Should().Be("orders_last_2_years.csv");
-    }
-
-    [TestMethod]
     public async Task Delete_AdminOrderNotFound_ReturnsNotFound()
     {
         var id = Guid.NewGuid();
@@ -324,5 +394,3 @@ public class OrderControllerTests
         result.Should().BeOfType<NotFoundResult>();
     }
 }
-
-

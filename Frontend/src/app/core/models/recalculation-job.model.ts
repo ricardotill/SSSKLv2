@@ -11,3 +11,15 @@ export interface RecalculationJob {
   errorMessage?: string;
   startedByUserId: string;
 }
+
+export type CsvExportJobStatus = 'Pending' | 'Running' | 'Completed' | 'Failed';
+
+export interface CsvExportJob {
+  id: string;
+  status: CsvExportJobStatus;
+  startedAt: string;
+  completedAt?: string;
+  errorMessage?: string;
+  startedByUserId: string;
+  fileName: string;
+}

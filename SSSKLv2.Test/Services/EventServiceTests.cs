@@ -26,27 +26,29 @@ public class EventServiceTests : RepositoryTest
     private IBlobStorageAgent _blobStorageAgent = null!;
     private IApplicationUserService _applicationUserService = null!;
     private IEventNotifier _eventNotifier = null!;
+    private IDbContextFactory<ApplicationDbContext> _dbContextFactory = null!;
     private ApplicationDbContext _dbContext = null!;
 
     [TestInitialize]
     public void TestInitialize()
     {
         InitializeDatabase();
-        _dbContext = new ApplicationDbContext(GetOptions());
+        var options = GetOptions();
+        _dbContext = new ApplicationDbContext(options);
+        _dbContextFactory = new MockDbContextFactory(options);
         
         _eventRepository = Substitute.For<IEventRepository>();
         _blobStorageAgent = Substitute.For<IBlobStorageAgent>();
         _applicationUserService = Substitute.For<IApplicationUserService>();
         _eventNotifier = Substitute.For<IEventNotifier>();
 
-        _sut = new EventService(_eventRepository, _blobStorageAgent, _applicationUserService, _dbContext, _eventNotifier);
+        _sut = new EventService(_eventRepository, _blobStorageAgent, _applicationUserService, _dbContextFactory, _eventNotifier);
     }
 
     [TestCleanup]
     public void TestCleanup()
     {
         CleanupDatabase();
-        _dbContext.Dispose();
     }
 
     [TestMethod]
@@ -196,6 +198,37 @@ public class EventServiceTests : RepositoryTest
     }
 
     [TestMethod]
+    public async Task UpdateEventImage_AsCreator_ShouldUploadReplacementImageAndNotify()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        var creatorId = "creator-id";
+        var existing = new Event
+        {
+            Id = id,
+            CreatorId = creatorId,
+            Title = "Event Title",
+            Image = new EventImage { Id = Guid.NewGuid(), FileName = "old.png", ContentType = "image/png", Uri = "https://old.example/image.png" }
+        };
+
+        _eventRepository.GetById(id).Returns(existing);
+        _blobStorageAgent.UploadFileToBlobAsync(Arg.Any<string>(), "image/png", Arg.Any<Stream>())
+            .Returns(new BlobStorageItem { FileName = "new.png", ContentType = "image/png", Uri = "https://new.example/new.png" });
+
+        using var stream = new MemoryStream(new byte[] { 1, 2, 3, 4 });
+
+        // Act
+        await _sut.UpdateEventImage(id, creatorId, false, stream, "image/png");
+
+        // Assert
+        existing.Image.Should().NotBeNull();
+        existing.Image!.Uri.Should().Be("https://new.example/new.png");
+        await _eventRepository.Received(1).UpdateImage(id, Arg.Is<EventImage>(img =>
+            img.Uri == "https://new.example/new.png" && img.FileName == "new.png"));
+        await _eventNotifier.Received(1).NotifyEventChangedAsync();
+    }
+
+    [TestMethod]
     public async Task UpdateEvent_WithLocation_ShouldUpdateLocationFields()
     {
         // Arrange
@@ -220,6 +253,62 @@ public class EventServiceTests : RepositoryTest
         e.Latitude.Should().Be(1.23);
         e.Longitude.Should().Be(4.56);
         await _eventRepository.Received(1).Update(e);
+    }
+
+    [TestMethod]
+    public async Task UpdateEventImage_WhenImageAlreadyExists_ShouldReplaceImageEntityWithNewId()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        var creatorId = "creator-id";
+        var existingImage = new EventImage
+        {
+            Id = Guid.NewGuid(),
+            FileName = "old-event-image.png",
+            Uri = "https://storage.example.com/old-event-image.png",
+            ContentType = "image/png",
+            CreatedOn = DateTime.UtcNow.AddDays(-1)
+        };
+
+        var e = new Event
+        {
+            Id = id,
+            CreatorId = creatorId,
+            Title = "Old Title",
+            Description = "Old Description",
+            StartDateTime = DateTime.UtcNow,
+            EndDateTime = DateTime.UtcNow.AddHours(2),
+            Image = existingImage
+        };
+
+        _eventRepository.GetById(id).Returns(e);
+        _blobStorageAgent.UploadFileToBlobAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<Stream>())
+            .Returns(new BlobStorageItem
+            {
+                Id = Guid.NewGuid(),
+                FileName = "new-event-image.png",
+                Uri = "https://storage.example.com/new-event-image.png",
+                ContentType = "image/png",
+                CreatedOn = DateTime.UtcNow
+            });
+
+        using var stream = new MemoryStream(new byte[] { 1, 2, 3 });
+
+        // Act
+        await _sut.UpdateEventImage(id, creatorId, false, stream, "image/png");
+
+        // Assert
+        e.Image.Should().NotBeNull();
+        e.Image!.Id.Should().NotBe(existingImage.Id);
+        e.Image.FileName.Should().Be("new-event-image.png");
+        e.Image.Uri.Should().Be("https://storage.example.com/new-event-image.png");
+        e.Image.ContentType.Should().Be("image/png");
+        await _eventRepository.Received(1).UpdateImage(id, Arg.Is<EventImage>(img =>
+            img.Id != existingImage.Id &&
+            img.FileName == "new-event-image.png" &&
+            img.Uri == "https://storage.example.com/new-event-image.png" &&
+            img.ContentType == "image/png"));
+        await _blobStorageAgent.Received(1).DeleteFileToBlobAsync(existingImage.FileName);
     }
 
     [TestMethod]
@@ -309,6 +398,48 @@ public class EventServiceTests : RepositoryTest
         // Assert
         await _eventRepository.Received(1).Add(Arg.Is<Event>(e => e.Image != null));
         await _blobStorageAgent.Received(1).UploadFileToBlobAsync(Arg.Any<string>(), "image/png", Arg.Any<Stream>());
+    }
+
+    [TestMethod]
+    public async Task CreateEvent_WithHeicImageContentType_ShouldUploadAndSetImage()
+    {
+        // Arrange
+        using var stream = new MemoryStream(new byte[] { 0, 1, 2 });
+        var dto = new EventCreateDto
+        {
+            Title = "Heic Event",
+            ImageContent = stream,
+            ImageContentType = new ContentType("image/heic")
+        };
+
+        _blobStorageAgent.UploadFileToBlobAsync(Arg.Any<string>(), "image/heic", Arg.Any<Stream>())
+            .Returns(new BlobStorageItem { Id = Guid.NewGuid(), FileName = "test.heic", Uri = "http://test.com/test.heic", ContentType = "image/heic" });
+
+        // Act
+        await _sut.CreateEvent(dto, "creator-id");
+
+        // Assert
+        await _eventRepository.Received(1).Add(Arg.Is<Event>(e => e.Image != null && e.Image.ContentType == "image/heic"));
+        await _blobStorageAgent.Received(1).UploadFileToBlobAsync(Arg.Any<string>(), "image/heic", Arg.Any<Stream>());
+    }
+
+    [TestMethod]
+    public async Task CreateEvent_WithUnsafeImageContentType_ShouldThrowArgumentException()
+    {
+        // Arrange
+        using var stream = new MemoryStream(new byte[] { 0, 1, 2 });
+        var dto = new EventCreateDto
+        {
+            Title = "Unsafe Image Event",
+            ImageContent = stream,
+            ImageContentType = new ContentType("text/html")
+        };
+
+        // Act
+        var act = () => _sut.CreateEvent(dto, "creator-id");
+
+        // Assert
+        await act.Should().ThrowAsync<ArgumentException>().WithMessage("*JPEG, PNG, WebP, HEIC, and HEIF*");
     }
 
     [TestMethod]

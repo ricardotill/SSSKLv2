@@ -17,7 +17,7 @@ export class PushNotificationService {
   private promptDismissed = signal<boolean>(localStorage.getItem('push_prompt_shown') === 'true');
 
   isEnabled = signal<boolean>(false);
-  isSupported = signal<boolean>(this.swPush.isEnabled);
+  isSupported = signal<boolean>(this.swPush.isEnabled && typeof Notification !== 'undefined');
 
   // Signal for prompt visibility
   showPrompt = computed(() => {

@@ -723,10 +723,12 @@ public class ApplicationUserControllerTests
     {
         var username = "currentuser";
         var user = new ApplicationUser { Id = "u-current", UserName = username };
-        var fileMock = Substitute.For<IFormFile>();
-        fileMock.Length.Returns(100);
-        fileMock.ContentType.Returns("image/png");
-        fileMock.OpenReadStream().Returns(new MemoryStream());
+        var file = new Base64FileUploadDto
+        {
+            FileName = "photo.png",
+            ContentType = "image/png",
+            Base64Content = Convert.ToBase64String(new byte[] { 1, 2, 3, 4 })
+        };
 
         _mockService.GetUserByUsername(username).Returns(user);
 
@@ -738,7 +740,7 @@ public class ApplicationUserControllerTests
             }
         };
 
-        var result = await _sut.UploadProfilePicture(fileMock);
+        var result = await _sut.UploadProfilePicture(file);
 
         result.Should().BeOfType<OkResult>();
         await _mockService.Received(1).UpdateProfilePictureAsync(user.Id, Arg.Any<Stream>(), "image/png");
@@ -758,7 +760,7 @@ public class ApplicationUserControllerTests
     public async Task UploadProfilePicture_WhenUnauthorized_ReturnsUnauthorized()
     {
         // Default context from Init is unauthorized (no identity name)
-        var result = await _sut.UploadProfilePicture(Substitute.For<IFormFile>());
+        var result = await _sut.UploadProfilePicture(new Base64FileUploadDto());
         result.Should().BeOfType<UnauthorizedResult>();
     }
 

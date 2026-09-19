@@ -230,10 +230,10 @@ export class SidebarComponent {
           label: t.general,
           items: [
             { label: t.order, icon: 'pi pi-shopping-cart', routerLink: '/pos' },
-            { label: t.events, icon: 'pi pi-calendar', routerLink: '/events' },
-            ...(this.canAccessQuotes() ? [{ label: t.quotes, icon: 'pi pi-comment', routerLink: '/quotes' }] : []),
             { label: t.my_orders, icon: 'pi pi-history', routerLink: '/orders/personal' },
             { label: t.my_saldo, icon: 'pi pi-wallet', routerLink: '/orders/saldo' },
+            { label: t.events, icon: 'pi pi-calendar', routerLink: '/events' },
+            ...(this.canAccessQuotes() ? [{ label: t.quotes, icon: 'pi pi-comment', routerLink: '/quotes' }] : []),
             { label: t.achievements, icon: 'pi pi-verified', routerLink: '/achievements' },
             { label: t.leaderboard, icon: 'pi pi-chart-bar', routerLink: '/leaderboard' },
             { label: t.user_overview, icon: 'pi pi-users', routerLink: '/users' },
@@ -251,22 +251,22 @@ export class SidebarComponent {
 
         const adminItems: MenuItem[] = [];
 
-        if (isAdmin) {
-          adminItems.push(
-            { label: t.users, icon: 'pi pi-users', routerLink: '/admin/users' },
-            { label: t.roles, icon: 'pi pi-id-card', routerLink: '/admin/roles' },
-            { label: t.products, icon: 'pi pi-box', routerLink: '/admin/products' },
-            { label: t.achievements, icon: 'pi pi-verified', routerLink: '/admin/achievements' },
-            { label: t.announcements, icon: 'pi pi-megaphone', routerLink: '/admin/announcements' },
-            { label: t.send_notification, icon: 'pi pi-bell', routerLink: '/admin/notifications' },
-            { label: t.global_settings, icon: 'pi pi-info-circle', routerLink: '/admin/global-settings' },
-            { label: t.top_ups, icon: 'pi pi-wallet', routerLink: '/admin/topups' }
-          );
-        }
-
         if (isAdmin || isKiosk) {
           adminItems.push(
             { label: t.orders, icon: 'pi pi-list', routerLink: '/admin/orders' }
+          );
+        }
+
+        if (isAdmin) {
+          adminItems.push(
+            { label: t.products, icon: 'pi pi-box', routerLink: '/admin/products' },
+            { label: t.top_ups, icon: 'pi pi-wallet', routerLink: '/admin/topups' },
+            { label: t.users, icon: 'pi pi-users', routerLink: '/admin/users' },
+            { label: t.roles, icon: 'pi pi-id-card', routerLink: '/admin/roles' },
+            { label: t.achievements, icon: 'pi pi-verified', routerLink: '/admin/achievements' },
+            { label: t.announcements, icon: 'pi pi-megaphone', routerLink: '/admin/announcements' },
+            { label: t.send_notification, icon: 'pi pi-bell', routerLink: '/admin/notifications' },
+            { label: t.global_settings, icon: 'pi pi-info-circle', routerLink: '/admin/global-settings' }
           );
         }
 

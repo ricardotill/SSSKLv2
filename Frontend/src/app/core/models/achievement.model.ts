@@ -79,6 +79,12 @@ export interface PaginationObject<T> {
   totalCount: number;
 }
 
+export interface Base64FileUpload {
+  fileName: string;
+  contentType: string;
+  base64Content: string;
+}
+
 export interface AchievementUpdateDto {
   id: string;
   name: string;
@@ -88,6 +94,7 @@ export interface AchievementUpdateDto {
   comparisonOperator: ComparisonOperatorOption;
   comparisonValue: number;
   image?: AchievementImage;
+  newImage?: Base64FileUpload;
   tier: AchievementTier;
   parentAchievementId?: string | null;
 }

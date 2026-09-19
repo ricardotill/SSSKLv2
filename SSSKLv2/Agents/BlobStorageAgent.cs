@@ -2,6 +2,7 @@ using System.Configuration;
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
 using SSSKLv2.Data;
+using SSSKLv2.Util;
 
 namespace SSSKLv2.Agents;
 
@@ -24,16 +25,20 @@ public class BlobStorageAgent : IBlobStorageAgent
     
     public async Task<BlobStorageItem> UploadFileToBlobAsync(string strFileName, string contentType, Stream fileStream)
     {
+        var normalizedContentType = string.IsNullOrWhiteSpace(contentType)
+            ? "application/octet-stream"
+            : contentType.Trim();
+
         var container = _storage.GetBlobContainerClient(_blobContainerName);
         var createResponse = await container.CreateIfNotExistsAsync();
         if (createResponse != null && createResponse.GetRawResponse().Status == 201)
             await container.SetAccessPolicyAsync(PublicAccessType.None);
         var blob = container.GetBlobClient(strFileName);
         await blob.DeleteIfExistsAsync(DeleteSnapshotsOption.IncludeSnapshots);
-        await blob.UploadAsync(fileStream, new BlobHttpHeaders { ContentType = contentType });
+        await blob.UploadAsync(fileStream, new BlobHttpHeaders { ContentType = normalizedContentType });
         var urlString = blob.Uri.ToString();
-        _logger.LogInformation("File uploaded to Blob Storage: {FileName} ({ContentType})", strFileName, contentType);
-        return new BlobStorageItem() { FileName = strFileName, Uri = urlString, ContentType = contentType };
+        _logger.LogInformation("File uploaded to Blob Storage: {FileName} ({ContentType})", strFileName, normalizedContentType);
+        return new BlobStorageItem() { FileName = strFileName, Uri = urlString, ContentType = normalizedContentType };
     }
 
     public async Task<bool> DeleteFileToBlobAsync(string strFileName)

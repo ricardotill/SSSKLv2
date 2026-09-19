@@ -6,6 +6,7 @@ using SSSKLv2.Dto.Api;
 using SSSKLv2.Dto.Api.v1;
 using System.Security.Claims;
 using SSSKLv2.Data;
+using SSSKLv2.Util;
 using System.Net.Mime;
 
 namespace SSSKLv2.Controllers.v1;
@@ -78,7 +79,19 @@ public class EventsController : ControllerBase
 
         if (image != null)
         {
-            dto.ImageContentType = new ContentType(image.ContentType);
+            var contentType = ContentTypeToExtensionMapper.NormalizeContentType(image.ContentType, image.FileName);
+            if (contentType == null)
+            {
+                _logger.LogWarning(
+                    "Event image create rejected: unsupported content type. UserId={UserId}, FileName={FileName}, RawContentType={RawContentType}, Length={Length}",
+                    userId, image.FileName, image.ContentType, image.Length);
+                return BadRequest("Unsupported image content type. Only JPEG, PNG, WebP, HEIC, and HEIF are allowed.");
+            }
+
+            _logger.LogInformation(
+                "Event image create accepted: UserId={UserId}, FileName={FileName}, RawContentType={RawContentType}, NormalizedContentType={NormalizedContentType}, Length={Length}",
+                userId, image.FileName, image.ContentType, contentType, image.Length);
+            dto.ImageContentType = new ContentType(contentType);
             dto.ImageContent = image.OpenReadStream();
         }
 
@@ -89,19 +102,14 @@ public class EventsController : ControllerBase
 
     [Authorize(Roles = "User,Admin")]
     [HttpPut("{id:guid}")]
+    [HttpPost("{id:guid}")]
     [Consumes("multipart/form-data")]
-    public async Task<IActionResult> Update(Guid id, [FromForm] EventCreateDto dto, [FromForm] IFormFile? image)
+    public async Task<IActionResult> Update(Guid id, [FromForm] EventCreateDto dto)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
         var isAdmin = User.IsInRole("Admin");
-
-        if (image != null)
-        {
-            dto.ImageContentType = new ContentType(image.ContentType);
-            dto.ImageContent = image.OpenReadStream();
-        }
 
         try
         {
@@ -115,6 +123,61 @@ public class EventsController : ControllerBase
         catch (UnauthorizedAccessException)
         {
             return Forbid();
+        }
+    }
+
+    // Accepts a JSON base64 payload rather than multipart/form-data: iOS PWAs with an
+    // active service worker are known to strip the body from multipart POST requests.
+    [Authorize(Roles = "User,Admin")]
+    [HttpPost("{id:guid}/image")]
+    public async Task<IActionResult> UpdateImage(Guid id, [FromBody] Base64FileUploadDto? image)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+        if (image == null || !Base64FileDecoder.TryDecode(image.Base64Content, out var bytes))
+        {
+            _logger.LogWarning(
+                "Event image update rejected: no file content was received. EventId={EventId}, UserId={UserId}, RequestContentLength={RequestContentLength}",
+                id, userId, Request.ContentLength);
+            return BadRequest("Image file is required.");
+        }
+
+        var contentType = ContentTypeToExtensionMapper.NormalizeContentType(image.ContentType, image.FileName);
+        if (contentType == null)
+        {
+            _logger.LogWarning(
+                "Event image update rejected: unsupported content type. EventId={EventId}, UserId={UserId}, FileName={FileName}, RawContentType={RawContentType}, Length={Length}",
+                id, userId, image.FileName, image.ContentType, bytes.Length);
+            return BadRequest("Unsupported image content type. Only JPEG, PNG, WebP, HEIC, and HEIF are allowed.");
+        }
+
+        var isAdmin = User.IsInRole("Admin");
+        _logger.LogInformation(
+            "Event image update accepted for processing: EventId={EventId}, UserId={UserId}, IsAdmin={IsAdmin}, FileName={FileName}, RawContentType={RawContentType}, NormalizedContentType={NormalizedContentType}, Length={Length}",
+            id, userId, isAdmin, image.FileName, image.ContentType, contentType, bytes.Length);
+
+        try
+        {
+            using var stream = new MemoryStream(bytes);
+            await _eventService.UpdateEventImage(id, userId, isAdmin, stream, contentType);
+            return NoContent();
+        }
+        catch (NotFoundException)
+        {
+            return NotFound();
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
+        catch (ArgumentException ex)
+        {
+            _logger.LogWarning(
+                ex,
+                "Event image update rejected by service: {Reason}. EventId={EventId}, UserId={UserId}, FileName={FileName}, RawContentType={RawContentType}, NormalizedContentType={NormalizedContentType}, Length={Length}",
+                ex.Message, id, userId, image.FileName, image.ContentType, contentType, bytes.Length);
+            return BadRequest("Unsupported image content type. Only JPEG, PNG, WebP, HEIC, and HEIF are allowed.");
         }
     }
 

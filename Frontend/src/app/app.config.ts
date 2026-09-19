@@ -13,7 +13,7 @@ import { definePreset } from '@primeuix/themes';
 import Aura from '@primeuix/themes/aura';
 import { MessageService, ConfirmationService } from 'primeng/api';
 
-import { provideHttpClient, withInterceptors, withXsrfConfiguration } from '@angular/common/http';
+import { provideHttpClient, withFetch, withInterceptors, withXsrfConfiguration } from '@angular/common/http';
 import { authInterceptor } from './core/auth/auth.interceptor';
 import { apiBaseInterceptor } from './core/interceptors/api-base.interceptor';
 
@@ -41,6 +41,7 @@ export const appConfig: ApplicationConfig = {
     provideBrowserGlobalErrorListeners(),
     provideRouter(routes),
     provideHttpClient(
+      withFetch(),
       withInterceptors([apiBaseInterceptor, authInterceptor]),
       withXsrfConfiguration({
         cookieName: 'XSRF-TOKEN',

@@ -376,6 +376,48 @@ public class AchievementServiceTests
     }
 
     [TestMethod]
+    public async Task UpdateAchievement_WithNewImage_UploadsAndDeletesOldBlob()
+    {
+        var id = Guid.NewGuid();
+        var existing = new Achievement
+        {
+            Id = id,
+            Name = "Old",
+            Image = new AchievementImage { Id = Guid.NewGuid(), FileName = "old.png", Uri = "http://test.com/old.png", ContentType = "image/png" }
+        };
+        _achievementRepository.GetById(id).Returns(Task.FromResult(existing));
+
+        var blobItem = new BlobStorageItem
+        {
+            Id = Guid.NewGuid(),
+            FileName = "new.png",
+            Uri = "http://test.com/new.png",
+            ContentType = "image/png",
+            CreatedOn = DateTime.Now
+        };
+        using var stream = new MemoryStream(new byte[] { 1, 2, 3 });
+        _blobStorageAgent.UploadFileToBlobAsync(Arg.Any<string>(), "image/png", stream).Returns(blobItem);
+
+        var achievement = new Achievement { Id = id, Name = "Old" };
+
+        await _sut.UpdateAchievement(achievement, stream, "image/png");
+
+        await _achievementRepository.Received(1).Update(Arg.Is<Achievement>(a => a.Image != null && a.Image.FileName == "new.png"));
+        await _blobStorageAgent.Received(1).DeleteFileToBlobAsync("old.png");
+    }
+
+    [TestMethod]
+    public async Task UpdateAchievement_WithUnsupportedNewImageContentType_ShouldThrowArgumentException()
+    {
+        var achievement = new Achievement { Id = Guid.NewGuid(), Name = "Old" };
+        using var stream = new MemoryStream(new byte[] { 1, 2, 3 });
+
+        var act = () => _sut.UpdateAchievement(achievement, stream, "application/pdf");
+
+        await act.Should().ThrowAsync<ArgumentException>();
+    }
+
+    [TestMethod]
     public async Task DeleteAchievement_ShouldCallRepository()
     {
         var id = Guid.NewGuid();

@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, inject, signal, OnInit, ViewChild, ElementRef } from '@angular/core';
+import { Component, inject, signal, OnInit } from '@angular/core';
 import { finalize } from 'rxjs';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { TableModule } from 'primeng/table';
@@ -19,7 +19,7 @@ import { ResolveApiUrlPipe } from '../../../shared/pipes/resolve-api-url.pipe';
 
 import { AchievementService } from '../../achievements/services/achievement.service';
 import { ApplicationUserService } from '../../users/services/application-user.service';
-import { Achievement, AchievementUpdateDto, ActionOption, ComparisonOperatorOption, PaginationObject, AchievementTier } from '../../../core/models/achievement.model';
+import { Achievement, AchievementUpdateDto, ActionOption, ComparisonOperatorOption, AchievementTier } from '../../../core/models/achievement.model';
 import { ApplicationUserDto } from '../../../core/models/application-user.model';
 import { LanguageService } from '../../../core/services/language.service';
 
@@ -370,9 +370,8 @@ export default class AchievementsComponent implements OnInit {
       const updateDto: AchievementUpdateDto = {
         id: this.editingId()!,
         ...formValue
-        // image cannot be updated easily via JSON PUT. 
       };
-      this.achievementService.updateAchievement(updateDto).subscribe({
+      this.achievementService.updateAchievement(updateDto, this.selectedFile ?? undefined).subscribe({
         next: () => {
           this.messageService.add({ severity: 'success', summary: 'Succes', detail: 'Achievement bewerkt' });
           this.dialogVisible.set(false);
@@ -385,23 +384,23 @@ export default class AchievementsComponent implements OnInit {
         }
       });
     } else {
-      const formData = new FormData();
-      formData.append('Name', formValue.name);
-      formData.append('Description', formValue.description);
-      formData.append('AutoAchieve', String(formValue.autoAchieve));
-      formData.append('Action', formValue.action);
-      formData.append('ComparisonOperator', formValue.comparisonOperator);
-      formData.append('ComparisonValue', String(formValue.comparisonValue));
-      formData.append('Tier', formValue.tier);
-      if (formValue.parentAchievementId) {
-        formData.append('ParentAchievementId', formValue.parentAchievementId);
+      if (!this.selectedFile) {
+        this.messageService.add({ severity: 'error', summary: 'Fout', detail: 'Afbeelding is verplicht' });
+        this.saving.set(false);
+        return;
       }
 
-      if (this.selectedFile) {
-        formData.append('image', this.selectedFile);
-      }
-
-      this.achievementService.createAchievement(formData).subscribe({
+      this.achievementService.createAchievement({
+        name: formValue.name,
+        description: formValue.description,
+        autoAchieve: formValue.autoAchieve,
+        action: formValue.action,
+        comparisonOperator: formValue.comparisonOperator,
+        comparisonValue: formValue.comparisonValue,
+        image: this.selectedFile,
+        tier: formValue.tier,
+        parentAchievementId: formValue.parentAchievementId || null
+      }).subscribe({
         next: () => {
           this.messageService.add({ severity: 'success', summary: 'Succes', detail: 'Achievement toegevoegd' });
           this.dialogVisible.set(false);

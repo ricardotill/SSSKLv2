@@ -785,3 +785,6 @@ SSSKLv2/wwwroot/*
 !SSSKLv2/wwwroot/.well-known/
 !SSSKLv2/wwwroot/js/
 !SSSKLv2/wwwroot/.gitkeep
+
+# SixLabors
+sixlabors.lic

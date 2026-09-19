@@ -93,9 +93,9 @@ import { UserProfileDrawerService } from '../../core/services/user-profile-drawe
                       </div>
                       <div class="absolute top-3 right-3">
                         @if (event.userResponse === 'Accepted') {
-                          <p-tag severity="success" icon="pi pi-check" value="Aangemeld"></p-tag>
+                          <p-tag severity="success" styleClass="event-response-tag event-response-tag-success" icon="pi pi-check" value="Aangemeld"></p-tag>
                         } @else if (event.userResponse === 'Declined') {
-                          <p-tag severity="danger" icon="pi pi-times" value="Afgemeld"></p-tag>
+                          <p-tag severity="danger" styleClass="event-response-tag event-response-tag-danger" icon="pi pi-times" value="Afgemeld"></p-tag>
                         }
                       </div>
                     </div>
@@ -164,6 +164,23 @@ import { UserProfileDrawerService } from '../../core/services/user-profile-drawe
     :host ::ng-deep .p-dataview-content {
       background: transparent !important;
       border: none !important;
+    }
+
+    :host ::ng-deep .event-response-tag {
+      border: 1px solid rgba(255, 255, 255, 0.9);
+      border-radius: 9999px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.55);
+      color: #ffffff;
+      font-weight: 700;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+    }
+
+    :host ::ng-deep .event-response-tag-success {
+      background: #166534;
+    }
+
+    :host ::ng-deep .event-response-tag-danger {
+      background: #991b1b;
     }
   `],
   changeDetection: ChangeDetectionStrategy.OnPush

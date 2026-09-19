@@ -332,14 +332,20 @@ public class AchievementControllerTests
     public async Task Create_WithValidForm_ReturnsCreated()
     {
         // Arrange
-        var dto = new AchievementDto { Name = "New", Description = "Desc" };
-        var fileMock = Substitute.For<IFormFile>();
-        fileMock.ContentType.Returns("image/png");
-        var stream = new MemoryStream();
-        fileMock.OpenReadStream().Returns(stream);
+        var dto = new AchievementCreateDto
+        {
+            Name = "New",
+            Description = "Desc",
+            Image = new Base64FileUploadDto
+            {
+                FileName = "photo.png",
+                ContentType = "image/png",
+                Base64Content = Convert.ToBase64String(new byte[] { 1, 2, 3, 4 })
+            }
+        };
 
         // Act
-        var result = await _sut.Create(dto, fileMock);
+        var result = await _sut.Create(dto);
 
         // Assert
         result.Should().BeOfType<StatusCodeResult>().Which.StatusCode.Should().Be(StatusCodes.Status201Created);
@@ -349,8 +355,8 @@ public class AchievementControllerTests
     [TestMethod]
     public async Task Create_WithoutImage_ReturnsBadRequest()
     {
-        var dto = new AchievementDto { Name = "New", Description = "Desc" };
-        var result = await _sut.Create(dto, null);
+        var dto = new AchievementCreateDto { Name = "New", Description = "Desc" };
+        var result = await _sut.Create(dto);
         result.Should().BeOfType<BadRequestObjectResult>();
     }
 
@@ -372,5 +378,30 @@ public class AchievementControllerTests
         // Assert
         result.Should().BeOfType<NoContentResult>();
         await _mockService.Received(1).UpdateAchievement(Arg.Is<Achievement>(a => a.Image != null && a.Image.FileName == "test.png"));
+    }
+
+    [TestMethod]
+    public async Task Update_WithNewImage_CallsUpdateAchievementWithStream()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        var dto = new AchievementUpdateDto
+        {
+            Id = id,
+            Name = "New",
+            NewImage = new Base64FileUploadDto
+            {
+                FileName = "photo.png",
+                ContentType = "image/png",
+                Base64Content = Convert.ToBase64String(new byte[] { 1, 2, 3, 4 })
+            }
+        };
+
+        // Act
+        var result = await _sut.Update(dto);
+
+        // Assert
+        result.Should().BeOfType<NoContentResult>();
+        await _mockService.Received(1).UpdateAchievement(Arg.Is<Achievement>(a => a.Id == id), Arg.Any<Stream>(), "image/png");
     }
 }

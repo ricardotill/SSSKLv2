@@ -215,13 +215,15 @@ export default class AchievementDetailComponent implements OnInit {
   );
 
   ngOnInit(): void {
-    const id = this.activatedRoute.snapshot.paramMap.get('id');
-    if (!id) {
-      this.loading.set(false);
-      this.notFound.set(true);
-      return;
-    }
-    this.loadData(id);
+    this.activatedRoute.paramMap.subscribe(params => {
+      const id = params.get('id');
+      if (!id) {
+        this.loading.set(false);
+        this.notFound.set(true);
+        return;
+      }
+      this.loadData(id);
+    });
   }
 
   private loadData(achievementId: string): void {

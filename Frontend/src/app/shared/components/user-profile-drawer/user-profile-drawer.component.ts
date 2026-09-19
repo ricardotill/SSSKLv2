@@ -148,8 +148,10 @@ import { ProgressBarModule } from 'primeng/progressbar';
                   class="w-full"
                   styleClass="w-full"
                 ></p-button>
+            }
+            @if (isCurrentUser() || isAdmin()) {
                 <p-button
-                  label="Mijn statistieken"
+                  [label]="isCurrentUser() ? 'Mijn statistieken' : 'Statistieken bekijken'"
                   icon="pi pi-chart-bar"
                   size="small"
                   severity="info"
@@ -504,8 +506,16 @@ export class UserProfileDrawerComponent {
   }
 
   goToStats() {
+    const user = this.user();
+    if (!user || (!this.isCurrentUser() && !this.isAdmin())) return;
+
     this.drawerService.close();
-    this.router.navigate(['/stats']);
+    if (this.isCurrentUser()) {
+      this.router.navigate(['/stats']);
+      return;
+    }
+
+    this.router.navigate(['/stats'], { queryParams: { userId: user.id } });
   }
 
   navigateToAchievements() {

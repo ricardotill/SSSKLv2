@@ -1,6 +1,8 @@
 import { CommonModule, DatePipe, DecimalPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, effect, inject, signal } from '@angular/core';
-import { RouterModule } from '@angular/router';
+import { ActivatedRoute, RouterModule } from '@angular/router';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { map } from 'rxjs';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { TagModule } from 'primeng/tag';
 import { ButtonModule } from 'primeng/button';
@@ -20,9 +22,9 @@ import { ResolveApiUrlPipe } from '../../shared/pipes/resolve-api-url.pipe';
   template: `
     <div class="max-w-6xl mx-auto flex flex-col gap-6">
       <header class="flex flex-col gap-1">
-        <span class="text-sm font-semibold uppercase tracking-wider text-primary">Mijn profiel</span>
-        <h1 class="text-3xl font-bold m-0 text-surface-900 dark:text-surface-0">Mijn statistieken</h1>
-        <p class="text-surface-500 m-0">Een volledig overzicht van jouw activiteit op SSSKL.</p>
+        <span class="text-sm font-semibold uppercase tracking-wider text-primary">{{ viewingOwnStats() ? 'Mijn profiel' : 'Gebruikersprofiel' }}</span>
+        <h1 class="text-3xl font-bold m-0 text-surface-900 dark:text-surface-0">{{ viewingOwnStats() ? 'Mijn statistieken' : 'Statistieken van ' + (displayedUserName() ?? 'gebruiker') }}</h1>
+        <p class="text-surface-500 m-0">{{ viewingOwnStats() ? 'Een volledig overzicht van jouw activiteit op SSSKL.' : 'Een volledig overzicht van de activiteit van deze gebruiker op SSSKL.' }}</p>
         <div class="flex items-center gap-3 mt-3">
           <p-button
             label="Statistieken herberekenen"
@@ -135,33 +137,53 @@ export class StatsComponent {
   private readonly userService = inject(ApplicationUserService);
   private readonly messageService = inject(MessageService);
   private readonly achievementService = inject(AchievementService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly requestedUserId = toSignal(
+    this.route.queryParamMap.pipe(map(params => params.get('userId'))),
+    { initialValue: this.route.snapshot.queryParamMap.get('userId') }
+  );
   readonly ls = inject(LanguageService);
   readonly stats = signal<UserStat | null>(null);
   readonly achievements = signal<AchievementEntry[]>([]);
   readonly loading = signal(true);
   readonly recalculating = signal(false);
+  readonly viewingOwnStats = signal(true);
+  readonly displayedUserName = signal<string | null>(null);
+  private readonly displayedUserId = signal<string | null>(null);
 
   constructor() {
     effect(() => {
       const user = this.authService.currentUser();
       if (!user) return;
-      this.load(user.id);
+
+      const requestedUserId = this.requestedUserId();
+      const isAdmin = user.roles?.includes('Admin') ?? false;
+      const userId = isAdmin && requestedUserId ? requestedUserId : user.id;
+      this.displayedUserId.set(userId);
+      this.viewingOwnStats.set(userId === user.id);
+      this.load(userId, userId !== user.id);
     });
   }
 
-  private load(userId: string): void {
+  private load(userId: string, loadUserName: boolean): void {
     this.loading.set(true);
+    this.displayedUserName.set(null);
     this.userService.getUserStats(userId).subscribe({ next: stats => { this.stats.set(stats); this.loading.set(false); }, error: () => this.loading.set(false) });
     this.achievementService.getAchievementEntries(userId).subscribe({ next: entries => this.achievements.set(entries), error: () => this.achievements.set([]) });
+    if (loadUserName) {
+      this.userService.getUser(userId).subscribe({ next: user => this.displayedUserName.set(user.fullName) });
+    }
   }
 
   canRecalculate(): boolean {
+    if (this.authService.currentUser()?.roles?.includes('Admin')) return true;
+
     const recalculatedAt = this.stats()?.lastStatsRecalculatedAt;
     return !recalculatedAt || Date.now() - new Date(recalculatedAt).getTime() >= 7 * 24 * 60 * 60 * 1000;
   }
 
   recalculateStats(): void {
-    const userId = this.authService.currentUser()?.id;
+    const userId = this.displayedUserId();
     if (!userId || !this.canRecalculate()) return;
 
     this.recalculating.set(true);

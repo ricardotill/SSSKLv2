@@ -185,6 +185,16 @@ describe('UserProfileDrawerComponent', () => {
     expect(mockRouter.navigate).toHaveBeenCalledWith(['/settings']);
   });
 
+  it('should let an admin navigate to another user\'s stats', () => {
+    mockAuthService.currentUser.set({ id: 'admin', userName: 'admin', roles: ['Admin'] });
+    component.user.set(mockUser);
+
+    component.goToStats();
+
+    expect(mockDrawerService.close).toHaveBeenCalled();
+    expect(mockRouter.navigate).toHaveBeenCalledWith(['/stats'], { queryParams: { userId: mockUser.id } });
+  });
+
   it('should delete profile picture with confirmation', () => {
     mockDrawerService.selectedUserId.set('user-123');
     component.onDeleteProfilePicture();

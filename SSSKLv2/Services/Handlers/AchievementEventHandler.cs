@@ -77,7 +77,6 @@ public class AchievementEventHandler(
         }
         stats.LastTopUpDate = domainEvent.OccurredOn;
 
-        stats.LastActivityDate = domainEvent.OccurredOn;
         
         await userStatRepository.Update(stats);
         await UpdateStreak(stats, domainEvent.OccurredOn);

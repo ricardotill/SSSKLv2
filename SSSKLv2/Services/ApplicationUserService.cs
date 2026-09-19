@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using SSSKLv2.Data;
+using SSSKLv2.Data.DAL;
 using SSSKLv2.Data.DAL.Interfaces;
 using SSSKLv2.Dto;
 using SSSKLv2.Services.Interfaces;
@@ -13,17 +15,27 @@ namespace SSSKLv2.Services;
 public class ApplicationUserService(
     IApplicationUserRepository applicationUserRepository,
     IProductRepository productRepository,
+    IProductUserStatRepository productUserStatRepository,
+    IOrderRepository orderRepository,
     UserManager<ApplicationUser> userManager,
     IBlobStorageAgent blobAgent,
     ApplicationDbContext context,
+    IMemoryCache cache,
     ILogger<ApplicationUserService> logger) : IApplicationUserService
 {
+    private static readonly TimeSpan LeaderboardCacheDuration = TimeSpan.FromSeconds(30);
+
     public Task<int> GetCount() => applicationUserRepository.GetCount();
     public Task<int> GetCountAdmin() => applicationUserRepository.GetCountAll();
     public async Task<ApplicationUser> GetUserById(string id)
     {
         logger.LogInformation("{GetType}: Get User with ID {Id}", GetType(), id);
         return await applicationUserRepository.GetById(id);
+    }
+    public async Task<IList<ApplicationUser>> GetUsersByIds(IEnumerable<string> ids)
+    {
+        logger.LogInformation("{GetType}: Get Users by ids", GetType());
+        return await applicationUserRepository.GetByIds(ids);
     }
     public async Task<ApplicationUser> GetUserByUsername(string username)
     {
@@ -48,152 +60,110 @@ public class ApplicationUserService(
 
     public async Task<IEnumerable<LeaderboardEntryDto>> GetAllLeaderboard(Guid productId)
     {
-        var ulist = await applicationUserRepository.GetAllWithOrders();
-        var product = await productRepository.GetById(productId);
+        var cacheKey = $"leaderboard:all:{productId}";
+        if (cache.TryGetValue(cacheKey, out IEnumerable<LeaderboardEntryDto>? cached) && cached != null) return cached;
 
-        var leaderboard = new List<LeaderboardEntryDto>();
-        foreach (var u in ulist)
-        {
-            int count;
-            try
+        var product = await productRepository.GetById(productId);
+        var stats = await productUserStatRepository.GetAllForProduct(productId);
+
+        var leaderboard = stats
+            .Where(s => s.TotalAmount > 0)
+            .Select(s => new LeaderboardEntryDto()
             {
-                count = u.Orders
-                    .Where(o => o.Product != null && o.Product.Id == product.Id)
-                    .Sum(o => o.Amount);
-            }
-            catch (OverflowException)
-            {
-                count = Int32.MaxValue;
-            }
-            if (count > 0)
-            {
-                leaderboard.Add(new LeaderboardEntryDto()
-                {
-                    Amount = count,
-                    FullName = $"{u.Name} {u.Surname.First()}",
-                    ProductName = product.Name,
-                    ProfilePictureUrl = u.ProfileImageId != null ? $"/api/v1/blob/profilepicture/image/{u.ProfileImageId}" : null,
-                    UserId = u.Id
-                });
-            }
-        }
-        return DeterminePositions(leaderboard);
+                Amount = s.TotalAmount,
+                FullName = $"{s.User.Name} {s.User.Surname.First()}",
+                ProductName = product.Name,
+                ProfilePictureUrl = s.User.ProfileImageId != null ? $"/api/v1/blob/profilepicture/image/{s.User.ProfileImageId}" : null,
+                UserId = s.UserId
+            });
+
+        var result = DeterminePositions(leaderboard).ToList();
+        cache.Set(cacheKey, result, LeaderboardCacheDuration);
+        return result;
     }
     
     public async Task<IEnumerable<LeaderboardEntryDto>> GetMonthlyLeaderboard(Guid productId)
     {
+        var cacheKey = $"leaderboard:monthly:{productId}";
+        if (cache.TryGetValue(cacheKey, out IEnumerable<LeaderboardEntryDto>? cached) && cached != null) return cached;
+
         var startDate = DateTime.Now.Date;
         // create month start with explicit DateTimeKind to avoid analyzer warning
         startDate = new DateTime(startDate.Year, startDate.Month, 1, 0, 0, 0, DateTimeKind.Utc);
         var endDate = startDate.AddMonths(1);
-        
+
         var product = await productRepository.GetById(productId);
-        var ulist = await applicationUserRepository.GetAllWithOrders();
-        
-        var leaderboard = new List<LeaderboardEntryDto>();
-        foreach (var u in ulist)
-        {
-            int count;
-            try
-            {
-                count = u.Orders
-                    .Where(o => o.CreatedOn >= startDate && o.CreatedOn < endDate)
-                    .Where(o => o.Product != null && o.Product.Id == product.Id)
-                    .Sum(o => o.Amount);
-            }
-            catch (OverflowException)
-            {
-                count = Int32.MaxValue;
-            }
-            
-            if (count > 0)
-            {
-                leaderboard.Add(new LeaderboardEntryDto()
-                {
-                    Amount = count,
-                    FullName = $"{u.Name} {u.Surname.First()}",
-                    ProductName = product.Name,
-                    ProfilePictureUrl = u.ProfileImageId != null ? $"/api/v1/blob/profilepicture/image/{u.ProfileImageId}" : null,
-                    UserId = u.Id
-                });
-            }
-        }
-        return DeterminePositions(leaderboard);
+        var aggregates = await orderRepository.GetAmountAggregates(productId, startDate, endDate);
+
+        var result = (await BuildLeaderboard(aggregates, product)).ToList();
+        cache.Set(cacheKey, result, LeaderboardCacheDuration);
+        return result;
     }
 
     public async Task<IEnumerable<LeaderboardEntryDto>> Get12HourlyLeaderboard(Guid productId)
     {
+        var cacheKey = $"leaderboard:12hour:{productId}";
+        if (cache.TryGetValue(cacheKey, out IEnumerable<LeaderboardEntryDto>? cached) && cached != null) return cached;
+
         var time = DateTime.Now.AddHours(-12);
-        
+
         var product = await productRepository.GetById(productId);
-        var ulist = await applicationUserRepository.GetAllWithOrders();
-        
-        var leaderboard = new List<LeaderboardEntryDto>();
-        foreach (var u in ulist)
-        {
-            int count;
-            try
-            {
-                count = u.Orders
-                    .Where(o => o.CreatedOn >= time)
-                    .Where(o => o.Product != null && o.Product.Id == product.Id)
-                    .Sum(o => o.Amount);
-            }
-            catch (OverflowException)
-            {
-                count = Int32.MaxValue;
-            }
-            if (count > 0)
-            {
-                leaderboard.Add(new LeaderboardEntryDto()
-                {
-                    Amount = count,
-                    FullName = $"{u.Name} {u.Surname.First()}",
-                    ProductName = product.Name,
-                    ProfilePictureUrl = u.ProfileImageId != null ? $"/api/v1/blob/profilepicture/image/{u.ProfileImageId}" : null,
-                    UserId = u.Id
-                });
-            }
-        }
-        
-        return DeterminePositions(leaderboard);
+        var aggregates = await orderRepository.GetAmountAggregates(productId, time);
+
+        var result = (await BuildLeaderboard(aggregates, product)).ToList();
+        cache.Set(cacheKey, result, LeaderboardCacheDuration);
+        return result;
     }
     
     public async Task<IEnumerable<LeaderboardEntryDto>> Get12HourlyLiveLeaderboard(Guid productId)
     {
+        var cacheKey = $"leaderboard:12hourlive:{productId}";
+        if (cache.TryGetValue(cacheKey, out IEnumerable<LeaderboardEntryDto>? cached) && cached != null) return cached;
+
         var time = DateTime.Now.AddHours(-12);
-        
+
         var product = await productRepository.GetById(productId);
-        var ulist = await applicationUserRepository.GetFirst12WithOrders();
-        
-        var leaderboard = new List<LeaderboardEntryDto>();
-        foreach (var u in ulist)
+        var topUserIds = await applicationUserRepository.GetTopActiveUserIds(10);
+
+        IEnumerable<LeaderboardEntryDto> result;
+        if (topUserIds.Count == 0)
         {
-            int count;
-            try
+            result = Enumerable.Empty<LeaderboardEntryDto>();
+        }
+        else
+        {
+            var aggregates = await orderRepository.GetAmountAggregates(productId, time, userIds: topUserIds);
+            result = await BuildLeaderboard(aggregates, product);
+        }
+
+        result = result.ToList();
+        cache.Set(cacheKey, result, LeaderboardCacheDuration);
+        return result;
+    }
+
+    private async Task<IEnumerable<LeaderboardEntryDto>> BuildLeaderboard(IList<OrderAggregate> aggregates, Product product)
+    {
+        var positive = aggregates.Where(a => a.Amount > 0).ToList();
+        if (positive.Count == 0) return DeterminePositions(Enumerable.Empty<LeaderboardEntryDto>());
+
+        var users = await applicationUserRepository.GetByIds(positive.Select(a => a.UserId));
+        var userMap = users.ToDictionary(u => u.Id);
+
+        var leaderboard = positive
+            .Where(a => userMap.ContainsKey(a.UserId))
+            .Select(a =>
             {
-                count = u.Orders
-                    .Where(o => o.CreatedOn >= time)
-                    .Where(o => o.Product != null && o.Product.Id == product.Id)
-                    .Sum(o => o.Amount);
-            }
-            catch (OverflowException)
-            {
-                count = Int32.MaxValue;
-            }
-            if (count > 0)
-            {
-                leaderboard.Add(new LeaderboardEntryDto()
+                var u = userMap[a.UserId];
+                return new LeaderboardEntryDto()
                 {
-                    Amount = count,
+                    Amount = a.Amount > int.MaxValue ? int.MaxValue : (int)a.Amount,
                     FullName = $"{u.Name} {u.Surname.First()}",
                     ProductName = product.Name,
                     ProfilePictureUrl = u.ProfileImageId != null ? $"/api/v1/blob/profilepicture/image/{u.ProfileImageId}" : null,
                     UserId = u.Id
-                });
-            }
-        }
-        
+                };
+            });
+
         return DeterminePositions(leaderboard);
     }
 

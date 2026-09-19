@@ -17,7 +17,7 @@ namespace SSSKLv2.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.6")
+                .HasAnnotation("ProductVersion", "10.0.12")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -240,6 +240,12 @@ namespace SSSKLv2.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<Guid?>("ParentAchievementId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Tier")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
                     b.HasIndex("Id")
@@ -248,6 +254,8 @@ namespace SSSKLv2.Migrations
                     b.HasIndex("ImageId")
                         .IsUnique()
                         .HasFilter("[ImageId] IS NOT NULL");
+
+                    b.HasIndex("ParentAchievementId");
 
                     b.ToTable("Achievement");
                 });
@@ -270,6 +278,9 @@ namespace SSSKLv2.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bit")
                         .HasDefaultValue(false);
+
+                    b.Property<int>("Tier")
+                        .HasColumnType("int");
 
                     b.Property<string>("UserId")
                         .IsRequired()
@@ -606,7 +617,7 @@ namespace SSSKLv2.Migrations
                     b.HasIndex("Id")
                         .IsUnique();
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("UserId", "IsRead");
 
                     b.ToTable("Notification");
                 });
@@ -667,9 +678,9 @@ namespace SSSKLv2.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ProductId");
+                    b.HasIndex("ProductId", "CreatedOn");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("UserId", "CreatedOn");
 
                     b.ToTable("Order");
                 });
@@ -708,6 +719,44 @@ namespace SSSKLv2.Migrations
                         .IsUnique();
 
                     b.ToTable("Product");
+                });
+
+            modelBuilder.Entity("SSSKLv2.Data.ProductUserStat", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("LastOrderDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("TotalAmount")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TotalOrders")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("TotalSpent")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductId");
+
+                    b.HasIndex("UserId", "ProductId")
+                        .IsUnique();
+
+                    b.ToTable("ProductUserStats");
                 });
 
             modelBuilder.Entity("SSSKLv2.Data.PushSubscription", b =>
@@ -905,6 +954,84 @@ namespace SSSKLv2.Migrations
                     b.ToTable("TopUp");
                 });
 
+            modelBuilder.Entity("SSSKLv2.Data.UserStat", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("CurrentStreak")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("LastActivityDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("LastOrderDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("LastStatsRecalculatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("LastTopUpDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("MaxOrdersPerHour")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("MaxSingleTopUp")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime?>("MembershipStartDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("MinMinutesBetweenOrders")
+                        .HasColumnType("int");
+
+                    b.Property<int>("MinMinutesBetweenTopUp")
+                        .HasColumnType("int");
+
+                    b.Property<int>("QuoteCount")
+                        .HasColumnType("int");
+
+                    b.Property<int>("QuoteVotesGiven")
+                        .HasColumnType("int");
+
+                    b.Property<int>("QuoteVotesReceived")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ReactionCount")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TotalItemsBought")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TotalOrders")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("TotalSpent")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("TotalTopUp")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Id")
+                        .IsUnique();
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
+                    b.ToTable("UserStats");
+                });
+
             modelBuilder.Entity("SSSKLv2.Data.AchievementImage", b =>
                 {
                     b.HasBaseType("SSSKLv2.Data.BlobStorageItem");
@@ -1071,7 +1198,14 @@ namespace SSSKLv2.Migrations
                         .HasForeignKey("SSSKLv2.Data.Achievement", "ImageId")
                         .OnDelete(DeleteBehavior.Cascade);
 
+                    b.HasOne("SSSKLv2.Data.Achievement", "ParentAchievement")
+                        .WithMany()
+                        .HasForeignKey("ParentAchievementId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
                     b.Navigation("Image");
+
+                    b.Navigation("ParentAchievement");
                 });
 
             modelBuilder.Entity("SSSKLv2.Data.AchievementEntry", b =>
@@ -1169,6 +1303,25 @@ namespace SSSKLv2.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("SSSKLv2.Data.ProductUserStat", b =>
+                {
+                    b.HasOne("SSSKLv2.Data.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SSSKLv2.Data.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Product");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("SSSKLv2.Data.PushSubscription", b =>
                 {
                     b.HasOne("SSSKLv2.Data.ApplicationUser", "User")
@@ -1244,6 +1397,17 @@ namespace SSSKLv2.Migrations
                     b.HasOne("SSSKLv2.Data.ApplicationUser", "User")
                         .WithMany("TopUps")
                         .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("SSSKLv2.Data.UserStat", b =>
+                {
+                    b.HasOne("SSSKLv2.Data.ApplicationUser", "User")
+                        .WithOne()
+                        .HasForeignKey("SSSKLv2.Data.UserStat", "UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 

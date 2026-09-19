@@ -15,4 +15,6 @@ public interface IOrderRepository
     public Task CreateRange(IEnumerable<Order> orders);
     public Task<Order> GetById(Guid id);
     public Task Delete(Guid id);
+    // SQL-side GROUP BY sum per user, optionally restricted to a set of user ids and/or an end date
+    public Task<IList<OrderAggregate>> GetAmountAggregates(Guid productId, DateTime from, DateTime? to = null, IEnumerable<string>? userIds = null);
 }

@@ -165,11 +165,18 @@ if (builder.Environment.IsDevelopment())
 if (!builder.Environment.IsEnvironment("IntegrationTest"))
 {
     var connectionString = (builder.Environment.IsProduction() ? builder.Configuration["AZURE_SQL_CONNECTIONSTRING"] : null)
-                          ?? builder.Configuration.GetConnectionString("db");
+                          ?? builder.Configuration.GetConnectionString("db")
+                          ?? builder.Configuration.GetConnectionString("DefaultConnection");
 
     builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>
     {
-        options.UseSqlServer(connectionString);
+        options.UseSqlServer(connectionString, sql =>
+        {
+            // Retry on Azure SQL transient/throttling errors instead of failing outright
+            sql.EnableRetryOnFailure(maxRetryCount: 3, maxRetryDelay: TimeSpan.FromSeconds(5), errorNumbersToAdd: null);
+            // Avoid Cartesian-product row bloat from multi-Include queries
+            sql.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery);
+        });
     });
     builder.EnrichSqlServerDbContext<ApplicationDbContext>();
 }
@@ -237,6 +244,7 @@ builder.Services.Configure<IdentityPasskeyOptions>(options =>
 // Implement a proper IEmailSender using SMTP
 builder.Services.AddTransient<IEmailSender<ApplicationUser>, SmtpEmailSender>();
 
+builder.Services.AddMemoryCache();
 builder.Services.AddServicesDI();
 builder.Services.AddDataDI();
 builder.Services.AddAgentsDI();

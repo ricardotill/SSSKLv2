@@ -8,11 +8,12 @@ import confetti from 'canvas-confetti';
 import { LanguageService } from '../../../core/services/language.service';
 import { AchievementEntry } from '../../../core/models/achievement.model';
 import { ResolveApiUrlPipe } from '../../pipes/resolve-api-url.pipe';
+import { TierBadgeComponent } from '../tier-badge/tier-badge.component';
 
 @Component({
   selector: 'app-achievement-modal',
   standalone: true,
-  imports: [CommonModule, DialogModule, ButtonModule, CarouselModule, ResolveApiUrlPipe],
+  imports: [CommonModule, DialogModule, ButtonModule, CarouselModule, ResolveApiUrlPipe, TierBadgeComponent],
   template: `
     <p-dialog 
       [(visible)]="isVisible" 
@@ -45,31 +46,43 @@ import { ResolveApiUrlPipe } from '../../pipes/resolve-api-url.pipe';
               <p-carousel styleClass="rounded-full" [value]="entries" [numVisible]="1" [numScroll]="1" [circular]="false" [autoplayInterval]="0">
                 <ng-template pTemplate="item" let-entry>
                   <div class="flex flex-col items-center justify-center p-4">
-                    <div class="w-32 h-32 mb-6 rounded-full overflow-hidden shadow-lg border-4 border-primary/20 flex items-center justify-center bg-surface-100 dark:bg-surface-700">
+                    <div class="relative w-32 h-32 mb-6">
+                      <div class="w-32 h-32 rounded-full overflow-hidden shadow-lg border-4 border-primary/20 flex items-center justify-center bg-surface-100 dark:bg-surface-700">
                       @if (entry.imageUrl) {
                         <img [src]="entry.imageUrl | resolveApiUrl" [alt]="entry.achievementName" class="w-full h-full object-cover" />
                       } @else {
                         <i class="pi pi-star-fill text-5xl text-yellow-500"></i>
                       }
+                      </div>
+                      <app-tier-badge class="absolute -top-2 -right-2" size="sm" [tier]="entry.tier" />
                     </div>
                     <h3 class="text-2xl font-bold text-surface-900 dark:text-surface-0 text-center mb-3">
                       {{ entry.achievementName }}
                     </h3>
+                    @if (entry.parentAchievementName) {
+                      <p class="text-sm text-surface-500 text-center">{{ ls.t()['part_of_achievement'] }}: {{ entry.parentAchievementName }}</p>
+                    }
                   </div>
                 </ng-template>
               </p-carousel>
             } @else {
               <div class="flex flex-col items-center justify-center p-4">
-                <div class="w-32 h-32 mb-6 rounded-full overflow-hidden shadow-lg border-4 border-primary/20 flex items-center justify-center bg-surface-100 dark:bg-surface-700">
+                <div class="relative w-32 h-32 mb-6">
+                  <div class="w-32 h-32 rounded-full overflow-hidden shadow-lg border-4 border-primary/20 flex items-center justify-center bg-surface-100 dark:bg-surface-700">
                   @if (entries[0].imageUrl) {
                     <img [src]="entries[0].imageUrl | resolveApiUrl" [alt]="entries[0].achievementName" class="w-full h-full object-cover" />
                   } @else {
                     <i class="pi pi-star-fill text-5xl text-yellow-500"></i>
                   }
+                  </div>
+                  <app-tier-badge class="absolute -top-2 -right-2" size="sm" [tier]="entries[0].tier" />
                 </div>
                 <h3 class="text-2xl font-bold text-surface-900 dark:text-surface-0 text-center mb-3">
                   {{ entries[0].achievementName }}
                 </h3>
+                @if (entries[0].parentAchievementName) {
+                  <p class="text-sm text-surface-500 text-center">{{ ls.t()['part_of_achievement'] }}: {{ entries[0].parentAchievementName }}</p>
+                }
               </div>
             }
           </div>

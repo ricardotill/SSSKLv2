@@ -21,6 +21,9 @@ import { AchievementEntry } from '../../../core/models/achievement.model';
 import { TooltipModule } from 'primeng/tooltip';
 import { QuoteService } from '../../../features/quotes/services/quote.service';
 import { QuoteDto } from '../../../core/models/quote.model';
+import { UserStat } from '../../../core/models/user-stat.model';
+import { ApplicationUserService } from '../../../features/users/services/application-user.service';
+import { ProgressBarModule } from 'primeng/progressbar';
 
 @Component({
   selector: 'app-user-profile-drawer',
@@ -36,7 +39,8 @@ import { QuoteDto } from '../../../core/models/quote.model';
     ProcessedContentPipe,
     ConfirmDialogModule,
     RouterModule,
-    TooltipModule
+    TooltipModule,
+    ProgressBarModule
   ],
   template: `
     <p-drawer 
@@ -105,6 +109,34 @@ import { QuoteDto } from '../../../core/models/quote.model';
               <h3 class="text-2xl font-bold m-0">{{ u.fullName }}</h3>
               <p class="text-surface-500 my-1">&#64;{{ u.userName }}</p>
             </div>
+
+            @if (stats(); as s) {
+              <div class="grid grid-cols-2 gap-2 w-full mt-2">
+                <div class="bg-surface-50 dark:bg-surface-800/50 p-2 rounded-lg text-center border border-surface-100 dark:border-surface-700 shadow-sm">
+                  <span class="text-xs text-surface-500 block uppercase font-bold tracking-wider">Orders</span>
+                  <span class="font-bold text-lg text-primary">{{ s.totalOrders }}</span>
+                </div>
+                <div class="bg-surface-50 dark:bg-surface-800/50 p-2 rounded-lg text-center border border-surface-100 dark:border-surface-700 shadow-sm">
+                  <span class="text-xs text-surface-500 block uppercase font-bold tracking-wider">Dag streak</span>
+                  <div class="flex items-center justify-center gap-1">
+                    <i class="pi pi-bolt text-amber-500 animate-pulse"></i>
+                    <span class="font-bold text-lg text-primary">{{ s.currentStreak }}</span>
+                  </div>
+                </div>
+              </div>
+              @if (isAdmin()) {
+                <p-button
+                  label="Statistieken herberekenen"
+                  icon="pi pi-refresh"
+                  size="small"
+                  severity="secondary"
+                  [loading]="recalculatingStats()"
+                  (onClick)="recalculateStats()"
+                  class="w-full"
+                  styleClass="w-full"
+                ></p-button>
+              }
+            }
             
             @if (isCurrentUser()) {
                 <p-button 
@@ -113,6 +145,17 @@ import { QuoteDto } from '../../../core/models/quote.model';
                   size="small"
                   severity="secondary"
                   (onClick)="goToSettings()"
+                  class="w-full"
+                  styleClass="w-full"
+                ></p-button>
+            }
+            @if (isCurrentUser() || isAdmin()) {
+                <p-button
+                  [label]="isCurrentUser() ? 'Mijn statistieken' : 'Statistieken bekijken'"
+                  icon="pi pi-chart-bar"
+                  size="small"
+                  severity="info"
+                  (onClick)="goToStats()"
                   class="w-full"
                   styleClass="w-full"
                 ></p-button>
@@ -187,12 +230,21 @@ import { QuoteDto } from '../../../core/models/quote.model';
                       tooltipPosition="top"
                       class="flex flex-col items-center gap-1 cursor-pointer hover:scale-105 transition-transform"
                     >
-                      <div class="w-14 h-14 rounded-xl bg-surface-100 dark:bg-surface-800 flex items-center justify-center overflow-hidden border border-surface-200 dark:border-surface-700 shadow-sm">
+                      <div class="w-14 h-14 rounded-xl bg-surface-100 dark:bg-surface-800 flex items-center justify-center overflow-hidden border border-surface-200 dark:border-surface-700 shadow-sm relative group-hover:border-primary transition-colors">
                         @if (ach.imageUrl) {
                           <img [src]="ach.imageUrl | resolveApiUrl" class="w-full h-full object-contain p-1" [alt]="ach.achievementName" />
                         } @else {
                           <i class="pi pi-verified text-2xl text-primary"></i>
                         }
+                        
+                        <div class="absolute -top-1 -right-1 w-5 h-5 rounded-full border-2 border-surface-0 dark:border-surface-900 flex items-center justify-center shadow-sm" [ngClass]="{
+                          'bg-amber-500': ach.tier === 'Bronze',
+                          'bg-slate-400': ach.tier === 'Silver',
+                          'bg-yellow-500': ach.tier === 'Gold',
+                          'bg-purple-500': ach.tier === 'Platinum'
+                        }">
+                          <span class="text-[8px] font-bold text-white">{{ ach.tier.substring(0,1) }}</span>
+                        </div>
                       </div>
                       <span class="text-[10px] font-medium text-surface-500 dark:text-surface-400 max-w-[56px] truncate text-center">{{ ach.achievementName }}</span>
                     </div>
@@ -282,12 +334,15 @@ export class UserProfileDrawerComponent {
   private router = inject(Router);
   private achievementService = inject(AchievementService);
   private quoteService = inject(QuoteService);
+  private appUserService = inject(ApplicationUserService);
 
   user = signal<ApplicationUserDto | null>(null);
+  stats = signal<UserStat | null>(null);
   achievements = signal<AchievementEntry[]>([]);
   quotes = signal<QuoteDto[]>([]);
   hasQuoteAccess = signal(true);
   loading = signal(false);
+  recalculatingStats = signal(false);
   editMode = signal(false);
   saving = signal(false);
   editDescription = '';
@@ -302,6 +357,7 @@ export class UserProfileDrawerComponent {
         this.loadUser(id);
       } else {
         this.user.set(null);
+        this.stats.set(null);
         this.achievements.set([]);
         this.quotes.set([]);
         this.hasQuoteAccess.set(true);
@@ -340,6 +396,28 @@ export class UserProfileDrawerComponent {
     return !!(current && u && current.userName === u.userName);
   }
 
+  isAdmin(): boolean {
+    return this.authService.currentUser()?.roles?.includes('Admin') ?? false;
+  }
+
+  recalculateStats() {
+    const id = this.user()?.id;
+    if (!id || !this.isAdmin()) return;
+
+    this.recalculatingStats.set(true);
+    this.appUserService.recalculateUserStats(id).subscribe({
+      next: (stats) => {
+        this.stats.set(stats);
+        this.recalculatingStats.set(false);
+        this.messageService.add({ severity: 'success', summary: 'Statistieken bijgewerkt', detail: 'Gebruikersstatistieken zijn herberekend.' });
+      },
+      error: () => {
+        this.recalculatingStats.set(false);
+        this.messageService.add({ severity: 'error', summary: 'Fout', detail: 'Gebruikersstatistieken konden niet worden herberekend.' });
+      }
+    });
+  }
+
   onVisibleChange(visible: boolean) {
     if (!visible) {
       this.drawerService.close();
@@ -359,6 +437,12 @@ export class UserProfileDrawerComponent {
         this.user.set(null);
         this.loading.set(false);
       }
+    });
+
+    // Fetch stats
+    this.appUserService.getUserStats(id).subscribe({
+      next: (data) => this.stats.set(data),
+      error: () => this.stats.set(null)
     });
 
     // Fetch achievements
@@ -419,6 +503,19 @@ export class UserProfileDrawerComponent {
   goToSettings() {
     this.drawerService.close();
     this.router.navigate(['/settings']);
+  }
+
+  goToStats() {
+    const user = this.user();
+    if (!user || (!this.isCurrentUser() && !this.isAdmin())) return;
+
+    this.drawerService.close();
+    if (this.isCurrentUser()) {
+      this.router.navigate(['/stats']);
+      return;
+    }
+
+    this.router.navigate(['/stats'], { queryParams: { userId: user.id } });
   }
 
   navigateToAchievements() {

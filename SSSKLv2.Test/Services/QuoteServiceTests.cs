@@ -8,6 +8,7 @@ using SSSKLv2.Services;
 using SSSKLv2.Services.Interfaces;
 using SSSKLv2.Test.Util;
 using NSubstitute;
+using SSSKLv2.Events;
 using SSSKLv2.Data.Constants;
 using SSSKLv2.Data.DAL.Interfaces;
 
@@ -21,6 +22,8 @@ public class QuoteServiceTests : RepositoryTest
     private IQuoteRepository _quoteRepository = null!;
     private IApplicationUserService _userService = null!;
     private INotificationService _notificationService = null!;
+    private IDomainEventDispatcher _mockEventDispatcher = null!;
+    private IUserStatRepository _mockUserStatRepository = null!;
 
     [TestInitialize]
     public void TestInitialize()
@@ -30,7 +33,10 @@ public class QuoteServiceTests : RepositoryTest
         _quoteRepository = Substitute.For<IQuoteRepository>();
         _userService = Substitute.For<IApplicationUserService>();
         _notificationService = Substitute.For<INotificationService>();
-        _sut = new QuoteService(_quoteRepository, _userService, _dbContext, _notificationService);
+        _mockEventDispatcher = Substitute.For<IDomainEventDispatcher>();
+        _mockUserStatRepository = Substitute.For<IUserStatRepository>();
+        _mockUserStatRepository.RecalculateByUserId(Arg.Any<string>()).Returns(call => new UserStat { UserId = call.Arg<string>() });
+        _sut = new QuoteService(_quoteRepository, _userService, _dbContext, _notificationService, _mockEventDispatcher, _mockUserStatRepository);
     }
 
     [TestCleanup]

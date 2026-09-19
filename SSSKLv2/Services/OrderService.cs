@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text;
+using SSSKLv2.Events;
 using SSSKLv2.Data;
 
 using SSSKLv2.Data.DAL.Interfaces;
@@ -15,6 +16,8 @@ public class OrderService(
     IProductService productService,
     IApplicationUserService applicationUserService,
     INotificationService notificationService,
+    IDomainEventDispatcher eventDispatcher,
+    IUserStatRepository userStatRepository,
     ILogger<OrderService> logger) : IOrderService
 {
     public Task<int> GetCount() => orderRepository.GetCount();
@@ -62,21 +65,15 @@ public class OrderService(
     {
         if (order == null) throw new ArgumentNullException(nameof(order));
 
-        // Fetch products by ids
-        var products = new List<Product>();
-        foreach (var pid in order.Products)
-        {
-            var p = await productService.GetProductById(pid);
-            products.Add(p);
-        }
+        // Batch-fetch products and users instead of one query per id
+        var products = await productService.GetProductsByIds(order.Products);
+        if (products.Count != order.Products.Count)
+            throw new Data.DAL.Exceptions.NotFoundException("Product not found");
 
-        // Fetch users by ids (ApplicationUser.Id is string, DTO uses GUIDs so convert)
-        var users = new List<ApplicationUser>();
-        foreach (var uid in order.Users)
-        {
-            var user = await applicationUserService.GetUserById(uid.ToString());
-            users.Add(user);
-        }
+        var userIds = order.Users.Select(u => u.ToString()).ToList();
+        var users = await applicationUserService.GetUsersByIds(userIds);
+        if (users.Count != userIds.Count)
+            throw new Data.DAL.Exceptions.NotFoundException("ApplicationUser not found");
 
         var orders = new List<Order>();
 
@@ -90,7 +87,11 @@ public class OrderService(
 
         await orderRepository.CreateRange(orders);
         await NotifyPurchase(orders);
-        await achievementService.CheckOrdersForAchievements(orders);
+        
+        foreach (var o in orders)
+        {
+            await eventDispatcher.DispatchAsync(new OrderPlacedEvent(o));
+        }
 
         // Notify users if someone ordered on their behalf
         if (!string.IsNullOrEmpty(actingUserId))
@@ -113,10 +114,7 @@ public class OrderService(
             }
         }
 
-        foreach (var u in users)
-        {
-            await achievementService.CheckUserForAchievements(u.UserName!);
-        }
+        // Achievements are now handled via events
     }
 
     public async Task<string> ExportOrdersFromPastTwoYearsToCsvAsync()
@@ -153,7 +151,9 @@ public class OrderService(
     public async Task DeleteOrder(Guid id)
     {
         logger.LogInformation("{Type}: Delete Order with ID {Id}", nameof(OrderService), id);
+        var order = await orderRepository.GetById(id);
         await orderRepository.Delete(id);
+        await userStatRepository.RecalculateByUserId(order.User.Id);
     }
 
     private IList<Order> GenerateUserOrders(IList<ApplicationUser> userList, Product p, int amount, bool goingDutch)

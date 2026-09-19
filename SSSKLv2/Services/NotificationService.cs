@@ -67,18 +67,9 @@ public class NotificationService : INotificationService
 
     public async Task MarkAllAsReadAsync(string userId)
     {
-        var unreadNotifications = await _context.Notification
+        await _context.Notification
             .Where(n => n.UserId == userId && !n.IsRead)
-            .ToListAsync();
-
-        if (unreadNotifications.Any())
-        {
-            foreach (var n in unreadNotifications)
-            {
-                n.IsRead = true;
-            }
-            await _context.SaveChangesAsync();
-        }
+            .ExecuteUpdateAsync(s => s.SetProperty(n => n.IsRead, true));
     }
 
     public async Task CreateNotificationAsync(string userId, string title, string message, string? linkUri = null, bool sendPush = false)

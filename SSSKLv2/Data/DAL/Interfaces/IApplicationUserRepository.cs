@@ -8,8 +8,10 @@ public interface IApplicationUserRepository
     // Paged overload - return only the requested users (Skip/Take)
     public Task<IList<ApplicationUser>> GetAllPaged(int skip, int take);
     public Task<IList<ApplicationUser>> GetAllForAdminPaged(int skip, int take);
-    public Task<IList<ApplicationUser>> GetAllWithOrders();
-    public Task<IList<ApplicationUser>> GetFirst12WithOrders();
+    // Batch lookup of display fields for a known set of user ids (leaderboard rendering)
+    public Task<IList<ApplicationUser>> GetByIds(IEnumerable<string> ids);
+    // Ids of the most recently active consumer users, ordered by LastOrdered desc
+    public Task<IList<string>> GetTopActiveUserIds(int take);
     public Task<ApplicationUser> GetById(string id);
     public Task<ApplicationUser> GetByUsername(string username);
     public Task<IList<ApplicationUser>> GetAllForAdmin();

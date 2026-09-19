@@ -15,4 +15,6 @@ public class AchievementDto
     public Achievement.ActionOption Action { get; set; }
     public Achievement.ComparisonOperatorOption ComparisonOperator { get; set; }
     public int ComparisonValue { get; set; }
+    public string? Tier { get; set; }
+    public Guid? ParentAchievementId { get; set; }
 }

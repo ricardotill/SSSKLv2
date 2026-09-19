@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using SSSKLv2.Data;
+using SSSKLv2.Data.DAL.Interfaces;
+using SSSKLv2.Events;
 using SSSKLv2.Data.Constants;
 using SSSKLv2.Dto;
 using SSSKLv2.Services.Interfaces;
@@ -11,12 +13,16 @@ public class ReactionService : IReactionService
     private readonly ApplicationDbContext _context;
     private readonly IApplicationUserService _userService;
     private readonly INotificationService _notificationService;
+    private readonly IDomainEventDispatcher _eventDispatcher;
+    private readonly IUserStatRepository _userStatRepository;
 
-    public ReactionService(ApplicationDbContext context, IApplicationUserService userService, INotificationService notificationService)
+    public ReactionService(ApplicationDbContext context, IApplicationUserService userService, INotificationService notificationService, IDomainEventDispatcher eventDispatcher, IUserStatRepository userStatRepository)
     {
         _context = context;
         _userService = userService;
         _notificationService = notificationService;
+        _eventDispatcher = eventDispatcher;
+        _userStatRepository = userStatRepository;
     }
 
     public async Task ToggleReaction(Guid targetId, string targetTypeStr, string content, string userId)
@@ -37,6 +43,8 @@ public class ReactionService : IReactionService
         if (existing != null)
         {
             _context.Reaction.Remove(existing);
+            await _context.SaveChangesAsync();
+            await _userStatRepository.RecalculateByUserId(existing.UserId);
         }
         else
         {
@@ -92,9 +100,10 @@ public class ReactionService : IReactionService
                     );
                 }
             }
+            
+            await _eventDispatcher.DispatchAsync(new ReactionAddedEvent(reaction));
+            await _context.SaveChangesAsync();
         }
-
-        await _context.SaveChangesAsync();
     }
 
     public async Task<IEnumerable<ReactionDto>> GetReactionsForTarget(Guid targetId, string targetTypeStr)
@@ -196,11 +205,16 @@ public class ReactionService : IReactionService
             throw new UnauthorizedAccessException("You are not authorized to delete this reaction.");
         }
 
-        await DeleteReactionAndChildrenInternal(id);
+        var affectedUserIds = new HashSet<string>();
+        await DeleteReactionAndChildrenInternal(id, affectedUserIds);
         await _context.SaveChangesAsync();
+        foreach (var affectedUserId in affectedUserIds)
+        {
+            await _userStatRepository.RecalculateByUserId(affectedUserId);
+        }
     }
 
-    private async Task DeleteReactionAndChildrenInternal(Guid id)
+    private async Task DeleteReactionAndChildrenInternal(Guid id, ISet<string> affectedUserIds)
     {
         // Recursive deletion of all nested reactions
         var children = await _context.Reaction
@@ -210,12 +224,13 @@ public class ReactionService : IReactionService
 
         foreach (var childId in children)
         {
-            await DeleteReactionAndChildrenInternal(childId);
+            await DeleteReactionAndChildrenInternal(childId, affectedUserIds);
         }
 
         var reaction = await _context.Reaction.FirstOrDefaultAsync(r => r.Id == id);
         if (reaction != null)
         {
+            affectedUserIds.Add(reaction.UserId);
             _context.Reaction.Remove(reaction);
         }
     }

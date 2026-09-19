@@ -30,12 +30,11 @@ import { AuthService } from '../../core/auth/auth.service';
     ResolveApiUrlPipe
   ],
   template: `
-    <div class="flex justify-between items-center mb-6 px-4">
-      <h1 class="text-2xl font-bold m-0 text-surface-900 dark:text-surface-0">{{ ls.t().leaderboard }}</h1>
-      <p-button icon="pi pi-refresh" [rounded]="true" (onClick)="refreshAll()" [loading]="loading()" [ariaLabel]="ls.t().refresh"></p-button>
-    </div>
-
     <div class="flex flex-col gap-8 px-4 pb-8 max-w-5xl mx-auto">
+      <div class="flex justify-between items-center">
+        <h1 class="text-2xl font-bold m-0 text-surface-900 dark:text-surface-0">{{ ls.t().leaderboard }}</h1>
+        <p-button icon="pi pi-refresh" [rounded]="true" (onClick)="refreshAll()" [loading]="loading()" [ariaLabel]="ls.t().refresh"></p-button>
+      </div>
       <div class="flex flex-col gap-2">
         <label for="product-select" class="text-surface-600 dark:text-surface-400 font-medium">{{ ls.t().select_product }}</label>
         <p-select

@@ -1,17 +1,22 @@
 using Microsoft.EntityFrameworkCore;
 using SSSKLv2.Data;
+using SSSKLv2.Data.DAL;
 using SSSKLv2.Data.Constants;
 using SSSKLv2.Data.DAL.Interfaces;
 using SSSKLv2.Dto;
 using SSSKLv2.Dto.Api.v1;
 using SSSKLv2.Services.Interfaces;
+using SSSKLv2.Events;
 
 namespace SSSKLv2.Services;
 
-public class QuoteService(IQuoteRepository quoteRepository, 
-    IApplicationUserService applicationUserService, 
+public class QuoteService(
+    IQuoteRepository quoteRepository,
+    IApplicationUserService applicationUserService,
     ApplicationDbContext dbContext,
-    INotificationService notificationService) : IQuoteService
+    INotificationService notificationService,
+    IDomainEventDispatcher eventDispatcher,
+    IUserStatRepository userStatRepository) : IQuoteService
 {
     private const string GlobalSettingKey = "QuotesFeatureAllowedRoles";
 
@@ -113,6 +118,21 @@ public class QuoteService(IQuoteRepository quoteRepository,
         {
             dbContext.QuoteVote.Remove(existingVote);
             await dbContext.SaveChangesAsync();
+
+            var affectedUserIds = await dbContext.QuoteAuthor
+                .Where(author => author.QuoteId == quoteId && author.ApplicationUserId != null)
+                .Select(author => author.ApplicationUserId!)
+                .Distinct()
+                .ToListAsync();
+            if (!affectedUserIds.Contains(userId))
+            {
+                affectedUserIds.Add(userId);
+            }
+
+            foreach (var affectedUserId in affectedUserIds)
+            {
+                await userStatRepository.RecalculateByUserId(affectedUserId);
+            }
             return false;
         }
 
@@ -124,6 +144,7 @@ public class QuoteService(IQuoteRepository quoteRepository,
 
         dbContext.QuoteVote.Add(newVote);
         await dbContext.SaveChangesAsync();
+        await eventDispatcher.DispatchAsync(new QuoteVotedEvent(newVote));
         return true;
     }
 
@@ -159,6 +180,7 @@ public class QuoteService(IQuoteRepository quoteRepository,
         }
 
         await quoteRepository.Add(quote);
+        await eventDispatcher.DispatchAsync(new QuoteCreatedEvent(quote));
         
         // Fetch again to include navigations for the mapping
         var createdQuote = await quoteRepository.GetById(quote.Id);
@@ -253,7 +275,21 @@ public class QuoteService(IQuoteRepository quoteRepository,
 
         await EnsureUserCanModify(quote, userId);
 
+        var affectedUserIds = await dbContext.QuoteAuthor
+            .Where(author => author.QuoteId == id && author.ApplicationUserId != null)
+            .Select(author => author.ApplicationUserId!)
+            .Distinct()
+            .ToListAsync();
+        if (!affectedUserIds.Contains(quote.CreatedById))
+        {
+            affectedUserIds.Add(quote.CreatedById);
+        }
+
         await quoteRepository.Delete(id);
+        foreach (var affectedUserId in affectedUserIds)
+        {
+            await userStatRepository.RecalculateByUserId(affectedUserId);
+        }
         return true;
     }
 

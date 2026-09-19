@@ -23,7 +23,7 @@ public class AchievementRulesUtilTests
     }
 
     [TestMethod]
-    public void CheckSpecialAchievementRules_YearsOfMembership_AwardsWhenCriteriaMet()
+    public void CheckStatAchievement_YearsOfMembership_AwardsWhenCriteriaMet()
     {
         // Arrange
         var achievement = new Achievement
@@ -32,23 +32,20 @@ public class AchievementRulesUtilTests
             ComparisonOperator = Achievement.ComparisonOperatorOption.GreaterThanOrEqual,
             ComparisonValue = 2
         };
-        var user = new ApplicationUser
+        var stats = new UserStat
         {
-            Orders = new List<Order>
-            {
-                new Order { CreatedOn = DateTime.Now.AddYears(-3) }
-            }
+            MembershipStartDate = DateTime.UtcNow.AddYears(-3)
         };
 
         // Act
-        var result = AchievementRulesUtil.CheckSpecialAchievementRules(achievement, user);
+        var result = AchievementRulesUtil.CheckStatAchievement(achievement, stats);
 
         // Assert
         result.Should().BeTrue();
     }
 
     [TestMethod]
-    public void CheckSpecialAchievementRules_YearsOfMembership_DoesNotAwardWhenCriteriaNotMet()
+    public void CheckStatAchievement_YearsOfMembership_DoesNotAwardWhenCriteriaNotMet()
     {
         // Arrange
         var achievement = new Achievement
@@ -57,44 +54,41 @@ public class AchievementRulesUtilTests
             ComparisonOperator = Achievement.ComparisonOperatorOption.GreaterThanOrEqual,
             ComparisonValue = 5
         };
-        var user = new ApplicationUser
+        var stats = new UserStat
         {
-            Orders = new List<Order>
-            {
-                new Order { CreatedOn = DateTime.Now.AddYears(-1) }
-            }
+            MembershipStartDate = DateTime.UtcNow.AddYears(-1)
         };
 
         // Act
-        var result = AchievementRulesUtil.CheckSpecialAchievementRules(achievement, user);
+        var result = AchievementRulesUtil.CheckStatAchievement(achievement, stats);
 
         // Assert
         result.Should().BeFalse();
     }
 
     [TestMethod]
-    public void CheckSpecialAchievementRules_YearsOfMembership_NoOrders_ReturnsFalse()
+    public void CheckStatAchievement_YearsOfMembership_NoStartDate_ReturnsFalse()
     {
         // Arrange
         var achievement = new Achievement { Action = Achievement.ActionOption.YearsOfMembership };
-        var user = new ApplicationUser { Orders = new List<Order>() };
+        var stats = new UserStat();
 
         // Act
-        var result = AchievementRulesUtil.CheckSpecialAchievementRules(achievement, user);
+        var result = AchievementRulesUtil.CheckStatAchievement(achievement, stats);
 
         // Assert
         result.Should().BeFalse();
     }
 
     [TestMethod]
-    public void CheckSpecialAchievementRules_UnknownAction_ReturnsFalse()
+    public void CheckStatAchievement_UnknownAction_ReturnsFalse()
     {
         // Arrange
         var achievement = new Achievement { Action = Achievement.ActionOption.None };
-        var user = new ApplicationUser();
+        var stats = new UserStat();
 
         // Act
-        var result = AchievementRulesUtil.CheckSpecialAchievementRules(achievement, user);
+        var result = AchievementRulesUtil.CheckStatAchievement(achievement, stats);
 
         // Assert
         result.Should().BeFalse();

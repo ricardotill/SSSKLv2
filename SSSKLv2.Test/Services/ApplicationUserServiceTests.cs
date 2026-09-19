@@ -1,9 +1,11 @@
 using FluentAssertions;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NSubstitute;
 using SSSKLv2.Data;
+using SSSKLv2.Data.DAL;
 using SSSKLv2.Data.DAL.Exceptions;
 using SSSKLv2.Data.DAL.Interfaces;
 using SSSKLv2.Services;
@@ -19,6 +21,9 @@ public class ApplicationUserServiceTests
 {
     private IApplicationUserRepository _mockUserRepository = null!;
     private IProductRepository _mockProductRepository = null!;
+    private IProductUserStatRepository _mockProductUserStatRepository = null!;
+    private IOrderRepository _mockOrderRepository = null!;
+    private IMemoryCache _cache = null!;
     private ILogger<ApplicationUserService> _mockLogger = null!;
     private ApplicationUserService _sut = null!;
     private UserManager<ApplicationUser> _fakeUserManager = null!;
@@ -30,6 +35,9 @@ public class ApplicationUserServiceTests
     {
         _mockUserRepository = Substitute.For<IApplicationUserRepository>();
         _mockProductRepository = Substitute.For<IProductRepository>();
+        _mockProductUserStatRepository = Substitute.For<IProductUserStatRepository>();
+        _mockOrderRepository = Substitute.For<IOrderRepository>();
+        _cache = new MemoryCache(new MemoryCacheOptions());
         _mockLogger = Substitute.For<ILogger<ApplicationUserService>>();
 
         // Create a very lightweight fake UserManager by providing a fake store and dependencies
@@ -51,7 +59,7 @@ public class ApplicationUserServiceTests
             .Options;
         _mockContext = new ApplicationDbContext(dbContextOptions);
 
-        _sut = new ApplicationUserService(_mockUserRepository, _mockProductRepository, _fakeUserManager, _mockBlobAgent, _mockContext, _mockLogger);
+        _sut = new ApplicationUserService(_mockUserRepository, _mockProductRepository, _mockProductUserStatRepository, _mockOrderRepository, _fakeUserManager, _mockBlobAgent, _mockContext, _cache, _mockLogger);
     }
 
     #region GetUserById Tests
@@ -171,10 +179,10 @@ public class ApplicationUserServiceTests
         // Arrange
         var productId = Guid.NewGuid();
         var product = CreateProduct(productId, "Test Product");
-        var users = CreateUsersWithOrders(product);
+        var stats = CreateProductUserStats(productId);
         
         _mockProductRepository.GetById(productId).Returns(product!);
-        _mockUserRepository.GetAllWithOrders().Returns(users!);
+        _mockProductUserStatRepository.GetAllForProduct(productId).Returns(stats);
 
         // Act
         var result = await _sut.GetAllLeaderboard(productId);
@@ -191,7 +199,7 @@ public class ApplicationUserServiceTests
         resultList[1].Amount.Should().Be(3); // User2 has 3 orders for this product
         
         await _mockProductRepository.Received(1).GetById(productId);
-        await _mockUserRepository.Received(1).GetAllWithOrders();
+        await _mockProductUserStatRepository.Received(1).GetAllForProduct(productId);
     }
 
     [TestMethod]
@@ -201,28 +209,18 @@ public class ApplicationUserServiceTests
         var productId = Guid.NewGuid();
         var product = CreateProduct(productId, "Test Product");
         
-        // Create a user with an order amount that would cause overflow when summed
+        // Simulate a cached stat row where the amount is already saturated at int.MaxValue
         var user = CreateApplicationUser("user-1", "user1", "Test1", "User1");
-        var overflowOrder = new Order 
-        { 
-            Id = Guid.NewGuid(), 
-            Product = product,
-            Amount = int.MaxValue,
-            CreatedOn = DateTime.Now 
+        var stat = new ProductUserStat
+        {
+            UserId = user.Id,
+            User = user,
+            ProductId = productId,
+            TotalAmount = int.MaxValue
         };
-        
-        var secondOverflowOrder = new Order 
-        { 
-            Id = Guid.NewGuid(), 
-            Product = product,
-            Amount = int.MaxValue,
-            CreatedOn = DateTime.Now 
-        };
-        
-        user.Orders = new List<Order> { overflowOrder, secondOverflowOrder };
         
         _mockProductRepository.GetById(productId).Returns(product!);
-        _mockUserRepository.GetAllWithOrders().Returns(new List<ApplicationUser> { user });
+        _mockProductUserStatRepository.GetAllForProduct(productId).Returns(new List<ProductUserStat> { stat });
 
         // Act
         var result = await _sut.GetAllLeaderboard(productId);
@@ -230,11 +228,11 @@ public class ApplicationUserServiceTests
 
         // Assert
         resultList.Should().HaveCount(1);
-        resultList[0].Amount.Should().Be(int.MaxValue); // Amount should be capped at int.MaxValue
+        resultList[0].Amount.Should().Be(int.MaxValue);
         resultList[0].Position.Should().Be(1);
         
         await _mockProductRepository.Received(1).GetById(productId);
-        await _mockUserRepository.Received(1).GetAllWithOrders();
+        await _mockProductUserStatRepository.Received(1).GetAllForProduct(productId);
     }
 
     [TestMethod]
@@ -243,25 +241,9 @@ public class ApplicationUserServiceTests
         // Arrange
         var productId = Guid.NewGuid();
         var product = CreateProduct(productId, "Test Product");
-        var differentProduct = CreateProduct(Guid.NewGuid(), "Different Product");
-        
-        // Create users with orders for a different product
-        var users = new List<ApplicationUser>();
-        var user = CreateApplicationUser("user-1", "user1", "Test1", "User1");
-        user.Orders = new List<Order> 
-        { 
-            new Order 
-            { 
-                Id = Guid.NewGuid(), 
-                Product = differentProduct, 
-                Amount = 5,
-                CreatedOn = DateTime.Now 
-            }
-        };
-        users.Add(user);
         
         _mockProductRepository.GetById(productId).Returns(product!);
-        _mockUserRepository.GetAllWithOrders().Returns(users!);
+        _mockProductUserStatRepository.GetAllForProduct(productId).Returns(new List<ProductUserStat>());
 
         // Act
         var result = await _sut.GetAllLeaderboard(productId);
@@ -269,7 +251,7 @@ public class ApplicationUserServiceTests
         // Assert
         result.Should().BeEmpty();
         await _mockProductRepository.Received(1).GetById(productId);
-        await _mockUserRepository.Received(1).GetAllWithOrders();
+        await _mockProductUserStatRepository.Received(1).GetAllForProduct(productId);
     }
 
     #endregion
@@ -282,30 +264,19 @@ public class ApplicationUserServiceTests
         // Arrange
         var productId = Guid.NewGuid();
         var product = CreateProduct(productId, "Test Product");
-        
-        // Create users with orders in current month and previous month
-        var currentMonth = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 15);
-        var previousMonth = currentMonth.AddMonths(-1);
-        
-        var users = new List<ApplicationUser>();
-        
+
         var user1 = CreateApplicationUser("user-1", "user1", "Test1", "User1");
-        user1.Orders = new List<Order> 
-        { 
-            new Order { Id = Guid.NewGuid(), Product = product, Amount = 5, CreatedOn = currentMonth },
-            new Order { Id = Guid.NewGuid(), Product = product, Amount = 10, CreatedOn = previousMonth } // This should be excluded
-        };
-        users.Add(user1);
-        
         var user2 = CreateApplicationUser("user-2", "user2", "Test2", "User2");
-        user2.Orders = new List<Order> 
-        { 
-            new Order { Id = Guid.NewGuid(), Product = product, Amount = 3, CreatedOn = currentMonth }
+
+        var aggregates = new List<OrderAggregate>
+        {
+            new OrderAggregate(user1.Id, 5),
+            new OrderAggregate(user2.Id, 3)
         };
-        users.Add(user2);
-        
+
         _mockProductRepository.GetById(productId).Returns(product!);
-        _mockUserRepository.GetAllWithOrders().Returns(users!);
+        _mockOrderRepository.GetAmountAggregates(productId, Arg.Any<DateTime>(), Arg.Any<DateTime?>(), null).Returns(aggregates);
+        _mockUserRepository.GetByIds(Arg.Any<IEnumerable<string>>()).Returns(new List<ApplicationUser> { user1, user2 });
 
         // Act
         var result = await _sut.GetMonthlyLeaderboard(productId);
@@ -314,12 +285,11 @@ public class ApplicationUserServiceTests
         // Assert
         resultList.Should().HaveCount(2);
         resultList[0].Position.Should().Be(1);
-        resultList[0].Amount.Should().Be(5); // Only current month orders should be counted
+        resultList[0].Amount.Should().Be(5);
         resultList[1].Position.Should().Be(2);
         resultList[1].Amount.Should().Be(3);
-        
+
         await _mockProductRepository.Received(1).GetById(productId);
-        await _mockUserRepository.Received(1).GetAllWithOrders();
     }
 
     [TestMethod]
@@ -328,30 +298,14 @@ public class ApplicationUserServiceTests
         // Arrange
         var productId = Guid.NewGuid();
         var product = CreateProduct(productId, "Test Product");
-        var currentMonth = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 15);
-        
-        // Create a user with an order amount that would cause overflow when summed
         var user = CreateApplicationUser("user-1", "user1", "Test1", "User1");
-        var overflowOrder = new Order 
-        { 
-            Id = Guid.NewGuid(), 
-            Product = product,
-            Amount = int.MaxValue,
-            CreatedOn = currentMonth
-        };
-        
-        var secondOverflowOrder = new Order 
-        { 
-            Id = Guid.NewGuid(), 
-            Product = product,
-            Amount = int.MaxValue,
-            CreatedOn = currentMonth
-        };
-        
-        user.Orders = new List<Order> { overflowOrder, secondOverflowOrder };
-        
+
+        // SQL-side sum uses long, so an over-int totals is represented exactly here
+        var aggregates = new List<OrderAggregate> { new OrderAggregate(user.Id, (long)int.MaxValue * 2) };
+
         _mockProductRepository.GetById(productId).Returns(product!);
-        _mockUserRepository.GetAllWithOrders().Returns(new List<ApplicationUser> { user });
+        _mockOrderRepository.GetAmountAggregates(productId, Arg.Any<DateTime>(), Arg.Any<DateTime?>(), null).Returns(aggregates);
+        _mockUserRepository.GetByIds(Arg.Any<IEnumerable<string>>()).Returns(new List<ApplicationUser> { user });
 
         // Act
         var result = await _sut.GetMonthlyLeaderboard(productId);
@@ -361,9 +315,6 @@ public class ApplicationUserServiceTests
         resultList.Should().HaveCount(1);
         resultList[0].Amount.Should().Be(int.MaxValue); // Amount should be capped at int.MaxValue
         resultList[0].Position.Should().Be(1);
-        
-        await _mockProductRepository.Received(1).GetById(productId);
-        await _mockUserRepository.Received(1).GetAllWithOrders();
     }
 
     [TestMethod]
@@ -372,26 +323,9 @@ public class ApplicationUserServiceTests
         // Arrange
         var productId = Guid.NewGuid();
         var product = CreateProduct(productId, "Test Product");
-        
-        // Create users with orders in previous month only
-        var previousMonth = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1).AddMonths(-1);
-        
-        var users = new List<ApplicationUser>();
-        var user = CreateApplicationUser("user-1", "user1", "Test1", "User1");
-        user.Orders = new List<Order> 
-        { 
-            new Order 
-            { 
-                Id = Guid.NewGuid(), 
-                Product = product, 
-                Amount = 5,
-                CreatedOn = previousMonth // Previous month order
-            }
-        };
-        users.Add(user);
-        
+
         _mockProductRepository.GetById(productId).Returns(product!);
-        _mockUserRepository.GetAllWithOrders().Returns(users!);
+        _mockOrderRepository.GetAmountAggregates(productId, Arg.Any<DateTime>(), Arg.Any<DateTime?>(), null).Returns(new List<OrderAggregate>());
 
         // Act
         var result = await _sut.GetMonthlyLeaderboard(productId);
@@ -399,7 +333,6 @@ public class ApplicationUserServiceTests
         // Assert
         result.Should().BeEmpty();
         await _mockProductRepository.Received(1).GetById(productId);
-        await _mockUserRepository.Received(1).GetAllWithOrders();
     }
 
     #endregion
@@ -412,30 +345,19 @@ public class ApplicationUserServiceTests
         // Arrange
         var productId = Guid.NewGuid();
         var product = CreateProduct(productId, "Test Product");
-        
-        // Create users with orders within and before 12-hour window
-        var withinWindow = DateTime.Now.AddHours(-6);
-        var beforeWindow = DateTime.Now.AddHours(-14);
-        
-        var users = new List<ApplicationUser>();
-        
+
         var user1 = CreateApplicationUser("user-1", "user1", "Test1", "User1");
-        user1.Orders = new List<Order> 
-        { 
-            new Order { Id = Guid.NewGuid(), Product = product, Amount = 5, CreatedOn = withinWindow },
-            new Order { Id = Guid.NewGuid(), Product = product, Amount = 10, CreatedOn = beforeWindow } // This should be excluded
-        };
-        users.Add(user1);
-        
         var user2 = CreateApplicationUser("user-2", "user2", "Test2", "User2");
-        user2.Orders = new List<Order> 
-        { 
-            new Order { Id = Guid.NewGuid(), Product = product, Amount = 8, CreatedOn = withinWindow }
+
+        var aggregates = new List<OrderAggregate>
+        {
+            new OrderAggregate(user1.Id, 5),
+            new OrderAggregate(user2.Id, 8)
         };
-        users.Add(user2);
-        
+
         _mockProductRepository.GetById(productId).Returns(product!);
-        _mockUserRepository.GetAllWithOrders().Returns(users!);
+        _mockOrderRepository.GetAmountAggregates(productId, Arg.Any<DateTime>(), null, null).Returns(aggregates);
+        _mockUserRepository.GetByIds(Arg.Any<IEnumerable<string>>()).Returns(new List<ApplicationUser> { user1, user2 });
 
         // Act
         var result = await _sut.Get12HourlyLeaderboard(productId);
@@ -446,10 +368,9 @@ public class ApplicationUserServiceTests
         resultList[0].Position.Should().Be(1);
         resultList[0].Amount.Should().Be(8); // User2 has more orders in the last 12 hours
         resultList[1].Position.Should().Be(2);
-        resultList[1].Amount.Should().Be(5); // User1 has 5 orders in the last 12 hours
-        
+        resultList[1].Amount.Should().Be(5);
+
         await _mockProductRepository.Received(1).GetById(productId);
-        await _mockUserRepository.Received(1).GetAllWithOrders();
     }
 
     [TestMethod]
@@ -458,30 +379,13 @@ public class ApplicationUserServiceTests
         // Arrange
         var productId = Guid.NewGuid();
         var product = CreateProduct(productId, "Test Product");
-        var withinWindow = DateTime.Now.AddHours(-6);
-        
-        // Create a user with an order amount that would cause overflow when summed
         var user = CreateApplicationUser("user-1", "user1", "Test1", "User1");
-        var overflowOrder = new Order 
-        { 
-            Id = Guid.NewGuid(), 
-            Product = product,
-            Amount = int.MaxValue,
-            CreatedOn = withinWindow
-        };
-        
-        var secondOverflowOrder = new Order 
-        { 
-            Id = Guid.NewGuid(), 
-            Product = product,
-            Amount = int.MaxValue,
-            CreatedOn = withinWindow
-        };
-        
-        user.Orders = new List<Order> { overflowOrder, secondOverflowOrder };
-        
+
+        var aggregates = new List<OrderAggregate> { new OrderAggregate(user.Id, (long)int.MaxValue * 2) };
+
         _mockProductRepository.GetById(productId).Returns(product!);
-        _mockUserRepository.GetAllWithOrders().Returns(new List<ApplicationUser> { user });
+        _mockOrderRepository.GetAmountAggregates(productId, Arg.Any<DateTime>(), null, null).Returns(aggregates);
+        _mockUserRepository.GetByIds(Arg.Any<IEnumerable<string>>()).Returns(new List<ApplicationUser> { user });
 
         // Act
         var result = await _sut.Get12HourlyLeaderboard(productId);
@@ -491,9 +395,6 @@ public class ApplicationUserServiceTests
         resultList.Should().HaveCount(1);
         resultList[0].Amount.Should().Be(int.MaxValue); // Amount should be capped at int.MaxValue
         resultList[0].Position.Should().Be(1);
-        
-        await _mockProductRepository.Received(1).GetById(productId);
-        await _mockUserRepository.Received(1).GetAllWithOrders();
     }
 
     [TestMethod]
@@ -502,26 +403,9 @@ public class ApplicationUserServiceTests
         // Arrange
         var productId = Guid.NewGuid();
         var product = CreateProduct(productId, "Test Product");
-        
-        // Create users with orders older than 12 hours
-        var beforeWindow = DateTime.Now.AddHours(-14);
-        
-        var users = new List<ApplicationUser>();
-        var user = CreateApplicationUser("user-1", "user1", "Test1", "User1");
-        user.Orders = new List<Order> 
-        { 
-            new Order 
-            { 
-                Id = Guid.NewGuid(), 
-                Product = product, 
-                Amount = 5,
-                CreatedOn = beforeWindow // Order outside 12-hour window
-            }
-        };
-        users.Add(user);
-        
+
         _mockProductRepository.GetById(productId).Returns(product!);
-        _mockUserRepository.GetAllWithOrders().Returns(users!);
+        _mockOrderRepository.GetAmountAggregates(productId, Arg.Any<DateTime>(), null, null).Returns(new List<OrderAggregate>());
 
         // Act
         var result = await _sut.Get12HourlyLeaderboard(productId);
@@ -529,7 +413,6 @@ public class ApplicationUserServiceTests
         // Assert
         result.Should().BeEmpty();
         await _mockProductRepository.Received(1).GetById(productId);
-        await _mockUserRepository.Received(1).GetAllWithOrders();
     }
 
     #endregion
@@ -542,30 +425,20 @@ public class ApplicationUserServiceTests
         // Arrange
         var productId = Guid.NewGuid();
         var product = CreateProduct(productId, "Test Product");
-        
-        // Create users with orders within and before 12-hour window
-        var withinWindow = DateTime.Now.AddHours(-6);
-        var beforeWindow = DateTime.Now.AddHours(-14);
-        
-        var users = new List<ApplicationUser>();
-        
+
         var user1 = CreateApplicationUser("user-1", "user1", "Test1", "User1");
-        user1.Orders = new List<Order> 
-        { 
-            new Order { Id = Guid.NewGuid(), Product = product, Amount = 5, CreatedOn = withinWindow },
-            new Order { Id = Guid.NewGuid(), Product = product, Amount = 10, CreatedOn = beforeWindow } // This should be excluded
-        };
-        users.Add(user1);
-        
         var user2 = CreateApplicationUser("user-2", "user2", "Test2", "User2");
-        user2.Orders = new List<Order> 
-        { 
-            new Order { Id = Guid.NewGuid(), Product = product, Amount = 8, CreatedOn = withinWindow }
+
+        var aggregates = new List<OrderAggregate>
+        {
+            new OrderAggregate(user1.Id, 5),
+            new OrderAggregate(user2.Id, 8)
         };
-        users.Add(user2);
-        
+
         _mockProductRepository.GetById(productId).Returns(product!);
-        _mockUserRepository.GetFirst12WithOrders().Returns(users!);
+        _mockUserRepository.GetTopActiveUserIds(10).Returns(new List<string> { user1.Id, user2.Id });
+        _mockOrderRepository.GetAmountAggregates(productId, Arg.Any<DateTime>(), null, Arg.Any<IEnumerable<string>>()).Returns(aggregates);
+        _mockUserRepository.GetByIds(Arg.Any<IEnumerable<string>>()).Returns(new List<ApplicationUser> { user1, user2 });
 
         // Act
         var result = await _sut.Get12HourlyLiveLeaderboard(productId);
@@ -576,10 +449,10 @@ public class ApplicationUserServiceTests
         resultList[0].Position.Should().Be(1);
         resultList[0].Amount.Should().Be(8); // User2 has more orders in the last 12 hours
         resultList[1].Position.Should().Be(2);
-        resultList[1].Amount.Should().Be(5); // User1 has 5 orders in the last 12 hours
-        
+        resultList[1].Amount.Should().Be(5);
+
         await _mockProductRepository.Received(1).GetById(productId);
-        await _mockUserRepository.Received(1).GetFirst12WithOrders();
+        await _mockUserRepository.Received(1).GetTopActiveUserIds(10);
     }
 
     [TestMethod]
@@ -588,30 +461,14 @@ public class ApplicationUserServiceTests
         // Arrange
         var productId = Guid.NewGuid();
         var product = CreateProduct(productId, "Test Product");
-        var withinWindow = DateTime.Now.AddHours(-6);
-        
-        // Create a user with an order amount that would cause overflow when summed
         var user = CreateApplicationUser("user-1", "user1", "Test1", "User1");
-        var overflowOrder = new Order 
-        { 
-            Id = Guid.NewGuid(), 
-            Product = product,
-            Amount = int.MaxValue,
-            CreatedOn = withinWindow
-        };
-        
-        var secondOverflowOrder = new Order 
-        { 
-            Id = Guid.NewGuid(), 
-            Product = product,
-            Amount = int.MaxValue,
-            CreatedOn = withinWindow
-        };
-        
-        user.Orders = new List<Order> { overflowOrder, secondOverflowOrder };
-        
+
+        var aggregates = new List<OrderAggregate> { new OrderAggregate(user.Id, (long)int.MaxValue * 2) };
+
         _mockProductRepository.GetById(productId).Returns(product!);
-        _mockUserRepository.GetFirst12WithOrders().Returns(new List<ApplicationUser> { user }!);
+        _mockUserRepository.GetTopActiveUserIds(10).Returns(new List<string> { user.Id });
+        _mockOrderRepository.GetAmountAggregates(productId, Arg.Any<DateTime>(), null, Arg.Any<IEnumerable<string>>()).Returns(aggregates);
+        _mockUserRepository.GetByIds(Arg.Any<IEnumerable<string>>()).Returns(new List<ApplicationUser> { user });
 
         // Act
         var result = await _sut.Get12HourlyLiveLeaderboard(productId);
@@ -621,9 +478,6 @@ public class ApplicationUserServiceTests
         resultList.Should().HaveCount(1);
         resultList[0].Amount.Should().Be(int.MaxValue); // Amount should be capped at int.MaxValue
         resultList[0].Position.Should().Be(1);
-        
-        await _mockProductRepository.Received(1).GetById(productId);
-        await _mockUserRepository.Received(1).GetFirst12WithOrders();
     }
 
     [TestMethod]
@@ -632,26 +486,9 @@ public class ApplicationUserServiceTests
         // Arrange
         var productId = Guid.NewGuid();
         var product = CreateProduct(productId, "Test Product");
-        
-        // Create users with orders older than 12 hours
-        var beforeWindow = DateTime.Now.AddHours(-14);
-        
-        var users = new List<ApplicationUser>();
-        var user = CreateApplicationUser("user-1", "user1", "Test1", "User1");
-        user.Orders = new List<Order> 
-        { 
-            new Order 
-            { 
-                Id = Guid.NewGuid(), 
-                Product = product, 
-                Amount = 5,
-                CreatedOn = beforeWindow // Order outside 12-hour window
-            }
-        };
-        users.Add(user);
-        
+
         _mockProductRepository.GetById(productId).Returns(product!);
-        _mockUserRepository.GetFirst12WithOrders().Returns(users!);
+        _mockUserRepository.GetTopActiveUserIds(10).Returns(new List<string>());
 
         // Act
         var result = await _sut.Get12HourlyLiveLeaderboard(productId);
@@ -659,7 +496,7 @@ public class ApplicationUserServiceTests
         // Assert
         result.Should().BeEmpty();
         await _mockProductRepository.Received(1).GetById(productId);
-        await _mockUserRepository.Received(1).GetFirst12WithOrders();
+        await _mockUserRepository.Received(1).GetTopActiveUserIds(10);
     }
 
     #endregion
@@ -792,41 +629,19 @@ public class ApplicationUserServiceTests
         };
     }
 
-    private List<ApplicationUser> CreateUsersWithOrders(Product product)
+    private List<ProductUserStat> CreateProductUserStats(Guid productId)
     {
-        var users = new List<ApplicationUser>();
-        
         var user1 = CreateApplicationUser("user-1", "user1", "Test1", "User1");
-        user1.Orders = new List<Order>
-        {
-            new Order { Id = Guid.NewGuid(), Product = product, Amount = 3, CreatedOn = DateTime.Now.AddDays(-1) },
-            new Order { Id = Guid.NewGuid(), Product = product, Amount = 2, CreatedOn = DateTime.Now.AddDays(-2) }
-        };
-        users.Add(user1);
-        
         var user2 = CreateApplicationUser("user-2", "user2", "Test2", "User2");
-        user2.Orders = new List<Order>
+
+        return new List<ProductUserStat>
         {
-            new Order { Id = Guid.NewGuid(), Product = product, Amount = 3, CreatedOn = DateTime.Now.AddDays(-1) }
+            new ProductUserStat { UserId = user1.Id, User = user1, ProductId = productId, TotalAmount = 5 },
+            new ProductUserStat { UserId = user2.Id, User = user2, ProductId = productId, TotalAmount = 3 }
         };
-        users.Add(user2);
-        
-        var user3 = CreateApplicationUser("user-3", "user3", "Test3", "User3");
-        user3.Orders = new List<Order>
-        {
-            // This user has orders for a different product
-            new Order 
-            { 
-                Id = Guid.NewGuid(), 
-                Product = new Product { Id = Guid.NewGuid(), Name = "Different Product" },
-                Amount = 5, 
-                CreatedOn = DateTime.Now.AddDays(-1)
-            }
-        };
-        users.Add(user3);
-        
-        return users;
     }
+
+
 
     // Helper method to invoke private DeterminePositions method using reflection
     private IEnumerable<LeaderboardEntryDto> InvokeDeterminePositions(IEnumerable<LeaderboardEntryDto> entries)

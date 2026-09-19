@@ -12,9 +12,10 @@ import { ImageModule } from 'primeng/image';
 import { AchievementService } from '../services/achievement.service';
 import { AuthService } from '../../../core/auth/auth.service';
 import { LanguageService } from '../../../core/services/language.service';
-import { AchievementEntry, AchievementListing } from '../../../core/models/achievement.model';
+import { AchievementEntry, AchievementListing, AchievementTier } from '../../../core/models/achievement.model';
 import { ResolveApiUrlPipe } from '../../../shared/pipes/resolve-api-url.pipe';
 import { UserProfileDrawerService } from '../../../core/services/user-profile-drawer.service';
+import { TierBadgeComponent } from '../../../shared/components/tier-badge/tier-badge.component';
 
 @Component({
   selector: 'app-achievement-detail',
@@ -30,7 +31,8 @@ import { UserProfileDrawerService } from '../../../core/services/user-profile-dr
     ProgressSpinnerModule,
     ImageModule,
     DatePipe,
-    ResolveApiUrlPipe
+    ResolveApiUrlPipe,
+    TierBadgeComponent
   ],
   template: `
     <div class="max-w-4xl mx-auto flex flex-col gap-6">
@@ -51,11 +53,14 @@ import { UserProfileDrawerService } from '../../../core/services/user-profile-dr
         </div>
 
         <!-- Achievement Info Card -->
-        <p-card styleClass="overflow-hidden">
+        <p-card styleClass="overflow-hidden" [ngClass]="tier() ? 'tier-accent-' + tier()!.toLowerCase() : ''">
           <div class="flex flex-col md:flex-row gap-6 items-center md:items-start">
 
             <!-- Badge / Image -->
-            <div class="achievement-badge flex-shrink-0 w-36 h-36 rounded-2xl flex items-center justify-center overflow-hidden bg-surface-100 dark:bg-surface-800 shadow-lg border border-surface-200 dark:border-surface-700">
+            <div
+              class="achievement-badge flex-shrink-0 w-36 h-36 rounded-2xl flex items-center justify-center overflow-hidden bg-surface-100 dark:bg-surface-800 shadow-lg border-2"
+              [ngClass]="tier() ? 'tier-border-' + tier()!.toLowerCase() : 'border-surface-200 dark:border-surface-700'"
+            >
               @if (imageUrl()) {
                 <p-image
                   [src]="(imageUrl()! | resolveApiUrl)!"
@@ -69,7 +74,12 @@ import { UserProfileDrawerService } from '../../../core/services/user-profile-dr
 
             <!-- Details -->
             <div class="flex flex-col gap-3 flex-1 text-center md:text-left">
-              <h2 class="text-2xl font-bold m-0 text-surface-900 dark:text-surface-0">{{ achievementName() }}</h2>
+              <div class="flex flex-wrap items-center gap-2 justify-center md:justify-start">
+                <h2 class="text-2xl font-bold m-0 text-surface-900 dark:text-surface-0">{{ achievementName() }}</h2>
+                @if (tier()) {
+                  <app-tier-badge [tier]="tier()!" />
+                }
+              </div>
               <p class="text-surface-600 dark:text-surface-400 m-0 leading-relaxed">{{ achievementDescription() }}</p>
 
               <div class="flex flex-wrap gap-2 justify-center md:justify-start mt-2">
@@ -77,6 +87,15 @@ import { UserProfileDrawerService } from '../../../core/services/user-profile-dr
                   <i class="pi pi-users text-xs"></i>
                   <span>{{ ls.translate('earned_by_count', { count: earners().length }) }}</span>
                 </div>
+                @if (parentAchievementName()) {
+                  <div class="inline-flex items-center gap-1 text-sm text-surface-500">
+                    {{ ls.t()['part_of_achievement'] }}
+                    <a
+                      class="text-primary-600 dark:text-primary-400 hover:underline"
+                      [routerLink]="['/achievements', parentAchievementId()]"
+                    >{{ parentAchievementName() }}</a>
+                  </div>
+                }
               </div>
             </div>
           </div>
@@ -159,6 +178,14 @@ import { UserProfileDrawerService } from '../../../core/services/user-profile-dr
     .achievement-badge {
       box-shadow: 0 4px 24px -4px var(--p-primary-color, rgba(0,0,0,0.15));
     }
+    .tier-border-bronze { border-color: #d97706; box-shadow: 0 4px 24px -4px rgba(217,119,6,0.5); }
+    .tier-border-silver { border-color: #cbd5e1; box-shadow: 0 4px 24px -4px rgba(148,163,184,0.6); }
+    .tier-border-gold { border-color: #f59e0b; box-shadow: 0 4px 24px -4px rgba(245,158,11,0.6); }
+    .tier-border-platinum { border-color: #a855f7; box-shadow: 0 4px 24px -4px rgba(168,85,247,0.6); }
+    .tier-accent-bronze { box-shadow: 0 0 0 1px rgba(217,119,6,0.35); }
+    .tier-accent-silver { box-shadow: 0 0 0 1px rgba(148,163,184,0.4); }
+    .tier-accent-gold { box-shadow: 0 0 0 1px rgba(245,158,11,0.4); }
+    .tier-accent-platinum { box-shadow: 0 0 0 1px rgba(168,85,247,0.4); }
   `],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
@@ -177,6 +204,9 @@ export default class AchievementDetailComponent implements OnInit {
   achievementName = signal<string>('');
   achievementDescription = signal<string>('');
   imageUrl = signal<string | null>(null);
+  tier = signal<AchievementTier | null>(null);
+  parentAchievementId = signal<string | null>(null);
+  parentAchievementName = signal<string | null>(null);
 
   sortedEarners = computed(() =>
     [...this.earners()].sort((a, b) =>
@@ -185,13 +215,15 @@ export default class AchievementDetailComponent implements OnInit {
   );
 
   ngOnInit(): void {
-    const id = this.activatedRoute.snapshot.paramMap.get('id');
-    if (!id) {
-      this.loading.set(false);
-      this.notFound.set(true);
-      return;
-    }
-    this.loadData(id);
+    this.activatedRoute.paramMap.subscribe(params => {
+      const id = params.get('id');
+      if (!id) {
+        this.loading.set(false);
+        this.notFound.set(true);
+        return;
+      }
+      this.loadData(id);
+    });
   }
 
   private loadData(achievementId: string): void {
@@ -213,11 +245,17 @@ export default class AchievementDetailComponent implements OnInit {
           this.achievementName.set(match.name);
           this.achievementDescription.set(match.description);
           this.imageUrl.set(match.imageUrl ?? null);
+          this.tier.set(match.tier);
+          this.parentAchievementId.set(match.parentAchievementId ?? null);
+          this.parentAchievementName.set(match.parentAchievementName ?? null);
         } else if (earners.length > 0) {
           // Fallback: get meta from first earner entry
           this.achievementName.set(earners[0].achievementName);
           this.achievementDescription.set(earners[0].achievementDescription);
           this.imageUrl.set(earners[0].imageUrl ?? null);
+          this.tier.set(earners[0].tier);
+          this.parentAchievementId.set(earners[0].parentAchievementId ?? null);
+          this.parentAchievementName.set(earners[0].parentAchievementName ?? null);
         } else {
           this.notFound.set(true);
         }

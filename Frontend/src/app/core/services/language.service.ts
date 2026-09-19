@@ -122,6 +122,18 @@ export class LanguageService {
     'email': 'E-mail',
     'password_edit_desc': 'Nieuw wachtwoord (laat leeg om te behouden)',
 
+    // Admin - Users - Bulk stats recalculation
+    'recalculate_all_stats': 'Alle statistieken herberekenen',
+    'recalculate_all_stats_confirm_title': 'Zware operatie bevestigen',
+    'recalculate_all_stats_confirm_message': 'Dit herberekent de statistieken van alle gebruikers. Dit is een zware operatie die lang kan duren en de database kan belasten. Weet je zeker dat je wilt doorgaan?',
+    'recalculate_all_stats_started': 'Herberekening van alle gebruikersstatistieken is gestart.',
+    'recalculate_all_stats_start_failed': 'Starten van de herberekening is mislukt.',
+    'recalculate_all_stats_already_running': 'Er loopt al een herberekening van alle gebruikersstatistieken.',
+    'recalculate_all_stats_running': 'Bezig met herberekenen: {processed} van {total} gebruikers ({failed} mislukt).',
+    'recalculate_all_stats_completed': 'Herberekening van alle gebruikersstatistieken is voltooid ({processed} van {total}, {failed} mislukt).',
+    'recalculate_all_stats_failed': 'Herberekening van alle gebruikersstatistieken is mislukt: {error}',
+    'recalculate_all_stats_warning': 'Let op: dit is een zware achtergrondtaak die alle gebruikersstatistieken herberekent en de server tijdelijk kan vertragen.',
+
     // Admin - Announcements
     'add_announcement': 'Mededeling Toevoegen',
     'edit_announcement': 'Mededeling Bewerken',
@@ -253,6 +265,7 @@ export class LanguageService {
     'earners': 'Behaald door',
     'no_earners': 'Niemand heeft dit achievement nog behaald.',
     'earned_by_count': 'Behaald door {count} gebruiker(s)',
+    'part_of_achievement': 'Onderdeel van',
     'earned_on': 'Behaald op',
 
     // Events

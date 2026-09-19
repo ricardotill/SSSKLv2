@@ -1,4 +1,5 @@
 using SSSKLv2.Data;
+using SSSKLv2.Events;
 using SSSKLv2.Data.DAL.Interfaces;
 using SSSKLv2.Services.Interfaces;
 
@@ -7,6 +8,8 @@ namespace SSSKLv2.Services;
 public class TopUpService(
     ITopUpRepository topUpRepository,
     IAchievementService achievementService,
+    IDomainEventDispatcher eventDispatcher,
+    IUserStatRepository userStatRepository,
     ILogger<TopUpService> logger) : ITopUpService
 {
     public Task<int> GetCount() => topUpRepository.GetCount();
@@ -58,13 +61,14 @@ public class TopUpService(
     {
         logger.LogInformation($"{GetType()}: Create TopUp for user {topup.User.UserName} with amount {topup.Saldo}");
         await topUpRepository.Create(topup);
-        await achievementService.CheckTopUpForAchievements(topup);
-        await achievementService.CheckUserForAchievements(topup.User.UserName!);
+        await eventDispatcher.DispatchAsync(new TopUpEvent(topup));
     }
     
     public async Task DeleteTopUp(Guid id)
     {
         logger.LogInformation($"{GetType()}: Delete TopUp with ID {id}");
+        var topUp = await topUpRepository.GetById(id);
         await topUpRepository.Delete(id);
+        await userStatRepository.RecalculateByUserId(topUp.User.Id);
     }
 }

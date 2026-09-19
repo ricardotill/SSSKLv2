@@ -1,9 +1,11 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SSSKLv2.Services;
 using SSSKLv2.Services.Interfaces;
 using SSSKLv2.Data;
 using SSSKLv2.Dto;
 using SSSKLv2.Data.DAL.Exceptions;
+using SSSKLv2.Data.DAL.Interfaces;
 using SSSKLv2.Dto.Api.v1;
 using SSSKLv2.Util;
 using Microsoft.AspNetCore.Identity;
@@ -19,12 +21,16 @@ public class ApplicationUserController : ControllerBase
     private readonly IApplicationUserService _applicationUserService;
     private readonly ILogger<ApplicationUserController> _logger;
     private readonly UserManager<ApplicationUser> _userManager;
+    private readonly IUserStatRepository _userStatRepository;
+    private readonly IStatsRecalculationJobService _statsRecalculationJobService;
 
-    public ApplicationUserController(IApplicationUserService applicationUserService, ILogger<ApplicationUserController> logger, UserManager<ApplicationUser> userManager)
+    public ApplicationUserController(IApplicationUserService applicationUserService, ILogger<ApplicationUserController> logger, UserManager<ApplicationUser> userManager, IUserStatRepository userStatRepository, IStatsRecalculationJobService statsRecalculationJobService)
     {
         _applicationUserService = applicationUserService;
         _logger = logger;
         _userManager = userManager;
+        _userStatRepository = userStatRepository;
+        _statsRecalculationJobService = statsRecalculationJobService;
     }
 
     private static ApplicationUserDto MapToDto(ApplicationUser u) => new ApplicationUserDto
@@ -36,6 +42,30 @@ public class ApplicationUserController : ControllerBase
         LastOrdered = u.LastOrdered,
         ProfilePictureUrl = u.ProfileImageId != null ? $"/api/v1/blob/profilepicture/image/{u.ProfileImageId}" : null,
         Description = u.Description
+    };
+
+    private static UserStatDto MapToDto(UserStat stats) => new UserStatDto
+    {
+        Id = stats.Id,
+        UserId = stats.UserId,
+        TotalSpent = stats.TotalSpent,
+        TotalOrders = stats.TotalOrders,
+        TotalItemsBought = stats.TotalItemsBought,
+        TotalTopUp = stats.TotalTopUp,
+        QuoteCount = stats.QuoteCount,
+        QuoteVotesGiven = stats.QuoteVotesGiven,
+        ReactionCount = stats.ReactionCount,
+        LastActivityDate = stats.LastActivityDate,
+        CurrentStreak = stats.CurrentStreak,
+        MembershipStartDate = stats.MembershipStartDate,
+        MaxOrdersPerHour = stats.MaxOrdersPerHour,
+        MinMinutesBetweenOrders = stats.MinMinutesBetweenOrders,
+        MinMinutesBetweenTopUp = stats.MinMinutesBetweenTopUp,
+        MaxSingleTopUp = stats.MaxSingleTopUp,
+        QuoteVotesReceived = stats.QuoteVotesReceived,
+        LastOrderDate = stats.LastOrderDate,
+        LastTopUpDate = stats.LastTopUpDate,
+        LastStatsRecalculatedAt = stats.LastStatsRecalculatedAt
     };
 
     // New: map to the more detailed DTO (does NOT include password)
@@ -391,5 +421,85 @@ public class ApplicationUserController : ControllerBase
             _logger.LogError(ex, "Failed to delete profile picture for user {Id}", id);
             return BadRequest(new { error = "Failed to delete profile picture" });
         }
+    }
+
+    [HttpGet("{id}/stats")]
+    public async Task<IActionResult> GetStats(string id)
+    {
+        var user = await _userManager.FindByIdAsync(id);
+        if (user == null) return NotFound();
+
+        var requesterId = _userManager.GetUserId(User);
+        var isAdmin = User.IsInRole("Admin");
+        if (!isAdmin && requesterId != id) return Forbid();
+
+        var stats = await _userStatRepository.GetOrCreateByUserId(id);
+        return Ok(MapToDto(stats));
+    }
+
+    // POST v1/applicationuser/stats/recalculate-all - starts a background job that recalculates stats for every user (Admin only)
+    [Authorize(Roles = "Admin")]
+    [HttpPost("stats/recalculate-all")]
+    public IActionResult RecalculateAllStats()
+    {
+        var requesterId = _userManager.GetUserId(User) ?? string.Empty;
+        var (job, started) = _statsRecalculationJobService.StartRecalculateAll(requesterId);
+        if (!started)
+        {
+            return StatusCode(StatusCodes.Status409Conflict, job);
+        }
+
+        return AcceptedAtAction(nameof(GetRecalculateAllStatsStatus), new { jobId = job.Id }, job);
+    }
+
+    // GET v1/applicationuser/stats/recalculate-all/latest - status of the most recently started bulk recalculation job (Admin only)
+    [Authorize(Roles = "Admin")]
+    [HttpGet("stats/recalculate-all/latest")]
+    public IActionResult GetLatestRecalculateAllStatsStatus()
+    {
+        var job = _statsRecalculationJobService.GetLatest();
+        if (job == null) return NotFound();
+        return Ok(job);
+    }
+
+    // GET v1/applicationuser/stats/recalculate-all/{jobId} - status of a specific bulk recalculation job (Admin only)
+    [Authorize(Roles = "Admin")]
+    [HttpGet("stats/recalculate-all/{jobId:guid}")]
+    public IActionResult GetRecalculateAllStatsStatus(Guid jobId)
+    {
+        var job = _statsRecalculationJobService.GetStatus(jobId);
+        if (job == null) return NotFound();
+        return Ok(job);
+    }
+
+    [Authorize]
+    [HttpPost("{id}/stats/recalculate")]
+    public async Task<IActionResult> RecalculateStats(string id)
+    {
+        var user = await _userManager.FindByIdAsync(id);
+        if (user == null) return NotFound();
+
+        var requesterId = _userManager.GetUserId(User);
+        var isAdmin = User.IsInRole("Admin");
+        if (!isAdmin && requesterId != id) return Forbid();
+
+        var now = DateTime.UtcNow;
+        if (!isAdmin)
+        {
+            var claimed = await _userStatRepository.TryMarkRecalculatedAtIfEligible(id, now, TimeSpan.FromDays(7));
+            if (!claimed)
+            {
+                var existingStats = await _userStatRepository.GetOrCreateByUserId(id);
+                var nextAllowedAt = existingStats.LastStatsRecalculatedAt?.AddDays(7);
+                return StatusCode(StatusCodes.Status429TooManyRequests, new
+                {
+                    message = "Statistics can only be recalculated once every seven days.",
+                    nextAllowedAt
+                });
+            }
+        }
+
+        var stats = await _userStatRepository.RecalculateByUserId(id);
+        return Ok(MapToDto(stats));
     }
 }

@@ -15,6 +15,7 @@ import { LanguageService } from '../../core/services/language.service';
 import { AchievementListing } from '../../core/models/achievement.model';
 import { ApplicationUserDto } from '../../core/models/application-user.model';
 import { ResolveApiUrlPipe } from '../../shared/pipes/resolve-api-url.pipe';
+import { TierBadgeComponent } from '../../shared/components/tier-badge/tier-badge.component';
 
 @Component({
   selector: 'app-achievements',
@@ -30,7 +31,8 @@ import { ResolveApiUrlPipe } from '../../shared/pipes/resolve-api-url.pipe';
     ImageModule,
     ProgressSpinnerModule,
     DatePipe,
-    ResolveApiUrlPipe
+    ResolveApiUrlPipe,
+    TierBadgeComponent
   ],
   template: `
     <div class="flex flex-col gap-4">
@@ -78,9 +80,10 @@ import { ResolveApiUrlPipe } from '../../shared/pipes/resolve-api-url.pipe';
                   class="col-span-12 sm:col-span-6 md:col-span-4 xl:col-span-3 cursor-pointer"
                   [routerLink]="['/achievements', entry.id]"
                 >
-                  <p-card class="h-full achievement-card" [class.locked]="!entry.completed">
+                  <p-card class="h-full achievement-card" [class.locked]="!entry.completed" [ngClass]="'tier-accent-' + entry.tier.toLowerCase()">
                     <ng-template pTemplate="header">
-                      <div class="flex justify-center bg-surface-50/50 dark:bg-surface-800/50 rounded-t-lg items-center overflow-hidden min-h-[12rem]">
+                      <div class="tier-strip h-1.5 w-full rounded-t-lg" [ngClass]="'tier-strip-' + entry.tier.toLowerCase()"></div>
+                      <div class="flex justify-center bg-surface-50/50 dark:bg-surface-800/50 items-center overflow-hidden min-h-[12rem]">
                         @if (entry.imageUrl) {
                           <p-image 
                             [src]="entry.imageUrl | resolveApiUrl" 
@@ -96,14 +99,28 @@ import { ResolveApiUrlPipe } from '../../shared/pipes/resolve-api-url.pipe';
                     <div class="flex flex-col gap-2 h-full">
                       <div class="flex justify-between items-start gap-2">
                         <span class="font-bold text-lg text-surface-900 dark:text-surface-0">{{ entry.name }}</span>
-                        @if (!entry.completed) {
-                          <p-tag [value]="ls.t()['locked']" severity="secondary"></p-tag>
-                        }
+                        <div class="flex items-center gap-2">
+                          <app-tier-badge [tier]="entry.tier" />
+                          @if (!entry.completed) {
+                            <p-tag [value]="ls.t()['locked']" severity="secondary"></p-tag>
+                          }
+                        </div>
                       </div>
                       
                       <p class="text-surface-600 dark:text-surface-400 text-sm line-clamp-3 mb-4">
                         {{ entry.description }}
                       </p>
+
+                      @if (entry.parentAchievementId) {
+                        <span class="text-xs text-surface-500">
+                          {{ ls.t()['part_of_achievement'] }}:
+                          <a
+                            class="text-primary-600 dark:text-primary-400 hover:underline"
+                            [routerLink]="['/achievements', entry.parentAchievementId]"
+                            (click)="$event.stopPropagation()"
+                          >{{ entry.parentAchievementName }}</a>
+                        </span>
+                      }
                       
                       @if (entry.completed) {
                         <div class="mt-auto pt-4 border-t border-surface-200 dark:border-surface-700 flex flex-col gap-1">
@@ -163,6 +180,14 @@ import { ResolveApiUrlPipe } from '../../shared/pipes/resolve-api-url.pipe';
     .locked {
       filter: grayscale(1) opacity(0.7);
     }
+    .tier-strip-bronze { background: linear-gradient(90deg, #d97706, #92400e); }
+    .tier-strip-silver { background: linear-gradient(90deg, #f1f5f9, #94a3b8); }
+    .tier-strip-gold { background: linear-gradient(90deg, #fde047, #d97706); }
+    .tier-strip-platinum { background: linear-gradient(90deg, #e879f9, #6366f1); }
+    .tier-accent-bronze:hover { box-shadow: 0 10px 20px -5px rgba(217,119,6,0.35); }
+    .tier-accent-silver:hover { box-shadow: 0 10px 20px -5px rgba(148,163,184,0.4); }
+    .tier-accent-gold:hover { box-shadow: 0 10px 20px -5px rgba(245,158,11,0.4); }
+    .tier-accent-platinum:hover { box-shadow: 0 10px 20px -5px rgba(168,85,247,0.4); }
   `],
   changeDetection: ChangeDetectionStrategy.OnPush
 })

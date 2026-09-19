@@ -24,6 +24,17 @@ public class ProductRepository(IDbContextFactory<ApplicationDbContext> dbContext
         throw new NotFoundException("Product not found");
     }
 
+    public async Task<IList<Product>> GetByIds(IEnumerable<Guid> ids)
+    {
+        var idList = ids.ToList();
+        if (idList.Count == 0) return new List<Product>();
+
+        await using var context = await dbContextFactory.CreateDbContextAsync();
+        return await context.Product
+            .Where(p => idList.Contains(p.Id))
+            .ToListAsync();
+    }
+
     public async Task<IList<Product>> GetAll()
     {
         await using var context = await dbContextFactory.CreateDbContextAsync();

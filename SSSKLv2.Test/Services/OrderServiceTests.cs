@@ -14,6 +14,7 @@ using SSSKLv2.Data.DAL.Interfaces;
 using SSSKLv2.Dto.Api.v1;
 using SSSKLv2.Services;
 using SSSKLv2.Services.Interfaces;
+using SSSKLv2.Events;
 
 
 namespace SSSKLv2.Test.Services;
@@ -27,6 +28,8 @@ public class OrderServiceTests
     private IProductService _productService = null!;
     private IApplicationUserService _applicationUserService = null!;
     private INotificationService _notificationService = null!;
+    private IDomainEventDispatcher _mockEventDispatcher = null!;
+    private IUserStatRepository _mockUserStatRepository = null!;
     private ILogger<OrderService> _mockLogger = null!;
     private OrderService _sut = null!;
 
@@ -39,6 +42,8 @@ public class OrderServiceTests
         _productService = Substitute.For<IProductService>();
         _applicationUserService = Substitute.For<IApplicationUserService>();
         _notificationService = Substitute.For<INotificationService>();
+        _mockEventDispatcher = Substitute.For<IDomainEventDispatcher>();
+        _mockUserStatRepository = Substitute.For<IUserStatRepository>();
         _mockLogger = Substitute.For<ILogger<OrderService>>();
         _sut = new OrderService(_mockOrderRepository,
             _achievementService,
@@ -46,6 +51,8 @@ public class OrderServiceTests
             _productService,
             _applicationUserService,
             _notificationService,
+            _mockEventDispatcher,
+            _mockUserStatRepository,
             _mockLogger);
     }
 
@@ -340,12 +347,16 @@ public class OrderServiceTests
     {
         // Arrange
         var orderId = Guid.NewGuid();
+        var order = CreateOrder(orderId, "user1", "Product 1", 1, 10m);
+        _mockOrderRepository.GetById(orderId).Returns(order);
+        _mockUserStatRepository.RecalculateByUserId(order.User.Id).Returns(new UserStat { UserId = order.User.Id });
 
         // Act
         await _sut.DeleteOrder(orderId);
 
         // Assert
         await _mockOrderRepository.Received(1).Delete(orderId);
+        await _mockUserStatRepository.Received(1).RecalculateByUserId(order.User.Id);
     }
 
     [TestMethod]
@@ -353,6 +364,7 @@ public class OrderServiceTests
     {
         // Arrange
         var orderId = Guid.NewGuid();
+        _mockOrderRepository.GetById(orderId).Returns(CreateOrder(orderId, "user1", "Product 1", 1, 10m));
         _mockOrderRepository.Delete(orderId).Returns(Task.FromException(
             new NotFoundException("Order not found")));
 
@@ -370,6 +382,7 @@ public class OrderServiceTests
     {
         // Arrange
         var emptyGuid = Guid.Empty;
+        _mockOrderRepository.GetById(emptyGuid).Returns(CreateOrder(emptyGuid, "user1", "Product 1", 1, 10m));
         _mockOrderRepository.Delete(emptyGuid).Returns(Task.FromException(
             new ArgumentException("Invalid order ID")));
 
@@ -413,8 +426,8 @@ public class OrderServiceTests
             Split = false
         };
 
-        _applicationUserService.GetUserById(userId.ToString()).Returns(user);
-        _productService.GetProductById(productId).Returns(product);
+        _applicationUserService.GetUsersByIds(Arg.Any<IEnumerable<string>>()).Returns(new List<ApplicationUser> { user });
+        _productService.GetProductsByIds(Arg.Any<IEnumerable<Guid>>()).Returns(new List<Product> { product });
 
         // Act
         await _sut.CreateOrder(dto, userId.ToString());
@@ -425,7 +438,7 @@ public class OrderServiceTests
                       orders.First().ProductNaam == product.Name &&
                       orders.First().Paid == product.Price));
         await _purchaseNotifier.Received(1).NotifyUserPurchaseAsync(Arg.Any<UserPurchaseEvent>());
-        await _achievementService.Received(1).CheckOrdersForAchievements(Arg.Any<IEnumerable<Order>>());
+        await _mockEventDispatcher.Received(1).DispatchAsync(Arg.Any<OrderPlacedEvent>());
     }
 
     [TestMethod]
@@ -447,9 +460,8 @@ public class OrderServiceTests
             Split = true
         };
 
-        _applicationUserService.GetUserById(user1Id.ToString()).Returns(user1);
-        _applicationUserService.GetUserById(user2Id.ToString()).Returns(user2);
-        _productService.GetProductById(productId).Returns(product);
+        _applicationUserService.GetUsersByIds(Arg.Any<IEnumerable<string>>()).Returns(new List<ApplicationUser> { user1, user2 });
+        _productService.GetProductsByIds(Arg.Any<IEnumerable<Guid>>()).Returns(new List<Product> { product });
 
         // Act
         await _sut.CreateOrder(dto, user1Id.ToString());
@@ -480,9 +492,8 @@ public class OrderServiceTests
             Split = false
         };
 
-        _applicationUserService.GetUserById(user1Id.ToString()).Returns(user1);
-        _applicationUserService.GetUserById(user2Id.ToString()).Returns(user2);
-        _productService.GetProductById(productId).Returns(product);
+        _applicationUserService.GetUsersByIds(Arg.Any<IEnumerable<string>>()).Returns(new List<ApplicationUser> { user1, user2 });
+        _productService.GetProductsByIds(Arg.Any<IEnumerable<Guid>>()).Returns(new List<Product> { product });
 
         // Act
         await _sut.CreateOrder(dto, user1Id.ToString());
@@ -492,9 +503,7 @@ public class OrderServiceTests
             orders => orders.Count() == 2 && 
                       orders.All(o => o.Paid == 2.50m)));
         await _purchaseNotifier.Received(2).NotifyUserPurchaseAsync(Arg.Any<UserPurchaseEvent>());
-        await _achievementService.Received(1).CheckOrdersForAchievements(Arg.Any<IEnumerable<Order>>());
-        await _achievementService.Received(1).CheckUserForAchievements("user1");
-        await _achievementService.Received(1).CheckUserForAchievements("user2");
+        await _mockEventDispatcher.Received(2).DispatchAsync(Arg.Any<OrderPlacedEvent>());
     }
 
     [TestMethod]
@@ -538,14 +547,14 @@ public class OrderServiceTests
             Amount = 1
         };
 
-        _productService.GetProductById(productId).Returns(product);
-        _applicationUserService.GetUserById(userId.ToString()).Throws(new NotFoundException("User not found"));
+        _productService.GetProductsByIds(Arg.Any<IEnumerable<Guid>>()).Returns(new List<Product> { product });
+        _applicationUserService.GetUsersByIds(Arg.Any<IEnumerable<string>>()).Returns(new List<ApplicationUser>());
 
         // Act
         Func<Task> act = async () => await _sut.CreateOrder(dto, userId.ToString());
 
         // Assert
-        await act.Should().ThrowAsync<NotFoundException>().WithMessage("User not found");
+        await act.Should().ThrowAsync<NotFoundException>().WithMessage("ApplicationUser not found");
         await _mockOrderRepository.DidNotReceiveWithAnyArgs().CreateRange(null!);
     }
 
@@ -576,8 +585,8 @@ public class OrderServiceTests
         };
 
         _applicationUserService.GetUserById(actingUserId.ToString()).Returns(actingUser);
-        _applicationUserService.GetUserById(targetUserId.ToString()).Returns(targetUser);
-        _productService.GetProductById(productId).Returns(product);
+        _applicationUserService.GetUsersByIds(Arg.Any<IEnumerable<string>>()).Returns(new List<ApplicationUser> { actingUser, targetUser });
+        _productService.GetProductsByIds(Arg.Any<IEnumerable<Guid>>()).Returns(new List<Product> { product });
 
         // Act
         await _sut.CreateOrder(dto, actingUserId.ToString());
@@ -619,8 +628,8 @@ public class OrderServiceTests
         };
 
         _applicationUserService.GetUserById(actingUserId.ToString()).Returns((ApplicationUser)null!);
-        _applicationUserService.GetUserById(targetUserId.ToString()).Returns(targetUser);
-        _productService.GetProductById(product.Id).Returns(product);
+        _applicationUserService.GetUsersByIds(Arg.Any<IEnumerable<string>>()).Returns(new List<ApplicationUser> { targetUser });
+        _productService.GetProductsByIds(Arg.Any<IEnumerable<Guid>>()).Returns(new List<Product> { product });
 
         // Act
         await _sut.CreateOrder(dto, actingUserId.ToString());
@@ -659,9 +668,8 @@ public class OrderServiceTests
         };
 
         _applicationUserService.GetUserById(actingUserId.ToString()).Returns(actingUser);
-        _applicationUserService.GetUserById(target1Id.ToString()).Returns(target1);
-        _applicationUserService.GetUserById(target2Id.ToString()).Returns(target2);
-        _productService.GetProductById(product.Id).Returns(product);
+        _applicationUserService.GetUsersByIds(Arg.Any<IEnumerable<string>>()).Returns(new List<ApplicationUser> { actingUser, target1, target2 });
+        _productService.GetProductsByIds(Arg.Any<IEnumerable<Guid>>()).Returns(new List<Product> { product });
 
         // Act
         await _sut.CreateOrder(dto, actingUserId.ToString());
@@ -722,7 +730,7 @@ public class OrderServiceTests
         return new Order
         {
             Id = id,
-            User = new ApplicationUser { UserName = username },
+            User = new ApplicationUser { Id = $"{username}-id", UserName = username },
             ProductNaam = productName,
             Amount = amount,
             Paid = paid,

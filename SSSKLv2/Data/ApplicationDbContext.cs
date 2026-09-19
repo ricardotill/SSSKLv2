@@ -16,6 +16,8 @@ namespace SSSKLv2.Data
         public DbSet<SSSKLv2.Data.AchievementImage> AchievementImage { get; set; } = default!;
         public DbSet<SSSKLv2.Data.Achievement> Achievement { get; set; } = default!;
         public DbSet<SSSKLv2.Data.AchievementEntry> AchievementEntry { get; set; } = default!;
+        public DbSet<SSSKLv2.Data.UserStat> UserStats { get; set; } = default!;
+        public DbSet<SSSKLv2.Data.ProductUserStat> ProductUserStats { get; set; } = default!;
         public DbSet<SSSKLv2.Data.Event> Event { get; set; } = default!;
         public DbSet<SSSKLv2.Data.EventResponse> EventResponse { get; set; } = default!;
         public DbSet<SSSKLv2.Data.EventImage> EventImage { get; set; } = default!;
@@ -70,6 +72,11 @@ namespace SSSKLv2.Data
             builder.Entity<Order>()
                 .Property(s => s.CreatedOn )
                 .HasDefaultValueSql("GETDATE()");
+            // Supports personal order history and leaderboard time-window filters without scanning (UserId/ProductId are shadow FK properties)
+            builder.Entity<Order>()
+                .HasIndex("UserId", "CreatedOn");
+            builder.Entity<Order>()
+                .HasIndex("ProductId", "CreatedOn");
             
             builder.Entity<TopUp>()
                 .Property(s => s.CreatedOn )
@@ -103,6 +110,37 @@ namespace SSSKLv2.Data
             builder.Entity<Achievement>()
                 .HasMany<AchievementEntry>(e => e.CompletedEntries)
                 .WithOne(e => e.Achievement)
+                .OnDelete(DeleteBehavior.Cascade);
+            builder.Entity<Achievement>()
+                .HasOne(e => e.ParentAchievement)
+                .WithMany()
+                .HasForeignKey(e => e.ParentAchievementId)
+                .OnDelete(DeleteBehavior.NoAction);
+            
+            builder.Entity<UserStat>()
+                .HasIndex(p => p.Id)
+                .IsUnique();
+            builder.Entity<UserStat>()
+                .HasIndex(p => p.UserId)
+                .IsUnique();
+            builder.Entity<UserStat>()
+                .HasOne(e => e.User)
+                .WithOne()
+                .HasForeignKey<UserStat>(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<ProductUserStat>()
+                .HasIndex(p => new { p.UserId, p.ProductId })
+                .IsUnique();
+            builder.Entity<ProductUserStat>()
+                .HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+            builder.Entity<ProductUserStat>()
+                .HasOne(e => e.Product)
+                .WithMany()
+                .HasForeignKey(e => e.ProductId)
                 .OnDelete(DeleteBehavior.Cascade);
             
             builder.Entity<AchievementEntry>()
@@ -219,6 +257,9 @@ namespace SSSKLv2.Data
                 .WithMany()
                 .HasForeignKey(e => e.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
+            // Supports unread-count/unread-only queries without scanning all of a user's notifications
+            builder.Entity<Notification>()
+                .HasIndex(n => new { n.UserId, n.IsRead });
 
             builder.Entity<PushSubscription>()
                 .HasIndex(p => p.Id)

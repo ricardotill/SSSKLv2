@@ -13,6 +13,8 @@ export interface AchievementCreateRequest {
   comparisonOperator: string;
   comparisonValue: number;
   image: File;
+  tier: string;
+  parentAchievementId?: string;
 }
 
 @Injectable({
@@ -102,7 +104,10 @@ export class AchievementService {
                     description: ac.description,
                     dateAdded: userEntry ? userEntry.dateAdded : undefined,
                     imageUrl: ac.imageUrl, // Map the image URL from the master list
-                    completed: !!userEntry
+                    completed: !!userEntry,
+                    tier: ac.tier,
+                    parentAchievementId: ac.parentAchievementId,
+                    parentAchievementName: ac.parentAchievementName
                 } as AchievementListing;
             });
         })
@@ -123,5 +128,9 @@ export class AchievementService {
 
   deleteAchievementEntries(ids: string[]): Observable<void> {
     return this.http.post<void>(`${this.baseUrl}/entries/delete`, ids);
+  }
+
+  getRarity(achievementId: string): Observable<{ count: number }> {
+    return this.http.get<{ count: number }>(`${this.baseUrl}/rarity/${achievementId}`);
   }
 }

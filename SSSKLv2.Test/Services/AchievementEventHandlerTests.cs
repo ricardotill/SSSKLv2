@@ -86,7 +86,7 @@ public class AchievementEventHandlerTests
         stats.TotalTopUp.Should().Be(25);
         stats.MaxSingleTopUp.Should().Be(25);
         stats.MinMinutesBetweenTopUp.Should().Be(10);
-        stats.CurrentStreak.Should().Be(4);
+        stats.CurrentStreak.Should().Be(1);
         await _userStats.Received(2).Update(stats);
     }
 

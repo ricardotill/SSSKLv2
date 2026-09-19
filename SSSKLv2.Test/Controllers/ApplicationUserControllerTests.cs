@@ -626,6 +626,101 @@ public class ApplicationUserControllerTests
     }
 
     [TestMethod]
+    public async Task RecalculateStats_WhenNotAdminAndTargetIsAnotherUser_ReturnsForbid()
+    {
+        var targetId = "target-user";
+        var userStore = Substitute.For<IUserStore<ApplicationUser>>();
+        var userManager = Substitute.For<UserManager<ApplicationUser>>(
+            userStore,
+            null,
+            new PasswordHasher<ApplicationUser>(),
+            Array.Empty<IUserValidator<ApplicationUser>>(),
+            Array.Empty<IPasswordValidator<ApplicationUser>>(),
+            new UpperInvariantLookupNormalizer(),
+            new IdentityErrorDescriber(),
+            null,
+            Substitute.For<ILogger<UserManager<ApplicationUser>>>());
+        userManager.FindByIdAsync(targetId).Returns(new ApplicationUser { Id = targetId });
+        userManager.GetUserId(Arg.Any<ClaimsPrincipal>()).Returns("normal-user");
+
+        var controller = new ApplicationUserController(
+            _mockService,
+            Substitute.For<ILogger<ApplicationUserController>>(),
+            userManager,
+            _mockUserStatRepository,
+            _mockStatsRecalculationJobService)
+        {
+            ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext
+                {
+                    User = new ClaimsPrincipal(new ClaimsIdentity(new[]
+                    {
+                        new Claim(ClaimTypes.NameIdentifier, "normal-user")
+                    }, "TestAuth"))
+                }
+            }
+        };
+
+        var result = await controller.RecalculateStats(targetId);
+
+        result.Should().BeOfType<ForbidResult>();
+        await _mockUserStatRepository.DidNotReceive().RecalculateByUserId(Arg.Any<string>());
+    }
+
+    [TestMethod]
+    public async Task RecalculateStats_WhenAdminTargetsAnotherUser_RecalculatesAndReturnsOk()
+    {
+        var targetId = "target-user";
+        var userStore = Substitute.For<IUserStore<ApplicationUser>>();
+        var userManager = Substitute.For<UserManager<ApplicationUser>>(
+            userStore,
+            null,
+            new PasswordHasher<ApplicationUser>(),
+            Array.Empty<IUserValidator<ApplicationUser>>(),
+            Array.Empty<IPasswordValidator<ApplicationUser>>(),
+            new UpperInvariantLookupNormalizer(),
+            new IdentityErrorDescriber(),
+            null,
+            Substitute.For<ILogger<UserManager<ApplicationUser>>>());
+        userManager.FindByIdAsync(targetId).Returns(new ApplicationUser { Id = targetId });
+        userManager.GetUserId(Arg.Any<ClaimsPrincipal>()).Returns("admin-user");
+        userManager.IsInRoleAsync(Arg.Any<ApplicationUser>(), "Admin").Returns(true);
+
+        var existingStats = new UserStat { UserId = targetId, LastStatsRecalculatedAt = DateTime.UtcNow.AddDays(-1) };
+        var recalculatedStats = new UserStat { UserId = targetId, TotalOrders = 3 };
+        _mockUserStatRepository.GetOrCreateByUserId(targetId).Returns(existingStats);
+        _mockUserStatRepository.RecalculateByUserId(targetId).Returns(recalculatedStats);
+
+        var controller = new ApplicationUserController(
+            _mockService,
+            Substitute.For<ILogger<ApplicationUserController>>(),
+            userManager,
+            _mockUserStatRepository,
+            _mockStatsRecalculationJobService)
+        {
+            ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext
+                {
+                    User = new ClaimsPrincipal(new ClaimsIdentity(new[]
+                    {
+                        new Claim(ClaimTypes.NameIdentifier, "admin-user"),
+                        new Claim(ClaimTypes.Role, "Admin")
+                    }, "TestAuth"))
+                }
+            }
+        };
+
+        var result = await controller.RecalculateStats(targetId);
+
+        result.Should().BeOfType<OkObjectResult>();
+        recalculatedStats.LastStatsRecalculatedAt.Should().BeNull();
+        await _mockUserStatRepository.Received(1).RecalculateByUserId(targetId);
+        await _mockUserStatRepository.DidNotReceive().Update(Arg.Any<UserStat>());
+    }
+
+    [TestMethod]
     public async Task Delete_WhenSuccessful_ReturnsNoContent()
     {
         var id = "user1";

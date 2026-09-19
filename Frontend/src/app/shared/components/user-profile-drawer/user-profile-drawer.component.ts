@@ -117,7 +117,7 @@ import { ProgressBarModule } from 'primeng/progressbar';
                   <span class="font-bold text-lg text-primary">{{ s.totalOrders }}</span>
                 </div>
                 <div class="bg-surface-50 dark:bg-surface-800/50 p-2 rounded-lg text-center border border-surface-100 dark:border-surface-700 shadow-sm">
-                  <span class="text-xs text-surface-500 block uppercase font-bold tracking-wider">Streak</span>
+                  <span class="text-xs text-surface-500 block uppercase font-bold tracking-wider">Dag streak</span>
                   <div class="flex items-center justify-center gap-1">
                     <i class="pi pi-bolt text-amber-500 animate-pulse"></i>
                     <span class="font-bold text-lg text-primary">{{ s.currentStreak }}</span>

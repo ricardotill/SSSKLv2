@@ -101,35 +101,28 @@ public class ApplicationUserRepository(
         return list;
     }
     
-    public async Task<IList<ApplicationUser>> GetAllWithOrders()
+    public async Task<IList<ApplicationUser>> GetByIds(IEnumerable<string> ids)
     {
-        await using var context = await dbContextFactory.CreateDbContextAsync();
-        
-        var list = await GetConsumerUsersQuery(context)
-            .Where(s => s.Orders.Any())
-            .Include(x => x.ProfileImage)
-            .Include(x => x.Orders)
-            .ThenInclude(x => x.Product)
-            .OrderByDescending(e => e.LastOrdered)
-            .ToListAsync();
+        var idList = ids.ToList();
+        if (idList.Count == 0) return new List<ApplicationUser>();
 
-        return list;
+        await using var context = await dbContextFactory.CreateDbContextAsync();
+        return await context.Users
+            .AsNoTracking()
+            .Where(u => idList.Contains(u.Id))
+            .ToListAsync();
     }
-    
-    public async Task<IList<ApplicationUser>> GetFirst12WithOrders()
+
+    public async Task<IList<string>> GetTopActiveUserIds(int take)
     {
         await using var context = await dbContextFactory.CreateDbContextAsync();
-        
-        var list = await GetConsumerUsersQuery(context)
-            .Where(s => s.Orders.Any())
-            .Include(x => x.ProfileImage)
-            .Include(x => x.Orders)
-            .ThenInclude(x => x.Product)
-            .OrderByDescending(e => e.LastOrdered)
-            .Take(10)
-            .ToListAsync();
 
-        return list;
+        return await GetConsumerUsersQuery(context)
+            .Where(s => s.Orders.Any())
+            .OrderByDescending(e => e.LastOrdered)
+            .Select(u => u.Id)
+            .Take(take)
+            .ToListAsync();
     }
 
     private static IQueryable<ApplicationUser> GetConsumerUsersQuery(ApplicationDbContext context)

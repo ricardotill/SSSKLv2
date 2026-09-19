@@ -23,6 +23,7 @@ public static class ServicesExtensions
             .AddTransient<IWebPushService, WebPushService>()
             .AddSingleton<IPurchaseNotifier, PurchaseNotifier>()
             .AddSingleton<IEventNotifier, EventNotifier>()
+            .AddSingleton<IStatsRecalculationJobService, StatsRecalculationJobService>()
             .AddScoped<IDomainEventDispatcher, DomainEventDispatcher>()
             .AddScoped<IDomainEventHandler<OrderPlacedEvent>, AchievementEventHandler>()
             .AddScoped<IDomainEventHandler<TopUpEvent>, AchievementEventHandler>()

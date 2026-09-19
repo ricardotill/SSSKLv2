@@ -9,6 +9,7 @@ namespace SSSKLv2.Services.Handlers;
 public class AchievementEventHandler(
     IAchievementRepository achievementRepository,
     IUserStatRepository userStatRepository,
+    IProductUserStatRepository productUserStatRepository,
     IOrderRepository orderRepository,
     IAchievementService achievementService,
     ILogger<AchievementEventHandler> logger) : 
@@ -46,6 +47,16 @@ public class AchievementEventHandler(
         
         await userStatRepository.Update(stats);
         await UpdateStreak(stats, domainEvent.OccurredOn);
+
+        if (order.Product != null)
+        {
+            var productStats = await productUserStatRepository.GetOrCreate(order.User.Id, order.Product.Id);
+            productStats.TotalAmount += order.Amount;
+            productStats.TotalOrders += 1;
+            productStats.TotalSpent += order.Paid;
+            productStats.LastOrderDate = domainEvent.OccurredOn;
+            await productUserStatRepository.Update(productStats);
+        }
         
         await CheckAndAwardAchievements(order.User.Id, stats);
     }

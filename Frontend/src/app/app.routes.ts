@@ -105,6 +105,12 @@ export const routes: Routes = [
         title: 'Instellingen - SSSKL'
       },
       {
+        path: 'stats',
+        loadComponent: () => import('./features/stats/stats.component').then(m => m.StatsComponent),
+        canActivate: [authGuard],
+        title: 'Mijn Statistieken - SSSKL'
+      },
+      {
         path: 'orders',
         canActivate: [authGuard],
         children: [

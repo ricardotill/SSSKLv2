@@ -36,4 +36,5 @@ public class UserStat : BaseModel
     // Tracking for window-based/interval stats
     public DateTime? LastOrderDate { get; set; }
     public DateTime? LastTopUpDate { get; set; }
+    public DateTime? LastStatsRecalculatedAt { get; set; }
 }

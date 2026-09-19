@@ -52,6 +52,8 @@ public class AchievementController : ControllerBase
         ImageUrl = e.Achievement?.Image != null ? $"/api/v1/blob/achievement/image/{e.Achievement.Image.Id}" : null,
         HasSeen = e.HasSeen,
         Tier = e.Tier.ToString(),
+        ParentAchievementId = e.Achievement?.ParentAchievementId,
+        ParentAchievementName = e.Achievement?.ParentAchievement?.Name,
         UserId = e.User?.Id,
         UserName = e.User?.UserName,
         UserFullName = e.User?.FullName,
@@ -169,6 +171,13 @@ public class AchievementController : ControllerBase
                     ContentType = dto.Image.ContentType,
                     CreatedOn = DateTime.Now
                 };
+            }
+            else
+            {
+                // The edit form never round-trips the current image, so without this the
+                // repository would treat a missing image field as "remove the image".
+                var existing = await _achievementService.GetAchievementById(dto.Id);
+                achievement.Image = existing.Image;
             }
 
             await _achievementService.UpdateAchievement(achievement);

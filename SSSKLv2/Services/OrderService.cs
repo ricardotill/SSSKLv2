@@ -64,21 +64,15 @@ public class OrderService(
     {
         if (order == null) throw new ArgumentNullException(nameof(order));
 
-        // Fetch products by ids
-        var products = new List<Product>();
-        foreach (var pid in order.Products)
-        {
-            var p = await productService.GetProductById(pid);
-            products.Add(p);
-        }
+        // Batch-fetch products and users instead of one query per id
+        var products = await productService.GetProductsByIds(order.Products);
+        if (products.Count != order.Products.Count)
+            throw new Data.DAL.Exceptions.NotFoundException("Product not found");
 
-        // Fetch users by ids (ApplicationUser.Id is string, DTO uses GUIDs so convert)
-        var users = new List<ApplicationUser>();
-        foreach (var uid in order.Users)
-        {
-            var user = await applicationUserService.GetUserById(uid.ToString());
-            users.Add(user);
-        }
+        var userIds = order.Users.Select(u => u.ToString()).ToList();
+        var users = await applicationUserService.GetUsersByIds(userIds);
+        if (users.Count != userIds.Count)
+            throw new Data.DAL.Exceptions.NotFoundException("ApplicationUser not found");
 
         var orders = new List<Order>();
 

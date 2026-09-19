@@ -28,6 +28,9 @@ public class AchievementService(
         return allAchievements.Select(a =>
         {
             var entry = achievementEntries.SingleOrDefault(e => e.Achievement.Id == a.Id);
+            var parent = a.ParentAchievementId.HasValue
+                ? allAchievements.FirstOrDefault(x => x.Id == a.ParentAchievementId.Value)
+                : null;
             return new AchievementListingDto(
                 a.Id,
                 a.Name,
@@ -35,7 +38,9 @@ public class AchievementService(
                 entry?.CreatedOn,
                 a.Image != null ? $"/api/v1/blob/achievement/image/{a.Image.Id}" : null,
                 entry != null,
-                a.Tier.ToString()
+                a.Tier.ToString(),
+                parent?.Id,
+                parent?.Name
             );
         }
 

@@ -55,6 +55,8 @@ export interface AchievementEntry {
   userFullName?: string;
   userProfilePictureUrl?: string;
   tier: AchievementTier;
+  parentAchievementId?: string | null;
+  parentAchievementName?: string | null;
 }
 
 export interface AchievementListing {
@@ -65,6 +67,8 @@ export interface AchievementListing {
   imageUrl?: string;
   completed: boolean;
   tier: AchievementTier;
+  parentAchievementId?: string | null;
+  parentAchievementName?: string | null;
 }
 
 export interface AchievementImage {

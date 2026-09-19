@@ -23,6 +23,12 @@ public class ProductService : IProductService
         return await productRepository.GetById(id);
     }
 
+    public async Task<IList<Product>> GetProductsByIds(IEnumerable<Guid> ids)
+    {
+        _logger.LogInformation("{Type}: Get Products by ids", GetType());
+        return await productRepository.GetByIds(ids);
+    }
+
     public async Task<IList<Product>> GetAll()
     {
         _logger.LogInformation("{Type}: Get All Products", GetType());

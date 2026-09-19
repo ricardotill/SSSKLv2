@@ -49,6 +49,7 @@ public class AchievementRepository(IDbContextFactory<ApplicationDbContext> dbCon
         return await context.AchievementEntry
             .Include(x => x.User)
             .Include(x => x.Achievement.Image)
+            .Include(x => x.Achievement.ParentAchievement)
             .Where(x => x.Achievement.Id == achievementId)
             .OrderBy(x => x.CreatedOn)
             .ToListAsync();
@@ -66,6 +67,7 @@ public class AchievementRepository(IDbContextFactory<ApplicationDbContext> dbCon
         return await context.AchievementEntry
             .Include(x => x.Achievement)
             .Include(x => x.Achievement.Image)
+            .Include(x => x.Achievement.ParentAchievement)
             .Include(x => x.User)
             .Where(x => x.User.Id == userId)
             .OrderBy(x => x.CreatedOn)
@@ -78,6 +80,7 @@ public class AchievementRepository(IDbContextFactory<ApplicationDbContext> dbCon
         return await context.AchievementEntry
             .Include(x => x.Achievement)
             .Include(x => x.Achievement.Image)
+            .Include(x => x.Achievement.ParentAchievement)
             .Include(x => x.User)
             .Where(x => x.User.UserName == username)
             .Where(x => !x.HasSeen)
@@ -191,6 +194,14 @@ public class AchievementRepository(IDbContextFactory<ApplicationDbContext> dbCon
                 context.Entry(existing).Property("ImageId").CurrentValue = newImage.Id;
             }
             }
+        }
+        else if (existing.Image != null)
+        {
+            // Image removed: clear the FK and delete the orphaned image row
+            var oldImage = existing.Image;
+            existing.Image = null;
+            context.Entry(existing).Property("ImageId").CurrentValue = null;
+            context.AchievementImage.Remove(oldImage);
         }
 
         await context.SaveChangesAsync();

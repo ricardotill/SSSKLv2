@@ -137,6 +137,26 @@ public class OrderRepository(IDbContextFactory<ApplicationDbContext> dbContextFa
         await context.SaveChangesAsync();
     }
 
+    public async Task<IList<OrderAggregate>> GetAmountAggregates(Guid productId, DateTime from, DateTime? to = null, IEnumerable<string>? userIds = null)
+    {
+        await using var context = await dbContextFactory.CreateDbContextAsync();
+
+        var query = context.Order
+            .Where(o => o.Product != null && o.Product.Id == productId && o.CreatedOn >= from);
+
+        if (to.HasValue) query = query.Where(o => o.CreatedOn < to.Value);
+        if (userIds != null)
+        {
+            var idSet = userIds.ToList();
+            query = query.Where(o => idSet.Contains(o.User.Id));
+        }
+
+        return await query
+            .GroupBy(o => o.User.Id)
+            .Select(g => new OrderAggregate(g.Key, g.Sum(o => (long)o.Amount)))
+            .ToListAsync();
+    }
+
     public async Task Delete(Guid id)
     {
         await using var context = await dbContextFactory.CreateDbContextAsync();

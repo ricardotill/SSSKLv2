@@ -109,7 +109,7 @@ public class AchievementControllerTests
     public async Task GetPersonal_ReturnsOk()
     {
         var username = "user1";
-        var list = new List<AchievementListingDto> { new AchievementListingDto(Guid.NewGuid(), "n", "d", null, null, false, "Bronze") };
+        var list = new List<AchievementListingDto> { new AchievementListingDto(Guid.NewGuid(), "n", "d", null, null, false, "Bronze", null, null) };
         _mockService.GetPersonalAchievementsByUsername(username).Returns(list);
 
         // Set authenticated user on controller
@@ -281,6 +281,7 @@ public class AchievementControllerTests
     public async Task Update_WhenNotFoundException_ReturnsNotFound()
     {
         var dto = new AchievementUpdateDto { Id = Guid.NewGuid(), Name = "New" };
+        _mockService.GetAchievementById(dto.Id).Returns(Task.FromException<Achievement>(new NotFoundException("test")));
         _mockService.UpdateAchievement(Arg.Any<Achievement>()).Returns(Task.FromException(new NotFoundException("test")));
 
         var result = await _sut.Update(dto);
@@ -312,7 +313,7 @@ public class AchievementControllerTests
     public async Task GetAllForUser_ReturnsOk()
     {
         var userId = "u1";
-        var list = new List<AchievementListingDto> { new AchievementListingDto(Guid.NewGuid(), "n", "d", null, null, false, "Bronze") };
+        var list = new List<AchievementListingDto> { new AchievementListingDto(Guid.NewGuid(), "n", "d", null, null, false, "Bronze", null, null) };
         _mockService.GetPersonalAchievements(userId).Returns(list);
 
         var result = await _sut.GetAllForUser(userId);

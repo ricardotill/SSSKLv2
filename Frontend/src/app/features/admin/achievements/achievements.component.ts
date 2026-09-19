@@ -399,7 +399,7 @@ export default class AchievementsComponent implements OnInit {
         comparisonValue: formValue.comparisonValue,
         image: this.selectedFile,
         tier: formValue.tier,
-        parentAchievementId: formValue.parentAchievementId || null
+        parentAchievementId: formValue.parentAchievementId || undefined
       }).subscribe({
         next: () => {
           this.messageService.add({ severity: 'success', summary: 'Succes', detail: 'Achievement toegevoegd' });

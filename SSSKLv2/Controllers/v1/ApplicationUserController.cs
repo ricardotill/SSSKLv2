@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SSSKLv2.Services;
 using SSSKLv2.Services.Interfaces;
 using SSSKLv2.Data;
 using SSSKLv2.Dto;
@@ -21,13 +22,15 @@ public class ApplicationUserController : ControllerBase
     private readonly ILogger<ApplicationUserController> _logger;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly IUserStatRepository _userStatRepository;
+    private readonly IStatsRecalculationJobService _statsRecalculationJobService;
 
-    public ApplicationUserController(IApplicationUserService applicationUserService, ILogger<ApplicationUserController> logger, UserManager<ApplicationUser> userManager, IUserStatRepository userStatRepository)
+    public ApplicationUserController(IApplicationUserService applicationUserService, ILogger<ApplicationUserController> logger, UserManager<ApplicationUser> userManager, IUserStatRepository userStatRepository, IStatsRecalculationJobService statsRecalculationJobService)
     {
         _applicationUserService = applicationUserService;
         _logger = logger;
         _userManager = userManager;
         _userStatRepository = userStatRepository;
+        _statsRecalculationJobService = statsRecalculationJobService;
     }
 
     private static ApplicationUserDto MapToDto(ApplicationUser u) => new ApplicationUserDto
@@ -400,6 +403,75 @@ public class ApplicationUserController : ControllerBase
     public async Task<IActionResult> GetStats(string id)
     {
         var stats = await _userStatRepository.GetOrCreateByUserId(id);
+        return Ok(stats);
+    }
+
+    // POST v1/applicationuser/stats/recalculate-all - starts a background job that recalculates stats for every user (Admin only)
+    [Authorize(Roles = "Admin")]
+    [HttpPost("stats/recalculate-all")]
+    public IActionResult RecalculateAllStats()
+    {
+        var requesterId = _userManager.GetUserId(User) ?? string.Empty;
+        var (job, started) = _statsRecalculationJobService.StartRecalculateAll(requesterId);
+        if (!started)
+        {
+            return StatusCode(StatusCodes.Status409Conflict, job);
+        }
+
+        return AcceptedAtAction(nameof(GetRecalculateAllStatsStatus), new { jobId = job.Id }, job);
+    }
+
+    // GET v1/applicationuser/stats/recalculate-all/latest - status of the most recently started bulk recalculation job (Admin only)
+    [Authorize(Roles = "Admin")]
+    [HttpGet("stats/recalculate-all/latest")]
+    public IActionResult GetLatestRecalculateAllStatsStatus()
+    {
+        var job = _statsRecalculationJobService.GetLatest();
+        if (job == null) return NotFound();
+        return Ok(job);
+    }
+
+    // GET v1/applicationuser/stats/recalculate-all/{jobId} - status of a specific bulk recalculation job (Admin only)
+    [Authorize(Roles = "Admin")]
+    [HttpGet("stats/recalculate-all/{jobId:guid}")]
+    public IActionResult GetRecalculateAllStatsStatus(Guid jobId)
+    {
+        var job = _statsRecalculationJobService.GetStatus(jobId);
+        if (job == null) return NotFound();
+        return Ok(job);
+    }
+
+    [Authorize]
+    [HttpPost("{id}/stats/recalculate")]
+    public async Task<IActionResult> RecalculateStats(string id)
+    {
+        var user = await _userManager.FindByIdAsync(id);
+        if (user == null) return NotFound();
+
+        var requesterId = _userManager.GetUserId(User);
+        var isAdmin = User.IsInRole("Admin");
+        if (!isAdmin && requesterId != id) return Forbid();
+
+        var existingStats = await _userStatRepository.GetOrCreateByUserId(id);
+        var now = DateTime.UtcNow;
+        if (!isAdmin && existingStats.LastStatsRecalculatedAt.HasValue &&
+            now - existingStats.LastStatsRecalculatedAt.Value < TimeSpan.FromDays(7))
+        {
+            var nextAllowedAt = existingStats.LastStatsRecalculatedAt.Value.AddDays(7);
+            return StatusCode(StatusCodes.Status429TooManyRequests, new
+            {
+                message = "Statistics can only be recalculated once every seven days.",
+                nextAllowedAt
+            });
+        }
+
+        var stats = await _userStatRepository.RecalculateByUserId(id);
+        if (!isAdmin)
+        {
+            stats.LastStatsRecalculatedAt = now;
+            await _userStatRepository.Update(stats);
+        }
+
         return Ok(stats);
     }
 }

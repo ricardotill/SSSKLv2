@@ -13,6 +13,8 @@ export interface AchievementCreateRequest {
   comparisonOperator: string;
   comparisonValue: number;
   image: File;
+  tier: string;
+  parentAchievementId?: string;
 }
 
 @Injectable({
@@ -102,7 +104,10 @@ export class AchievementService {
                     description: ac.description,
                     dateAdded: userEntry ? userEntry.dateAdded : undefined,
                     imageUrl: ac.imageUrl, // Map the image URL from the master list
-                    completed: !!userEntry
+                    completed: !!userEntry,
+                    tier: ac.tier,
+                    parentAchievementId: ac.parentAchievementId,
+                    parentAchievementName: ac.parentAchievementName
                 } as AchievementListing;
             });
         })

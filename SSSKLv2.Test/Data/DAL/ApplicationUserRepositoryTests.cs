@@ -338,106 +338,63 @@ public class ApplicationUserRepositoryTests : RepositoryTest
     
     #endregion
     
-    #region GetAllWithOrders Tests
-    
+    #region GetByIds Tests
+
     [TestMethod]
-    public async Task GetAllWithOrders_WithUsersAndOrders_ReturnsConsumerUsersWithOrdersOrderedByLastOrdered()
+    public async Task GetByIds_WithKnownIds_ReturnsMatchingUsers()
     {
         // Arrange
-        await SetupRolesAndUserRoles();
-        
-        var now = DateTime.Now;
-        
-        // Create users with different LastOrdered dates
-        var user1 = CreateUser("userWithOrders1", "user1@test.com", "User", "One");
-        user1.LastOrdered = now.AddDays(-1);
-        
-        var user2 = CreateUser("userWithOrders2", "user2@test.com", "User", "Two");
-        user2.LastOrdered = now;
-        
-        var userNoOrders = CreateUser("userNoOrders", "user3@test.com", "User", "Three");
-        
-        await SaveUsers(user1, user2, userNoOrders);
-        
-        // Set roles for users
-        await AddUserToRole(user1, "Consumer");
-        await AddUserToRole(user2, "Consumer");
-        await AddUserToRole(userNoOrders, "Consumer");
-        
-        // Create product
-        var product = await CreateProduct("Test Product", 10.0m);
-        
-        // Create orders for users
-        await CreateOrder(user1, product);
-        await CreateOrder(user2, product);
-        
+        var user1 = CreateUser("byids1", "byids1@test.com", "User", "One");
+        var user2 = CreateUser("byids2", "byids2@test.com", "User", "Two");
+        var user3 = CreateUser("byids3", "byids3@test.com", "User", "Three");
+        await SaveUsers(user1, user2, user3);
+
         // Act
-        var result = await _sut.GetAllWithOrders();
-        
+        var result = await _sut.GetByIds(new[] { user1.Id, user3.Id });
+
         // Assert
-        result.Should().Contain(u => u.UserName == "userWithOrders1");
-        result.Should().Contain(u => u.UserName == "userWithOrders2");
-        result.Should().NotContain(u => u.UserName == "userNoOrders"); // No orders
-        
-        // Verify ordering - most recent first
-        var user1Index = -1;
-        var user2Index = -1;
-        
-        for (int i = 0; i < result.Count; i++)
-        {
-            if (result[i].UserName == "userWithOrders1") user1Index = i;
-            if (result[i].UserName == "userWithOrders2") user2Index = i;
-        }
-        
-        // Only verify if both users were found
-        if (user1Index >= 0 && user2Index >= 0)
-        {
-            // user2 has more recent LastOrdered, so should come first
-            user2Index.Should().BeLessThan(user1Index);
-        }
-        
-        // Verify orders are included
-        foreach (var user in result)
-        {
-            user.Orders.Should().NotBeEmpty();
-        }
+        result.Should().HaveCount(2);
+        result.Should().Contain(u => u.UserName == "byids1");
+        result.Should().Contain(u => u.UserName == "byids3");
+        result.Should().NotContain(u => u.UserName == "byids2");
     }
-    
+
     [TestMethod]
-    public async Task GetAllWithOrders_WithNoUsersWithOrders_ReturnsEmptyList()
+    public async Task GetByIds_WithEmptyIdList_ReturnsEmptyList()
     {
-        // Arrange
-        await DeleteAllUsersAndRoles();
-        await SetupRolesAndUserRoles();
-        
-        var userNoOrders = CreateUser("userNoOrders", "user@test.com", "User", "NoOrders");
-        await SaveUsers(userNoOrders);
-        await AddUserToRole(userNoOrders, "Consumer");
-        
         // Act
-        var result = await _sut.GetAllWithOrders();
-        
+        var result = await _sut.GetByIds(Array.Empty<string>());
+
         // Assert
         result.Should().BeEmpty();
     }
-    
+
+    [TestMethod]
+    public async Task GetByIds_WithUnknownIds_ReturnsEmptyList()
+    {
+        // Act
+        var result = await _sut.GetByIds(new[] { Guid.NewGuid().ToString() });
+
+        // Assert
+        result.Should().BeEmpty();
+    }
+
     #endregion
     
-    #region GetFirst12WithOrders Tests
+    #region GetTopActiveUserIds Tests
     
     [TestMethod]
-    public async Task GetFirst12WithOrders_WithMoreThan12Users_ReturnsFirst10Users()
+    public async Task GetTopActiveUserIds_WithMoreUsersThanTake_ReturnsMostRecentlyActiveIds()
     {
         // Arrange
         await SetupRolesAndUserRoles();
         
-        // Create 15 users with orders
         var users = new List<ApplicationUser>();
         var product = await CreateProduct("Test Product", 10.0m);
         
         for (int i = 0; i < 15; i++)
         {
-            string username = $"user{i}";
+            string username = $"activeuser{i}";
             var user = CreateUser(username, $"{username}@test.com", "User", $"{i}");
             user.LastOrdered = DateTime.Now.AddHours(-i); // Different LastOrdered dates
             users.Add(user);
@@ -445,7 +402,6 @@ public class ApplicationUserRepositoryTests : RepositoryTest
         
         await SaveUsers(users.ToArray());
         
-        // Assign roles and create orders
         foreach (var user in users)
         {
             await AddUserToRole(user, "Consumer");
@@ -453,39 +409,36 @@ public class ApplicationUserRepositoryTests : RepositoryTest
         }
         
         // Act
-        var result = await _sut.GetFirst12WithOrders();
+        var result = await _sut.GetTopActiveUserIds(10);
         
         // Assert
-        result.Should().HaveCount(10); // Method actually takes 10, not 12 as the name suggests
+        result.Should().HaveCount(10);
         
-        // Verify most recently ordered users are included
-        var expectedUsers = users.Take(10).ToList();
-        foreach (var expectedUser in expectedUsers)
+        var expectedIds = users.Take(10).Select(u => u.Id).ToList();
+        foreach (var expectedId in expectedIds)
         {
-            result.Should().Contain(u => u.UserName == expectedUser.UserName);
+            result.Should().Contain(expectedId);
         }
         
-        // Verify older orders are excluded
-        var excludedUsers = users.Skip(10).ToList();
-        foreach (var excludedUser in excludedUsers)
+        var excludedIds = users.Skip(10).Select(u => u.Id).ToList();
+        foreach (var excludedId in excludedIds)
         {
-            result.Should().NotContain(u => u.UserName == excludedUser.UserName);
+            result.Should().NotContain(excludedId);
         }
     }
     
     [TestMethod]
-    public async Task GetFirst12WithOrders_WithFewerThan12Users_ReturnsAllUsers()
+    public async Task GetTopActiveUserIds_WithFewerUsersThanTake_ReturnsAllIds()
     {
         // Arrange
         await SetupRolesAndUserRoles();
         
-        // Create 5 users with orders
         var users = new List<ApplicationUser>();
         var product = await CreateProduct("Test Product", 10.0m);
         
         for (int i = 0; i < 5; i++)
         {
-            string username = $"user{i}";
+            string username = $"activeuser{i}";
             var user = CreateUser(username, $"{username}@test.com", "User", $"{i}");
             user.LastOrdered = DateTime.Now.AddHours(-i);
             users.Add(user);
@@ -493,7 +446,6 @@ public class ApplicationUserRepositoryTests : RepositoryTest
         
         await SaveUsers(users.ToArray());
         
-        // Assign roles and create orders
         foreach (var user in users)
         {
             await AddUserToRole(user, "Consumer");
@@ -501,27 +453,25 @@ public class ApplicationUserRepositoryTests : RepositoryTest
         }
         
         // Act
-        var result = await _sut.GetFirst12WithOrders();
+        var result = await _sut.GetTopActiveUserIds(10);
         
         // Assert
         result.Should().HaveCount(5);
-        
-        // Verify all users are included
         foreach (var expectedUser in users)
         {
-            result.Should().Contain(u => u.UserName == expectedUser.UserName);
+            result.Should().Contain(expectedUser.Id);
         }
     }
     
     [TestMethod]
-    public async Task GetFirst12WithOrders_WithNoUsersWithOrders_ReturnsEmptyList()
+    public async Task GetTopActiveUserIds_WithNoUsersWithOrders_ReturnsEmptyList()
     {
         // Arrange
         await DeleteAllUsersAndRoles();
         await SetupRolesAndUserRoles();
         
         // Act
-        var result = await _sut.GetFirst12WithOrders();
+        var result = await _sut.GetTopActiveUserIds(10);
         
         // Assert
         result.Should().BeEmpty();
@@ -545,8 +495,8 @@ public class ApplicationUserRepositoryTests : RepositoryTest
         await Assert.ThrowsAsync<InvalidOperationException>(() => repository.GetByUsername("testuser"));
         await Assert.ThrowsAsync<InvalidOperationException>(() => repository.GetAll());
         await Assert.ThrowsAsync<InvalidOperationException>(() => repository.GetAllForAdmin());
-        await Assert.ThrowsAsync<InvalidOperationException>(() => repository.GetAllWithOrders());
-        await Assert.ThrowsAsync<InvalidOperationException>(() => repository.GetFirst12WithOrders());
+        await Assert.ThrowsAsync<InvalidOperationException>(() => repository.GetByIds(new[] { "testid" }));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => repository.GetTopActiveUserIds(10));
     }
     
     #endregion

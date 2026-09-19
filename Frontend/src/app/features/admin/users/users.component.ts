@@ -1,5 +1,6 @@
-import { Component, ChangeDetectionStrategy, inject, signal, OnInit } from '@angular/core';
-import { finalize } from 'rxjs';
+import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit, OnDestroy } from '@angular/core';
+import { catchError, finalize, interval, of, Subscription, switchMap, takeWhile } from 'rxjs';
+import { HttpErrorResponse } from '@angular/common/http';
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { DatePipe, CurrencyPipe } from '@angular/common';
 import { TableModule } from 'primeng/table';
@@ -9,14 +10,19 @@ import { InputTextModule } from 'primeng/inputtext';
 import { CheckboxModule } from 'primeng/checkbox';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { MessageModule } from 'primeng/message';
+import { ProgressBarModule } from 'primeng/progressbar';
 import { ApplicationUserService } from '../../users/services/application-user.service';
 import { ApplicationUserDto, ApplicationUserUpdateDto } from '../../../core/models/application-user.model';
+import { RecalculationJob } from '../../../core/models/recalculation-job.model';
 import { LanguageService } from '../../../core/services/language.service';
 import { CardModule } from 'primeng/card';
 import { MultiSelect } from 'primeng/multiselect';
 import { AvatarModule } from 'primeng/avatar';
 import { ResolveApiUrlPipe } from '../../../shared/pipes/resolve-api-url.pipe';
 import { RoleService } from '../services/role.service';
+
+const RECALCULATE_ALL_POLL_INTERVAL_MS = 3000;
 
 
 @Component({
@@ -36,14 +42,43 @@ import { RoleService } from '../services/role.service';
     CardModule,
     MultiSelect,
     AvatarModule,
-    ResolveApiUrlPipe
+    ResolveApiUrlPipe,
+    MessageModule,
+    ProgressBarModule
   ],
   template: `
     <div class="flex justify-between items-center mb-4">
       <h1 class="text-2xl font-bold m-0 text-surface-900 dark:text-surface-0">{{ ls.t().users }}</h1>
-      <p-button icon="pi pi-refresh" [rounded]="true" (onClick)="loadUsers()" [ariaLabel]="ls.t().refresh"></p-button>
+      <div class="flex gap-2">
+        <p-button
+          icon="pi pi-exclamation-triangle"
+          [label]="ls.t().recalculate_all_stats"
+          severity="warn"
+          [outlined]="true"
+          (onClick)="confirmRecalculateAllStats()"
+          [loading]="isRecalculateAllRunning()"
+        ></p-button>
+        <p-button icon="pi pi-refresh" [rounded]="true" (onClick)="loadUsers()" [ariaLabel]="ls.t().refresh"></p-button>
+      </div>
     </div>
     <p-confirmDialog></p-confirmDialog>
+
+    @if (recalculateAllJob(); as job) {
+      <p-message
+        [severity]="job.status === 'Failed' ? 'error' : (job.status === 'Completed' ? 'success' : 'warn')"
+        [closable]="job.status === 'Completed' || job.status === 'Failed'"
+        (onClose)="recalculateAllJob.set(null)"
+        styleClass="w-full mb-4"
+      >
+        <div class="flex flex-col gap-2 w-full">
+          <span>{{ recalculateAllStatusMessage() }}</span>
+          @if (job.status === 'Pending' || job.status === 'Running') {
+            <p-progressBar [value]="recalculateAllProgress()" [showValue]="true"></p-progressBar>
+          }
+        </div>
+      </p-message>
+    }
+
     <p-card>
       
       <p-table stripedRows [value]="users()" [loading]="loading()" [paginator]="true" [rows]="10" [totalRecords]="totalRecords()" responsiveLayout="scroll">
@@ -75,6 +110,7 @@ import { RoleService } from '../services/role.service';
             <td>
               <div class="flex gap-2">
                 <p-button icon="pi pi-pencil" [rounded]="true" [text]="true" severity="info" (onClick)="openEditDialog(user)" [ariaLabel]="ls.t().edit"></p-button>
+                <p-button icon="pi pi-refresh" [rounded]="true" [text]="true" severity="secondary" (onClick)="recalculateStats(user.id)" [loading]="recalculatingUserId() === user.id" ariaLabel="Statistieken herberekenen"></p-button>
                 <p-button icon="pi pi-trash" [rounded]="true" [text]="true" severity="danger" (onClick)="confirmDelete(user)" [loading]="deletingUserId() === user.id" [ariaLabel]="ls.t().delete"></p-button>
               </div>
             </td>
@@ -160,7 +196,7 @@ import { RoleService } from '../services/role.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [ConfirmationService]
 })
-export default class UsersComponent implements OnInit {
+export default class UsersComponent implements OnInit, OnDestroy {
   private readonly userService = inject(ApplicationUserService);
   private readonly roleService = inject(RoleService);
   private readonly fb = inject(FormBuilder);
@@ -177,7 +213,43 @@ export default class UsersComponent implements OnInit {
   editingUserProfilePictureUrl = signal<string | null>(null);
   saving = signal<boolean>(false);
   deletingUserId = signal<string | null>(null);
+  recalculatingUserId = signal<string | null>(null);
   availableRoles = signal<{ label: string, value: string }[]>([]);
+
+  recalculateAllJob = signal<RecalculationJob | null>(null);
+  private recalculateAllPollSubscription: Subscription | null = null;
+
+  isRecalculateAllRunning = computed(() => {
+    const job = this.recalculateAllJob();
+    return job?.status === 'Pending' || job?.status === 'Running';
+  });
+
+  recalculateAllProgress = computed(() => {
+    const job = this.recalculateAllJob();
+    if (!job || job.totalUsers === 0) return 0;
+    return Math.round((job.processedUsers / job.totalUsers) * 100);
+  });
+
+  recalculateAllStatusMessage = computed(() => {
+    const job = this.recalculateAllJob();
+    if (!job) return '';
+    switch (job.status) {
+      case 'Completed':
+        return this.ls.translate('recalculate_all_stats_completed', {
+          processed: job.processedUsers,
+          total: job.totalUsers,
+          failed: job.failedUsers
+        });
+      case 'Failed':
+        return this.ls.translate('recalculate_all_stats_failed', { error: job.errorMessage ?? '' });
+      default:
+        return this.ls.translate('recalculate_all_stats_running', {
+          processed: job.processedUsers,
+          total: job.totalUsers,
+          failed: job.failedUsers
+        });
+    }
+  });
 
   editForm = this.fb.nonNullable.group({
     userName: [{ value: '', disabled: true }, Validators.required],
@@ -195,6 +267,11 @@ export default class UsersComponent implements OnInit {
   ngOnInit(): void {
     this.loadUsers();
     this.loadRoles();
+    this.checkForRunningRecalculateAllJob();
+  }
+
+  ngOnDestroy(): void {
+    this.recalculateAllPollSubscription?.unsubscribe();
   }
 
   loadUsers(): void {
@@ -343,6 +420,90 @@ export default class UsersComponent implements OnInit {
         this.messageService.add({ severity: 'error', summary: this.ls.t().error, detail: this.ls.t().delete_failed });
       }
     });
+  }
+
+  recalculateStats(id: string): void {
+    this.recalculatingUserId.set(id);
+    this.userService.recalculateUserStats(id)
+      .pipe(finalize(() => this.recalculatingUserId.set(null)))
+      .subscribe({
+        next: () => this.messageService.add({ severity: 'success', summary: this.ls.t().success, detail: 'Gebruikersstatistieken zijn herberekend.' }),
+        error: () => this.messageService.add({ severity: 'error', summary: this.ls.t().error, detail: 'Gebruikersstatistieken konden niet worden herberekend.' })
+      });
+  }
+
+  confirmRecalculateAllStats(): void {
+    this.confirmationService.confirm({
+      message: this.ls.t().recalculate_all_stats_confirm_message,
+      header: this.ls.t().recalculate_all_stats_confirm_title,
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonStyleClass: 'p-button-warning',
+      accept: () => this.startRecalculateAllStats()
+    });
+  }
+
+  private startRecalculateAllStats(): void {
+    this.userService.startRecalculateAllStats()
+      .pipe(
+        catchError((err: HttpErrorResponse) => {
+          if (err.status === 409 && err.error) {
+            // A job is already running server-side; resume polling for it instead of failing.
+            return of(err.error as RecalculationJob);
+          }
+          throw err;
+        })
+      )
+      .subscribe({
+        next: (job) => {
+          const alreadyRunning = job.status === 'Running' || job.status === 'Pending';
+          this.recalculateAllJob.set(job);
+          this.messageService.add({
+            severity: alreadyRunning ? 'info' : 'success',
+            summary: this.ls.t().success,
+            detail: alreadyRunning
+              ? this.ls.t().recalculate_all_stats_already_running
+              : this.ls.t().recalculate_all_stats_started
+          });
+          this.pollRecalculateAllStatus(job.id);
+        },
+        error: () => {
+          this.messageService.add({ severity: 'error', summary: this.ls.t().error, detail: this.ls.t().recalculate_all_stats_start_failed });
+        }
+      });
+  }
+
+  private checkForRunningRecalculateAllJob(): void {
+    this.userService.getLatestRecalculateAllStatsStatus().subscribe({
+      next: (job) => {
+        this.recalculateAllJob.set(job);
+        if (job.status === 'Pending' || job.status === 'Running') {
+          this.pollRecalculateAllStatus(job.id);
+        }
+      },
+      error: () => {
+        // No job has ever run yet - nothing to resume.
+      }
+    });
+  }
+
+  private pollRecalculateAllStatus(jobId: string): void {
+    this.recalculateAllPollSubscription?.unsubscribe();
+    this.recalculateAllPollSubscription = interval(RECALCULATE_ALL_POLL_INTERVAL_MS)
+      .pipe(
+        switchMap(() => this.userService.getRecalculateAllStatsStatus(jobId)),
+        takeWhile((job) => job.status === 'Pending' || job.status === 'Running', true)
+      )
+      .subscribe({
+        next: (job) => {
+          this.recalculateAllJob.set(job);
+          if (job.status === 'Completed') {
+            this.loadUsers();
+          }
+        },
+        error: () => {
+          this.messageService.add({ severity: 'error', summary: this.ls.t().error, detail: this.ls.t().load_failed });
+        }
+      });
   }
 }
 

@@ -124,6 +124,18 @@ import { ProgressBarModule } from 'primeng/progressbar';
                   </div>
                 </div>
               </div>
+              @if (isAdmin()) {
+                <p-button
+                  label="Statistieken herberekenen"
+                  icon="pi pi-refresh"
+                  size="small"
+                  severity="secondary"
+                  [loading]="recalculatingStats()"
+                  (onClick)="recalculateStats()"
+                  class="w-full"
+                  styleClass="w-full"
+                ></p-button>
+              }
             }
             
             @if (isCurrentUser()) {
@@ -133,6 +145,15 @@ import { ProgressBarModule } from 'primeng/progressbar';
                   size="small"
                   severity="secondary"
                   (onClick)="goToSettings()"
+                  class="w-full"
+                  styleClass="w-full"
+                ></p-button>
+                <p-button
+                  label="Mijn statistieken"
+                  icon="pi pi-chart-bar"
+                  size="small"
+                  severity="info"
+                  (onClick)="goToStats()"
                   class="w-full"
                   styleClass="w-full"
                 ></p-button>
@@ -319,6 +340,7 @@ export class UserProfileDrawerComponent {
   quotes = signal<QuoteDto[]>([]);
   hasQuoteAccess = signal(true);
   loading = signal(false);
+  recalculatingStats = signal(false);
   editMode = signal(false);
   saving = signal(false);
   editDescription = '';
@@ -370,6 +392,28 @@ export class UserProfileDrawerComponent {
     const current = this.authService.currentUser();
     const u = this.user();
     return !!(current && u && current.userName === u.userName);
+  }
+
+  isAdmin(): boolean {
+    return this.authService.currentUser()?.roles?.includes('Admin') ?? false;
+  }
+
+  recalculateStats() {
+    const id = this.user()?.id;
+    if (!id || !this.isAdmin()) return;
+
+    this.recalculatingStats.set(true);
+    this.appUserService.recalculateUserStats(id).subscribe({
+      next: (stats) => {
+        this.stats.set(stats);
+        this.recalculatingStats.set(false);
+        this.messageService.add({ severity: 'success', summary: 'Statistieken bijgewerkt', detail: 'Gebruikersstatistieken zijn herberekend.' });
+      },
+      error: () => {
+        this.recalculatingStats.set(false);
+        this.messageService.add({ severity: 'error', summary: 'Fout', detail: 'Gebruikersstatistieken konden niet worden herberekend.' });
+      }
+    });
   }
 
   onVisibleChange(visible: boolean) {
@@ -457,6 +501,11 @@ export class UserProfileDrawerComponent {
   goToSettings() {
     this.drawerService.close();
     this.router.navigate(['/settings']);
+  }
+
+  goToStats() {
+    this.drawerService.close();
+    this.router.navigate(['/stats']);
   }
 
   navigateToAchievements() {

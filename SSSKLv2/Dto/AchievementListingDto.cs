@@ -7,5 +7,7 @@ public record AchievementListingDto(
     DateTime? DateAdded,
     string? ImageUrl,
     bool Completed,
-    string Tier
+    string Tier,
+    Guid? ParentAchievementId,
+    string? ParentAchievementName
 );

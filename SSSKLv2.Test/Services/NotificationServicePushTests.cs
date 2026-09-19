@@ -179,6 +179,9 @@ public class NotificationServiceTests : RepositoryTest
         // Act
         await _sut.MarkAllAsReadAsync(TestUser.Id);
 
+        // ExecuteUpdateAsync bypasses the change tracker, so drop stale tracked entities before re-querying
+        _dbContext.ChangeTracker.Clear();
+
         // Assert
         var userNotifs = await _dbContext.Notification.Where(n => n.UserId == TestUser.Id).ToListAsync();
         userNotifs.Should().AllSatisfy(n => n.IsRead.Should().BeTrue());

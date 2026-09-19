@@ -8,6 +8,7 @@ public interface IApplicationUserService
     public Task<int> GetCount();
     public Task<int> GetCountAdmin();
     public Task<ApplicationUser> GetUserById(string id);
+    public Task<IList<ApplicationUser>> GetUsersByIds(IEnumerable<string> ids);
     public Task<ApplicationUser> GetUserByUsername(string username);
     public Task<IList<ApplicationUser>> GetAllUsers();
     // Paged overload - return only the requested users (Skip/Take)

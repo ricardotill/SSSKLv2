@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { ApplicationUserDetailedDto, ApplicationUserDto, ApplicationUserUpdateDto, PaginatedUsers } from '../../../core/models/application-user.model';
 import { UserStat } from '../../../core/models/user-stat.model';
+import { RecalculationJob } from '../../../core/models/recalculation-job.model';
 
 @Injectable({
   providedIn: 'root'
@@ -45,5 +46,25 @@ export class ApplicationUserService {
 
   getUserStats(id: string): Observable<UserStat> {
     return this.http.get<UserStat>(`${this.baseUrl}/${id}/stats`);
+  }
+
+  recalculateUserStats(id: string): Observable<UserStat> {
+    return this.http.post<UserStat>(`${this.baseUrl}/${id}/stats/recalculate`, {});
+  }
+
+  /**
+   * Starts an async, admin-only job that recalculates stats for every user.
+   * Resolves with the job status even if a job was already running (HTTP 409).
+   */
+  startRecalculateAllStats(): Observable<RecalculationJob> {
+    return this.http.post<RecalculationJob>(`${this.baseUrl}/stats/recalculate-all`, {});
+  }
+
+  getRecalculateAllStatsStatus(jobId: string): Observable<RecalculationJob> {
+    return this.http.get<RecalculationJob>(`${this.baseUrl}/stats/recalculate-all/${jobId}`);
+  }
+
+  getLatestRecalculateAllStatsStatus(): Observable<RecalculationJob> {
+    return this.http.get<RecalculationJob>(`${this.baseUrl}/stats/recalculate-all/latest`);
   }
 }

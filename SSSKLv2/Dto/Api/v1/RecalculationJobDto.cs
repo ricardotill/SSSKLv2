@@ -1,5 +1,8 @@
+using System.Text.Json.Serialization;
+
 namespace SSSKLv2.Dto.Api.v1;
 
+[JsonConverter(typeof(JsonStringEnumConverter<RecalculationJobStatus>))]
 public enum RecalculationJobStatus
 {
     Pending,

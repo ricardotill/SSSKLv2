@@ -87,9 +87,9 @@ import { ResolveApiUrlPipe } from '../../shared/pipes/resolve-api-url.pipe';
             <div class="stat-list">
               <div><span>Kortste tijd tussen bestellingen</span><strong>{{ minutes(s.minMinutesBetweenOrders) }}</strong></div>
               <div><span>Kortste tijd tussen opwaarderingen</span><strong>{{ minutes(s.minMinutesBetweenTopUp) }}</strong></div>
-              <div><span>Laatste activiteit</span><strong>{{ s.lastActivityDate | date:'medium' }}</strong></div>
-              <div><span>Laatste bestelling</span><strong>{{ s.lastOrderDate | date:'medium' }}</strong></div>
-              <div><span>Laatste opwaardering</span><strong>{{ s.lastTopUpDate | date:'medium' }}</strong></div>
+              <div><span>Laatste activiteit</span><strong>{{ isDateUnset(s.lastActivityDate) ? 'Gebeurtenis heeft nog niet plaatsgevonden' : (s.lastActivityDate | date:'medium') }}</strong></div>
+              <div><span>Laatste bestelling</span><strong>{{ isDateUnset(s.lastOrderDate) ? 'Gebeurtenis heeft nog niet plaatsgevonden' : (s.lastOrderDate | date:'medium') }}</strong></div>
+              <div><span>Laatste opwaardering</span><strong>{{ isDateUnset(s.lastTopUpDate) ? 'Gebeurtenis heeft nog niet plaatsgevonden' : (s.lastTopUpDate | date:'medium') }}</strong></div>
             </div>
           </div>
 
@@ -215,5 +215,9 @@ export class StatsComponent {
 
   minutes(value: number): string {
     return value === 2147483647 ? 'Geen gegevens' : `${value} min.`;
+  }
+
+  isDateUnset(value?: string): boolean {
+    return !value || value.startsWith('0001-01-01') || new Date(value).getUTCFullYear() === 1;
   }
 }

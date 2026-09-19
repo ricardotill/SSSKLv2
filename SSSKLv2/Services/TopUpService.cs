@@ -9,6 +9,7 @@ public class TopUpService(
     ITopUpRepository topUpRepository,
     IAchievementService achievementService,
     IDomainEventDispatcher eventDispatcher,
+    IUserStatRepository userStatRepository,
     ILogger<TopUpService> logger) : ITopUpService
 {
     public Task<int> GetCount() => topUpRepository.GetCount();
@@ -66,6 +67,8 @@ public class TopUpService(
     public async Task DeleteTopUp(Guid id)
     {
         logger.LogInformation($"{GetType()}: Delete TopUp with ID {id}");
+        var topUp = await topUpRepository.GetById(id);
         await topUpRepository.Delete(id);
+        await userStatRepository.RecalculateByUserId(topUp.User.Id);
     }
 }

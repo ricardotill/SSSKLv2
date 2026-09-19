@@ -17,6 +17,7 @@ public class OrderService(
     IApplicationUserService applicationUserService,
     INotificationService notificationService,
     IDomainEventDispatcher eventDispatcher,
+    IUserStatRepository userStatRepository,
     ILogger<OrderService> logger) : IOrderService
 {
     public Task<int> GetCount() => orderRepository.GetCount();
@@ -150,7 +151,9 @@ public class OrderService(
     public async Task DeleteOrder(Guid id)
     {
         logger.LogInformation("{Type}: Delete Order with ID {Id}", nameof(OrderService), id);
+        var order = await orderRepository.GetById(id);
         await orderRepository.Delete(id);
+        await userStatRepository.RecalculateByUserId(order.User.Id);
     }
 
     private IList<Order> GenerateUserOrders(IList<ApplicationUser> userList, Product p, int amount, bool goingDutch)

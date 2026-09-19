@@ -483,26 +483,23 @@ public class ApplicationUserController : ControllerBase
         var isAdmin = User.IsInRole("Admin");
         if (!isAdmin && requesterId != id) return Forbid();
 
-        var existingStats = await _userStatRepository.GetOrCreateByUserId(id);
         var now = DateTime.UtcNow;
-        if (!isAdmin && existingStats.LastStatsRecalculatedAt.HasValue &&
-            now - existingStats.LastStatsRecalculatedAt.Value < TimeSpan.FromDays(7))
+        if (!isAdmin)
         {
-            var nextAllowedAt = existingStats.LastStatsRecalculatedAt.Value.AddDays(7);
-            return StatusCode(StatusCodes.Status429TooManyRequests, new
+            var claimed = await _userStatRepository.TryMarkRecalculatedAtIfEligible(id, now, TimeSpan.FromDays(7));
+            if (!claimed)
             {
-                message = "Statistics can only be recalculated once every seven days.",
-                nextAllowedAt
-            });
+                var existingStats = await _userStatRepository.GetOrCreateByUserId(id);
+                var nextAllowedAt = existingStats.LastStatsRecalculatedAt?.AddDays(7);
+                return StatusCode(StatusCodes.Status429TooManyRequests, new
+                {
+                    message = "Statistics can only be recalculated once every seven days.",
+                    nextAllowedAt
+                });
+            }
         }
 
         var stats = await _userStatRepository.RecalculateByUserId(id);
-        if (!isAdmin)
-        {
-            stats.LastStatsRecalculatedAt = now;
-            await _userStatRepository.Update(stats);
-        }
-
         return Ok(MapToDto(stats));
     }
 }

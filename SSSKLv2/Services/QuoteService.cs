@@ -15,7 +15,8 @@ public class QuoteService(
     IApplicationUserService applicationUserService,
     ApplicationDbContext dbContext,
     INotificationService notificationService,
-    IDomainEventDispatcher eventDispatcher) : IQuoteService
+    IDomainEventDispatcher eventDispatcher,
+    IUserStatRepository userStatRepository) : IQuoteService
 {
     private const string GlobalSettingKey = "QuotesFeatureAllowedRoles";
 
@@ -117,6 +118,21 @@ public class QuoteService(
         {
             dbContext.QuoteVote.Remove(existingVote);
             await dbContext.SaveChangesAsync();
+
+            var affectedUserIds = await dbContext.QuoteAuthor
+                .Where(author => author.QuoteId == quoteId && author.ApplicationUserId != null)
+                .Select(author => author.ApplicationUserId!)
+                .Distinct()
+                .ToListAsync();
+            if (!affectedUserIds.Contains(userId))
+            {
+                affectedUserIds.Add(userId);
+            }
+
+            foreach (var affectedUserId in affectedUserIds)
+            {
+                await userStatRepository.RecalculateByUserId(affectedUserId);
+            }
             return false;
         }
 
@@ -259,7 +275,21 @@ public class QuoteService(
 
         await EnsureUserCanModify(quote, userId);
 
+        var affectedUserIds = await dbContext.QuoteAuthor
+            .Where(author => author.QuoteId == id && author.ApplicationUserId != null)
+            .Select(author => author.ApplicationUserId!)
+            .Distinct()
+            .ToListAsync();
+        if (!affectedUserIds.Contains(quote.CreatedById))
+        {
+            affectedUserIds.Add(quote.CreatedById);
+        }
+
         await quoteRepository.Delete(id);
+        foreach (var affectedUserId in affectedUserIds)
+        {
+            await userStatRepository.RecalculateByUserId(affectedUserId);
+        }
         return true;
     }
 

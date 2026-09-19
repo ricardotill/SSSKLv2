@@ -4,6 +4,8 @@ using SSSKLv2.Data;
 using SSSKLv2.Data.DAL.Interfaces;
 using SSSKLv2.Services.Interfaces;
 using SSSKLv2.Util;
+using System.Collections.Concurrent;
+using System.Threading;
 
 
 namespace SSSKLv2.Services;
@@ -18,6 +20,8 @@ public class AchievementService(
     INotificationService notificationService,
     IUserStatRepository userStatRepository) : IAchievementService
 {
+    private static readonly ConcurrentDictionary<string, SemaphoreSlim> AwardLocks = new();
+
     public Task<int> GetCount() => achievementRepository.GetCount();
 
     public async Task<IList<AchievementListingDto>> GetPersonalAchievements(string userId)
@@ -210,38 +214,48 @@ public class AchievementService(
 
     public async Task<bool> AwardAchievementToUser(string userId, Guid achievementId)
     {
-        var entries = await achievementRepository.GetAllEntriesOfUser(userId);
-        var user = await applicationUserRepository.GetById(userId);
-        if (user == null)
+        var lockKey = $"{userId}:{achievementId}";
+        var awardLock = AwardLocks.GetOrAdd(lockKey, _ => new SemaphoreSlim(1, 1));
+        await awardLock.WaitAsync();
+        try
         {
-            user = new ApplicationUser { Id = userId, UserName = userId };
+            var entries = await achievementRepository.GetAllEntriesOfUser(userId);
+            var user = await applicationUserRepository.GetById(userId);
+            if (user == null)
+            {
+                user = new ApplicationUser { Id = userId, UserName = userId };
+            }
+
+            if (entries.Any(e => e.Achievement.Id == achievementId))
+                return false; // Already awarded
+
+            var achievement = (await achievementRepository.GetAll()).FirstOrDefault(a => a.Id == achievementId);
+            if (achievement == null)
+                return false;
+
+            // Tiered Sequence: If this has a parent, ensure parent is awarded
+            if (achievement.ParentAchievementId.HasValue && !entries.Any(e => e.Achievement.Id == achievement.ParentAchievementId.Value))
+            {
+                await AwardAchievementToUser(userId, achievement.ParentAchievementId.Value);
+            }
+
+            var achievementEntry = new AchievementEntry
+            {
+                Id = Guid.NewGuid(),
+                Achievement = achievement,
+                User = user,
+                Tier = achievement.Tier,
+                HasSeen = false,
+                CreatedOn = DateTime.Now
+            };
+            await achievementRepository.CreateEntryRange(new List<AchievementEntry> { achievementEntry });
+            await NotifyAchievement(new List<AchievementEntry> { achievementEntry });
+            return true;
         }
-
-        if (entries.Any(e => e.Achievement.Id == achievementId))
-            return false; // Already awarded
-
-        var achievement = (await achievementRepository.GetAll()).FirstOrDefault(a => a.Id == achievementId);
-        if (achievement == null)
-            return false;
-
-        // Tiered Sequence: If this has a parent, ensure parent is awarded
-        if (achievement.ParentAchievementId.HasValue && !entries.Any(e => e.Achievement.Id == achievement.ParentAchievementId.Value))
+        finally
         {
-            await AwardAchievementToUser(userId, achievement.ParentAchievementId.Value);
+            awardLock.Release();
         }
-
-        var achievementEntry = new AchievementEntry
-        {
-            Id = Guid.NewGuid(),
-            Achievement = achievement,
-            User = user,
-            Tier = achievement.Tier,
-            HasSeen = false,
-            CreatedOn = DateTime.Now
-        };
-        await achievementRepository.CreateEntryRange(new List<AchievementEntry> { achievementEntry });
-        await NotifyAchievement(new List<AchievementEntry> { achievementEntry });
-        return true;
     }
 
     public async Task<int> AwardAchievementToAllUsers(Guid achievementId)

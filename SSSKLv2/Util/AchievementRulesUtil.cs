@@ -25,7 +25,7 @@ public class AchievementRulesUtil
 
     public static bool CheckStatAchievement(Achievement achievement, UserStat stats)
     {
-        int actualValue = achievement.Action switch
+        int? actualValue = achievement.Action switch
         {
             Achievement.ActionOption.UserOrderAmountBought => stats.TotalItemsBought,
             Achievement.ActionOption.UserOrderAmountPaid => (int)stats.TotalSpent,
@@ -41,9 +41,10 @@ public class AchievementRulesUtil
             Achievement.ActionOption.YearsOfMembership => stats.MembershipStartDate.HasValue 
                 ? (DateTime.UtcNow - stats.MembershipStartDate.Value).Days / 365 
                 : 0,
-            _ => 0
+            _ => null
         };
 
-        return CheckComparison(actualValue, achievement.ComparisonOperator, achievement.ComparisonValue);
+        return actualValue.HasValue &&
+               CheckComparison(actualValue.Value, achievement.ComparisonOperator, achievement.ComparisonValue);
     }
 }

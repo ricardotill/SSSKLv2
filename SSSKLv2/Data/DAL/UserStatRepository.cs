@@ -90,6 +90,21 @@ public class UserStatRepository(ApplicationDbContext context, IProductUserStatRe
         return stats;
     }
 
+    public async Task<bool> TryMarkRecalculatedAtIfEligible(string userId, DateTime claimedAtUtc, TimeSpan minInterval)
+    {
+        await GetOrCreateByUserId(userId);
+
+        var threshold = claimedAtUtc - minInterval;
+        var rowsUpdated = await context.UserStats
+            .Where(stats =>
+                stats.UserId == userId &&
+                (!stats.LastStatsRecalculatedAt.HasValue || stats.LastStatsRecalculatedAt.Value <= threshold))
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(stats => stats.LastStatsRecalculatedAt, claimedAtUtc));
+
+        return rowsUpdated > 0;
+    }
+
     private static int GetMinimumIntervalMinutes(IReadOnlyList<DateTime> dates)
     {
         if (dates.Count < 2) return int.MaxValue;

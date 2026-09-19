@@ -19,6 +19,7 @@ public class TopUpServiceTests
     private ITopUpRepository _mockRepository = null!;
     private IAchievementService _achievementService = null!;
     private IDomainEventDispatcher _mockEventDispatcher = null!;
+    private IUserStatRepository _mockUserStatRepository = null!;
     private ILogger<TopUpService> _mockLogger = null!;
     private TopUpService _sut = null!;
 
@@ -28,8 +29,9 @@ public class TopUpServiceTests
         _mockRepository = Substitute.For<ITopUpRepository>();
         _achievementService = Substitute.For<IAchievementService>();
         _mockEventDispatcher = Substitute.For<IDomainEventDispatcher>();
+        _mockUserStatRepository = Substitute.For<IUserStatRepository>();
         _mockLogger = Substitute.For<ILogger<TopUpService>>();
-        _sut = new TopUpService(_mockRepository, _achievementService, _mockEventDispatcher, _mockLogger);
+        _sut = new TopUpService(_mockRepository, _achievementService, _mockEventDispatcher, _mockUserStatRepository, _mockLogger);
     }
 
     #region GetAllQueryable Tests
@@ -363,12 +365,16 @@ public class TopUpServiceTests
     {
         // Arrange
         var id = Guid.NewGuid();
+        var topUp = CreateTopUp(id, "testUser", 100m);
+        _mockRepository.GetById(id).Returns(topUp);
+        _mockUserStatRepository.RecalculateByUserId(topUp.User.Id).Returns(new UserStat { UserId = topUp.User.Id });
 
         // Act
         await _sut.DeleteTopUp(id);
 
         // Assert
         await _mockRepository.Received(1).Delete(id);
+        await _mockUserStatRepository.Received(1).RecalculateByUserId(topUp.User.Id);
     }
 
     [TestMethod]
@@ -376,6 +382,7 @@ public class TopUpServiceTests
     {
         // Arrange
         var emptyGuid = Guid.Empty;
+        _mockRepository.GetById(emptyGuid).Returns(CreateTopUp(emptyGuid, "testUser", 10m));
         _mockRepository.Delete(emptyGuid).Throws(new ArgumentException("Invalid TopUp ID"));
 
         // Act
@@ -391,6 +398,7 @@ public class TopUpServiceTests
     {
         // Arrange
         var id = Guid.NewGuid();
+        _mockRepository.GetById(id).Returns(CreateTopUp(id, "testUser", 10m));
         _mockRepository.Delete(id).Throws(new NotFoundException("TopUp not found"));
 
         // Act
@@ -406,6 +414,7 @@ public class TopUpServiceTests
     {
         // Arrange
         var id = Guid.NewGuid();
+        _mockRepository.GetById(id).Returns(CreateTopUp(id, "testUser", 10m));
         var expectedException = new InvalidOperationException("Database error");
         _mockRepository.Delete(id).Throws(expectedException);
 
@@ -426,7 +435,7 @@ public class TopUpServiceTests
         return new TopUp
         {
             Id = id,
-            User = new ApplicationUser { UserName = username },
+            User = new ApplicationUser { Id = $"{username}-id", UserName = username },
             Saldo = saldo,
             CreatedOn = DateTime.UtcNow
         };

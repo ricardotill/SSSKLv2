@@ -29,6 +29,7 @@ public class OrderServiceTests
     private IApplicationUserService _applicationUserService = null!;
     private INotificationService _notificationService = null!;
     private IDomainEventDispatcher _mockEventDispatcher = null!;
+    private IUserStatRepository _mockUserStatRepository = null!;
     private ILogger<OrderService> _mockLogger = null!;
     private OrderService _sut = null!;
 
@@ -42,6 +43,7 @@ public class OrderServiceTests
         _applicationUserService = Substitute.For<IApplicationUserService>();
         _notificationService = Substitute.For<INotificationService>();
         _mockEventDispatcher = Substitute.For<IDomainEventDispatcher>();
+        _mockUserStatRepository = Substitute.For<IUserStatRepository>();
         _mockLogger = Substitute.For<ILogger<OrderService>>();
         _sut = new OrderService(_mockOrderRepository,
             _achievementService,
@@ -50,6 +52,7 @@ public class OrderServiceTests
             _applicationUserService,
             _notificationService,
             _mockEventDispatcher,
+            _mockUserStatRepository,
             _mockLogger);
     }
 
@@ -344,12 +347,16 @@ public class OrderServiceTests
     {
         // Arrange
         var orderId = Guid.NewGuid();
+        var order = CreateOrder(orderId, "user1", "Product 1", 1, 10m);
+        _mockOrderRepository.GetById(orderId).Returns(order);
+        _mockUserStatRepository.RecalculateByUserId(order.User.Id).Returns(new UserStat { UserId = order.User.Id });
 
         // Act
         await _sut.DeleteOrder(orderId);
 
         // Assert
         await _mockOrderRepository.Received(1).Delete(orderId);
+        await _mockUserStatRepository.Received(1).RecalculateByUserId(order.User.Id);
     }
 
     [TestMethod]
@@ -357,6 +364,7 @@ public class OrderServiceTests
     {
         // Arrange
         var orderId = Guid.NewGuid();
+        _mockOrderRepository.GetById(orderId).Returns(CreateOrder(orderId, "user1", "Product 1", 1, 10m));
         _mockOrderRepository.Delete(orderId).Returns(Task.FromException(
             new NotFoundException("Order not found")));
 
@@ -374,6 +382,7 @@ public class OrderServiceTests
     {
         // Arrange
         var emptyGuid = Guid.Empty;
+        _mockOrderRepository.GetById(emptyGuid).Returns(CreateOrder(emptyGuid, "user1", "Product 1", 1, 10m));
         _mockOrderRepository.Delete(emptyGuid).Returns(Task.FromException(
             new ArgumentException("Invalid order ID")));
 
@@ -721,7 +730,7 @@ public class OrderServiceTests
         return new Order
         {
             Id = id,
-            User = new ApplicationUser { UserName = username },
+            User = new ApplicationUser { Id = $"{username}-id", UserName = username },
             ProductNaam = productName,
             Amount = amount,
             Paid = paid,

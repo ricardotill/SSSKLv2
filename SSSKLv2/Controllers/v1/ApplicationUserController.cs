@@ -426,6 +426,13 @@ public class ApplicationUserController : ControllerBase
     [HttpGet("{id}/stats")]
     public async Task<IActionResult> GetStats(string id)
     {
+        var user = await _userManager.FindByIdAsync(id);
+        if (user == null) return NotFound();
+
+        var requesterId = _userManager.GetUserId(User);
+        var isAdmin = User.IsInRole("Admin");
+        if (!isAdmin && requesterId != id) return Forbid();
+
         var stats = await _userStatRepository.GetOrCreateByUserId(id);
         return Ok(MapToDto(stats));
     }

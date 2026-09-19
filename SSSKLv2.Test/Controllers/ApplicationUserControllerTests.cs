@@ -549,6 +549,83 @@ public class ApplicationUserControllerTests
     }
 
     [TestMethod]
+    public async Task GetStats_AsOwner_ReturnsOk()
+    {
+        var id = "user1";
+        var userStore = Substitute.For<IUserStore<ApplicationUser>>();
+        var userManager = Substitute.For<UserManager<ApplicationUser>>(
+            userStore,
+            null,
+            new PasswordHasher<ApplicationUser>(),
+            Array.Empty<IUserValidator<ApplicationUser>>(),
+            Array.Empty<IPasswordValidator<ApplicationUser>>(),
+            new UpperInvariantLookupNormalizer(),
+            new IdentityErrorDescriber(),
+            null,
+            Substitute.For<ILogger<UserManager<ApplicationUser>>>());
+        userManager.FindByIdAsync(id).Returns(new ApplicationUser { Id = id, UserName = "owneruser" });
+        userManager.GetUserId(Arg.Any<ClaimsPrincipal>()).Returns(id);
+
+        var stats = new UserStat { Id = Guid.NewGuid(), UserId = id, TotalOrders = 2, TotalSpent = 3.5m };
+        _mockUserStatRepository.GetOrCreateByUserId(id).Returns(stats);
+
+        var controller = new ApplicationUserController(_mockService, Substitute.For<ILogger<ApplicationUserController>>(), userManager, _mockUserStatRepository, _mockStatsRecalculationJobService)
+        {
+            ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext
+                {
+                    User = new ClaimsPrincipal(new ClaimsIdentity(new[]
+                    {
+                        new Claim(ClaimTypes.NameIdentifier, id)
+                    }, "TestAuth"))
+                }
+            }
+        };
+
+        var result = await controller.GetStats(id);
+
+        result.Should().BeOfType<OkObjectResult>();
+    }
+
+    [TestMethod]
+    public async Task GetStats_WhenNotOwnerAndNotAdmin_ReturnsForbid()
+    {
+        var id = "user1";
+        var userStore = Substitute.For<IUserStore<ApplicationUser>>();
+        var userManager = Substitute.For<UserManager<ApplicationUser>>(
+            userStore,
+            null,
+            new PasswordHasher<ApplicationUser>(),
+            Array.Empty<IUserValidator<ApplicationUser>>(),
+            Array.Empty<IPasswordValidator<ApplicationUser>>(),
+            new UpperInvariantLookupNormalizer(),
+            new IdentityErrorDescriber(),
+            null,
+            Substitute.For<ILogger<UserManager<ApplicationUser>>>());
+        userManager.FindByIdAsync(id).Returns(new ApplicationUser { Id = id, UserName = "owneruser" });
+
+        var controller = new ApplicationUserController(_mockService, Substitute.For<ILogger<ApplicationUserController>>(), userManager, _mockUserStatRepository, _mockStatsRecalculationJobService)
+        {
+            ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext
+                {
+                    User = new ClaimsPrincipal(new ClaimsIdentity(new[]
+                    {
+                        new Claim(ClaimTypes.NameIdentifier, "other-user")
+                    }, "TestAuth"))
+                }
+            }
+        };
+
+        var result = await controller.GetStats(id);
+
+        result.Should().BeOfType<ForbidResult>();
+        await _mockUserStatRepository.DidNotReceive().GetOrCreateByUserId(Arg.Any<string>());
+    }
+
+    [TestMethod]
     public async Task Delete_WhenSuccessful_ReturnsNoContent()
     {
         var id = "user1";

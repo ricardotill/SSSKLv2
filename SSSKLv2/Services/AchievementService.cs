@@ -213,7 +213,15 @@ public class AchievementService(
     }
 
     public async Task<bool> AwardAchievementToUser(string userId, Guid achievementId)
+        => await AwardAchievementToUserInternal(userId, achievementId, new HashSet<Guid>());
+
+    private async Task<bool> AwardAchievementToUserInternal(string userId, Guid achievementId, ISet<Guid> visitedAchievementIds)
     {
+        if (!visitedAchievementIds.Add(achievementId))
+        {
+            return false;
+        }
+
         var lockKey = $"{userId}:{achievementId}";
         var awardLock = AwardLocks.GetOrAdd(lockKey, _ => new SemaphoreSlim(1, 1));
         await awardLock.WaitAsync();
@@ -236,7 +244,12 @@ public class AchievementService(
             // Tiered Sequence: If this has a parent, ensure parent is awarded
             if (achievement.ParentAchievementId.HasValue && !entries.Any(e => e.Achievement.Id == achievement.ParentAchievementId.Value))
             {
-                await AwardAchievementToUser(userId, achievement.ParentAchievementId.Value);
+                if (visitedAchievementIds.Contains(achievement.ParentAchievementId.Value))
+                {
+                    return false;
+                }
+
+                await AwardAchievementToUserInternal(userId, achievement.ParentAchievementId.Value, visitedAchievementIds);
             }
 
             var achievementEntry = new AchievementEntry
@@ -255,6 +268,7 @@ public class AchievementService(
         finally
         {
             awardLock.Release();
+            visitedAchievementIds.Remove(achievementId);
         }
     }
 

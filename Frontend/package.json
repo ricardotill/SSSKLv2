@@ -21,7 +21,7 @@
     "@angular/core": "^21.2.0",
     "@angular/forms": "^21.2.23",
     "@angular/platform-browser": "^21.2.0",
-    "@angular/router": "^21.2.23",
+    "@angular/router": "^21.2.24",
     "@angular/service-worker": "^21.2.23",
     "@googlemaps/js-api-loader": "^2.1.1",
     "@microsoft/signalr": "^10.0.11",

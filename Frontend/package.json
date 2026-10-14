@@ -38,7 +38,7 @@
   },
   "devDependencies": {
     "@angular/build": "^21.2.24",
-    "@angular/cli": "^21.2.24",
+    "@angular/cli": "^21.2.26",
     "@angular/compiler-cli": "^21.2.23",
     "@azure/static-web-apps-cli": "^2.0.10",
     "@tailwindcss/postcss": "^4.3.3",

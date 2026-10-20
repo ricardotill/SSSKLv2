@@ -28,7 +28,8 @@
             ],
             "styles": ["src/styles.css"],
             "define": {
-              "CUSTOM_API_URL": "''"
+              "CUSTOM_API_URL": "''",
+              "PRIMEUI_LICENSE_KEY": "''"
             },
             "allowedCommonJsDependencies": [
               "qrcode",
@@ -87,7 +88,7 @@
         "test": {
           "builder": "@angular/build:unit-test",
           "options": {
-            "runnerConfig": "vitest.config.ts"
+            "runnerConfig": "vitest.config.mts"
           }
         }
       }

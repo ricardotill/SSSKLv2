@@ -43,7 +43,7 @@ import { AuthService } from '../../core/auth/auth.service';
           [(ngModel)]="selectedProduct"
           optionLabel="name"
           placeholder="Selecteer een product"
-          styleClass="w-full md:w-80"
+          class="w-full md:w-80"
           (onChange)="onProductChange()"
         ></p-select>
       </div>
@@ -54,15 +54,15 @@ import { AuthService } from '../../core/auth/auth.service';
         @if (leaderboard12h().length === 0 && !loading()) {
             <p class="text-surface-600 dark:text-surface-400 italic mb-4">{{ ls.t().no_purchases_period }}</p>
         } @else {
-            <p-table stripedRows [value]="leaderboard12h()" [loading]="loading()" responsiveLayout="scroll" styleClass="p-datatable-sm">
-                <ng-template pTemplate="header">
+            <p-table stripedRows [value]="leaderboard12h()" [loading]="loading()" class="p-datatable-sm">
+                <ng-template #header>
                     <tr>
                         <th class="w-14 text-center px-2">{{ ls.t().rank }}</th>
                         <th class="text-left">{{ ls.t().name }}</th>
                         <th class="w-20 text-right px-4">{{ ls.t().amount }}</th>
                     </tr>
                 </ng-template>
-                <ng-template pTemplate="body" let-entry>
+                <ng-template #body let-entry>
                     <tr>
                         <td class="text-center font-bold px-2">#{{ entry.position }}</td>
                         <td class="py-2">
@@ -91,15 +91,15 @@ import { AuthService } from '../../core/auth/auth.service';
       <!-- Monthly -->
       <p-card>
         <h2 class="text-xl font-bold mb-4 text-surface-900 dark:text-surface-0">{{ ls.t().monthly }}</h2>
-        <p-table stripedRows [value]="leaderboardMonthly()" [loading]="loading()" responsiveLayout="scroll" styleClass="p-datatable-sm">
-            <ng-template pTemplate="header">
+        <p-table stripedRows [value]="leaderboardMonthly()" [loading]="loading()" class="p-datatable-sm">
+            <ng-template #header>
                     <tr>
                         <th class="w-14 text-center px-2">{{ ls.t().rank }}</th>
                         <th class="text-left">{{ ls.t().name }}</th>
                         <th class="w-20 text-right px-4">{{ ls.t().amount }}</th>
                     </tr>
             </ng-template>
-            <ng-template pTemplate="body" let-entry>
+            <ng-template #body let-entry>
                 <tr>
                     <td class="text-center font-bold px-2">#{{ entry.position }}</td>
                     <td class="py-2">
@@ -121,7 +121,7 @@ import { AuthService } from '../../core/auth/auth.service';
                     <td class="text-right px-4 font-semibold">{{ entry.amount }}</td>
                 </tr>
             </ng-template>
-            <ng-template pTemplate="emptymessage">
+            <ng-template #emptymessage>
                 <tr>
                     <td colspan="3" class="text-center p-4 text-surface-500 italic">{{ ls.t().no_purchases_period }}</td>
                 </tr>
@@ -132,15 +132,15 @@ import { AuthService } from '../../core/auth/auth.service';
       <!-- Total -->
       <p-card>
         <h2 class="text-xl font-bold mb-4 text-surface-900 dark:text-surface-0">{{ ls.t().total }}</h2>
-        <p-table stripedRows [value]="leaderboardTotal()" [loading]="loading()" responsiveLayout="scroll" styleClass="p-datatable-sm">
-            <ng-template pTemplate="header">
+        <p-table stripedRows [value]="leaderboardTotal()" [loading]="loading()" class="p-datatable-sm">
+            <ng-template #header>
                     <tr>
                         <th class="w-14 text-center px-2">{{ ls.t().rank }}</th>
                         <th class="text-left">{{ ls.t().name }}</th>
                         <th class="w-20 text-right px-4">{{ ls.t().amount }}</th>
                     </tr>
             </ng-template>
-            <ng-template pTemplate="body" let-entry>
+            <ng-template #body let-entry>
                 <tr>
                     <td class="text-center font-bold px-2">#{{ entry.position }}</td>
                     <td class="py-2">
@@ -162,7 +162,7 @@ import { AuthService } from '../../core/auth/auth.service';
                     <td class="text-right px-4 font-semibold">{{ entry.amount }}</td>
                 </tr>
             </ng-template>
-            <ng-template pTemplate="emptymessage">
+            <ng-template #emptymessage>
                 <tr>
                     <td colspan="3" class="text-center p-4 text-surface-500 italic">{{ ls.t().no_purchases_period }}</td>
                 </tr>

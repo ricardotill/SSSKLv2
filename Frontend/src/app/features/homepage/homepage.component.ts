@@ -9,7 +9,7 @@ import { NgOptimizedImage } from '@angular/common';
   imports: [CardModule, BrandingComponent, NgOptimizedImage],
   template: `
     <div class="flex justify-center items-center h-full sm:mt-10">
-      <p-card class="max-w-2xl w-full" styleClass="bg-surface-50 border border-surface-200 dark:bg-surface-900 dark:border-surface-800">
+      <p-card class="max-w-2xl w-full bg-surface-50 border border-surface-200 dark:bg-surface-900 dark:border-surface-800">
         <div class="flex flex-col items-center gap-6">
           <img
             ngSrc="/logo.png"

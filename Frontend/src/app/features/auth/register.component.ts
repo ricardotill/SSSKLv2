@@ -107,7 +107,7 @@ import { LanguageService } from '../../core/services/language.service';
               formControlName="password" 
               [feedback]="true" 
               [toggleMask]="true"
-              styleClass="w-full"
+              class="w-full"
               inputStyleClass="w-full"
             ></p-password>
             @if (registerForm.controls['password'].invalid && registerForm.controls['password'].touched) {
@@ -116,11 +116,11 @@ import { LanguageService } from '../../core/services/language.service';
           </div>
 
           @if (errorMessage()) {
-             <p-message severity="error" [text]="errorMessage()" styleClass="w-full mt-4"></p-message>
+             <p-message severity="error" class="w-full mt-4">{{ errorMessage() }}</p-message>
           }
           
           @if (successMessage()) {
-             <p-message severity="success" [text]="successMessage()" styleClass="w-full mt-4"></p-message>
+             <p-message severity="success" class="w-full mt-4">{{ successMessage() }}</p-message>
              <p class="text-surface-500 mt-3 mb-0">
                Geen mail ontvangen?
                <a routerLink="/resend-confirmation-email" class="text-primary hover:underline cursor-pointer">Bevestigingsmail opnieuw versturen</a>

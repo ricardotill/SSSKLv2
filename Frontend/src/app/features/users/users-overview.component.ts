@@ -17,40 +17,55 @@ import { AuthService } from '../../core/auth/auth.service';
   imports: [CurrencyPipe, TableModule, CardModule, ButtonModule, AvatarModule, ResolveApiUrlPipe],
   template: `
     <div class="flex justify-between items-center mb-4">
-      <h1 class="text-2xl font-bold m-0 text-surface-900 dark:text-surface-0">{{ ls.t().user_overview }}</h1>
-      <p-button icon="pi pi-refresh" [rounded]="true" (onClick)="loadUsers()" [ariaLabel]="ls.t().refresh"></p-button>
+      <h1 class="text-2xl font-bold m-0 text-surface-900 dark:text-surface-0">
+        {{ ls.t().user_overview }}
+      </h1>
+      <p-button
+        icon="pi pi-refresh"
+        [rounded]="true"
+        (onClick)="loadUsers()"
+        [ariaLabel]="ls.t().refresh"
+      ></p-button>
     </div>
-    
+
     <p-card>
-      <p-table stripedRows [value]="users()" [loading]="loading()" responsiveLayout="scroll">
-        <ng-template pTemplate="header">
+      <p-table stripedRows [value]="users()" [loading]="loading()">
+        <ng-template #header>
           <tr>
-            <th pSortableColumn="fullName">{{ ls.t().name }} <p-sortIcon field="fullName"></p-sortIcon></th>
-            <th pSortableColumn="saldo">{{ ls.t().balance }} <p-sortIcon field="saldo"></p-sortIcon></th>
+            <th pSortableColumn="fullName">
+              {{ ls.t().name }} <p-sort-icon field="fullName"></p-sort-icon>
+            </th>
+            <th pSortableColumn="saldo">
+              {{ ls.t().balance }} <p-sort-icon field="saldo"></p-sort-icon>
+            </th>
           </tr>
         </ng-template>
-        <ng-template pTemplate="body" let-user>
+        <ng-template #body let-user>
           <tr>
             <td>
-              <div 
+              <div
                 class="flex items-center gap-3"
                 [class.cursor-pointer]="authService.isAuthenticated()"
                 [class.hover:opacity-70]="authService.isAuthenticated()"
                 (click)="authService.isAuthenticated() && drawerService.open(user.id)"
               >
-                <p-avatar 
-                  [image]="(user.profilePictureUrl | resolveApiUrl) || undefined" 
-                  [label]="!user.profilePictureUrl ? user.fullName?.substring(0,1) : undefined"
-                  shape="circle" 
+                <p-avatar
+                  [image]="(user.profilePictureUrl | resolveApiUrl) || undefined"
+                  [label]="
+                    !user.profilePictureUrl
+                      ? $safeNavigationMigration(user.fullName?.substring(0, 1))
+                      : undefined
+                  "
+                  shape="circle"
                   size="normal"
                 ></p-avatar>
                 <span class="font-medium">{{ user.fullName }}</span>
               </div>
             </td>
-            <td>{{ user.saldo | currency:'EUR' }}</td>
+            <td>{{ user.saldo | currency: 'EUR' }}</td>
           </tr>
         </ng-template>
-        <ng-template pTemplate="emptymessage">
+        <ng-template #emptymessage>
           <tr>
             <td colspan="2" class="text-center p-4 text-surface-500">{{ ls.t().no_users }}</td>
           </tr>
@@ -58,7 +73,7 @@ import { AuthService } from '../../core/auth/auth.service';
       </p-table>
     </p-card>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export default class UsersOverviewComponent implements OnInit {
   private readonly userService = inject(ApplicationUserService);
@@ -84,7 +99,7 @@ export default class UsersOverviewComponent implements OnInit {
       },
       error: () => {
         this.loading.set(false);
-      }
+      },
     });
   }
 }

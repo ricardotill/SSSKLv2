@@ -45,7 +45,7 @@ import { QuoteFormDialogComponent } from './components/quote-form-dialog/quote-f
         </div>
       </div>
 
-      <p-dataView 
+      <p-data-view 
         [value]="quotes()" 
         layout="grid" 
         [paginator]="true" 
@@ -82,7 +82,7 @@ import { QuoteFormDialogComponent } from './components/quote-form-dialog/quote-f
             }
           </div>
         </ng-template>
-      </p-dataView>
+      </p-data-view>
     </div>
   `,
   styles: [`

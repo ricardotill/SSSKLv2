@@ -1,7 +1,13 @@
 import { Component, ChangeDetectionStrategy, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+  FormBuilder,
+  FormGroup,
+  FormsModule,
+  ReactiveFormsModule,
+  Validators,
+} from '@angular/forms';
 import { Observable } from 'rxjs';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
@@ -18,7 +24,10 @@ import { MultiSelect } from 'primeng/multiselect';
 import { ResolveApiUrlPipe } from '../../../shared/pipes/resolve-api-url.pipe';
 import { RoleService } from '../../admin/services/role.service';
 import { Role } from '../../../core/models/role.model';
-import { LocationSelectorComponent, LocationResult } from '../../../shared/components/location-selector/location-selector.component';
+import {
+  LocationSelectorComponent,
+  LocationResult,
+} from '../../../shared/components/location-selector/location-selector.component';
 
 @Component({
   selector: 'app-event-edit',
@@ -37,13 +46,17 @@ import { LocationSelectorComponent, LocationResult } from '../../../shared/compo
     FileUploadModule,
     MultiSelect,
     ResolveApiUrlPipe,
-    LocationSelectorComponent
+    LocationSelectorComponent,
   ],
   template: `
     <div class="max-w-3xl mx-auto">
-      
       <div class="flex items-center gap-3 mb-6">
-        <p-button icon="pi pi-arrow-left" [text]="true" severity="secondary" [routerLink]="isEdit ? ['/events', eventId] : ['/events']" />
+        <p-button
+          icon="pi pi-arrow-left"
+          [text]="true"
+          severity="secondary"
+          [routerLink]="isEdit ? ['/events', eventId] : ['/events']"
+        />
         <h1 class="text-3xl font-bold m-0 text-surface-900 dark:text-surface-0">
           {{ isEdit ? ls.t().edit_event : ls.t().create_event }}
         </h1>
@@ -53,7 +66,13 @@ import { LocationSelectorComponent, LocationResult } from '../../../shared/compo
         <form [formGroup]="eventForm" class="flex flex-col gap-6">
           <div class="flex flex-col gap-2">
             <label for="title" class="font-bold">{{ ls.t().title }}</label>
-            <input pInputText id="title" formControlName="title" [placeholder]="ls.t().title" class="w-full" />
+            <input
+              pInputText
+              id="title"
+              formControlName="title"
+              [placeholder]="ls.t().title"
+              class="w-full"
+            />
             @if (eventForm.get('title')?.touched && eventForm.get('title')?.invalid) {
               <small class="text-red-500">Titel is verplicht</small>
             }
@@ -62,23 +81,23 @@ import { LocationSelectorComponent, LocationResult } from '../../../shared/compo
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div class="flex flex-col gap-2">
               <label for="startDateTime" class="font-bold">{{ ls.t().start_date }}</label>
-              <p-datepicker 
-                id="startDateTime" 
-                formControlName="startDateTime" 
-                [showTime]="true" 
-                [showIcon]="true" 
+              <p-datepicker
+                id="startDateTime"
+                formControlName="startDateTime"
+                [showTime]="true"
+                [showIcon]="true"
                 appendTo="body"
                 class="w-full"
               ></p-datepicker>
             </div>
             <div class="flex flex-col gap-2">
               <label for="endDateTime" class="font-bold">{{ ls.t().end_date }}</label>
-              <p-datepicker 
-                id="endDateTime" 
-                formControlName="endDateTime" 
-                [minDate]="eventForm.get('startDateTime')?.value"
-                [showTime]="true" 
-                [showIcon]="true" 
+              <p-datepicker
+                id="endDateTime"
+                formControlName="endDateTime"
+                [minDate]="$safeNavigationMigration(eventForm.get('startDateTime')?.value)"
+                [showTime]="true"
+                [showIcon]="true"
                 appendTo="body"
                 class="w-full"
               ></p-datepicker>
@@ -87,17 +106,20 @@ import { LocationSelectorComponent, LocationResult } from '../../../shared/compo
 
           <div class="flex flex-col gap-2">
             <label for="requiredRoles" class="font-bold">Toegestane Rollen</label>
-            <p-multiselect 
-              id="requiredRoles" 
-              formControlName="requiredRoles" 
-              [options]="availableRoles()" 
-              optionLabel="name" 
-              optionValue="name" 
-              [placeholder]="'Selecteer rollen'" 
+            <p-multiselect
+              id="requiredRoles"
+              formControlName="requiredRoles"
+              [options]="availableRoles()"
+              optionLabel="name"
+              optionValue="name"
+              [placeholder]="'Selecteer rollen'"
               display="chip"
-              class="w-full">
+              class="w-full"
+            >
             </p-multiselect>
-            <small class="text-surface-500">Laat leeg om het evenement voor iedereen toegankelijk te maken.</small>
+            <small class="text-surface-500"
+              >Laat leeg om het evenement voor iedereen toegankelijk te maken.</small
+            >
           </div>
 
           <div class="flex flex-col gap-2">
@@ -105,53 +127,68 @@ import { LocationSelectorComponent, LocationResult } from '../../../shared/compo
             @if (isEdit && currentImageUri()) {
               <div class="mb-2">
                 <span class="text-sm text-surface-500 block mb-1">Huidige afbeelding:</span>
-                <img [src]="currentImageUri() | resolveApiUrl" class="w-16 h-16 object-contain rounded-md border border-surface-200 dark:border-surface-700 bg-surface-100 dark:bg-surface-800" />
+                <img
+                  [src]="currentImageUri() | resolveApiUrl"
+                  class="w-16 h-16 object-contain rounded-md border border-surface-200 dark:border-surface-700 bg-surface-100 dark:bg-surface-800"
+                />
               </div>
             }
-            <small class="text-surface-500">De afbeelding kan je vanaf de eventpagina uploaden.</small>
+            <small class="text-surface-500"
+              >De afbeelding kan je vanaf de eventpagina uploaden.</small
+            >
           </div>
 
           <div class="flex flex-col gap-2">
             <label class="font-bold">{{ ls.t().description }}</label>
             <p-editor formControlName="description" [style]="{ height: '320px' }">
-               <ng-template pTemplate="header">
+              <ng-template #header>
                 <span class="ql-formats">
-                    <button type="button" class="ql-bold" aria-label="Bold"></button>
-                    <button type="button" class="ql-italic" aria-label="Italic"></button>
-                    <button type="button" class="ql-underline" aria-label="Underline"></button>
+                  <button type="button" class="ql-bold" aria-label="Bold"></button>
+                  <button type="button" class="ql-italic" aria-label="Italic"></button>
+                  <button type="button" class="ql-underline" aria-label="Underline"></button>
                 </span>
                 <span class="ql-formats">
-                    <button type="button" class="ql-list" value="ordered" aria-label="Ordered List"></button>
-                    <button type="button" class="ql-list" value="bullet" aria-label="Bullet List"></button>
+                  <button
+                    type="button"
+                    class="ql-list"
+                    value="ordered"
+                    aria-label="Ordered List"
+                  ></button>
+                  <button
+                    type="button"
+                    class="ql-list"
+                    value="bullet"
+                    aria-label="Bullet List"
+                  ></button>
                 </span>
-                 <span class="ql-formats">
-                    <button type="button" class="ql-link" aria-label="Insert Link"></button>
+                <span class="ql-formats">
+                  <button type="button" class="ql-link" aria-label="Insert Link"></button>
                 </span>
-            </ng-template>
+              </ng-template>
             </p-editor>
           </div>
 
           <div class="flex flex-col gap-2">
             <label class="font-bold">Locatie</label>
             <app-location-selector
-              [initialName]="eventForm.get('locationName')?.value"
-              [initialLatitude]="eventForm.get('latitude')?.value"
-              [initialLongitude]="eventForm.get('longitude')?.value"
+              [initialName]="$safeNavigationMigration(eventForm.get('locationName')?.value)"
+              [initialLatitude]="$safeNavigationMigration(eventForm.get('latitude')?.value)"
+              [initialLongitude]="$safeNavigationMigration(eventForm.get('longitude')?.value)"
               (locationChanged)="onLocationChanged($event)"
             ></app-location-selector>
           </div>
 
           <div class="flex justify-end gap-3 mt-4">
-            <p-button 
-              [label]="ls.t().cancel" 
-              severity="secondary" 
-              [outlined]="true" 
-              [routerLink]="isEdit ? ['/events', eventId] : ['/events']" 
+            <p-button
+              [label]="ls.t().cancel"
+              severity="secondary"
+              [outlined]="true"
+              [routerLink]="isEdit ? ['/events', eventId] : ['/events']"
             />
-            <p-button 
-              [label]="ls.t().save" 
-              type="button" 
-              severity="primary" 
+            <p-button
+              [label]="ls.t().save"
+              type="button"
+              severity="primary"
               [loading]="submitting()"
               [disabled]="eventForm.invalid"
               (onClick)="onSubmit()"
@@ -162,7 +199,7 @@ import { LocationSelectorComponent, LocationResult } from '../../../shared/compo
     </div>
   `,
   styles: [],
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export default class EventEditComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
@@ -191,7 +228,7 @@ export default class EventEditComponent implements OnInit {
       locationName: [null],
       latitude: [null],
       longitude: [null],
-      requiredRoles: [[]]
+      requiredRoles: [[]],
     });
 
     this.eventForm.get('startDateTime')?.valueChanges.subscribe((startDateVal) => {
@@ -227,7 +264,7 @@ export default class EventEditComponent implements OnInit {
   loadRoles(): void {
     this.roleService.getAllRoles().subscribe({
       next: (roles) => this.availableRoles.set(roles),
-      error: () => console.error('Failed to load roles')
+      error: () => console.error('Failed to load roles'),
     });
   }
 
@@ -240,7 +277,11 @@ export default class EventEditComponent implements OnInit {
         const isCreator = user?.userName === event.creatorName;
 
         if (!isAdmin && !isCreator) {
-          this.messageService.add({ severity: 'error', summary: 'Toegang geweigerd', detail: 'Je kunt alleen je eigen evenementen bewerken' });
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Toegang geweigerd',
+            detail: 'Je kunt alleen je eigen evenementen bewerken',
+          });
           setTimeout(() => this.router.navigate(['/events']), 1500);
           return;
         }
@@ -254,10 +295,15 @@ export default class EventEditComponent implements OnInit {
           locationName: event.locationName,
           latitude: event.latitude,
           longitude: event.longitude,
-          requiredRoles: event.requiredRoles || []
+          requiredRoles: event.requiredRoles || [],
         });
       },
-      error: () => this.messageService.add({ severity: 'error', summary: 'Fout', detail: 'Kan evenement niet laden' })
+      error: () =>
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Fout',
+          detail: 'Kan evenement niet laden',
+        }),
     });
   }
 
@@ -266,13 +312,13 @@ export default class EventEditComponent implements OnInit {
       this.eventForm.patchValue({
         locationName: location.name,
         latitude: location.lat,
-        longitude: location.lng
+        longitude: location.lng,
       });
     } else {
       this.eventForm.patchValue({
         locationName: null,
         latitude: null,
-        longitude: null
+        longitude: null,
       });
     }
   }
@@ -282,13 +328,15 @@ export default class EventEditComponent implements OnInit {
 
     this.submitting.set(true);
     const formValue = this.eventForm.value;
-    
-    const startIso = formValue.startDateTime instanceof Date 
-      ? formValue.startDateTime.toISOString() 
-      : new Date(formValue.startDateTime).toISOString();
-    const endIso = formValue.endDateTime instanceof Date 
-      ? formValue.endDateTime.toISOString() 
-      : new Date(formValue.endDateTime).toISOString();
+
+    const startIso =
+      formValue.startDateTime instanceof Date
+        ? formValue.startDateTime.toISOString()
+        : new Date(formValue.startDateTime).toISOString();
+    const endIso =
+      formValue.endDateTime instanceof Date
+        ? formValue.endDateTime.toISOString()
+        : new Date(formValue.endDateTime).toISOString();
 
     const formData = new FormData();
     formData.append('Title', formValue.title);
@@ -306,20 +354,25 @@ export default class EventEditComponent implements OnInit {
       });
     }
 
-    const request: Observable<any> = this.isEdit && this.eventId
-      ? this.eventService.updateEvent(this.eventId, formData)
-      : this.eventService.createEvent(formData);
+    const request: Observable<any> =
+      this.isEdit && this.eventId
+        ? this.eventService.updateEvent(this.eventId, formData)
+        : this.eventService.createEvent(formData);
 
     request.subscribe({
       next: () => {
         this.submitting.set(false);
-        this.messageService.add({ severity: 'success', summary: 'Succes', detail: 'Evenement opgeslagen' });
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Succes',
+          detail: 'Evenement opgeslagen',
+        });
         setTimeout(() => this.router.navigate(['/events']), 1000);
       },
       error: () => {
         this.submitting.set(false);
         this.messageService.add({ severity: 'error', summary: 'Fout', detail: 'Opslaan mislukt' });
-      }
+      },
     });
   }
 }

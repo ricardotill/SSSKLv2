@@ -1,4 +1,12 @@
-import { Component, Input, OnInit, inject, signal, computed } from '@angular/core';
+import {
+  Component,
+  Input,
+  OnInit,
+  inject,
+  signal,
+  computed,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactionService } from '../../../core/services/reaction.service';
 import { ReactionDto, ReactionTargetType } from '../../../core/models/reaction.model';
@@ -17,53 +25,63 @@ import { ReactionItemComponent } from './reaction-item.component';
   selector: 'app-reaction-list',
   standalone: true,
   imports: [
-    CommonModule, 
-    ButtonModule, 
-    TooltipModule, 
-    TextareaModule, 
+    CommonModule,
+    ButtonModule,
+    TooltipModule,
+    TextareaModule,
     FormsModule,
     AvatarModule,
     ResolveApiUrlPipe,
-    ReactionItemComponent
+    ReactionItemComponent,
   ],
   template: `
     <div class="flex flex-col gap-6">
       <!-- Comment Input Area -->
       @if (authService.isAuthenticated()) {
-        <div class="flex gap-4 p-4 bg-surface-50 dark:bg-surface-800/50 rounded-2xl border border-surface-200 dark:border-surface-700">
-          <p-avatar 
-            [image]="authService.currentUser()?.profilePictureUrl | resolveApiUrl" 
-            [label]="!authService.currentUser()?.profilePictureUrl ? authService.currentUser()?.userName?.substring(0,1) : undefined"
-            shape="circle" 
+        <div
+          class="flex gap-4 p-4 bg-surface-50 dark:bg-surface-800/50 rounded-2xl border border-surface-200 dark:border-surface-700"
+        >
+          <p-avatar
+            [image]="
+              $safeNavigationMigration(authService.currentUser()?.profilePictureUrl) | resolveApiUrl
+            "
+            [label]="
+              !authService.currentUser()?.profilePictureUrl
+                ? $safeNavigationMigration(authService.currentUser()?.userName?.substring(0, 1))
+                : undefined
+            "
+            shape="circle"
             size="normal"
             class="hidden md:flex shrink-0"
           />
           <div class="flex-1 flex flex-col gap-3">
-            <textarea 
-              pInputTextarea 
+            <textarea
+              pInputTextarea
               [autoResize]="true"
               rows="1"
-              [(ngModel)]="customReaction" 
-              placeholder="Deel je gedachten..." 
+              [(ngModel)]="customReaction"
+              placeholder="Deel je gedachten..."
               class="w-full border-none bg-transparent focus:ring-0 p-0 text-sm overflow-hidden"
               (keydown.enter)="$event.preventDefault(); toggle(customReaction); customReaction = ''"
             ></textarea>
-            
-            <div class="flex justify-between items-center border-t border-surface-100 dark:border-surface-700 pt-2 -mx-1">
+
+            <div
+              class="flex justify-between items-center border-t border-surface-100 dark:border-surface-700 pt-2 -mx-1"
+            >
               <div class="flex gap-1">
-                 @for (quick of filteredQuickReactions().slice(0, 5); track quick) {
-                   <p-button 
-                     [label]="quick" 
-                     [text]="true" 
-                     (onClick)="toggle(quick)" 
-                     styleClass="p-1 h-8 w-8 text-lg hover:scale-110 transition-transform" 
-                   />
-                 }
+                @for (quick of filteredQuickReactions().slice(0, 5); track quick) {
+                  <p-button
+                    [label]="quick"
+                    [text]="true"
+                    (onClick)="toggle(quick)"
+                    styleClass="p-1 h-8 w-8 text-lg hover:scale-110 transition-transform"
+                  />
+                }
               </div>
-              <p-button 
-                label="Plaatsen" 
-                [disabled]="!customReaction.trim()" 
-                (onClick)="toggle(customReaction); customReaction = ''" 
+              <p-button
+                label="Plaatsen"
+                [disabled]="!customReaction.trim()"
+                (onClick)="toggle(customReaction); customReaction = ''"
                 styleClass="p-button-sm rounded-full px-4"
               />
             </div>
@@ -74,26 +92,29 @@ import { ReactionItemComponent } from './reaction-item.component';
       <!-- Feed -->
       <div class="flex flex-col divide-y divide-surface-100 dark:divide-surface-800">
         @for (reaction of reactions(); track reaction.id) {
-          <app-reaction-item 
-            [reaction]="reaction" 
+          <app-reaction-item
+            [reaction]="reaction"
             (onReact)="toggleOnReaction(reaction, $event)"
             (onReply)="loadReactions()"
           />
         }
         @if (reactions().length === 0) {
           <div class="py-12 flex flex-col items-center justify-center opacity-40 grayscale">
-             <i class="pi pi-comments text-4xl mb-4"></i>
-             <span class="text-sm italic">Nog geen reacties. Wees de eerste!</span>
+            <i class="pi pi-comments text-4xl mb-4"></i>
+            <span class="text-sm italic">Nog geen reacties. Wees de eerste!</span>
           </div>
         }
       </div>
     </div>
   `,
-  styles: [`
-    :host {
-      display: block;
-    }
-  `]
+  changeDetection: ChangeDetectionStrategy.Eager,
+  styles: [
+    `
+      :host {
+        display: block;
+      }
+    `,
+  ],
 })
 export class ReactionListComponent implements OnInit {
   @Input({ required: true }) targetId!: string;
@@ -108,7 +129,7 @@ export class ReactionListComponent implements OnInit {
   quickReactions = ['👍', '❤️', '😂', '🎉', '🔥', '🤔', '😢'];
   filteredQuickReactions = computed(() => {
     if (this.targetType === 'Quote') {
-      return this.quickReactions.filter(r => r !== '❤️');
+      return this.quickReactions.filter((r) => r !== '❤️');
     }
     return this.quickReactions;
   });
@@ -122,14 +143,14 @@ export class ReactionListComponent implements OnInit {
   }
 
   loadReactions(): void {
-    this.reactionService.getReactions(this.targetId, this.targetType).subscribe(res => {
+    this.reactionService.getReactions(this.targetId, this.targetType).subscribe((res) => {
       this.reactions.set(res);
     });
   }
 
   toggle(content: string): void {
     if (!content || !content.trim()) return;
-    
+
     const tid = this.replyingTo ? this.replyingTo.id : this.targetId;
     const ttype = this.replyingTo ? 'Reaction' : this.targetType;
 

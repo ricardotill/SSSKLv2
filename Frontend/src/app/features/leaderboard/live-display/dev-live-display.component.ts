@@ -62,8 +62,8 @@ const MEMES = [
                       (onPage)="onPageChange($event)"
                       [showNavigators]="false" 
                       [showIndicators]="true"
-                      styleClass="flex-1 w-full border-none h-full">
-            <ng-template pTemplate="item" let-slide let-i="index">
+                      class="flex-1 w-full border-none h-full">
+            <ng-template #item let-slide let-i="index">
               <div class="h-full w-full pt-6 px-12 pb-24 overflow-hidden flex flex-col">
                 @if (slide.type === 'product') {
                   <div class="grid grid-cols-2 gap-8 w-full h-[calc(100vh-8rem)] overflow-hidden">
@@ -76,15 +76,15 @@ const MEMES = [
                         <div class="glass-panel flex flex-col flex-1 overflow-hidden p-6 rounded-2xl border-white/10 bg-black/40 shadow-inner">
                           <h2 class="text-2xl font-bold mb-6 m-0 text-center text-surface-0 tracking-wide uppercase text-sm">All Time Leaderboard (Mock)</h2>
                           <div [appAutoScroll]="slide.index === currentPage()" class="flex-1 overflow-auto custom-scrollbar">
-                            <p-table [value]="slide.leaderboardTotal" styleClass="p-datatable-sm custom-dark-table">
-                              <ng-template pTemplate="header">
+                            <p-table [value]="slide.leaderboardTotal" class="p-datatable-sm custom-dark-table">
+                              <ng-template #header>
                                 <tr>
                                   <th class="w-24 text-center py-4">Plek</th>
                                   <th class="py-4">Naam</th>
                                   <th class="w-40 text-center py-4">Hoeveelheid</th>
                                 </tr>
                               </ng-template>
-                              <ng-template pTemplate="body" let-entry let-rowIndex="rowIndex">
+                              <ng-template #body let-entry let-rowIndex="rowIndex">
                                 <tr [ngClass]="rowIndex % 2 === 0 ? 'bg-transparent' : 'bg-white/5'">
                                   <td class="text-center py-3 font-semibold text-surface-400">#{{ entry.position }}</td>
                                   <td class="py-3">
@@ -116,15 +116,15 @@ const MEMES = [
                         @if (slide.leaderboard12h && slide.leaderboard12h.length > 0) {
                           <h2 class="text-2xl font-bold mb-6 m-0 text-center text-white tracking-wide uppercase text-sm">Leaderboard (12 uur Mock)</h2>
                           <div [appAutoScroll]="slide.index === currentPage()" class="flex-1 overflow-auto custom-scrollbar bg-black/20 rounded-xl shadow-inner border border-white/5">
-                            <p-table [value]="slide.leaderboard12h" styleClass="p-datatable-sm custom-dark-table">
-                              <ng-template pTemplate="header">
+                            <p-table [value]="slide.leaderboard12h" class="p-datatable-sm custom-dark-table">
+                              <ng-template #header>
                                 <tr>
                                   <th class="w-24 text-center py-4">Plek</th>
                                   <th class="py-4">Naam</th>
                                   <th class="w-40 text-center py-4">Hoeveelheid</th>
                                 </tr>
                               </ng-template>
-                              <ng-template pTemplate="body" let-entry let-rowIndex="rowIndex">
+                              <ng-template #body let-entry let-rowIndex="rowIndex">
                                 <tr [ngClass]="rowIndex % 2 === 0 ? 'bg-transparent' : 'bg-white/5'">
                                   <td class="text-center py-3 font-semibold text-surface-400">#{{ entry.position }}</td>
                                   <td class="py-3">
@@ -152,15 +152,15 @@ const MEMES = [
                         @if (slide.latestOrders && slide.latestOrders.length > 0) {
                           <h2 class="text-2xl font-bold mb-6 m-0 text-center text-white tracking-wide uppercase text-sm">Laatste Bestellingen (Mock)</h2>
                           <div [appAutoScroll]="slide.index === currentPage()" class="flex-1 overflow-auto custom-scrollbar bg-black/20 rounded-xl shadow-inner border border-white/5">
-                            <p-table [value]="slide.latestOrders" styleClass="p-datatable-sm custom-dark-table">
-                              <ng-template pTemplate="header">
+                            <p-table [value]="slide.latestOrders" class="p-datatable-sm custom-dark-table">
+                              <ng-template #header>
                                 <tr>
                                   <th class="w-24 text-center py-4">Tijd</th>
                                   <th class="py-4">Naam</th>
                                   <th class="w-32 text-center py-4">Hoeveelheid</th>
                                 </tr>
                               </ng-template>
-                              <ng-template pTemplate="body" let-order let-rowIndex="rowIndex">
+                              <ng-template #body let-order let-rowIndex="rowIndex">
                                 <tr [ngClass]="rowIndex % 2 === 0 ? 'bg-transparent' : 'bg-white/5'">
                                   <td class="text-center py-3 font-medium text-surface-400">{{ formatTime(order.createdOn) }}</td>
                                   <td class="py-3">

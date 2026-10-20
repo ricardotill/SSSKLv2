@@ -36,7 +36,7 @@ import { finalize } from 'rxjs';
               [blockScroll]="false"
               [appendTo]="'body'"
               styleClass="notification-drawer !h-auto w-full flex flex-col bg-surface-0 dark:bg-surface-900 border-none rounded-b-2xl shadow-xl max-h-[90vh]">
-      <ng-template pTemplate="header">
+      <ng-template #header>
         <div class="flex items-center justify-between w-full pr-2">
           <h2 class="text-xl font-bold m-0 text-surface-900 dark:text-surface-0">Notificaties</h2>
           @if (notifications().length > 0) {
@@ -48,7 +48,7 @@ import { finalize } from 'rxjs';
       <div class="px-2 pb-2">
         @if (loading()) {
           <div class="flex justify-center p-8">
-            <p-progressSpinner styleClass="w-8 h-8" />
+            <p-progress-spinner class="w-8 h-8" />
           </div>
         } @else if (notifications().length === 0) {
            <div class="flex flex-col items-center justify-center p-8 text-surface-500">

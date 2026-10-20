@@ -32,7 +32,7 @@ import { ProgressSpinnerModule } from 'primeng/progressspinner';
     <div class="text-surface-900 dark:text-surface-0 h-full">
       @if (isLoading()) {
         <div class="flex justify-center items-center p-12">
-          <p-progressSpinner ariaLabel="loading"></p-progressSpinner>
+          <p-progress-spinner ariaLabel="loading"></p-progress-spinner>
         </div>
       } @else {
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 w-full max-w-7xl mx-auto">

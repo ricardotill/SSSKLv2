@@ -28,7 +28,7 @@ import { Router } from '@angular/router';
       <div class="bg-surface-0 dark:bg-surface-900 rounded-3xl shadow-sm border border-surface-200 dark:border-surface-800 overflow-hidden">
         @if (loading() && notifications().length === 0) {
           <div class="flex justify-center p-12">
-            <p-progressSpinner styleClass="w-10 h-10" />
+            <p-progress-spinner class="w-10 h-10" />
           </div>
         } @else if (notifications().length === 0) {
            <div class="flex flex-col items-center justify-center p-16 text-surface-500">

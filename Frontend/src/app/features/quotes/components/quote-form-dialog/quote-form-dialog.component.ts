@@ -1,6 +1,13 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators, FormArray } from '@angular/forms';
+import {
+  FormBuilder,
+  FormGroup,
+  FormsModule,
+  ReactiveFormsModule,
+  Validators,
+  FormArray,
+} from '@angular/forms';
 import { DynamicDialogConfig, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
@@ -40,18 +47,21 @@ interface AuthorOption {
     MultiSelectModule,
     AutoCompleteModule,
     ChipModule,
-    ToggleSwitchModule
+    ToggleSwitchModule,
   ],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <form [formGroup]="quoteForm" (ngSubmit)="onSubmit()" class="flex flex-col gap-5 mt-2">
       <!-- Quote Text -->
       <div class="flex flex-col gap-2">
-        <label for="text" class="font-bold text-surface-700 dark:text-surface-300">{{ ls.t().quote_text }}</label>
-        <textarea 
-          pTextarea 
-          id="text" 
-          formControlName="text" 
-          [rows]="3" 
+        <label for="text" class="font-bold text-surface-700 dark:text-surface-300">{{
+          ls.t().quote_text
+        }}</label>
+        <textarea
+          pTextarea
+          id="text"
+          formControlName="text"
+          [rows]="3"
           [autoResize]="true"
           class="w-full"
           [placeholder]="ls.t().quote_text"
@@ -63,11 +73,13 @@ interface AuthorOption {
 
       <!-- Date Said -->
       <div class="flex flex-col gap-2">
-        <label for="dateSaid" class="font-bold text-surface-700 dark:text-surface-300">{{ ls.t().when_was_it_said }}</label>
-        <p-datepicker 
-          id="dateSaid" 
-          formControlName="dateSaid" 
-          [showIcon]="true" 
+        <label for="dateSaid" class="font-bold text-surface-700 dark:text-surface-300">{{
+          ls.t().when_was_it_said
+        }}</label>
+        <p-datepicker
+          id="dateSaid"
+          formControlName="dateSaid"
+          [showIcon]="true"
           appendTo="body"
           class="w-full"
           dateFormat="dd/mm/yy"
@@ -76,12 +88,14 @@ interface AuthorOption {
 
       <!-- Authors Selection -->
       <div class="flex flex-col gap-2">
-        <label for="authors" class="font-bold text-surface-700 dark:text-surface-300">{{ ls.t().who_said_it }}</label>
+        <label for="authors" class="font-bold text-surface-700 dark:text-surface-300">{{
+          ls.t().who_said_it
+        }}</label>
         <div class="flex flex-wrap gap-2 mb-2">
           @for (author of selectedAuthors(); track $index) {
-            <p-chip 
-              [label]="author.name" 
-              [removable]="true" 
+            <p-chip
+              [label]="author.name"
+              [removable]="true"
               (onRemove)="removeAuthor(author)"
               [icon]="author.isUser ? 'pi pi-user' : 'pi pi-pencil'"
             ></p-chip>
@@ -89,7 +103,7 @@ interface AuthorOption {
         </div>
         <p-autocomplete
           [(ngModel)]="authorInput"
-          [ngModelOptions]="{standalone: true}"
+          [ngModelOptions]="{ standalone: true }"
           [suggestions]="filteredAuthors()"
           (completeMethod)="searchAuthors($event)"
           (onSelect)="addAuthor($event)"
@@ -100,7 +114,7 @@ interface AuthorOption {
           appendTo="body"
           [dropdown]="true"
         >
-          <ng-template let-option pTemplate="item">
+          <ng-template let-option #item>
             <div class="flex items-center gap-2">
               @if (option.isUser) {
                 <i class="pi pi-user text-primary-500"></i>
@@ -119,14 +133,16 @@ interface AuthorOption {
 
       <!-- Visible To Roles -->
       <div class="flex flex-col gap-2">
-        <label for="visibleToRoles" class="font-bold text-surface-700 dark:text-surface-300">{{ ls.t().visible_to_roles }}</label>
-        <p-multiselect 
-          id="visibleToRoles" 
-          formControlName="visibleToRoles" 
-          [options]="availableRoles()" 
-          optionLabel="name" 
-          optionValue="name" 
-          [placeholder]="ls.t().select_roles" 
+        <label for="visibleToRoles" class="font-bold text-surface-700 dark:text-surface-300">{{
+          ls.t().visible_to_roles
+        }}</label>
+        <p-multiselect
+          id="visibleToRoles"
+          formControlName="visibleToRoles"
+          [options]="availableRoles()"
+          optionLabel="name"
+          optionValue="name"
+          [placeholder]="ls.t().select_roles"
           display="chip"
           class="w-full"
           appendTo="body"
@@ -136,9 +152,13 @@ interface AuthorOption {
 
       <!-- Notification Toggle (Only for new quotes) -->
       @if (!isEdit) {
-        <div class="flex items-center justify-between p-3 bg-surface-50 dark:bg-surface-800/50 rounded-lg border border-surface-200 dark:border-surface-700">
+        <div
+          class="flex items-center justify-between p-3 bg-surface-50 dark:bg-surface-800/50 rounded-lg border border-surface-200 dark:border-surface-700"
+        >
           <div class="flex flex-col gap-1">
-            <span class="font-bold text-surface-700 dark:text-surface-300">{{ ls.t().send_notification_toggle }}</span>
+            <span class="font-bold text-surface-700 dark:text-surface-300">{{
+              ls.t().send_notification_toggle
+            }}</span>
             <small class="text-surface-500">{{ ls.t().send_notification_help }}</small>
           </div>
           <p-toggleswitch formControlName="sendNotification"></p-toggleswitch>
@@ -147,17 +167,22 @@ interface AuthorOption {
 
       <!-- Action Buttons -->
       <div class="flex justify-end gap-3 mt-4">
-        <p-button [label]="ls.t().cancel" severity="secondary" [outlined]="true" (onClick)="onCancel()" />
-        <p-button 
-          [label]="ls.t().save" 
-          type="submit" 
-          severity="primary" 
+        <p-button
+          [label]="ls.t().cancel"
+          severity="secondary"
+          [outlined]="true"
+          (onClick)="onCancel()"
+        />
+        <p-button
+          [label]="ls.t().save"
+          type="submit"
+          severity="primary"
           [loading]="submitting()"
           [disabled]="quoteForm.invalid || selectedAuthors().length === 0"
         />
       </div>
     </form>
-  `
+  `,
 })
 export class QuoteFormDialogComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
@@ -172,10 +197,10 @@ export class QuoteFormDialogComponent implements OnInit {
   isEdit = false;
   quoteId: string | null = null;
   submitting = signal<boolean>(false);
-  
+
   availableUsers = signal<ApplicationUserDto[]>([]);
   availableRoles = signal<Role[]>([]);
-  
+
   // Author management
   authorInput = '';
   selectedAuthors = signal<AuthorOption[]>([]);
@@ -186,94 +211,102 @@ export class QuoteFormDialogComponent implements OnInit {
       text: ['', Validators.required],
       dateSaid: [new Date(), Validators.required],
       visibleToRoles: [[]],
-      sendNotification: [false]
+      sendNotification: [false],
     });
   }
 
   ngOnInit(): void {
     this.loadData();
-    
+
     if (this.config.data?.quote) {
       const quote = this.config.data.quote as QuoteDto;
       this.isEdit = true;
       this.quoteId = quote.id;
-      
+
       this.quoteForm.patchValue({
         text: quote.text,
         dateSaid: new Date(quote.dateSaid),
-        visibleToRoles: quote.visibleToRoles
+        visibleToRoles: quote.visibleToRoles,
       });
-      
-      const authors: AuthorOption[] = quote.authors.map(a => ({
+
+      const authors: AuthorOption[] = quote.authors.map((a) => ({
         id: a.applicationUserId || undefined,
         name: a.customName || a.applicationUser?.fullName || 'Unknown',
         isUser: !!a.applicationUserId,
-        user: a.applicationUser || undefined
+        user: a.applicationUser || undefined,
       }));
       this.selectedAuthors.set(authors);
     }
   }
 
   loadData(): void {
-    this.userService.getUsers().subscribe((res: PaginatedUsers) => this.availableUsers.set(res.items));
-    
+    this.userService
+      .getUsers()
+      .subscribe((res: PaginatedUsers) => this.availableUsers.set(res.items));
+
     // Load all roles and filter by global settings
-    this.roleService.getAllRoles().subscribe(allRoles => {
-      this.settingsService.getSetting('QuotesFeatureAllowedRoles').pipe(
-        catchError(() => of({ value: '' }))
-      ).subscribe(setting => {
-        if (setting && setting.value) {
-          const allowedRoleNames = setting.value.split(',').map((r: string) => r.trim());
-          this.availableRoles.set(allRoles.filter(r => allowedRoleNames.includes(r.name)));
-        } else {
-          // If no setting, allow all roles
-          this.availableRoles.set(allRoles);
-        }
-      });
+    this.roleService.getAllRoles().subscribe((allRoles) => {
+      this.settingsService
+        .getSetting('QuotesFeatureAllowedRoles')
+        .pipe(catchError(() => of({ value: '' })))
+        .subscribe((setting) => {
+          if (setting && setting.value) {
+            const allowedRoleNames = setting.value.split(',').map((r: string) => r.trim());
+            this.availableRoles.set(allRoles.filter((r) => allowedRoleNames.includes(r.name)));
+          } else {
+            // If no setting, allow all roles
+            this.availableRoles.set(allRoles);
+          }
+        });
     });
   }
 
   searchAuthors(event: AutoCompleteCompleteEvent): void {
     const query = event.query.toLowerCase();
     const suggestions: any[] = this.availableUsers()
-      .filter(u => u.fullName.toLowerCase().includes(query) || u.userName.toLowerCase().includes(query))
-      .map(u => ({
+      .filter(
+        (u) => u.fullName.toLowerCase().includes(query) || u.userName.toLowerCase().includes(query),
+      )
+      .map((u) => ({
         id: u.id,
         name: u.fullName,
         isUser: true,
-        user: u
+        user: u,
       }));
-    
-    if (query && !suggestions.some(s => s.name.toLowerCase() === query)) {
+
+    if (query && !suggestions.some((s) => s.name.toLowerCase() === query)) {
       suggestions.push({
         name: event.query,
         isUser: false,
-        isNew: true
+        isNew: true,
       });
     }
-    
+
     this.filteredAuthors.set(suggestions);
   }
 
   addAuthor(event: any): void {
     const author = event.value as any;
-    if (this.selectedAuthors().some(a => a.name === author.name)) {
+    if (this.selectedAuthors().some((a) => a.name === author.name)) {
       this.authorInput = '';
       return;
     }
-    
-    this.selectedAuthors.update(list => [...list, {
-      id: author.id,
-      name: author.name,
-      isUser: author.isUser,
-      user: author.user
-    }]);
-    
+
+    this.selectedAuthors.update((list) => [
+      ...list,
+      {
+        id: author.id,
+        name: author.name,
+        isUser: author.isUser,
+        user: author.user,
+      },
+    ]);
+
     this.authorInput = '';
   }
 
   removeAuthor(author: AuthorOption): void {
-    this.selectedAuthors.update(list => list.filter(a => a !== author));
+    this.selectedAuthors.update((list) => list.filter((a) => a !== author));
   }
 
   onCancel(): void {
@@ -284,9 +317,9 @@ export class QuoteFormDialogComponent implements OnInit {
     if (this.quoteForm.invalid || this.selectedAuthors().length === 0) return;
 
     const formValue = this.quoteForm.value;
-    const authors = this.selectedAuthors().map(a => ({
+    const authors = this.selectedAuthors().map((a) => ({
       applicationUserId: a.isUser ? a.id : null,
-      customName: a.isUser ? null : a.name
+      customName: a.isUser ? null : a.name,
     }));
 
     const result = {
@@ -294,7 +327,7 @@ export class QuoteFormDialogComponent implements OnInit {
       dateSaid: formValue.dateSaid.toISOString(),
       authors: authors,
       visibleToRoles: formValue.visibleToRoles,
-      sendNotification: formValue.sendNotification
+      sendNotification: formValue.sendNotification,
     };
 
     this.ref.close(result);

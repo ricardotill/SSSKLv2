@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { finalize } from 'rxjs';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { TableModule } from 'primeng/table';
@@ -19,7 +19,13 @@ import { ResolveApiUrlPipe } from '../../../shared/pipes/resolve-api-url.pipe';
 
 import { AchievementService } from '../../achievements/services/achievement.service';
 import { ApplicationUserService } from '../../users/services/application-user.service';
-import { Achievement, AchievementUpdateDto, ActionOption, ComparisonOperatorOption, AchievementTier } from '../../../core/models/achievement.model';
+import {
+  Achievement,
+  AchievementUpdateDto,
+  ActionOption,
+  ComparisonOperatorOption,
+  AchievementTier,
+} from '../../../core/models/achievement.model';
 import { ApplicationUserDto } from '../../../core/models/application-user.model';
 import { LanguageService } from '../../../core/services/language.service';
 
@@ -49,22 +55,47 @@ interface PickListAchievement {
     NgIf,
     NgClass,
     FormsModule,
-    ResolveApiUrlPipe
+    ResolveApiUrlPipe,
   ],
   template: `
     <div class="flex justify-between items-center mb-4">
       <h1 class="text-2xl font-bold m-0 text-surface-900 dark:text-surface-0">Achievements</h1>
       <div class="flex gap-2">
-        <p-button icon="pi pi-users" severity="help" [rounded]="true" (onClick)="openUserDialog()" ariaLabel="Gebruikers Beheren"></p-button>
-        <p-button icon="pi pi-plus" severity="info" [rounded]="true" (onClick)="openCreateDialog()" ariaLabel="Achievement Toevoegen"></p-button>
-        <p-button icon="pi pi-refresh" [rounded]="true" (onClick)="loadAchievements()" ariaLabel="Vernieuwen"></p-button>
+        <p-button
+          icon="pi pi-users"
+          severity="help"
+          [rounded]="true"
+          (onClick)="openUserDialog()"
+          ariaLabel="Gebruikers Beheren"
+        ></p-button>
+        <p-button
+          icon="pi pi-plus"
+          severity="info"
+          [rounded]="true"
+          (onClick)="openCreateDialog()"
+          ariaLabel="Achievement Toevoegen"
+        ></p-button>
+        <p-button
+          icon="pi pi-refresh"
+          [rounded]="true"
+          (onClick)="loadAchievements()"
+          ariaLabel="Vernieuwen"
+        ></p-button>
       </div>
     </div>
-    <p-confirmDialog></p-confirmDialog>
-    
+    <p-confirm-dialog></p-confirm-dialog>
+
     <p-card>
-      <p-table stripedRows [value]="achievements()" [loading]="loading()" [paginator]="true" [rows]="10" [totalRecords]="totalRecords()" responsiveLayout="scroll">
-        <ng-template pTemplate="header">
+      <p-table
+        stripedRows
+        [value]="achievements()"
+        [loading]="loading()"
+        [paginator]="true"
+        [rows]="10"
+        [totalRecords]="totalRecords()"
+
+      >
+        <ng-template #header>
           <tr>
             <th class="w-16">Icoon</th>
             <th>Naam</th>
@@ -75,25 +106,44 @@ interface PickListAchievement {
             <th class="w-40">Acties</th>
           </tr>
         </ng-template>
-        <ng-template pTemplate="body" let-ach>
+        <ng-template #body let-ach>
           <tr>
             <td>
-              <img *ngIf="ach.image?.uri" [src]="ach.image?.uri | resolveApiUrl" class="w-10 h-10 object-contain shadow-sm rounded-md" />
+              <img
+                *ngIf="ach.image?.uri"
+                [src]="
+                  $safeNavigationMigration($safeNavigationMigration(ach.image?.uri)) | resolveApiUrl
+                "
+                class="w-10 h-10 object-contain shadow-sm rounded-md"
+              />
             </td>
             <td>{{ ach.name }}</td>
             <td>{{ ach.description }}</td>
             <td>
-              <span class="px-2 py-1 rounded text-xs font-bold" [ngClass]="{
-                'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400': ach.tier === 'Bronze',
-                'bg-slate-100 text-slate-700 dark:bg-slate-900/30 dark:text-slate-400': ach.tier === 'Silver',
-                'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400': ach.tier === 'Gold',
-                'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400': ach.tier === 'Platinum'
-              }">
+              <span
+                class="px-2 py-1 rounded text-xs font-bold"
+                [ngClass]="{
+                  'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400':
+                    ach.tier === 'Bronze',
+                  'bg-slate-100 text-slate-700 dark:bg-slate-900/30 dark:text-slate-400':
+                    ach.tier === 'Silver',
+                  'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400':
+                    ach.tier === 'Gold',
+                  'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400':
+                    ach.tier === 'Platinum',
+                }"
+              >
                 {{ ach.tier }}
               </span>
             </td>
             <td>
-              <i class="pi" [ngClass]="{'text-green-500 pi-check-circle': ach.autoAchieve, 'text-red-500 pi-times-circle': !ach.autoAchieve}"></i>
+              <i
+                class="pi"
+                [ngClass]="{
+                  'text-green-500 pi-check-circle': ach.autoAchieve,
+                  'text-red-500 pi-times-circle': !ach.autoAchieve,
+                }"
+              ></i>
             </td>
             <td>
               <span *ngIf="ach.autoAchieve" class="text-sm">
@@ -103,14 +153,36 @@ interface PickListAchievement {
             </td>
             <td>
               <div class="flex gap-2">
-                <p-button icon="pi pi-users" [rounded]="true" [text]="true" severity="help" (onClick)="confirmAwardAll(ach)" ariaLabel="Aan Iedereen Toekennen"></p-button>
-                <p-button icon="pi pi-pencil" [rounded]="true" [text]="true" severity="info" (onClick)="openEditDialog(ach)" ariaLabel="Bewerken"></p-button>
-                <p-button icon="pi pi-trash" [rounded]="true" [text]="true" severity="danger" (onClick)="confirmDelete(ach)" [loading]="deletingId() === ach.id" ariaLabel="Verwijderen"></p-button>
+                <p-button
+                  icon="pi pi-users"
+                  [rounded]="true"
+                  [text]="true"
+                  severity="help"
+                  (onClick)="confirmAwardAll(ach)"
+                  ariaLabel="Aan Iedereen Toekennen"
+                ></p-button>
+                <p-button
+                  icon="pi pi-pencil"
+                  [rounded]="true"
+                  [text]="true"
+                  severity="info"
+                  (onClick)="openEditDialog(ach)"
+                  ariaLabel="Bewerken"
+                ></p-button>
+                <p-button
+                  icon="pi pi-trash"
+                  [rounded]="true"
+                  [text]="true"
+                  severity="danger"
+                  (onClick)="confirmDelete(ach)"
+                  [loading]="deletingId() === ach.id"
+                  ariaLabel="Verwijderen"
+                ></p-button>
               </div>
             </td>
           </tr>
         </ng-template>
-        <ng-template pTemplate="emptymessage">
+        <ng-template #emptymessage>
           <tr>
             <td colspan="6" class="text-center p-4 text-surface-500">Geen achievements gevonden</td>
           </tr>
@@ -118,7 +190,13 @@ interface PickListAchievement {
       </p-table>
     </p-card>
 
-    <p-dialog [header]="isEdit() ? 'Achievement Bewerken' : 'Achievement Toevoegen'" [(visible)]="dialogVisible" [modal]="true" [style]="{width: '500px'}" [breakpoints]="{'768px': '90vw'}">
+    <p-dialog
+      [header]="isEdit() ? 'Achievement Bewerken' : 'Achievement Toevoegen'"
+      [(visible)]="dialogVisible"
+      [modal]="true"
+      [style]="{ width: '500px' }"
+      [breakpoints]="{ '768px': '90vw' }"
+    >
       <form [formGroup]="achForm" (ngSubmit)="saveAchievement()" class="flex flex-col gap-4 mt-2">
         <div class="flex flex-col gap-2">
           <label for="name">Naam</label>
@@ -129,43 +207,92 @@ interface PickListAchievement {
           <label for="description">Beschrijving</label>
           <input pInputText id="description" formControlName="description" class="w-full" />
         </div>
-        
+
         <div class="flex items-center gap-2">
-          <p-checkbox inputId="autoAchieve" formControlName="autoAchieve" [binary]="true"></p-checkbox>
+          <p-checkbox
+            inputId="autoAchieve"
+            formControlName="autoAchieve"
+            [binary]="true"
+          ></p-checkbox>
           <label for="autoAchieve">Automatisch Behalen</label>
         </div>
 
         @if (achForm.get('autoAchieve')?.value) {
           <div class="flex flex-col gap-2">
             <label for="action">Actie Optie</label>
-            <p-select id="action" [options]="actionOptions" formControlName="action" optionLabel="label" optionValue="value" class="w-full" appendTo="body"></p-select>
-            <small class="text-surface-500 italic" *ngIf="actionExplanations[achForm.get('action')?.value ?? 'None']">
+            <p-select
+              id="action"
+              [options]="actionOptions"
+              formControlName="action"
+              optionLabel="label"
+              optionValue="value"
+              class="w-full"
+              appendTo="body"
+            ></p-select>
+            <small
+              class="text-surface-500 italic"
+              *ngIf="actionExplanations[achForm.get('action')?.value ?? 'None']"
+            >
               {{ actionExplanations[achForm.get('action')?.value ?? 'None'] }}
             </small>
           </div>
 
           <div class="flex flex-col gap-2">
             <label for="comparisonOperator">Vergelijkingsoperator</label>
-            <p-select id="comparisonOperator" [options]="operatorOptions" formControlName="comparisonOperator" optionLabel="label" optionValue="value" class="w-full" appendTo="body"></p-select>
-            <small class="text-surface-500 italic" *ngIf="operatorExplanations[achForm.get('comparisonOperator')?.value ?? 'None']">
+            <p-select
+              id="comparisonOperator"
+              [options]="operatorOptions"
+              formControlName="comparisonOperator"
+              optionLabel="label"
+              optionValue="value"
+              class="w-full"
+              appendTo="body"
+            ></p-select>
+            <small
+              class="text-surface-500 italic"
+              *ngIf="operatorExplanations[achForm.get('comparisonOperator')?.value ?? 'None']"
+            >
               {{ operatorExplanations[achForm.get('comparisonOperator')?.value ?? 'None'] }}
             </small>
           </div>
 
           <div class="flex flex-col gap-2">
             <label for="comparisonValue">Vergelijkingswaarde</label>
-            <p-inputNumber id="comparisonValue" formControlName="comparisonValue" class="w-full" [useGrouping]="false"></p-inputNumber>
+            <p-input-number
+              id="comparisonValue"
+              formControlName="comparisonValue"
+              class="w-full"
+              [useGrouping]="false"
+            ></p-input-number>
           </div>
         }
 
         <div class="flex flex-col gap-2">
           <label for="tier">Tier</label>
-          <p-select id="tier" [options]="tierOptions" formControlName="tier" optionLabel="label" optionValue="value" class="w-full" appendTo="body"></p-select>
+          <p-select
+            id="tier"
+            [options]="tierOptions"
+            formControlName="tier"
+            optionLabel="label"
+            optionValue="value"
+            class="w-full"
+            appendTo="body"
+          ></p-select>
         </div>
 
         <div class="flex flex-col gap-2">
           <label for="parentAchievementId">Ouder Achievement (Optioneel)</label>
-          <p-select id="parentAchievementId" [options]="parentOptions()" formControlName="parentAchievementId" optionLabel="name" optionValue="id" class="w-full" appendTo="body" [showClear]="true" placeholder="Selecteer Ouder"></p-select>
+          <p-select
+            id="parentAchievementId"
+            [options]="parentOptions()"
+            formControlName="parentAchievementId"
+            optionLabel="name"
+            optionValue="id"
+            class="w-full"
+            appendTo="body"
+            [showClear]="true"
+            placeholder="Selecteer Ouder"
+          ></p-select>
         </div>
 
         <div class="flex flex-col gap-2" *ngIf="!isEdit() || isEdit()">
@@ -173,42 +300,104 @@ interface PickListAchievement {
           @if (isEdit() && currentImageUri()) {
             <div class="mb-2">
               <span class="text-sm text-surface-500 block mb-1">Huidige afbeelding:</span>
-              <img [src]="currentImageUri() | resolveApiUrl" class="w-16 h-16 object-contain rounded-md border border-surface-200 dark:border-surface-700 bg-surface-100 dark:bg-surface-800" />
+              <img
+                [src]="currentImageUri() | resolveApiUrl"
+                class="w-16 h-16 object-contain rounded-md border border-surface-200 dark:border-surface-700 bg-surface-100 dark:bg-surface-800"
+              />
             </div>
           }
-          <input type="file" id="image" (change)="onFileSelected($event)" accept="image/png, image/jpeg" class="w-full p-2 border border-surface-200 dark:border-surface-700 rounded-md" />
+          <input
+            type="file"
+            id="image"
+            (change)="onFileSelected($event)"
+            accept="image/png, image/jpeg"
+            class="w-full p-2 border border-surface-200 dark:border-surface-700 rounded-md"
+          />
         </div>
       </form>
-      
-      <ng-template pTemplate="footer">
-        <p-button label="Annuleren" icon="pi pi-times" [text]="true" severity="secondary" (onClick)="dialogVisible.set(false)"></p-button>
-        <p-button label="Opslaan" icon="pi pi-check" (onClick)="saveAchievement()" [loading]="saving()" [disabled]="achForm.invalid"></p-button>
+
+      <ng-template #footer>
+        <p-button
+          label="Annuleren"
+          icon="pi pi-times"
+          [text]="true"
+          severity="secondary"
+          (onClick)="dialogVisible.set(false)"
+        ></p-button>
+        <p-button
+          label="Opslaan"
+          icon="pi pi-check"
+          (onClick)="saveAchievement()"
+          [loading]="saving()"
+          [disabled]="achForm.invalid"
+        ></p-button>
       </ng-template>
     </p-dialog>
-    
-    <p-dialog header="Gebruiker Achievements Beheren" [(visible)]="userDialogVisible" [modal]="true" [style]="{width: '80vw'}" [maximizable]="true">
+
+    <p-dialog
+      header="Gebruiker Achievements Beheren"
+      [(visible)]="userDialogVisible"
+      [modal]="true"
+      [style]="{ width: '80vw' }"
+      [maximizable]="true"
+    >
       <div class="flex flex-col gap-4 mt-2">
         <div class="flex flex-col gap-2">
           <label>Selecteer Gebruiker</label>
-          <p-select [options]="users()" [(ngModel)]="selectedUser" optionLabel="fullName" [filter]="true" filterBy="fullName" [showClear]="true" placeholder="Selecteer een Gebruiker" (onChange)="onUserSelect($any($event).value)" appendTo="body" class="w-full md:w-1/2"></p-select>
+          <p-select
+            [options]="users()"
+            [(ngModel)]="selectedUser"
+            optionLabel="fullName"
+            [filter]="true"
+            filterBy="fullName"
+            [showClear]="true"
+            placeholder="Selecteer een Gebruiker"
+            (onChange)="onUserSelect($any($event).value)"
+            appendTo="body"
+            class="w-full md:w-1/2"
+          ></p-select>
         </div>
-        
+
         @if (selectedUser()) {
-          <p-pickList [source]="availableAchievements()" [target]="userAchievements()" sourceHeader="Beschikbaar" targetHeader="Achievements van Gebruiker" [dragdrop]="true" [responsive]="true" [sourceStyle]="{ height: '30rem' }" [targetStyle]="{ height: '30rem' }" filterBy="name" sourceFilterPlaceholder="Zoeken op naam" targetFilterPlaceholder="Zoeken op naam" [showSourceControls]="false" [showTargetControls]="false" (onMoveToTarget)="onMoveToTarget($event)" (onMoveToSource)="onMoveToSource($event)">
-            <ng-template let-ach pTemplate="item">
+          <p-pick-list
+            [source]="availableAchievements()"
+            [target]="userAchievements()"
+            sourceHeader="Beschikbaar"
+            targetHeader="Achievements van Gebruiker"
+            [dragdrop]="true"
+            [responsive]="true"
+            [sourceStyle]="{ height: '30rem' }"
+            [targetStyle]="{ height: '30rem' }"
+            filterBy="name"
+            sourceFilterPlaceholder="Zoeken op naam"
+            targetFilterPlaceholder="Zoeken op naam"
+            [showSourceControls]="false"
+            [showTargetControls]="false"
+            (onMoveToTarget)="onMoveToTarget($event)"
+            (onMoveToSource)="onMoveToSource($event)"
+          >
+            <ng-template let-ach #item>
               <div class="flex flex-wrap p-2 items-center gap-3">
-                <img *ngIf="ach.imageUri" [src]="ach.imageUri | resolveApiUrl" [alt]="ach.name" class="w-10 h-10 object-contain shadow-sm shrink-0 rounded-md bg-surface-100 dark:bg-surface-800" />
+                <img
+                  *ngIf="ach.imageUri"
+                  [src]="ach.imageUri | resolveApiUrl"
+                  [alt]="ach.name"
+                  class="w-10 h-10 object-contain shadow-sm shrink-0 rounded-md bg-surface-100 dark:bg-surface-800"
+                />
                 <div class="flex-1 flex flex-col gap-1">
-                    <span class="font-bold border-surface-200 dark:border-surface-700">{{ ach.name }}</span>
+                  <span class="font-bold border-surface-200 dark:border-surface-700">{{
+                    ach.name
+                  }}</span>
                 </div>
               </div>
             </ng-template>
-          </p-pickList>
+          </p-pick-list>
         }
       </div>
     </p-dialog>
   `,
-  providers: [ConfirmationService]
+  changeDetection: ChangeDetectionStrategy.Eager,
+  providers: [ConfirmationService],
 })
 export default class AchievementsComponent implements OnInit {
   private readonly achievementService = inject(AchievementService);
@@ -230,24 +419,25 @@ export default class AchievementsComponent implements OnInit {
   deletingId = signal<string | null>(null);
 
   // Enums for dropdowns
-  actionOptions = Object.values(ActionOption).map(v => ({ label: v, value: v }));
-  operatorOptions = Object.values(ComparisonOperatorOption).map(v => ({ label: v, value: v }));
-  tierOptions = Object.values(AchievementTier).map(v => ({ label: v, value: v }));
+  actionOptions = Object.values(ActionOption).map((v) => ({ label: v, value: v }));
+  operatorOptions = Object.values(ComparisonOperatorOption).map((v) => ({ label: v, value: v }));
+  tierOptions = Object.values(AchievementTier).map((v) => ({ label: v, value: v }));
 
   actionExplanations: Record<string, string> = {
     [ActionOption.None]: 'Geen automatische actie.',
     [ActionOption.UserOrderAmountBought]: 'Totaal aantal bestelde items (producten).',
-    [ActionOption.UserOrderAmountPaid]: 'Totaal uitgegeven bedrag in euro\'s.',
+    [ActionOption.UserOrderAmountPaid]: "Totaal uitgegeven bedrag in euro's.",
     [ActionOption.UserIndividualTopUp]: 'Grootste individuele opwaardering.',
     [ActionOption.UserTotalTopUp]: 'Totaal opgewaardeerd bedrag.',
-    [ActionOption.YearsOfMembership]: 'Aantal jaren dat de gebruiker lid is (gebaseerd op eerste bestelling).',
+    [ActionOption.YearsOfMembership]:
+      'Aantal jaren dat de gebruiker lid is (gebaseerd op eerste bestelling).',
     [ActionOption.OrdersWithinHour]: 'Maximaal aantal bestellingen binnen één uur.',
     [ActionOption.MinutesBetweenOrders]: 'Minimaal aantal minuten tussen twee bestellingen.',
     [ActionOption.MinutesBetweenTopUp]: 'Minimaal aantal minuten tussen twee opwaarderingen.',
     [ActionOption.QuoteCount]: 'Totaal aantal geplaatste quotes.',
     [ActionOption.QuoteVotesReceived]: 'Totaal aantal ontvangen stemmen op eigen quotes.',
     [ActionOption.ReactionCount]: 'Totaal aantal geplaatste reacties.',
-    [ActionOption.CurrentStreak]: 'Huidige dagelijkse streak (aantal opeenvolgende dagen actief).'
+    [ActionOption.CurrentStreak]: 'Huidige dagelijkse streak (aantal opeenvolgende dagen actief).',
   };
 
   operatorExplanations: Record<string, string> = {
@@ -255,10 +445,10 @@ export default class AchievementsComponent implements OnInit {
     [ComparisonOperatorOption.LessThan]: 'Kleiner dan (<)',
     [ComparisonOperatorOption.GreaterThan]: 'Groter dan (>)',
     [ComparisonOperatorOption.LessThanOrEqual]: 'Kleiner dan of gelijk aan (<=)',
-    [ComparisonOperatorOption.GreaterThanOrEqual]: 'Groter dan of gelijk aan (>=)'
+    [ComparisonOperatorOption.GreaterThanOrEqual]: 'Groter dan of gelijk aan (>=)',
   };
 
-  parentOptions = signal<{name: string, id: string}[]>([]);
+  parentOptions = signal<{ name: string; id: string }[]>([]);
 
   selectedFile: File | null = null;
 
@@ -270,7 +460,7 @@ export default class AchievementsComponent implements OnInit {
     comparisonOperator: [ComparisonOperatorOption.None],
     comparisonValue: [0],
     tier: [AchievementTier.Bronze],
-    parentAchievementId: [null as string | null]
+    parentAchievementId: [null as string | null],
   });
 
   // User Management Signals
@@ -289,7 +479,7 @@ export default class AchievementsComponent implements OnInit {
   loadAchievements(): void {
     this.loading.set(true);
     // Passing 0 and 1000 to get a large list simply for our table and picklist for now.
-    // In a real huge dataset, we should correctly wire up the table's (onLazyLoad) 
+    // In a real huge dataset, we should correctly wire up the table's (onLazyLoad)
     this.achievementService.getAchievements(0, 1000).subscribe({
       next: (data) => {
         this.achievements.set(data.items);
@@ -297,13 +487,15 @@ export default class AchievementsComponent implements OnInit {
         this.loading.set(false);
 
         // Populate the base list for PickList
-        this.allAchievementsForPick.set(data.items.map(a => ({
-          id: a.id,
-          name: a.name,
-          imageUri: a.image?.uri
-        })));
+        this.allAchievementsForPick.set(
+          data.items.map((a) => ({
+            id: a.id,
+            name: a.name,
+            imageUri: a.image?.uri,
+          })),
+        );
 
-        this.parentOptions.set(data.items.map(a => ({ name: a.name, id: a.id })));
+        this.parentOptions.set(data.items.map((a) => ({ name: a.name, id: a.id })));
 
         // If a user is currently selected in the dialog, refresh their lists
         if (this.selectedUser()) {
@@ -311,9 +503,13 @@ export default class AchievementsComponent implements OnInit {
         }
       },
       error: () => {
-        this.messageService.add({ severity: 'error', summary: 'Fout', detail: 'Laden van achievements is mislukt' });
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Fout',
+          detail: 'Laden van achievements is mislukt',
+        });
         this.loading.set(false);
-      }
+      },
     });
   }
 
@@ -330,7 +526,7 @@ export default class AchievementsComponent implements OnInit {
       comparisonOperator: ComparisonOperatorOption.None,
       comparisonValue: 0,
       tier: AchievementTier.Bronze,
-      parentAchievementId: null
+      parentAchievementId: null,
     });
     this.dialogVisible.set(true);
   }
@@ -348,7 +544,7 @@ export default class AchievementsComponent implements OnInit {
       comparisonOperator: ach.comparisonOperator,
       comparisonValue: ach.comparisonValue,
       tier: ach.tier,
-      parentAchievementId: ach.parentAchievementId || null
+      parentAchievementId: ach.parentAchievementId || null,
     });
     this.dialogVisible.set(true);
   }
@@ -369,49 +565,73 @@ export default class AchievementsComponent implements OnInit {
     if (this.isEdit() && this.editingId()) {
       const updateDto: AchievementUpdateDto = {
         id: this.editingId()!,
-        ...formValue
+        ...formValue,
       };
-      this.achievementService.updateAchievement(updateDto, this.selectedFile ?? undefined).subscribe({
-        next: () => {
-          this.messageService.add({ severity: 'success', summary: 'Succes', detail: 'Achievement bewerkt' });
-          this.dialogVisible.set(false);
-          this.saving.set(false);
-          this.loadAchievements();
-        },
-        error: () => {
-          this.messageService.add({ severity: 'error', summary: 'Fout', detail: 'Bewerken is mislukt' });
-          this.saving.set(false);
-        }
-      });
+      this.achievementService
+        .updateAchievement(updateDto, this.selectedFile ?? undefined)
+        .subscribe({
+          next: () => {
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Succes',
+              detail: 'Achievement bewerkt',
+            });
+            this.dialogVisible.set(false);
+            this.saving.set(false);
+            this.loadAchievements();
+          },
+          error: () => {
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Fout',
+              detail: 'Bewerken is mislukt',
+            });
+            this.saving.set(false);
+          },
+        });
     } else {
       if (!this.selectedFile) {
-        this.messageService.add({ severity: 'error', summary: 'Fout', detail: 'Afbeelding is verplicht' });
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Fout',
+          detail: 'Afbeelding is verplicht',
+        });
         this.saving.set(false);
         return;
       }
 
-      this.achievementService.createAchievement({
-        name: formValue.name,
-        description: formValue.description,
-        autoAchieve: formValue.autoAchieve,
-        action: formValue.action,
-        comparisonOperator: formValue.comparisonOperator,
-        comparisonValue: formValue.comparisonValue,
-        image: this.selectedFile,
-        tier: formValue.tier,
-        parentAchievementId: formValue.parentAchievementId || undefined
-      }).subscribe({
-        next: () => {
-          this.messageService.add({ severity: 'success', summary: 'Succes', detail: 'Achievement toegevoegd' });
-          this.dialogVisible.set(false);
-          this.saving.set(false);
-          this.loadAchievements();
-        },
-        error: () => {
-          this.messageService.add({ severity: 'error', summary: 'Fout', detail: 'Toevoegen is mislukt' });
-          this.saving.set(false);
-        }
-      });
+      this.achievementService
+        .createAchievement({
+          name: formValue.name,
+          description: formValue.description,
+          autoAchieve: formValue.autoAchieve,
+          action: formValue.action,
+          comparisonOperator: formValue.comparisonOperator,
+          comparisonValue: formValue.comparisonValue,
+          image: this.selectedFile,
+          tier: formValue.tier,
+          parentAchievementId: formValue.parentAchievementId || undefined,
+        })
+        .subscribe({
+          next: () => {
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Succes',
+              detail: 'Achievement toegevoegd',
+            });
+            this.dialogVisible.set(false);
+            this.saving.set(false);
+            this.loadAchievements();
+          },
+          error: () => {
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Fout',
+              detail: 'Toevoegen is mislukt',
+            });
+            this.saving.set(false);
+          },
+        });
     }
   }
 
@@ -423,22 +643,31 @@ export default class AchievementsComponent implements OnInit {
       acceptButtonStyleClass: 'p-button-danger',
       accept: () => {
         this.deleteAchievement(ach.id);
-      }
+      },
     });
   }
 
   deleteAchievement(id: string): void {
     this.deletingId.set(id);
-    this.achievementService.deleteAchievement(id)
+    this.achievementService
+      .deleteAchievement(id)
       .pipe(finalize(() => this.deletingId.set(null)))
       .subscribe({
         next: () => {
-          this.messageService.add({ severity: 'success', summary: 'Succes', detail: 'Achievement verwijderd' });
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Succes',
+            detail: 'Achievement verwijderd',
+          });
           this.loadAchievements();
         },
         error: () => {
-          this.messageService.add({ severity: 'error', summary: 'Fout', detail: 'Verwijderen is mislukt' });
-        }
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Fout',
+            detail: 'Verwijderen is mislukt',
+          });
+        },
       });
   }
 
@@ -451,13 +680,21 @@ export default class AchievementsComponent implements OnInit {
       accept: () => {
         this.achievementService.awardAchievementToAllUsers(ach.id).subscribe({
           next: (count) => {
-            this.messageService.add({ severity: 'success', summary: 'Succes', detail: `Toegekend aan ${count} gebruikers` });
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Succes',
+              detail: `Toegekend aan ${count} gebruikers`,
+            });
           },
           error: () => {
-            this.messageService.add({ severity: 'error', summary: 'Fout', detail: 'Toekennen is mislukt' });
-          }
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Fout',
+              detail: 'Toekennen is mislukt',
+            });
+          },
         });
-      }
+      },
     });
   }
 
@@ -466,7 +703,7 @@ export default class AchievementsComponent implements OnInit {
   openUserDialog(): void {
     this.userDialogVisible.set(true);
     if (this.users().length === 0) {
-      this.userService.getUsers().subscribe(u => this.users.set(u.items));
+      this.userService.getUsers().subscribe((u) => this.users.set(u.items));
     }
   }
 
@@ -484,21 +721,21 @@ export default class AchievementsComponent implements OnInit {
     this.achievementService.getAchievementEntries(user.id).subscribe({
       next: (entries) => {
         // Map entries to PickList formats
-        const targetList: PickListAchievement[] = entries.map(e => ({
+        const targetList: PickListAchievement[] = entries.map((e) => ({
           id: e.achievementId,
           name: e.achievementName,
           imageUri: e.imageUrl,
-          entryId: e.id
+          entryId: e.id,
         }));
 
         // Filter out achievements the user already has from the source list
         const sourceList = this.allAchievementsForPick().filter(
-          a => !targetList.some(t => t.id === a.id)
+          (a) => !targetList.some((t) => t.id === a.id),
         );
 
         this.userAchievements.set(targetList);
         this.availableAchievements.set(sourceList);
-      }
+      },
     });
   }
 
@@ -511,7 +748,11 @@ export default class AchievementsComponent implements OnInit {
     for (let ach of movedItems) {
       this.achievementService.awardAchievementToUser(user.id, ach.id).subscribe({
         next: () => {
-          this.messageService.add({ severity: 'success', summary: 'Toegekend', detail: `${ach.name} is toegekend aan ${user.fullName}` });
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Toegekend',
+            detail: `${ach.name} is toegekend aan ${user.fullName}`,
+          });
           // Ideally fetch the entryId here to set on the item if they move it back immediately,
           // but for now re-fetching the list implicitly will solve it.
           // Since it's moved entirely by DOM, if they move it back immediately without an entryId, it might fail.
@@ -519,9 +760,13 @@ export default class AchievementsComponent implements OnInit {
           this.refreshUserPickList(user);
         },
         error: () => {
-          this.messageService.add({ severity: 'error', summary: 'Fout', detail: `Toekennen van ${ach.name} is mislukt` });
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Fout',
+            detail: `Toekennen van ${ach.name} is mislukt`,
+          });
           this.refreshUserPickList(user);
-        }
+        },
       });
     }
   }
@@ -532,18 +777,26 @@ export default class AchievementsComponent implements OnInit {
 
     // Items moved to the left (removed)
     const movedItems = event.items as PickListAchievement[];
-    const entryIdsToDelete = movedItems.filter(i => i.entryId).map(i => i.entryId!);
+    const entryIdsToDelete = movedItems.filter((i) => i.entryId).map((i) => i.entryId!);
 
     if (entryIdsToDelete.length > 0) {
       this.achievementService.deleteAchievementEntries(entryIdsToDelete).subscribe({
         next: () => {
-          this.messageService.add({ severity: 'info', summary: 'Verwijderd', detail: `${entryIdsToDelete.length} achievements verwijderd van ${user.fullName}` });
+          this.messageService.add({
+            severity: 'info',
+            summary: 'Verwijderd',
+            detail: `${entryIdsToDelete.length} achievements verwijderd van ${user.fullName}`,
+          });
           this.refreshUserPickList(user);
         },
         error: () => {
-          this.messageService.add({ severity: 'error', summary: 'Fout', detail: 'Verwijderen van achievements is mislukt' });
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Fout',
+            detail: 'Verwijderen van achievements is mislukt',
+          });
           this.refreshUserPickList(user);
-        }
+        },
       });
     }
   }

@@ -1,4 +1,13 @@
-import { Component, ChangeDetectionStrategy, input, output, inject, computed, signal, effect } from '@angular/core';
+import {
+  Component,
+  ChangeDetectionStrategy,
+  input,
+  output,
+  inject,
+  computed,
+  signal,
+  effect,
+} from '@angular/core';
 import { MenuModule } from 'primeng/menu';
 import { MenuItem } from 'primeng/api';
 import { CommonModule } from '@angular/common';
@@ -14,47 +23,85 @@ import { UserProfileDrawerService } from '../../core/services/user-profile-drawe
 
 @Component({
   selector: 'app-sidebar',
-  imports: [CommonModule, MenuModule, AvatarModule, RouterModule, BrandingComponent, ResolveApiUrlPipe],
+  imports: [
+    CommonModule,
+    MenuModule,
+    AvatarModule,
+    RouterModule,
+    BrandingComponent,
+    ResolveApiUrlPipe,
+  ],
   template: `
     @if (isOpen()) {
       <div class="mobile-overlay" (click)="close.emit()"></div>
     }
-    
+
     <aside class="sidebar" [class.sidebar-open]="isOpen()">
       <div class="logo">
         <app-branding />
       </div>
       <div class="flex-1 overflow-y-auto min-h-0 custom-scrollbar">
-        <p-menu [model]="items()" styleClass="w-full border-none bg-transparent" (click)="close.emit()" />
+        <p-menu
+          [model]="items()"
+          styleClass="w-full border-none bg-transparent"
+          (click)="close.emit()"
+        />
       </div>
-      
+
       <div class="pb-4 flex flex-col">
         @if (authService.isAuthenticated()) {
-          <div class="flex items-center gap-3 px-6 py-3 cursor-pointer text-surface-200 hover:text-white hover:bg-surface-700 transition-colors" (click)="openOwnProfile()">
-            <p-avatar 
-              [image]="(authService.currentUser()?.profilePictureUrl | resolveApiUrl) || undefined" 
-              [label]="!authService.currentUser()?.profilePictureUrl ? authService.currentUser()?.fullName?.substring(0,1) : undefined"
-              shape="circle" 
-              styleClass="w-8 h-8 flex-shrink-0"
+          <div
+            class="flex items-center gap-3 px-6 py-3 cursor-pointer text-surface-200 hover:text-white hover:bg-surface-700 transition-colors"
+            (click)="openOwnProfile()"
+          >
+            <p-avatar
+              [image]="
+                ($safeNavigationMigration(authService.currentUser()?.profilePictureUrl)
+                  | resolveApiUrl) || undefined
+              "
+              [label]="
+                !authService.currentUser()?.profilePictureUrl
+                  ? $safeNavigationMigration(authService.currentUser()?.fullName?.substring(0, 1))
+                  : undefined
+              "
+              shape="circle"
+              class="w-8 h-8 flex-shrink-0"
             ></p-avatar>
-            <span class="font-medium truncate">{{ authService.currentUser()?.fullName ?? authService.currentUser()?.userName }}</span>
+            <span class="font-medium truncate">{{
+              authService.currentUser()?.fullName ?? authService.currentUser()?.userName
+            }}</span>
           </div>
-          
-          <a class="flex items-center gap-3 px-6 py-3 cursor-pointer text-red-500 hover:text-red-400 hover:bg-surface-700 transition-colors" (click)="authService.logout(); close.emit()" style="text-decoration: none;">
+
+          <a
+            class="flex items-center gap-3 px-6 py-3 cursor-pointer text-red-500 hover:text-red-400 hover:bg-surface-700 transition-colors"
+            (click)="authService.logout(); close.emit()"
+            style="text-decoration: none;"
+          >
             <div class="w-8 h-8 flex items-center justify-center">
               <i class="pi pi-sign-out text-lg"></i>
             </div>
             <span class="font-medium">{{ ls.t().logout }}</span>
           </a>
         } @else {
-          <a class="flex items-center gap-3 px-6 py-3 cursor-pointer hover:bg-surface-700 transition-colors" [routerLink]="['/login']" [queryParams]="{ returnUrl: router.url }" style="text-decoration: none; color: var(--p-primary-color, #3b82f6);" (click)="close.emit()">
+          <a
+            class="flex items-center gap-3 px-6 py-3 cursor-pointer hover:bg-surface-700 transition-colors"
+            [routerLink]="['/login']"
+            [queryParams]="{ returnUrl: router.url }"
+            style="text-decoration: none; color: var(--p-primary-color, #3b82f6);"
+            (click)="close.emit()"
+          >
             <div class="w-8 h-8 flex items-center justify-center">
               <i class="pi pi-sign-in text-lg"></i>
             </div>
             <span class="font-medium">{{ ls.t().login }}</span>
           </a>
-          
-          <a class="flex items-center gap-3 px-6 py-3 cursor-pointer text-surface-200 hover:text-white hover:bg-surface-700 transition-colors" [routerLink]="['/register']" style="text-decoration: none;" (click)="close.emit()">
+
+          <a
+            class="flex items-center gap-3 px-6 py-3 cursor-pointer text-surface-200 hover:text-white hover:bg-surface-700 transition-colors"
+            [routerLink]="['/register']"
+            style="text-decoration: none;"
+            (click)="close.emit()"
+          >
             <div class="w-8 h-8 flex items-center justify-center">
               <i class="pi pi-user-plus text-lg"></i>
             </div>
@@ -140,7 +187,7 @@ import { UserProfileDrawerService } from '../../core/services/user-profile-drawe
         display: block;
       }
     }
-    
+
     .custom-scrollbar {
       scrollbar-width: thin;
       scrollbar-color: var(--p-surface-600) transparent;
@@ -192,15 +239,18 @@ export class SidebarComponent {
   private checkQuotesAccess() {
     // Probe the quotes API to determine if this user has access.
     // 200 = accessible, 403 = role-restricted, anything else = allow through.
-    this.http.get('/api/v1/quote', { params: { skip: '0', take: '1' } }).pipe(
-      catchError(err => {
-        if (err.status === 403) this.canAccessQuotes.set(false);
-        else this.canAccessQuotes.set(true); // network errors etc. — allow
-        return of(null);
-      })
-    ).subscribe(res => {
-      if (res !== null) this.canAccessQuotes.set(true);
-    });
+    this.http
+      .get('/api/v1/quote', { params: { skip: '0', take: '1' } })
+      .pipe(
+        catchError((err) => {
+          if (err.status === 403) this.canAccessQuotes.set(false);
+          else this.canAccessQuotes.set(true); // network errors etc. — allow
+          return of(null);
+        }),
+      )
+      .subscribe((res) => {
+        if (res !== null) this.canAccessQuotes.set(true);
+      });
   }
 
   openOwnProfile() {
@@ -218,30 +268,35 @@ export class SidebarComponent {
       baseItems.push({
         label: t.main,
         items: [
-          { label: t.homepage, icon: 'pi pi-home', routerLink: '/', routerLinkActiveOptions: { exact: true } },
-          { label: t.leaderboard, icon: 'pi pi-chart-bar', routerLink: '/leaderboard' }
-        ]
+          {
+            label: t.homepage,
+            icon: 'pi pi-home',
+            routerLink: '/',
+            routerLinkActiveOptions: { exact: true },
+          },
+          { label: t.leaderboard, icon: 'pi pi-chart-bar', routerLink: '/leaderboard' },
+        ],
       });
     }
 
     if (this.authService.isAuthenticated()) {
-      baseItems.push(
-        {
-          label: t.general,
-          items: [
-            { label: t.order, icon: 'pi pi-shopping-cart', routerLink: '/pos' },
-            { label: t.my_orders, icon: 'pi pi-history', routerLink: '/orders/personal' },
-            { label: t.my_saldo, icon: 'pi pi-wallet', routerLink: '/orders/saldo' },
-            { label: t.events, icon: 'pi pi-calendar', routerLink: '/events' },
-            ...(this.canAccessQuotes() ? [{ label: t.quotes, icon: 'pi pi-comment', routerLink: '/quotes' }] : []),
-            { label: t.achievements, icon: 'pi pi-verified', routerLink: '/achievements' },
-            { label: t.leaderboard, icon: 'pi pi-chart-bar', routerLink: '/leaderboard' },
-            { label: t.user_overview, icon: 'pi pi-users', routerLink: '/users' },
-            { label: t.about, icon: 'pi pi-info-circle', routerLink: '/about' },
-            { label: t.settings, icon: 'pi pi-cog', routerLink: '/settings' }
-          ]
-        }
-      );
+      baseItems.push({
+        label: t.general,
+        items: [
+          { label: t.order, icon: 'pi pi-shopping-cart', routerLink: '/pos' },
+          { label: t.my_orders, icon: 'pi pi-history', routerLink: '/orders/personal' },
+          { label: t.my_saldo, icon: 'pi pi-wallet', routerLink: '/orders/saldo' },
+          { label: t.events, icon: 'pi pi-calendar', routerLink: '/events' },
+          ...(this.canAccessQuotes()
+            ? [{ label: t.quotes, icon: 'pi pi-comment', routerLink: '/quotes' }]
+            : []),
+          { label: t.achievements, icon: 'pi pi-verified', routerLink: '/achievements' },
+          { label: t.leaderboard, icon: 'pi pi-chart-bar', routerLink: '/leaderboard' },
+          { label: t.user_overview, icon: 'pi pi-users', routerLink: '/users' },
+          { label: t.about, icon: 'pi pi-info-circle', routerLink: '/about' },
+          { label: t.settings, icon: 'pi pi-cog', routerLink: '/settings' },
+        ],
+      });
 
       const currentUser = this.authService.currentUser();
       if (currentUser) {
@@ -252,9 +307,7 @@ export class SidebarComponent {
         const adminItems: MenuItem[] = [];
 
         if (isAdmin || isKiosk) {
-          adminItems.push(
-            { label: t.orders, icon: 'pi pi-list', routerLink: '/admin/orders' }
-          );
+          adminItems.push({ label: t.orders, icon: 'pi pi-list', routerLink: '/admin/orders' });
         }
 
         if (isAdmin) {
@@ -266,14 +319,18 @@ export class SidebarComponent {
             { label: t.achievements, icon: 'pi pi-verified', routerLink: '/admin/achievements' },
             { label: t.announcements, icon: 'pi pi-megaphone', routerLink: '/admin/announcements' },
             { label: t.send_notification, icon: 'pi pi-bell', routerLink: '/admin/notifications' },
-            { label: t.global_settings, icon: 'pi pi-info-circle', routerLink: '/admin/global-settings' }
+            {
+              label: t.global_settings,
+              icon: 'pi pi-info-circle',
+              routerLink: '/admin/global-settings',
+            },
           );
         }
 
         if (adminItems.length > 0) {
           baseItems.push({
             label: t.admin,
-            items: adminItems
+            items: adminItems,
           });
         }
       }

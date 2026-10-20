@@ -1,4 +1,4 @@
-import { Component, signal, inject, effect } from '@angular/core';
+import { Component, signal, inject, effect, ChangeDetectionStrategy } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { ThemeService } from './core/services/theme.service';
 import { PrimeNG } from 'primeng/config';
@@ -14,9 +14,17 @@ import { AppUpdateService } from './core/services/app-update.service';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, AchievementModalComponent, WhatsNewModalComponent, UserProfileDrawerComponent, PushPermissionDialogComponent, CommonModule],
+  imports: [
+    RouterOutlet,
+    AchievementModalComponent,
+    WhatsNewModalComponent,
+    UserProfileDrawerComponent,
+    PushPermissionDialogComponent,
+    CommonModule,
+  ],
   templateUrl: './app.html',
-  styleUrl: './app.css'
+  changeDetection: ChangeDetectionStrategy.Eager,
+  styleUrl: './app.css',
 })
 export class App {
   protected readonly title = signal('SSSKLv2');
@@ -51,11 +59,37 @@ export class App {
       choose: 'Kies',
       upload: 'Uploaden',
       cancel: 'Annuleren',
-      dayNames: ["Zondag", "Maandag", "Dinsdag", "Woensdag", "Donderdag", "Vrijdag", "Zaterdag"],
-      dayNamesShort: ["Zon", "Maan", "Din", "Woe", "Don", "Vrij", "Zat"],
-      dayNamesMin: ["Zo", "Ma", "Di", "Wo", "Do", "Vr", "Za"],
-      monthNames: ["Januari", "Februari", "Maart", "April", "Mei", "Juni", "Juli", "Augustus", "September", "Oktober", "November", "December"],
-      monthNamesShort: ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dec"],
+      dayNames: ['Zondag', 'Maandag', 'Dinsdag', 'Woensdag', 'Donderdag', 'Vrijdag', 'Zaterdag'],
+      dayNamesShort: ['Zon', 'Maan', 'Din', 'Woe', 'Don', 'Vrij', 'Zat'],
+      dayNamesMin: ['Zo', 'Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za'],
+      monthNames: [
+        'Januari',
+        'Februari',
+        'Maart',
+        'April',
+        'Mei',
+        'Juni',
+        'Juli',
+        'Augustus',
+        'September',
+        'Oktober',
+        'November',
+        'December',
+      ],
+      monthNamesShort: [
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'Mei',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Okt',
+        'Nov',
+        'Dec',
+      ],
       today: 'Vandaag',
       clear: 'Wissen',
       weekHeader: 'Wk',
@@ -114,8 +148,8 @@ export class App {
         zoomIn: 'Inzoomen',
         zoomOut: 'Uitzoomen',
         rotateRight: 'Roteer rechts',
-        rotateLeft: 'Roteer links'
-      }
+        rotateLeft: 'Roteer links',
+      },
     });
   }
 }

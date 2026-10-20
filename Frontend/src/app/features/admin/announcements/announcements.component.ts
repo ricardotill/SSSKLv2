@@ -43,11 +43,11 @@ import { LanguageService } from '../../../core/services/language.service';
       </div>
     </div>
 
-    <p-confirmDialog></p-confirmDialog>
+    <p-confirm-dialog></p-confirm-dialog>
 
     <p-card>
-      <p-table stripedRows [value]="announcements()" [loading]="loading()" [paginator]="true" [rows]="10" responsiveLayout="scroll">
-        <ng-template pTemplate="header">
+      <p-table stripedRows [value]="announcements()" [loading]="loading()" [paginator]="true" [rows]="10">
+        <ng-template #header>
           <tr>
             <th>{{ ls.t().message }}</th>
             <th class="w-24 text-center">{{ ls.t().announcement_order }}</th>
@@ -57,7 +57,7 @@ import { LanguageService } from '../../../core/services/language.service';
             <th class="w-32">{{ ls.t().actions }}</th>
           </tr>
         </ng-template>
-        <ng-template pTemplate="body" let-announcement>
+        <ng-template #body let-announcement>
           <tr>
             <td>
               <div class="font-bold">{{ announcement.message }}</div>
@@ -77,7 +77,7 @@ import { LanguageService } from '../../../core/services/language.service';
             </td>
           </tr>
         </ng-template>
-        <ng-template pTemplate="emptymessage">
+        <ng-template #emptymessage>
           <tr>
             <td colspan="6" class="text-center p-4 text-surface-500">{{ ls.t().no_announcements }}</td>
           </tr>
@@ -99,7 +99,7 @@ import { LanguageService } from '../../../core/services/language.service';
 
         <div class="flex flex-col gap-2">
           <label for="order">{{ ls.t().announcement_order }}</label>
-          <p-inputNumber id="order" formControlName="order" class="w-full"></p-inputNumber>
+          <p-input-number id="order" formControlName="order" class="w-full"></p-input-number>
         </div>
 
         <div class="flex items-center gap-2">
@@ -120,7 +120,7 @@ import { LanguageService } from '../../../core/services/language.service';
         }
       </form>
       
-      <ng-template pTemplate="footer">
+      <ng-template #footer>
         <p-button [label]="ls.t().cancel" icon="pi pi-times" [text]="true" severity="secondary" (onClick)="dialogVisible.set(false)"></p-button>
         <p-button [label]="ls.t().save" icon="pi pi-check" (onClick)="save()" [loading]="saving()" [disabled]="announcementForm.invalid"></p-button>
       </ng-template>

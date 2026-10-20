@@ -42,7 +42,7 @@ import { ResolveApiUrlPipe } from '../../shared/pipes/resolve-api-url.pipe';
 
       @if (loading()) {
         <div class="flex justify-center items-center p-16">
-          <p-progressSpinner ariaLabel="Laden"></p-progressSpinner>
+          <p-progress-spinner ariaLabel="Laden"></p-progress-spinner>
         </div>
       } @else if (stats(); as s) {
         <section class="grid grid-cols-2 md:grid-cols-4 gap-3">

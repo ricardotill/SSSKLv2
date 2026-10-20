@@ -1,4 +1,12 @@
-import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit, OnDestroy } from '@angular/core';
+import {
+  Component,
+  ChangeDetectionStrategy,
+  inject,
+  signal,
+  computed,
+  OnInit,
+  OnDestroy,
+} from '@angular/core';
 import { catchError, finalize, interval, of, Subscription, switchMap, takeWhile } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -13,7 +21,10 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { MessageModule } from 'primeng/message';
 import { ProgressBarModule } from 'primeng/progressbar';
 import { ApplicationUserService } from '../../users/services/application-user.service';
-import { ApplicationUserDto, ApplicationUserUpdateDto } from '../../../core/models/application-user.model';
+import {
+  ApplicationUserDto,
+  ApplicationUserUpdateDto,
+} from '../../../core/models/application-user.model';
 import { RecalculationJob } from '../../../core/models/recalculation-job.model';
 import { LanguageService } from '../../../core/services/language.service';
 import { CardModule } from 'primeng/card';
@@ -23,7 +34,6 @@ import { ResolveApiUrlPipe } from '../../../shared/pipes/resolve-api-url.pipe';
 import { RoleService } from '../services/role.service';
 
 const RECALCULATE_ALL_POLL_INTERVAL_MS = 3000;
-
 
 @Component({
   selector: 'app-users',
@@ -44,11 +54,13 @@ const RECALCULATE_ALL_POLL_INTERVAL_MS = 3000;
     AvatarModule,
     ResolveApiUrlPipe,
     MessageModule,
-    ProgressBarModule
+    ProgressBarModule,
   ],
   template: `
     <div class="flex justify-between items-center mb-4">
-      <h1 class="text-2xl font-bold m-0 text-surface-900 dark:text-surface-0">{{ ls.t().users }}</h1>
+      <h1 class="text-2xl font-bold m-0 text-surface-900 dark:text-surface-0">
+        {{ ls.t().users }}
+      </h1>
       <div class="flex gap-2">
         <p-button
           icon="pi pi-exclamation-triangle"
@@ -58,31 +70,45 @@ const RECALCULATE_ALL_POLL_INTERVAL_MS = 3000;
           (onClick)="confirmRecalculateAllStats()"
           [loading]="isRecalculateAllRunning()"
         ></p-button>
-        <p-button icon="pi pi-refresh" [rounded]="true" (onClick)="loadUsers()" [ariaLabel]="ls.t().refresh"></p-button>
+        <p-button
+          icon="pi pi-refresh"
+          [rounded]="true"
+          (onClick)="loadUsers()"
+          [ariaLabel]="ls.t().refresh"
+        ></p-button>
       </div>
     </div>
-    <p-confirmDialog></p-confirmDialog>
+    <p-confirm-dialog></p-confirm-dialog>
 
     @if (recalculateAllJob(); as job) {
       <p-message
-        [severity]="job.status === 'Failed' ? 'error' : (job.status === 'Completed' ? 'success' : 'warn')"
+        [severity]="
+          job.status === 'Failed' ? 'error' : job.status === 'Completed' ? 'success' : 'warn'
+        "
         [closable]="job.status === 'Completed' || job.status === 'Failed'"
         (onClose)="recalculateAllJob.set(null)"
-        styleClass="w-full mb-4"
+        class="w-full mb-4"
       >
         <div class="flex flex-col gap-2 w-full">
           <span>{{ recalculateAllStatusMessage() }}</span>
           @if (job.status === 'Pending' || job.status === 'Running') {
-            <p-progressBar [value]="recalculateAllProgress()" [showValue]="true"></p-progressBar>
+            <p-progress-bar [value]="recalculateAllProgress()" [showValue]="true"></p-progress-bar>
           }
         </div>
       </p-message>
     }
 
     <p-card>
-      
-      <p-table stripedRows [value]="users()" [loading]="loading()" [paginator]="true" [rows]="10" [totalRecords]="totalRecords()" responsiveLayout="scroll">
-        <ng-template pTemplate="header">
+      <p-table
+        stripedRows
+        [value]="users()"
+        [loading]="loading()"
+        [paginator]="true"
+        [rows]="10"
+        [totalRecords]="totalRecords()"
+
+      >
+        <ng-template #header>
           <tr>
             <th>{{ ls.t().username }}</th>
             <th>{{ ls.t().full_name }}</th>
@@ -91,32 +117,62 @@ const RECALCULATE_ALL_POLL_INTERVAL_MS = 3000;
             <th class="w-32">{{ ls.t().actions }}</th>
           </tr>
         </ng-template>
-        <ng-template pTemplate="body" let-user>
+        <ng-template #body let-user>
           <tr>
             <td>
               <div class="flex items-center gap-3">
-                <p-avatar 
-                  [image]="(user.profilePictureUrl | resolveApiUrl) || undefined" 
-                  [label]="!user.profilePictureUrl ? user.fullName?.substring(0,1) : undefined"
-                  shape="circle" 
-                  size="normal">
+                <p-avatar
+                  [image]="(user.profilePictureUrl | resolveApiUrl) || undefined"
+                  [label]="
+                    !user.profilePictureUrl
+                      ? $safeNavigationMigration(user.fullName?.substring(0, 1))
+                      : undefined
+                  "
+                  shape="circle"
+                  size="normal"
+                >
                 </p-avatar>
                 <span>{{ user.userName }}</span>
               </div>
             </td>
             <td>{{ user.fullName }}</td>
-            <td>{{ user.saldo | currency:'EUR' }}</td>
-            <td>{{ user.lastOrdered ? (user.lastOrdered | date:'dd-MM-yyyy HH:mm') : ls.t().never }}</td>
+            <td>{{ user.saldo | currency: 'EUR' }}</td>
+            <td>
+              {{ user.lastOrdered ? (user.lastOrdered | date: 'dd-MM-yyyy HH:mm') : ls.t().never }}
+            </td>
             <td>
               <div class="flex gap-2">
-                <p-button icon="pi pi-pencil" [rounded]="true" [text]="true" severity="info" (onClick)="openEditDialog(user)" [ariaLabel]="ls.t().edit"></p-button>
-                <p-button icon="pi pi-refresh" [rounded]="true" [text]="true" severity="secondary" (onClick)="recalculateStats(user.id)" [loading]="recalculatingUserId() === user.id" ariaLabel="Statistieken herberekenen"></p-button>
-                <p-button icon="pi pi-trash" [rounded]="true" [text]="true" severity="danger" (onClick)="confirmDelete(user)" [loading]="deletingUserId() === user.id" [ariaLabel]="ls.t().delete"></p-button>
+                <p-button
+                  icon="pi pi-pencil"
+                  [rounded]="true"
+                  [text]="true"
+                  severity="info"
+                  (onClick)="openEditDialog(user)"
+                  [ariaLabel]="ls.t().edit"
+                ></p-button>
+                <p-button
+                  icon="pi pi-refresh"
+                  [rounded]="true"
+                  [text]="true"
+                  severity="secondary"
+                  (onClick)="recalculateStats(user.id)"
+                  [loading]="recalculatingUserId() === user.id"
+                  ariaLabel="Statistieken herberekenen"
+                ></p-button>
+                <p-button
+                  icon="pi pi-trash"
+                  [rounded]="true"
+                  [text]="true"
+                  severity="danger"
+                  (onClick)="confirmDelete(user)"
+                  [loading]="deletingUserId() === user.id"
+                  [ariaLabel]="ls.t().delete"
+                ></p-button>
               </div>
             </td>
           </tr>
         </ng-template>
-        <ng-template pTemplate="emptymessage">
+        <ng-template #emptymessage>
           <tr>
             <td colspan="5" class="text-center p-4 text-surface-500">{{ ls.t().no_users }}</td>
           </tr>
@@ -124,15 +180,28 @@ const RECALCULATE_ALL_POLL_INTERVAL_MS = 3000;
       </p-table>
     </p-card>
 
-    <p-dialog [header]="ls.t().edit_user" [(visible)]="editDialogVisible" [modal]="true" [style]="{width: '500px'}" [breakpoints]="{'768px': '90vw'}">
+    <p-dialog
+      [header]="ls.t().edit_user"
+      [(visible)]="editDialogVisible"
+      [modal]="true"
+      [style]="{ width: '500px' }"
+      [breakpoints]="{ '768px': '90vw' }"
+    >
       @if (editingUserProfilePictureUrl()) {
-        <div class="flex flex-col items-center gap-3 mb-6 p-4 bg-surface-50 dark:bg-surface-900 rounded-xl border border-surface-200 dark:border-surface-700">
-          <p-avatar [image]="(editingUserProfilePictureUrl() | resolveApiUrl)!" size="xlarge" shape="circle" class="shadow-md border-2 border-white dark:border-surface-800"></p-avatar>
-          <p-button 
-            [label]="ls.t().remove_profile_picture" 
-            icon="pi pi-trash" 
-            [text]="true" 
-            severity="danger" 
+        <div
+          class="flex flex-col items-center gap-3 mb-6 p-4 bg-surface-50 dark:bg-surface-900 rounded-xl border border-surface-200 dark:border-surface-700"
+        >
+          <p-avatar
+            [image]="(editingUserProfilePictureUrl() | resolveApiUrl)!"
+            size="xlarge"
+            shape="circle"
+            class="shadow-md border-2 border-white dark:border-surface-800"
+          ></p-avatar>
+          <p-button
+            [label]="ls.t().remove_profile_picture"
+            icon="pi pi-trash"
+            [text]="true"
+            severity="danger"
             size="small"
             (onClick)="confirmRemoveProfilePicture()"
           ></p-button>
@@ -161,7 +230,11 @@ const RECALCULATE_ALL_POLL_INTERVAL_MS = 3000;
         </div>
 
         <div class="flex items-center gap-2">
-          <p-checkbox formControlName="emailConfirmed" [binary]="true" inputId="emailConfirmed"></p-checkbox>
+          <p-checkbox
+            formControlName="emailConfirmed"
+            [binary]="true"
+            inputId="emailConfirmed"
+          ></p-checkbox>
           <label for="emailConfirmed">{{ ls.t().email_confirmed }}</label>
         </div>
 
@@ -171,30 +244,61 @@ const RECALCULATE_ALL_POLL_INTERVAL_MS = 3000;
         </div>
 
         <div class="flex items-center gap-2">
-          <p-checkbox formControlName="phoneNumberConfirmed" [binary]="true" inputId="phoneNumberConfirmed"></p-checkbox>
+          <p-checkbox
+            formControlName="phoneNumberConfirmed"
+            [binary]="true"
+            inputId="phoneNumberConfirmed"
+          ></p-checkbox>
           <label for="phoneNumberConfirmed">{{ ls.t().phone_number_confirmed }}</label>
         </div>
 
         <div class="flex flex-col gap-2">
           <label for="password">{{ ls.t().new_password_help }}</label>
-          <input pInputText id="password" type="password" formControlName="password" class="w-full" />
+          <input
+            pInputText
+            id="password"
+            type="password"
+            formControlName="password"
+            class="w-full"
+          />
         </div>
 
         <div class="flex flex-col gap-2">
           <label for="roles">{{ ls.t().roles }}</label>
-          <p-multiselect id="roles" formControlName="roles" [options]="availableRoles()" optionLabel="label" optionValue="value" [placeholder]="ls.t().select_roles" class="w-full" display="chip"></p-multiselect>
+          <p-multiselect
+            id="roles"
+            formControlName="roles"
+            [options]="availableRoles()"
+            optionLabel="label"
+            optionValue="value"
+            [placeholder]="ls.t().select_roles"
+            class="w-full"
+            display="chip"
+          ></p-multiselect>
         </div>
       </form>
-      
-      <ng-template pTemplate="footer">
-        <p-button [label]="ls.t().cancel" icon="pi pi-times" [text]="true" severity="secondary" (onClick)="editDialogVisible.set(false)"></p-button>
-        <p-button [label]="ls.t().save" icon="pi pi-check" (onClick)="saveEdit()" [loading]="saving()" [disabled]="editForm.invalid"></p-button>
+
+      <ng-template #footer>
+        <p-button
+          [label]="ls.t().cancel"
+          icon="pi pi-times"
+          [text]="true"
+          severity="secondary"
+          (onClick)="editDialogVisible.set(false)"
+        ></p-button>
+        <p-button
+          [label]="ls.t().save"
+          icon="pi pi-check"
+          (onClick)="saveEdit()"
+          [loading]="saving()"
+          [disabled]="editForm.invalid"
+        ></p-button>
       </ng-template>
     </p-dialog>
   `,
   styles: ``,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  providers: [ConfirmationService]
+  providers: [ConfirmationService],
 })
 export default class UsersComponent implements OnInit, OnDestroy {
   private readonly userService = inject(ApplicationUserService);
@@ -214,7 +318,7 @@ export default class UsersComponent implements OnInit, OnDestroy {
   saving = signal<boolean>(false);
   deletingUserId = signal<string | null>(null);
   recalculatingUserId = signal<string | null>(null);
-  availableRoles = signal<{ label: string, value: string }[]>([]);
+  availableRoles = signal<{ label: string; value: string }[]>([]);
 
   recalculateAllJob = signal<RecalculationJob | null>(null);
   private recalculateAllPollSubscription: Subscription | null = null;
@@ -238,7 +342,7 @@ export default class UsersComponent implements OnInit, OnDestroy {
         return this.ls.translate('recalculate_all_stats_completed', {
           processed: job.processedUsers,
           total: job.totalUsers,
-          failed: job.failedUsers
+          failed: job.failedUsers,
         });
       case 'Failed':
         return this.ls.translate('recalculate_all_stats_failed', { error: job.errorMessage ?? '' });
@@ -246,7 +350,7 @@ export default class UsersComponent implements OnInit, OnDestroy {
         return this.ls.translate('recalculate_all_stats_running', {
           processed: job.processedUsers,
           total: job.totalUsers,
-          failed: job.failedUsers
+          failed: job.failedUsers,
         });
     }
   });
@@ -260,9 +364,8 @@ export default class UsersComponent implements OnInit, OnDestroy {
     name: [''],
     surname: [''],
     password: [''],
-    roles: [[] as string[]]
+    roles: [[] as string[]],
   });
-
 
   ngOnInit(): void {
     this.loadUsers();
@@ -283,20 +386,24 @@ export default class UsersComponent implements OnInit, OnDestroy {
         this.loading.set(false);
       },
       error: () => {
-        this.messageService.add({ severity: 'error', summary: this.ls.t().error, detail: this.ls.t().load_failed });
+        this.messageService.add({
+          severity: 'error',
+          summary: this.ls.t().error,
+          detail: this.ls.t().load_failed,
+        });
         this.loading.set(false);
-      }
+      },
     });
   }
 
   loadRoles(): void {
     this.roleService.getAdminRoles().subscribe({
-        next: (roles) => {
-            this.availableRoles.set(roles.map(r => ({ label: r.name, value: r.name })));
-        },
-        error: () => {
-            console.error('Failed to load roles for multiselect');
-        }
+      next: (roles) => {
+        this.availableRoles.set(roles.map((r) => ({ label: r.name, value: r.name })));
+      },
+      error: () => {
+        console.error('Failed to load roles for multiselect');
+      },
     });
   }
 
@@ -319,14 +426,18 @@ export default class UsersComponent implements OnInit, OnDestroy {
           name: details.name ?? '',
           surname: details.surname ?? '',
           password: '',
-          roles: details.roles ?? []
+          roles: details.roles ?? [],
         });
         this.editingUserProfilePictureUrl.set(details.profilePictureUrl ?? null);
       },
       error: () => {
-        this.messageService.add({ severity: 'error', summary: this.ls.t().error, detail: this.ls.t().load_failed });
+        this.messageService.add({
+          severity: 'error',
+          summary: this.ls.t().error,
+          detail: this.ls.t().load_failed,
+        });
         this.editDialogVisible.set(false);
-      }
+      },
     });
   }
 
@@ -339,7 +450,7 @@ export default class UsersComponent implements OnInit, OnDestroy {
     this.saving.set(true);
     const formValue = this.editForm.getRawValue();
 
-    // Construct DTO taking care to omit empty strings for optional fields if necessary, 
+    // Construct DTO taking care to omit empty strings for optional fields if necessary,
     // or passing them. Usually empty strings are okay if the backend accepts it.
     const updateDto: ApplicationUserUpdateDto = {
       userName: formValue.userName,
@@ -351,20 +462,28 @@ export default class UsersComponent implements OnInit, OnDestroy {
       surname: formValue.surname || undefined,
       // Only send password if it has been typed
       ...(formValue.password ? { password: formValue.password } : {}),
-      roles: formValue.roles
+      roles: formValue.roles,
     };
 
     this.userService.updateUser(id, updateDto).subscribe({
       next: () => {
-        this.messageService.add({ severity: 'success', summary: this.ls.t().success, detail: this.ls.t().user_updated });
+        this.messageService.add({
+          severity: 'success',
+          summary: this.ls.t().success,
+          detail: this.ls.t().user_updated,
+        });
         this.editDialogVisible.set(false);
         this.saving.set(false);
         this.loadUsers(); // refresh the list
       },
       error: () => {
-        this.messageService.add({ severity: 'error', summary: this.ls.t().error, detail: this.ls.t().update_failed });
+        this.messageService.add({
+          severity: 'error',
+          summary: this.ls.t().error,
+          detail: this.ls.t().update_failed,
+        });
         this.saving.set(false);
-      }
+      },
     });
   }
 
@@ -376,21 +495,30 @@ export default class UsersComponent implements OnInit, OnDestroy {
       acceptButtonStyleClass: 'p-button-danger',
       accept: () => {
         this.deleteUser(user.id);
-      }
+      },
     });
   }
   deleteUser(id: string): void {
     this.deletingUserId.set(id);
-    this.userService.deleteUser(id)
+    this.userService
+      .deleteUser(id)
       .pipe(finalize(() => this.deletingUserId.set(null)))
       .subscribe({
         next: () => {
-          this.messageService.add({ severity: 'success', summary: this.ls.t().success, detail: this.ls.t().user_deleted });
+          this.messageService.add({
+            severity: 'success',
+            summary: this.ls.t().success,
+            detail: this.ls.t().user_deleted,
+          });
           this.loadUsers();
         },
         error: () => {
-          this.messageService.add({ severity: 'error', summary: this.ls.t().error, detail: this.ls.t().delete_failed });
-        }
+          this.messageService.add({
+            severity: 'error',
+            summary: this.ls.t().error,
+            detail: this.ls.t().delete_failed,
+          });
+        },
       });
   }
 
@@ -402,7 +530,7 @@ export default class UsersComponent implements OnInit, OnDestroy {
       acceptButtonStyleClass: 'p-button-danger',
       accept: () => {
         this.removeProfilePicture();
-      }
+      },
     });
   }
 
@@ -412,23 +540,42 @@ export default class UsersComponent implements OnInit, OnDestroy {
 
     this.userService.deleteProfilePicture(id).subscribe({
       next: () => {
-        this.messageService.add({ severity: 'success', summary: this.ls.t().success, detail: this.ls.t().profile_picture_removed });
+        this.messageService.add({
+          severity: 'success',
+          summary: this.ls.t().success,
+          detail: this.ls.t().profile_picture_removed,
+        });
         this.editingUserProfilePictureUrl.set(null);
         this.loadUsers(); // Refresh the main list too
       },
       error: () => {
-        this.messageService.add({ severity: 'error', summary: this.ls.t().error, detail: this.ls.t().delete_failed });
-      }
+        this.messageService.add({
+          severity: 'error',
+          summary: this.ls.t().error,
+          detail: this.ls.t().delete_failed,
+        });
+      },
     });
   }
 
   recalculateStats(id: string): void {
     this.recalculatingUserId.set(id);
-    this.userService.recalculateUserStats(id)
+    this.userService
+      .recalculateUserStats(id)
       .pipe(finalize(() => this.recalculatingUserId.set(null)))
       .subscribe({
-        next: () => this.messageService.add({ severity: 'success', summary: this.ls.t().success, detail: 'Gebruikersstatistieken zijn herberekend.' }),
-        error: () => this.messageService.add({ severity: 'error', summary: this.ls.t().error, detail: 'Gebruikersstatistieken konden niet worden herberekend.' })
+        next: () =>
+          this.messageService.add({
+            severity: 'success',
+            summary: this.ls.t().success,
+            detail: 'Gebruikersstatistieken zijn herberekend.',
+          }),
+        error: () =>
+          this.messageService.add({
+            severity: 'error',
+            summary: this.ls.t().error,
+            detail: 'Gebruikersstatistieken konden niet worden herberekend.',
+          }),
       });
   }
 
@@ -438,12 +585,13 @@ export default class UsersComponent implements OnInit, OnDestroy {
       header: this.ls.t().recalculate_all_stats_confirm_title,
       icon: 'pi pi-exclamation-triangle',
       acceptButtonStyleClass: 'p-button-warning',
-      accept: () => this.startRecalculateAllStats()
+      accept: () => this.startRecalculateAllStats(),
     });
   }
 
   private startRecalculateAllStats(): void {
-    this.userService.startRecalculateAllStats()
+    this.userService
+      .startRecalculateAllStats()
       .pipe(
         catchError((err: HttpErrorResponse) => {
           if (err.status === 409 && err.error) {
@@ -451,7 +599,7 @@ export default class UsersComponent implements OnInit, OnDestroy {
             return of(err.error as RecalculationJob);
           }
           throw err;
-        })
+        }),
       )
       .subscribe({
         next: (job) => {
@@ -462,13 +610,17 @@ export default class UsersComponent implements OnInit, OnDestroy {
             summary: this.ls.t().success,
             detail: alreadyRunning
               ? this.ls.t().recalculate_all_stats_already_running
-              : this.ls.t().recalculate_all_stats_started
+              : this.ls.t().recalculate_all_stats_started,
           });
           this.pollRecalculateAllStatus(job.id);
         },
         error: () => {
-          this.messageService.add({ severity: 'error', summary: this.ls.t().error, detail: this.ls.t().recalculate_all_stats_start_failed });
-        }
+          this.messageService.add({
+            severity: 'error',
+            summary: this.ls.t().error,
+            detail: this.ls.t().recalculate_all_stats_start_failed,
+          });
+        },
       });
   }
 
@@ -482,7 +634,7 @@ export default class UsersComponent implements OnInit, OnDestroy {
       },
       error: () => {
         // No job has ever run yet - nothing to resume.
-      }
+      },
     });
   }
 
@@ -491,7 +643,7 @@ export default class UsersComponent implements OnInit, OnDestroy {
     this.recalculateAllPollSubscription = interval(RECALCULATE_ALL_POLL_INTERVAL_MS)
       .pipe(
         switchMap(() => this.userService.getRecalculateAllStatsStatus(jobId)),
-        takeWhile((job) => job.status === 'Pending' || job.status === 'Running', true)
+        takeWhile((job) => job.status === 'Pending' || job.status === 'Running', true),
       )
       .subscribe({
         next: (job) => {
@@ -501,8 +653,12 @@ export default class UsersComponent implements OnInit, OnDestroy {
           }
         },
         error: () => {
-          this.messageService.add({ severity: 'error', summary: this.ls.t().error, detail: this.ls.t().load_failed });
-        }
+          this.messageService.add({
+            severity: 'error',
+            summary: this.ls.t().error,
+            detail: this.ls.t().load_failed,
+          });
+        },
       });
   }
 }

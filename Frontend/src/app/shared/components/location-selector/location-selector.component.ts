@@ -1,4 +1,18 @@
-import { Component, input, output, effect, ElementRef, viewChild, AfterViewInit, inject, signal, OnDestroy, CUSTOM_ELEMENTS_SCHEMA, HostListener } from '@angular/core';
+import {
+  Component,
+  input,
+  output,
+  effect,
+  ElementRef,
+  viewChild,
+  AfterViewInit,
+  inject,
+  signal,
+  OnDestroy,
+  CUSTOM_ELEMENTS_SCHEMA,
+  HostListener,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 // Triggering recompile to ensure Google Maps replacement is picked up
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -21,81 +35,111 @@ export interface LocationResult {
 @Component({
   selector: 'app-location-selector',
   standalone: true,
-  imports: [CommonModule, FormsModule, InputTextModule, ButtonModule, ProgressSpinnerModule, MessageModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    InputTextModule,
+    ButtonModule,
+    ProgressSpinnerModule,
+    MessageModule,
+  ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
     <div class="flex flex-col gap-3">
       @if (loadingApi()) {
-        <div class="flex items-center gap-2 p-4 bg-surface-50 dark:bg-surface-800 rounded-lg border border-dashed border-surface-200 dark:border-surface-700">
-          <p-progress-spinner strokeWidth="4" styleClass="w-6 h-6"></p-progress-spinner>
+        <div
+          class="flex items-center gap-2 p-4 bg-surface-50 dark:bg-surface-800 rounded-lg border border-dashed border-surface-200 dark:border-surface-700"
+        >
+          <p-progress-spinner strokeWidth="4" class="w-6 h-6"></p-progress-spinner>
           <span class="text-sm text-surface-500 font-bold">Google Maps wordt geladen...</span>
         </div>
       } @else if (!apiLoaded()) {
         <!-- Fallback UI -->
-        <div class="flex flex-col gap-3 p-4 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-900/30 rounded-lg">
-          <div class="flex items-center gap-2 text-orange-700 dark:text-orange-400 font-medium text-sm">
+        <div
+          class="flex flex-col gap-3 p-4 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-900/30 rounded-lg"
+        >
+          <div
+            class="flex items-center gap-2 text-orange-700 dark:text-orange-400 font-medium text-sm"
+          >
             <i class="pi pi-exclamation-triangle"></i>
-            <span>Google Maps kon niet worden geladen (ontbrekende API-sleutel). Voer de locatie handmatig in.</span>
+            <span
+              >Google Maps kon niet worden geladen (ontbrekende API-sleutel). Voer de locatie
+              handmatig in.</span
+            >
           </div>
           <div class="flex gap-2">
-            <input 
-              pInputText 
-              [(ngModel)]="manualLocationName" 
-              (ngModelChange)="onManualLocationChange()" 
-              [placeholder]="'Voer locatienaam in...'" 
+            <input
+              pInputText
+              [(ngModel)]="manualLocationName"
+              (ngModelChange)="onManualLocationChange()"
+              [placeholder]="'Voer locatienaam in...'"
               class="w-full"
             />
           </div>
         </div>
       } @else {
         <!-- Google Maps UI -->
-        <div class="flex flex-col gap-3" (keydown.enter)="$event.preventDefault(); $event.stopPropagation()">
+        <div
+          class="flex flex-col gap-3"
+          (keydown.enter)="$event.preventDefault(); $event.stopPropagation()"
+        >
           <div class="relative flex-grow gmp-autocomplete-container">
-            <gmp-place-autocomplete 
-              #autocompleteElement 
+            <gmp-place-autocomplete
+              #autocompleteElement
               class="w-full"
               (gmp-select)="handlePlaceSelect($event)"
             ></gmp-place-autocomplete>
           </div>
 
-          <div class="relative w-full h-[350px] rounded-lg overflow-hidden border border-surface-200 dark:border-surface-700 shadow-sm">
+          <div
+            class="relative w-full h-[350px] rounded-lg overflow-hidden border border-surface-200 dark:border-surface-700 shadow-sm"
+          >
             <div #mapContainer class="w-full h-full z-0"></div>
           </div>
 
           @if (selectedLocationName()) {
-            <div class="flex items-center gap-2 p-2 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 rounded-md text-sm font-medium border border-primary-100 dark:border-primary-900/30">
+            <div
+              class="flex items-center gap-2 p-2 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 rounded-md text-sm font-medium border border-primary-100 dark:border-primary-900/30"
+            >
               <i class="pi pi-map-marker"></i>
               <span class="truncate">{{ selectedLocationName() }}</span>
-              <button type="button" class="ml-auto pi pi-times hover:text-primary-900" (click)="clearSelection()"></button>
+              <button
+                type="button"
+                class="ml-auto pi pi-times hover:text-primary-900"
+                (click)="clearSelection()"
+              ></button>
             </div>
           }
         </div>
       }
     </div>
   `,
-  styles: [`
-    :host {
-      display: block;
-    }
-    .gmp-autocomplete-container {
-      --gmpx-border-radius: 8px;
-      --gmpx-font-family: inherit;
-    }
-    gmp-place-autocomplete::part(input) {
-      width: 100%;
-      padding: 0.75rem 1rem;
-      border: 1px solid var(--p-surface-200);
-      border-radius: 8px;
-      font-size: 1rem;
-      background: var(--p-surface-0);
-      color: var(--p-surface-900);
-    }
-    .dark gmp-place-autocomplete::part(input) {
-      background: var(--p-surface-800);
-      border-color: var(--p-surface-700);
-      color: var(--p-surface-0);
-    }
-  `]
+  changeDetection: ChangeDetectionStrategy.Eager,
+  styles: [
+    `
+      :host {
+        display: block;
+      }
+      .gmp-autocomplete-container {
+        --gmpx-border-radius: 8px;
+        --gmpx-font-family: inherit;
+      }
+      gmp-place-autocomplete::part(input) {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 1px solid var(--p-surface-200);
+        border-radius: 8px;
+        font-size: 1rem;
+        background: var(--p-surface-0);
+        color: var(--p-surface-900);
+      }
+      .dark gmp-place-autocomplete::part(input) {
+        background: var(--p-surface-800);
+        border-color: var(--p-surface-700);
+        color: var(--p-surface-0);
+      }
+    `,
+  ],
 })
 export class LocationSelectorComponent implements AfterViewInit, OnDestroy {
   private readonly googleMapsService = inject(GoogleMapsService);
@@ -139,7 +183,7 @@ export class LocationSelectorComponent implements AfterViewInit, OnDestroy {
       const apiLoaded = this.apiLoaded();
       const container = this.mapContainer()?.nativeElement;
       const isDark = this.themeService.isDark();
-      
+
       if (apiLoaded && container) {
         this.initMap();
       }
@@ -150,7 +194,7 @@ export class LocationSelectorComponent implements AfterViewInit, OnDestroy {
       const lat = this.sanitizeCoordinate(this.initialLatitude());
       const lng = this.sanitizeCoordinate(this.initialLongitude());
       const name = this.initialName();
-      
+
       if (this.map && lat && lng) {
         this.updateMarker(lat, lng, name || '');
         this.map.setCenter({ lat, lng });
@@ -160,7 +204,7 @@ export class LocationSelectorComponent implements AfterViewInit, OnDestroy {
     // Handle theme updates for non-map elements
     effect(() => {
       const isDark = this.themeService.isDark();
-      
+
       // Update Autocomplete component color scheme
       const el = this.autocompleteElement()?.nativeElement as any;
       if (el) {
@@ -170,10 +214,13 @@ export class LocationSelectorComponent implements AfterViewInit, OnDestroy {
   }
 
   ngAfterViewInit() {
-    this.googleMapsService.load().pipe(take(1)).subscribe(loaded => {
-      this.apiLoaded.set(loaded);
-      this.loadingApi.set(false);
-    });
+    this.googleMapsService
+      .load()
+      .pipe(take(1))
+      .subscribe((loaded) => {
+        this.apiLoaded.set(loaded);
+        this.loadingApi.set(false);
+      });
   }
 
   ngOnDestroy() {
@@ -195,43 +242,48 @@ export class LocationSelectorComponent implements AfterViewInit, OnDestroy {
     }
 
     const isDark = this.themeService.isDark();
-    this.googleMapsService.getMapId().pipe(take(1)).subscribe(mapId => {
-      // Use setTimeout to ensure container has dimensions
-      setTimeout(() => {
-        const lat = this.sanitizeCoordinate(this.initialLatitude()) || 52.0907;
-        const lng = this.sanitizeCoordinate(this.initialLongitude()) || 5.1214;
-        const zoom = this.initialLatitude() ? 15 : 7;
+    this.googleMapsService
+      .getMapId()
+      .pipe(take(1))
+      .subscribe((mapId) => {
+        // Use setTimeout to ensure container has dimensions
+        setTimeout(() => {
+          const lat = this.sanitizeCoordinate(this.initialLatitude()) || 52.0907;
+          const lng = this.sanitizeCoordinate(this.initialLongitude()) || 5.1214;
+          const zoom = this.initialLatitude() ? 15 : 7;
 
-        const mapOptions: any = {
-          center: { lat, lng },
-          zoom: zoom,
-          mapId: mapId,
-          colorScheme: isDark ? (google.maps as any).ColorScheme.DARK : (google.maps as any).ColorScheme.LIGHT,
-          mapTypeControl: false,
-          streetViewControl: false,
-          fullscreenControl: false
-        };
+          const mapOptions: any = {
+            center: { lat, lng },
+            zoom: zoom,
+            mapId: mapId,
+            colorScheme: isDark
+              ? (google.maps as any).ColorScheme.DARK
+              : (google.maps as any).ColorScheme.LIGHT,
+            mapTypeControl: false,
+            streetViewControl: false,
+            fullscreenControl: false,
+          };
 
-        // Only apply inline styles if no Map ID is provided, to avoid API warnings
-        if (!mapId) {
-          mapOptions.styles = [
-            { featureType: 'poi', elementType: 'labels', stylers: [{ visibility: 'off' }] }
-          ];
-        }
-
-        this.map = new google.maps.Map(container, mapOptions);
-
-        if (this.initialLatitude() && this.initialLongitude()) {
-          this.updateMarker(lat, lng, this.initialName() || '');
-        }
-
-        this.map.addListener('click', (e: google.maps.MapMouseEvent) => {
-          if (e.latLng) {
-            this.handleMapClick(e.latLng.lat(), e.latLng.lng());
+          // Only apply inline styles if no Map ID is provided, to avoid API warnings
+          if (!mapId) {
+            mapOptions.styles = [
+              { featureType: 'poi', elementType: 'labels', stylers: [{ visibility: 'off' }] },
+            ];
           }
-        });
-      }, 50);
-    });
+
+          this.map = new google.maps.Map(container, mapOptions);
+
+          if (this.initialLatitude() && this.initialLongitude()) {
+            this.updateMarker(lat, lng, this.initialName() || '');
+          }
+
+          this.map.addListener('click', (e: google.maps.MapMouseEvent) => {
+            if (e.latLng) {
+              this.handleMapClick(e.latLng.lat(), e.latLng.lng());
+            }
+          });
+        }, 50);
+      });
   }
 
   private initAutocomplete() {
@@ -246,12 +298,12 @@ export class LocationSelectorComponent implements AfterViewInit, OnDestroy {
 
     try {
       const place = await (placePrediction as any).toPlace();
-      
+
       // We must explicitly fetch the fields we need in the new Places API
       await (place as any).fetchFields({
-        fields: ['location', 'displayName', 'formattedAddress']
+        fields: ['location', 'displayName', 'formattedAddress'],
       });
-      
+
       if (place?.location) {
         const lat = place.location.lat();
         const lng = place.location.lng();
@@ -289,7 +341,7 @@ export class LocationSelectorComponent implements AfterViewInit, OnDestroy {
   private async updateMarker(lat: number, lng: number, name: string) {
     if (!this.map) return;
 
-    const markerLib = await google.maps.importLibrary("marker") as any;
+    const markerLib = (await google.maps.importLibrary('marker')) as any;
     const AdvancedMarkerElement = markerLib.AdvancedMarkerElement;
 
     if (this.marker) {
@@ -299,7 +351,7 @@ export class LocationSelectorComponent implements AfterViewInit, OnDestroy {
         position: { lat, lng },
         map: this.map,
         gmpDraggable: true,
-        title: name
+        title: name,
       });
 
       this.marker.addListener('dragend', () => {
@@ -318,7 +370,7 @@ export class LocationSelectorComponent implements AfterViewInit, OnDestroy {
     this.locationChanged.emit({
       name: this.manualLocationName,
       lat: 0,
-      lng: 0
+      lng: 0,
     });
   }
 
@@ -336,17 +388,17 @@ export class LocationSelectorComponent implements AfterViewInit, OnDestroy {
   private sanitizeCoordinate(coord: number | undefined): number | undefined {
     if (coord === undefined || coord === null || isNaN(coord)) return undefined;
     if (coord === 0) return 0;
-    
+
     // Standard coordinates are between -180 and 180
     if (Math.abs(coord) <= 180) return coord;
-    
+
     // If coordinate is ridiculously large, it was likely mangled by locale issues (dot vs comma)
     // We attempt to "heal" it by scaling it down
     let fixed = coord;
     while (Math.abs(fixed) > 180) {
       fixed /= 10;
     }
-    
+
     console.warn(`Sanitized coordinate from ${coord} to ${fixed}`);
     return fixed;
   }

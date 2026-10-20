@@ -34,7 +34,7 @@ const CSV_EXPORT_POLL_INTERVAL_MS = 3000;
         <p-button icon="pi pi-refresh" [rounded]="true" (onClick)="loadOrders()" [ariaLabel]="ls.t().refresh"></p-button>
       </div>
     </div>
-    <p-confirmDialog></p-confirmDialog>
+    <p-confirm-dialog></p-confirm-dialog>
     <p-card>
       <p-table 
         stripedRows
@@ -45,11 +45,11 @@ const CSV_EXPORT_POLL_INTERVAL_MS = 3000;
         [totalRecords]="totalRecords()"
         [lazy]="true" 
         (onLazyLoad)="onLazyLoad($event)"
-        responsiveLayout="scroll"
+
         [showCurrentPageReport]="true"
         [currentPageReportTemplate]="ls.t().showing_orders_report_no_total"
         [rowsPerPageOptions]="[10, 15, 25, 50]">
-        <ng-template pTemplate="header">
+        <ng-template #header>
           <tr>
             <th>{{ ls.t().date }}</th>
             <th>{{ ls.t().user }}</th>
@@ -59,7 +59,7 @@ const CSV_EXPORT_POLL_INTERVAL_MS = 3000;
             <th class="w-32">{{ ls.t().actions }}</th>
           </tr>
         </ng-template>
-        <ng-template pTemplate="body" let-order>
+        <ng-template #body let-order>
           <tr>
             <td>{{ order.createdOn | date:'dd-MM-yyyy HH:mm' }}</td>
             <td>{{ order.userFullName }}</td>
@@ -73,7 +73,7 @@ const CSV_EXPORT_POLL_INTERVAL_MS = 3000;
             </td>
           </tr>
         </ng-template>
-        <ng-template pTemplate="emptymessage">
+        <ng-template #emptymessage>
           <tr>
             <td colspan="6" class="text-center p-4 text-surface-500">{{ ls.t().no_orders }}</td>
           </tr>

@@ -46,7 +46,7 @@ import { finalize, forkJoin, of, catchError } from 'rxjs';
                 formControlName="googleMapsApiKey" 
                 [toggleMask]="true" 
                 [feedback]="false" 
-                styleClass="w-full" 
+                class="w-full" 
                 inputStyleClass="w-full"
                 [placeholder]="'AIza...'"
               ></p-password>
@@ -93,7 +93,7 @@ import { finalize, forkJoin, of, catchError } from 'rxjs';
                   formControlName="emailSmtpPassword" 
                   [toggleMask]="true" 
                   [feedback]="false" 
-                  styleClass="w-full" 
+                  class="w-full" 
                   inputStyleClass="w-full"
                   [placeholder]="passwordIsSet() ? '●●●●●●●● (reeds ingesteld)' : 'App wachtwoord invoeren'"
                 ></p-password>
@@ -150,7 +150,7 @@ import { finalize, forkJoin, of, catchError } from 'rxjs';
         <p-card [header]="ls.t().whats_new_settings_section_title" [subheader]="ls.t().whats_new_settings_section_desc">
           <div class="flex flex-col gap-2">
             <p-editor formControlName="whatsNewContent" [style]="{ height: '400px' }">
-              <ng-template pTemplate="header">
+              <ng-template #header>
                 <span class="ql-formats">
                   <button type="button" class="ql-bold" aria-label="Bold"></button>
                   <button type="button" class="ql-italic" aria-label="Italic"></button>

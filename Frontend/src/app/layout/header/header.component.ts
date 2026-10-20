@@ -18,15 +18,15 @@ import { NotificationDrawerService } from '../../core/services/notification-draw
   imports: [CommonModule, ToolbarModule, AvatarModule, ButtonModule, BadgeModule, RouterLink, NotificationDrawerComponent, BrandingComponent],
   template: `
     <header class="header">
-      <p-toolbar styleClass="bg-surface-0 dark:bg-surface-900 border-none border-b border-surface-200 dark:border-surface-700 w-full mb-0 h-16 px-4 relative">
-        <ng-template pTemplate="start">
+      <p-toolbar class="bg-surface-0 dark:bg-surface-900 border-none border-b border-surface-200 dark:border-surface-700 w-full mb-0 h-16 px-4 relative">
+        <ng-template #start>
           <div class="flex items-center gap-2">
               <p-button icon="pi pi-bars" (onClick)="menuToggled.emit()" [text]="true" severity="secondary" styleClass="md:!hidden flex-shrink-0" />
               <app-branding [showVersion]="false" class="scale-[0.85] sm:scale-100 origin-left md:!hidden" />
           </div>
         </ng-template>
 
-        <ng-template pTemplate="end">
+        <ng-template #end>
           <div class="flex items-center gap-4">
             @if (authService.isAuthenticated()) {
               <p-button 
@@ -40,7 +40,7 @@ import { NotificationDrawerService } from '../../core/services/notification-draw
                   <p-badge 
                     [value]="notificationService.unreadCount() > 9 ? '9+' : notificationService.unreadCount()" 
                     severity="danger" 
-                    styleClass="absolute p-0 min-w-[18px] h-[18px] leading-[18px] text-[10px] -top-1 -right-1 flex items-center justify-center m-0" />
+                    class="absolute p-0 min-w-[18px] h-[18px] leading-[18px] text-[10px] -top-1 -right-1 flex items-center justify-center m-0" />
                 }
               </p-button>
 

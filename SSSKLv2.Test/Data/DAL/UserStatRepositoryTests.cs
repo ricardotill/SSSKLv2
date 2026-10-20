@@ -38,9 +38,9 @@ public class UserStatRepositoryTests : RepositoryTest
     public async Task RecalculateByUserId_RebuildsAggregatesAndDelegatesProductStats()
     {
         var user = TestUser;
-        var firstOrderDate = DateTime.UtcNow.AddDays(-2);
-        var secondOrderDate = DateTime.UtcNow.AddDays(-1);
-        var topUpDate = DateTime.UtcNow.AddHours(-12);
+        var firstOrderDate = new DateTime(2026, 1, 1, 12, 0, 0, DateTimeKind.Utc);
+        var secondOrderDate = firstOrderDate.AddDays(1);
+        var topUpDate = secondOrderDate.AddHours(12);
         await using (var context = new ApplicationDbContext(GetOptions()))
         {
             user = context.Users.Single(candidate => candidate.Id == user.Id);

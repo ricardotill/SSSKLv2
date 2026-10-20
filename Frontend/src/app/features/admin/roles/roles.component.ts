@@ -38,7 +38,7 @@ import { finalize } from 'rxjs';
       </div>
     </div>
 
-    <p-confirmDialog></p-confirmDialog>
+    <p-confirm-dialog></p-confirm-dialog>
 
     <p-card>
       <p-table 
@@ -48,14 +48,14 @@ import { finalize } from 'rxjs';
         stripedRows
         [paginator]="true" 
         [rows]="10"
-        responsiveLayout="scroll">
-        <ng-template pTemplate="header">
+>
+        <ng-template #header>
           <tr>
             <th>{{ ls.t().roles_name }}</th>
             <th class="w-32">{{ ls.t().roles_actions }}</th>
           </tr>
         </ng-template>
-        <ng-template pTemplate="body" let-role>
+        <ng-template #body let-role>
           <tr>
             <td>
               <span class="font-medium">{{ role.name }}</span>
@@ -90,7 +90,7 @@ import { finalize } from 'rxjs';
             </td>
           </tr>
         </ng-template>
-        <ng-template pTemplate="emptymessage">
+        <ng-template #emptymessage>
           <tr>
             <td colspan="2" class="text-center p-4 text-surface-500">{{ ls.t().roles_no_roles }}</td>
           </tr>
@@ -120,7 +120,7 @@ import { finalize } from 'rxjs';
         </div>
       </form>
 
-      <ng-template pTemplate="footer">
+      <ng-template #footer>
         @if (editingRole()) {
           <p-button 
             label="Live Display" 

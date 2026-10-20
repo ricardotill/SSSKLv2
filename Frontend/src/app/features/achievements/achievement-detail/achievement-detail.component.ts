@@ -39,7 +39,7 @@ import { TierBadgeComponent } from '../../../shared/components/tier-badge/tier-b
 
       @if (loading()) {
         <div class="flex justify-center items-center p-12">
-          <p-progressSpinner ariaLabel="loading"></p-progressSpinner>
+          <p-progress-spinner ariaLabel="loading"></p-progress-spinner>
         </div>
       } @else if (earners().length > 0 || achievementName()) {
 
@@ -53,7 +53,7 @@ import { TierBadgeComponent } from '../../../shared/components/tier-badge/tier-b
         </div>
 
         <!-- Achievement Info Card -->
-        <p-card styleClass="overflow-hidden" [ngClass]="tier() ? 'tier-accent-' + tier()!.toLowerCase() : ''">
+        <p-card class="overflow-hidden" [ngClass]="tier() ? 'tier-accent-' + tier()!.toLowerCase() : ''">
           <div class="flex flex-col md:flex-row gap-6 items-center md:items-start">
 
             <!-- Badge / Image -->
@@ -103,12 +103,12 @@ import { TierBadgeComponent } from '../../../shared/components/tier-badge/tier-b
 
         <!-- Earners Section -->
         <p-card>
-          <ng-template pTemplate="header">
+          <ng-template #header>
             <div class="px-5 pt-5 pb-0">
               <h3 class="text-lg font-bold m-0 flex items-center gap-2 text-surface-900 dark:text-surface-0">
                 <i class="pi pi-trophy text-primary-500"></i>
                 {{ ls.t()['earners'] }}
-                <p-tag [value]="earners().length.toString()" severity="success" styleClass="ml-2" />
+                <p-tag [value]="earners().length.toString()" severity="success" class="ml-2" />
               </h3>
             </div>
           </ng-template>
@@ -133,7 +133,7 @@ import { TierBadgeComponent } from '../../../shared/components/tier-badge/tier-b
                       [label]="!earner.userProfilePictureUrl ? (earner.userFullName || earner.userName || '?').substring(0, 1).toUpperCase() : undefined"
                       shape="circle"
                       size="large"
-                      styleClass="ring-2 ring-primary-200 dark:ring-primary-800 shadow-sm flex-shrink-0"
+                      class="ring-2 ring-primary-200 dark:ring-primary-800 shadow-sm flex-shrink-0"
                     ></p-avatar>
 
                     <!-- Info -->

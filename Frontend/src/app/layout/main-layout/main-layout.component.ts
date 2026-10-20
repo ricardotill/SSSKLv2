@@ -12,7 +12,7 @@ import { ConfirmDialog } from 'primeng/confirmdialog';
   template: `
     <div class="layout-container bg-surface-50 dark:bg-surface-950">
       <p-toast position="bottom-left" />
-      <p-confirmDialog />
+      <p-confirm-dialog />
       <app-sidebar [isOpen]="isSidebarOpen()" (close)="isSidebarOpen.set(false)" />
       <div class="main-wrapper">
         <app-header [isSidebarOpen]="isSidebarOpen()" (menuToggled)="toggleSidebar()" />

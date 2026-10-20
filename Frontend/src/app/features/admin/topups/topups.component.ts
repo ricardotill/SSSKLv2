@@ -39,7 +39,7 @@ import { AuthService } from '../../../core/auth/auth.service';
         <p-button icon="pi pi-refresh" [rounded]="true" (onClick)="loadTopUps()" [ariaLabel]="ls.t().refresh"></p-button>
       </div>
     </div>
-    <p-confirmDialog></p-confirmDialog>
+    <p-confirm-dialog></p-confirm-dialog>
     <p-card>
       <p-table 
         stripedRows
@@ -50,15 +50,15 @@ import { AuthService } from '../../../core/auth/auth.service';
         [totalRecords]="totalRecords()" 
         [lazy]="true"
         (onLazyLoad)="onLazyLoad($event)"
-        responsiveLayout="scroll">
-        <ng-template pTemplate="header">
+>
+        <ng-template #header>
           <tr>
             <th>{{ ls.t().username }}</th>
             <th>{{ ls.t().amount }}</th>
             <th class="w-24 text-center">{{ ls.t().actions }}</th>
           </tr>
         </ng-template>
-        <ng-template pTemplate="body" let-topUp>
+        <ng-template #body let-topUp>
           <tr>
             <td>{{ topUp.userName }}</td>
             <td class="font-medium text-primary">{{ topUp.saldo | currency:'EUR' }}</td>
@@ -67,7 +67,7 @@ import { AuthService } from '../../../core/auth/auth.service';
             </td>
           </tr>
         </ng-template>
-        <ng-template pTemplate="emptymessage">
+        <ng-template #emptymessage>
           <tr>
             <td colspan="3" class="text-center p-4 text-surface-500">{{ ls.t().no_top_ups }}</td>
           </tr>
@@ -91,7 +91,7 @@ import { AuthService } from '../../../core/auth/auth.service';
             [placeholder]="ls.t().select_user"
             class="w-full"
             inputStyleClass="w-full">
-            <ng-template pTemplate="item" let-user>
+            <ng-template #item let-user>
                 <div class="flex flex-col">
                     <span class="font-medium">{{ user.fullName || user.userName }}</span>
                     @if (user.fullName) {
@@ -104,11 +104,11 @@ import { AuthService } from '../../../core/auth/auth.service';
 
         <div class="flex flex-col gap-2">
           <label for="saldo">{{ ls.t().amount }}</label>
-          <p-inputNumber id="saldo" formControlName="saldo" mode="currency" currency="EUR" locale="nl-NL" class="w-full" [min]="1"></p-inputNumber>
+          <p-input-number id="saldo" formControlName="saldo" mode="currency" currency="EUR" locale="nl-NL" class="w-full" [min]="1"></p-input-number>
         </div>
       </form>
       
-      <ng-template pTemplate="footer">
+      <ng-template #footer>
         <p-button [label]="ls.t().cancel" icon="pi pi-times" [text]="true" severity="secondary" (onClick)="dialogVisible.set(false)"></p-button>
         <p-button [label]="ls.t().save" icon="pi pi-check" (onClick)="saveTopUp()" [loading]="saving()" [disabled]="topUpForm.invalid"></p-button>
       </ng-template>

@@ -39,10 +39,10 @@ import { LanguageService } from '../../../core/services/language.service';
         <p-button icon="pi pi-refresh" [rounded]="true" (onClick)="loadProducts()" [ariaLabel]="ls.t().refresh"></p-button>
       </div>
     </div>
-    <p-confirmDialog></p-confirmDialog>
+    <p-confirm-dialog></p-confirm-dialog>
     <p-card>
-      <p-table stripedRows [value]="products()" [loading]="loading()" [paginator]="true" [rows]="10" [totalRecords]="totalRecords()" responsiveLayout="scroll">
-        <ng-template pTemplate="header">
+      <p-table stripedRows [value]="products()" [loading]="loading()" [paginator]="true" [rows]="10" [totalRecords]="totalRecords()">
+        <ng-template #header>
           <tr>
             <th>{{ ls.t().product_name }}</th>
             <th>{{ ls.t().product_description }}</th>
@@ -52,7 +52,7 @@ import { LanguageService } from '../../../core/services/language.service';
             <th class="w-32">{{ ls.t().actions }}</th>
           </tr>
         </ng-template>
-        <ng-template pTemplate="body" let-product>
+        <ng-template #body let-product>
           <tr>
             <td>{{ product.name }}</td>
             <td>{{ product.description }}</td>
@@ -69,7 +69,7 @@ import { LanguageService } from '../../../core/services/language.service';
             </td>
           </tr>
         </ng-template>
-        <ng-template pTemplate="emptymessage">
+        <ng-template #emptymessage>
           <tr>
             <td colspan="5" class="text-center p-4 text-surface-500">{{ ls.t().no_products }}</td>
           </tr>
@@ -91,21 +91,21 @@ import { LanguageService } from '../../../core/services/language.service';
 
         <div class="flex flex-col gap-2">
           <label for="price">{{ ls.t().price }}</label>
-          <p-inputNumber id="price" formControlName="price" mode="currency" currency="EUR" locale="nl-NL" class="w-full" [min]="0"></p-inputNumber>
+          <p-input-number id="price" formControlName="price" mode="currency" currency="EUR" locale="nl-NL" class="w-full" [min]="0"></p-input-number>
         </div>
 
         <div class="flex flex-col gap-2">
           <label for="stock">{{ ls.t().stock }}</label>
-          <p-inputNumber id="stock" formControlName="stock" class="w-full" [min]="0" [showButtons]="true"></p-inputNumber>
+          <p-input-number id="stock" formControlName="stock" class="w-full" [min]="0" [showButtons]="true"></p-input-number>
         </div>
 
         <div class="flex items-center gap-3">
-          <p-toggleSwitch id="enableLeaderboard" formControlName="enableLeaderboard"></p-toggleSwitch>
+          <p-toggle-switch id="enableLeaderboard" formControlName="enableLeaderboard"></p-toggle-switch>
           <label for="enableLeaderboard">{{ ls.t().enable_leaderboard }}</label>
         </div>
       </form>
       
-      <ng-template pTemplate="footer">
+      <ng-template #footer>
         @if (isEdit()) {
           <p-button [label]="ls.t().view_livedisplay" icon="pi pi-external-link" [text]="true" severity="info" (onClick)="openLiveDisplay()"></p-button>
         }

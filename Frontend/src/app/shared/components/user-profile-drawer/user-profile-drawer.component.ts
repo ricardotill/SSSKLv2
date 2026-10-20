@@ -54,7 +54,7 @@ import { ProgressBarModule } from 'primeng/progressbar';
       [blockScroll]="false"
       [appendTo]="'body'"
     >
-      <ng-template pTemplate="header">
+      <ng-template #header>
         <div class="flex items-center gap-3">
           <i class="pi pi-user text-2xl text-primary"></i>
           <h2 class="text-xl font-bold m-0">{{ user()?.fullName || ls.t().profile }}</h2>
@@ -63,7 +63,7 @@ import { ProgressBarModule } from 'primeng/progressbar';
 
       @if (loading()) {
         <div class="flex justify-center items-center p-12">
-          <p-progressSpinner></p-progressSpinner>
+          <p-progress-spinner></p-progress-spinner>
         </div>
       } @else if (user(); as u) {
         <div class="flex flex-col md:flex-row gap-6 p-2">
@@ -184,7 +184,7 @@ import { ProgressBarModule } from 'primeng/progressbar';
               
               @if (editMode()) {
                 <p-editor [(ngModel)]="editDescription" [style]="{ height: '180px' }">
-                  <ng-template pTemplate="header">
+                  <ng-template #header>
                     <span class="ql-formats">
                         <button type="button" class="ql-bold" aria-label="Bold"></button>
                         <button type="button" class="ql-italic" aria-label="Italic"></button>

@@ -38,11 +38,11 @@ import { BrandingComponent } from '../../shared/components/branding/branding.com
           </div>
 
           @if (successMessage()) {
-            <p-message severity="success" [text]="successMessage()" styleClass="w-full mt-4"></p-message>
+            <p-message severity="success" class="w-full mt-4">{{ successMessage() }}</p-message>
           }
 
           @if (errorMessage()) {
-            <p-message severity="error" [text]="errorMessage()" styleClass="w-full mt-4"></p-message>
+            <p-message severity="error" class="w-full mt-4">{{ errorMessage() }}</p-message>
           }
 
           <div class="mt-4">

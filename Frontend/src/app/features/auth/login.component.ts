@@ -69,7 +69,7 @@ import { BrandingComponent } from '../../shared/components/branding/branding.com
               formControlName="password" 
               [feedback]="false" 
               [toggleMask]="true"
-              styleClass="w-full"
+              class="w-full"
               inputStyleClass="w-full"
             ></p-password>
             @if (loginForm.controls['password'].invalid && loginForm.controls['password'].touched) {
@@ -101,7 +101,7 @@ import { BrandingComponent } from '../../shared/components/branding/branding.com
           }
 
           @if (errorMessage()) {
-             <p-message severity="error" [text]="errorMessage()" styleClass="w-full mt-4"></p-message>
+             <p-message severity="error" class="w-full mt-4">{{ errorMessage() }}</p-message>
           }
 
           <div class="mt-4 flex gap-2">

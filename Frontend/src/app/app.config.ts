@@ -10,12 +10,13 @@ import { provideRouter } from '@angular/router';
 import { routes } from './app.routes';
 import { providePrimeNG } from 'primeng/config';
 import { definePreset } from '@primeuix/themes';
-import Aura from '@primeuix/themes/aura';
+import Aura from '@primeuix/themes/aura-compat';
 import { MessageService, ConfirmationService } from 'primeng/api';
 
 import { provideHttpClient, withFetch, withInterceptors, withXsrfConfiguration } from '@angular/common/http';
 import { authInterceptor } from './core/auth/auth.interceptor';
 import { apiBaseInterceptor } from './core/interceptors/api-base.interceptor';
+import { environment } from '../environments/environment';
 
 const MyPreset = definePreset(Aura, {
   semantic: {
@@ -49,6 +50,7 @@ export const appConfig: ApplicationConfig = {
       })
     ),
     providePrimeNG({
+      license: environment.primeUiLicenseKey || undefined,
       theme: {
         preset: MyPreset,
         options: {

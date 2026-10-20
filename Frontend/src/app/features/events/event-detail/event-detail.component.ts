@@ -1,4 +1,14 @@
-import { Component, ChangeDetectionStrategy, inject, signal, OnInit, computed, ElementRef, viewChild, effect } from '@angular/core';
+import {
+  Component,
+  ChangeDetectionStrategy,
+  inject,
+  signal,
+  OnInit,
+  computed,
+  ElementRef,
+  viewChild,
+  effect,
+} from '@angular/core';
 import { CommonModule, DOCUMENT } from '@angular/common';
 import { GoogleMapsService } from '../../../core/services/google-maps.service';
 import { ThemeService } from '../../../core/services/theme.service';
@@ -38,7 +48,7 @@ import { ReactionListComponent } from '../../../shared/components/reaction-list/
     ResolveApiUrlPipe,
     ProcessedContentPipe,
     ReactionListComponent,
-    DialogModule
+    DialogModule,
   ],
   template: `
     <div class="max-w-4xl mx-auto">
@@ -55,34 +65,61 @@ import { ReactionListComponent } from '../../../shared/components/reaction-list/
         (onHide)="closeImageModal()"
       >
         <div class="flex flex-col gap-4">
-          <div class="flex justify-center rounded-2xl border border-surface-200 dark:border-surface-700 bg-surface-100 dark:bg-surface-800 p-3 min-h-56">
+          <div
+            class="flex justify-center rounded-2xl border border-surface-200 dark:border-surface-700 bg-surface-100 dark:bg-surface-800 p-3 min-h-56"
+          >
             @if (imagePreview()) {
-              <img [src]="imagePreview()" alt="Preview van eventafbeelding" class="max-h-64 w-full rounded-xl object-cover shadow-sm" />
+              <img
+                [src]="imagePreview()"
+                alt="Preview van eventafbeelding"
+                class="max-h-64 w-full rounded-xl object-cover shadow-sm"
+              />
             } @else if (event()?.imageUrl) {
-              <img [src]="event()?.imageUrl | resolveApiUrl" alt="Huidige eventafbeelding" class="max-h-64 w-full rounded-xl object-cover shadow-sm" />
+              <img
+                [src]="$safeNavigationMigration(event()?.imageUrl) | resolveApiUrl"
+                alt="Huidige eventafbeelding"
+                class="max-h-64 w-full rounded-xl object-cover shadow-sm"
+              />
             } @else {
-              <div class="flex min-h-56 w-full items-center justify-center rounded-xl border border-dashed border-surface-300 dark:border-surface-600 text-sm text-surface-500">
+              <div
+                class="flex min-h-56 w-full items-center justify-center rounded-xl border border-dashed border-surface-300 dark:border-surface-600 text-sm text-surface-500"
+              >
                 Geen afbeelding beschikbaar
               </div>
             }
           </div>
 
           <div class="flex items-center justify-center">
-            <label class="inline-flex cursor-pointer items-center gap-2 rounded-full border border-primary-500 bg-primary-500/10 px-4 py-2 text-sm font-medium text-primary-700 dark:text-primary-300 transition hover:bg-primary-500/20">
+            <label
+              class="inline-flex cursor-pointer items-center gap-2 rounded-full border border-primary-500 bg-primary-500/10 px-4 py-2 text-sm font-medium text-primary-700 dark:text-primary-300 transition hover:bg-primary-500/20"
+            >
               <i class="pi pi-upload"></i>
               Kies afbeelding
-              <input #eventImageInput type="file" accept="image/png, image/jpeg, image/webp, image/heic, image/heif" class="hidden" (change)="onImageFileSelected($event)" />
+              <input
+                #eventImageInput
+                type="file"
+                accept="image/png, image/jpeg, image/webp, image/heic, image/heif"
+                class="hidden"
+                (change)="onImageFileSelected($event)"
+              />
             </label>
           </div>
 
           @if (selectedImageFile()) {
-            <div class="rounded-lg border border-surface-200 bg-surface-50 px-3 py-2 text-xs text-surface-600 dark:border-surface-700 dark:bg-surface-900 dark:text-surface-300">
+            <div
+              class="rounded-lg border border-surface-200 bg-surface-50 px-3 py-2 text-xs text-surface-600 dark:border-surface-700 dark:bg-surface-900 dark:text-surface-300"
+            >
               {{ selectedImageFile()?.name }}
             </div>
           }
 
           <div class="flex justify-end gap-2 pt-2">
-            <p-button label="Annuleren" severity="secondary" [outlined]="true" (onClick)="closeImageModal()" />
+            <p-button
+              label="Annuleren"
+              severity="secondary"
+              [outlined]="true"
+              (onClick)="closeImageModal()"
+            />
             <p-button
               label="Opslaan"
               icon="pi pi-check"
@@ -93,52 +130,95 @@ import { ReactionListComponent } from '../../../shared/components/reaction-list/
           </div>
         </div>
       </p-dialog>
-      
+
       @if (loading()) {
         <div class="flex justify-center items-center p-12">
-          <p-progressSpinner ariaLabel="loading"></p-progressSpinner>
+          <p-progress-spinner ariaLabel="loading"></p-progress-spinner>
         </div>
       } @else if (event()) {
         <div class="flex flex-col gap-6">
           <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div class="flex items-center gap-3">
-              <p-button icon="pi pi-arrow-left" [text]="true" severity="secondary" routerLink="/events" />
-              <h1 class="text-3xl font-bold m-0 text-surface-900 dark:text-surface-0">{{ event()?.title }}</h1>
+              <p-button
+                icon="pi pi-arrow-left"
+                [text]="true"
+                severity="secondary"
+                routerLink="/events"
+              />
+              <h1 class="text-3xl font-bold m-0 text-surface-900 dark:text-surface-0">
+                {{ event()?.title }}
+              </h1>
             </div>
-            
+
             <div class="flex gap-2 flex-wrap">
-              <p-button [label]="ls.t().share" icon="pi pi-share-alt" [outlined]="true" severity="secondary" (onClick)="share()" />
+              <p-button
+                [label]="ls.t().share"
+                icon="pi pi-share-alt"
+                [outlined]="true"
+                severity="secondary"
+                (onClick)="share()"
+              />
               @if (canEdit()) {
-                <p-button [label]="ls.t().edit" icon="pi pi-pencil" severity="secondary" [routerLink]="['/events', event()?.id, 'edit']" />
-                <p-button label="Afbeelding wijzigen" icon="pi pi-image" severity="secondary" [outlined]="true" (onClick)="triggerImageUpload()" />
-                <p-button [label]="ls.t().delete" icon="pi pi-trash" severity="danger" (onClick)="deleteEvent()" />
+                <p-button
+                  [label]="ls.t().edit"
+                  icon="pi pi-pencil"
+                  severity="secondary"
+                  [routerLink]="['/events', $safeNavigationMigration(event()?.id), 'edit']"
+                />
+                <p-button
+                  label="Afbeelding wijzigen"
+                  icon="pi pi-image"
+                  severity="secondary"
+                  [outlined]="true"
+                  (onClick)="triggerImageUpload()"
+                />
+                <p-button
+                  [label]="ls.t().delete"
+                  icon="pi pi-trash"
+                  severity="danger"
+                  (onClick)="deleteEvent()"
+                />
               }
             </div>
           </div>
 
           <div class="grid grid-cols-12 gap-6">
             <div class="col-span-12 lg:col-span-8 flex flex-col gap-6">
-              <p-card styleClass="overflow-hidden">
-                <ng-template pTemplate="header">
+              <p-card class="overflow-hidden">
+                <ng-template #header>
                   @if (event()?.imageUrl) {
-                    <img [src]="event()?.imageUrl | resolveApiUrl" alt="Event Banner" class="w-full h-64 object-cover">
+                    <img
+                      [src]="$safeNavigationMigration(event()?.imageUrl) | resolveApiUrl"
+                      alt="Event Banner"
+                      class="w-full h-64 object-cover"
+                    />
                   }
                 </ng-template>
-                
+
                 <div class="flex flex-col gap-4">
                   <div class="grid grid-cols-2 gap-4">
                     <div class="flex flex-col gap-1">
-                      <span class="text-xs text-surface-500 uppercase font-bold tracking-wider">{{ ls.t().start_date }}</span>
+                      <span class="text-xs text-surface-500 uppercase font-bold tracking-wider">{{
+                        ls.t().start_date
+                      }}</span>
                       <div class="flex items-center gap-2">
                         <i class="pi pi-calendar text-primary-500"></i>
-                        <span class="font-medium">{{ event()?.startDateTime | date:'EEEE d MMMM yyyy, HH:mm' }}</span>
+                        <span class="font-medium">{{
+                          $safeNavigationMigration(event()?.startDateTime)
+                            | date: 'EEEE d MMMM yyyy, HH:mm'
+                        }}</span>
                       </div>
                     </div>
                     <div class="flex flex-col gap-1">
-                      <span class="text-xs text-surface-500 uppercase font-bold tracking-wider">{{ ls.t().end_date }}</span>
+                      <span class="text-xs text-surface-500 uppercase font-bold tracking-wider">{{
+                        ls.t().end_date
+                      }}</span>
                       <div class="flex items-center gap-2">
                         <i class="pi pi-calendar text-primary-500"></i>
-                        <span class="font-medium">{{ event()?.endDateTime | date:'EEEE d MMMM yyyy, HH:mm' }}</span>
+                        <span class="font-medium">{{
+                          $safeNavigationMigration(event()?.endDateTime)
+                            | date: 'EEEE d MMMM yyyy, HH:mm'
+                        }}</span>
                       </div>
                     </div>
                   </div>
@@ -146,21 +226,35 @@ import { ReactionListComponent } from '../../../shared/components/reaction-list/
                   @if (event()?.locationName) {
                     <p-divider></p-divider>
                     <div class="flex flex-col gap-2">
-                      <span class="text-xs text-surface-500 uppercase font-bold tracking-wider">Locatie</span>
+                      <span class="text-xs text-surface-500 uppercase font-bold tracking-wider"
+                        >Locatie</span
+                      >
                       <div class="flex items-center gap-2 mb-2">
                         <i class="pi pi-map-marker text-primary-500"></i>
                         <span class="font-medium">{{ event()?.locationName }}</span>
                       </div>
                       @if (event()?.latitude && event()?.longitude) {
-                        <a 
-                          [href]="'https://www.google.com/maps/search/?api=1&query=' + event()?.latitude + ',' + event()?.longitude" 
+                        <a
+                          [href]="
+                            'https://www.google.com/maps/search/?api=1&query=' +
+                            $safeNavigationMigration(event()?.latitude) +
+                            ',' +
+                            $safeNavigationMigration(event()?.longitude)
+                          "
                           target="_blank"
                           class="relative w-full h-48 block rounded-lg overflow-hidden border border-surface-200 dark:border-surface-700 shadow-sm transition-all hover:shadow-md hover:border-primary-500 cursor-pointer group"
                         >
-                          <div #detailMapContainer class="w-full h-full z-0 pointer-events-none grayscale-[0.2] transition-all group-hover:grayscale-0 group-hover:scale-105"></div>
-                          <div class="absolute inset-0 bg-black/5 group-hover:bg-transparent transition-colors pointer-events-none"></div>
+                          <div
+                            #detailMapContainer
+                            class="w-full h-full z-0 pointer-events-none grayscale-[0.2] transition-all group-hover:grayscale-0 group-hover:scale-105"
+                          ></div>
+                          <div
+                            class="absolute inset-0 bg-black/5 group-hover:bg-transparent transition-colors pointer-events-none"
+                          ></div>
                           <div class="absolute top-3 left-3 pointer-events-none">
-                            <span class="text-white text-[10px] sm:text-xs font-bold bg-black/50 px-2 py-1 rounded-md backdrop-blur-md flex items-center gap-1 border border-white/10 group-hover:bg-primary-500/80 transition-all shadow-lg">
+                            <span
+                              class="text-white text-[10px] sm:text-xs font-bold bg-black/50 px-2 py-1 rounded-md backdrop-blur-md flex items-center gap-1 border border-white/10 group-hover:bg-primary-500/80 transition-all shadow-lg"
+                            >
                               <i class="pi pi-external-link"></i>
                               Ga naar Google Maps
                             </span>
@@ -174,7 +268,9 @@ import { ReactionListComponent } from '../../../shared/components/reaction-list/
 
                   @if (event()?.requiredRoles && event()!.requiredRoles!.length > 0) {
                     <div class="flex flex-col gap-2 mb-4">
-                      <span class="text-xs text-surface-500 uppercase font-bold tracking-wider">Toegestane Rollen</span>
+                      <span class="text-xs text-surface-500 uppercase font-bold tracking-wider"
+                        >Toegestane Rollen</span
+                      >
                       <div class="flex gap-2 flex-wrap">
                         @for (role of event()?.requiredRoles; track role) {
                           <p-tag severity="secondary" [value]="role" icon="pi pi-lock"></p-tag>
@@ -183,56 +279,76 @@ import { ReactionListComponent } from '../../../shared/components/reaction-list/
                     </div>
                   }
 
-                  <div class="rich-text-content prose dark:prose-invert max-w-none" 
-                       style="word-wrap: break-word; overflow-wrap: break-word; word-break: normal; white-space: normal;"
-                       [innerHTML]="event()?.description | processedContent">
-                  </div>
-
+                  <div
+                    class="rich-text-content prose dark:prose-invert max-w-none"
+                    style="word-wrap: break-word; overflow-wrap: break-word; word-break: normal; white-space: normal;"
+                    [innerHTML]="$safeNavigationMigration(event()?.description) | processedContent"
+                  ></div>
                 </div>
               </p-card>
 
               <!-- RSVP Section -->
-              <p-card styleClass="bg-primary-50/50 dark:bg-primary-900/10 border-primary-100 dark:border-primary-900/20">
+              <p-card
+                class="bg-primary-50/50 dark:bg-primary-900/10 border-primary-100 dark:border-primary-900/20"
+              >
                 <div class="flex flex-col md:flex-row justify-between items-center gap-6 p-2">
                   <div class="flex flex-col gap-2 text-center md:text-left">
-                    <h3 class="text-xl font-bold m-0 text-surface-900 dark:text-surface-0">Ben je erbij?</h3>
-                    <p class="text-surface-600 dark:text-surface-400 m-0">Laat weten of je komt zodat we rekening kunnen houden met de planning.</p>
+                    <h3 class="text-xl font-bold m-0 text-surface-900 dark:text-surface-0">
+                      Ben je erbij?
+                    </h3>
+                    <p class="text-surface-600 dark:text-surface-400 m-0">
+                      Laat weten of je komt zodat we rekening kunnen houden met de planning.
+                    </p>
                   </div>
-                  
+
                   <div class="flex gap-3">
                     @if (authService.isAuthenticated()) {
                       @if (canRsvp()) {
-                        <p-button 
-                          [label]="ls.t().accept" 
-                          icon="pi pi-check" 
-                          [severity]="event()?.userResponse === 'Accepted' ? 'success' : 'secondary'"
+                        <p-button
+                          [label]="ls.t().accept"
+                          icon="pi pi-check"
+                          [severity]="
+                            event()?.userResponse === 'Accepted' ? 'success' : 'secondary'
+                          "
                           [outlined]="event()?.userResponse !== 'Accepted'"
                           (onClick)="rsvp('Accepted')"
                           [loading]="rsvpLoading()"
                         />
-                        <p-button 
-                          [label]="ls.t().decline" 
-                          icon="pi pi-times" 
+                        <p-button
+                          [label]="ls.t().decline"
+                          icon="pi pi-times"
                           [severity]="event()?.userResponse === 'Declined' ? 'danger' : 'secondary'"
                           [outlined]="event()?.userResponse !== 'Declined'"
                           (onClick)="rsvp('Declined')"
                           [loading]="rsvpLoading()"
                         />
                       } @else {
-                        <div class="flex items-center gap-2 text-surface-500 bg-surface-100 dark:bg-surface-800 p-2 rounded-lg">
+                        <div
+                          class="flex items-center gap-2 text-surface-500 bg-surface-100 dark:bg-surface-800 p-2 rounded-lg"
+                        >
                           <i class="pi pi-lock"></i>
-                          <span class="text-sm font-medium">Je hebt niet de juiste rol om je aan te melden.</span>
+                          <span class="text-sm font-medium"
+                            >Je hebt niet de juiste rol om je aan te melden.</span
+                          >
                         </div>
                       }
                     } @else {
-                      <p-button [label]="ls.t().login" icon="pi pi-sign-in" [routerLink]="['/login']" [queryParams]="{ returnUrl: router.url }" />
+                      <p-button
+                        [label]="ls.t().login"
+                        icon="pi pi-sign-in"
+                        [routerLink]="['/login']"
+                        [queryParams]="{ returnUrl: router.url }"
+                      />
                     }
                   </div>
                 </div>
               </p-card>
 
               <p-card header="Reacties">
-                <app-reaction-list [targetId]="event()!.id" [targetType]="'Event'"></app-reaction-list>
+                <app-reaction-list
+                  [targetId]="event()!.id"
+                  [targetType]="'Event'"
+                ></app-reaction-list>
               </p-card>
             </div>
 
@@ -241,23 +357,30 @@ import { ReactionListComponent } from '../../../shared/components/reaction-list/
                 <div class="flex flex-col gap-4">
                   <div class="flex justify-between items-center">
                     <span class="text-surface-600">{{ ls.t().accept }}</span>
-                    <p-tag severity="success" [value]="event()?.acceptedUsers?.length?.toString()"></p-tag>
+                    <p-tag
+                      severity="success"
+                      [value]="$safeNavigationMigration(event()?.acceptedUsers?.length?.toString())"
+                    ></p-tag>
                   </div>
                   <div class="flex flex-col gap-2 mb-2 px-2">
                     <div class="flex -space-x-2">
                       @for (user of event()?.acceptedUsers?.slice(0, 5); track user.userId) {
-                        <p-avatar 
-                          [image]="(user.profilePictureUrl | resolveApiUrl) || undefined" 
-                          [label]="!user.profilePictureUrl ? user.userName.substring(0,1) : undefined"
-                          shape="circle" 
+                        <p-avatar
+                          [image]="(user.profilePictureUrl | resolveApiUrl) || undefined"
+                          [label]="
+                            !user.profilePictureUrl ? user.userName.substring(0, 1) : undefined
+                          "
+                          shape="circle"
                           size="normal"
-                          styleClass="ring-2 ring-surface-0 dark:ring-surface-900 shadow-sm cursor-pointer"
+                          class="ring-2 ring-surface-0 dark:ring-surface-900 shadow-sm cursor-pointer"
                           [title]="user.userName"
                           (click)="$event.stopPropagation(); drawerService.open(user.userId)"
                         ></p-avatar>
                       }
                       @if ((event()?.acceptedUsers?.length ?? 0) > 5) {
-                        <div class="flex h-8 w-8 rounded-full ring-2 ring-surface-0 dark:ring-surface-900 bg-surface-200 dark:bg-surface-700 items-center justify-center text-xs font-bold text-surface-600 dark:text-surface-300 shadow-sm">
+                        <div
+                          class="flex h-8 w-8 rounded-full ring-2 ring-surface-0 dark:ring-surface-900 bg-surface-200 dark:bg-surface-700 items-center justify-center text-xs font-bold text-surface-600 dark:text-surface-300 shadow-sm"
+                        >
                           +{{ (event()?.acceptedUsers?.length ?? 0) - 5 }}
                         </div>
                       }
@@ -265,16 +388,24 @@ import { ReactionListComponent } from '../../../shared/components/reaction-list/
                   </div>
                   <div class="flex flex-col gap-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
                     @for (user of event()?.acceptedUsers; track user.userId) {
-                      <div class="flex items-center gap-2 p-2 bg-surface-50 dark:bg-surface-800 rounded-lg">
-                        <p-avatar 
-                          [image]="(user.profilePictureUrl | resolveApiUrl) || undefined" 
-                          [label]="!user.profilePictureUrl ? user.userName.substring(0,1) : undefined"
-                          shape="circle" 
+                      <div
+                        class="flex items-center gap-2 p-2 bg-surface-50 dark:bg-surface-800 rounded-lg"
+                      >
+                        <p-avatar
+                          [image]="(user.profilePictureUrl | resolveApiUrl) || undefined"
+                          [label]="
+                            !user.profilePictureUrl ? user.userName.substring(0, 1) : undefined
+                          "
+                          shape="circle"
                           size="normal"
-                          styleClass="cursor-pointer"
+                          class="cursor-pointer"
                           (click)="$event.stopPropagation(); drawerService.open(user.userId)"
                         ></p-avatar>
-                        <span class="text-sm font-medium cursor-pointer hover:underline" (click)="drawerService.open(user.userId)">{{ user.userName }}</span>
+                        <span
+                          class="text-sm font-medium cursor-pointer hover:underline"
+                          (click)="drawerService.open(user.userId)"
+                          >{{ user.userName }}</span
+                        >
                       </div>
                     } @empty {
                       <span class="text-xs text-surface-400 italic">Nog geen aanmeldingen</span>
@@ -285,20 +416,31 @@ import { ReactionListComponent } from '../../../shared/components/reaction-list/
 
                   <div class="flex justify-between items-center">
                     <span class="text-surface-600">{{ ls.t().declined }}</span>
-                    <p-tag severity="danger" [value]="event()?.declinedUsers?.length?.toString()"></p-tag>
+                    <p-tag
+                      severity="danger"
+                      [value]="$safeNavigationMigration(event()?.declinedUsers?.length?.toString())"
+                    ></p-tag>
                   </div>
                   <div class="flex flex-col gap-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
                     @for (user of event()?.declinedUsers; track user.userId) {
-                      <div class="flex items-center gap-2 p-2 bg-surface-50 dark:bg-surface-800 rounded-lg opacity-60">
-                        <p-avatar 
-                          [image]="(user.profilePictureUrl | resolveApiUrl) || undefined" 
-                          [label]="!user.profilePictureUrl ? user.userName.substring(0,1) : undefined"
-                          shape="circle" 
+                      <div
+                        class="flex items-center gap-2 p-2 bg-surface-50 dark:bg-surface-800 rounded-lg opacity-60"
+                      >
+                        <p-avatar
+                          [image]="(user.profilePictureUrl | resolveApiUrl) || undefined"
+                          [label]="
+                            !user.profilePictureUrl ? user.userName.substring(0, 1) : undefined
+                          "
+                          shape="circle"
                           size="normal"
-                          styleClass="cursor-pointer"
+                          class="cursor-pointer"
                           (click)="$event.stopPropagation(); drawerService.open(user.userId)"
                         ></p-avatar>
-                        <span class="text-sm cursor-pointer hover:underline" (click)="drawerService.open(user.userId)">{{ user.userName }}</span>
+                        <span
+                          class="text-sm cursor-pointer hover:underline"
+                          (click)="drawerService.open(user.userId)"
+                          >{{ user.userName }}</span
+                        >
                       </div>
                     } @empty {
                       <span class="text-xs text-surface-400 italic">Nog geen afmeldingen</span>
@@ -312,20 +454,33 @@ import { ReactionListComponent } from '../../../shared/components/reaction-list/
                   <div class="flex justify-between items-center">
                     <span class="text-surface-500">Gemaakt door</span>
                     <div class="flex items-center gap-2">
-                      <p-avatar 
-                        [image]="(event()?.creatorProfilePictureUrl | resolveApiUrl) || undefined" 
-                        [label]="!event()?.creatorProfilePictureUrl ? event()?.creatorName?.substring(0,1) : undefined"
-                        shape="circle" 
+                      <p-avatar
+                        [image]="
+                          ($safeNavigationMigration(event()?.creatorProfilePictureUrl)
+                            | resolveApiUrl) || undefined
+                        "
+                        [label]="
+                          !event()?.creatorProfilePictureUrl
+                            ? $safeNavigationMigration(event()?.creatorName?.substring(0, 1))
+                            : undefined
+                        "
+                        shape="circle"
                         size="normal"
-                        styleClass="w-6 h-6 text-[10px] cursor-pointer"
-                        (click)="drawerService.open(event()?.creatorId!)"
+                        class="w-6 h-6 text-[10px] cursor-pointer"
+                        (click)="drawerService.open($safeNavigationMigration(event()?.creatorId)!)"
                       ></p-avatar>
-                      <span class="font-medium cursor-pointer hover:underline" (click)="drawerService.open(event()?.creatorId!)">{{ event()?.creatorName }}</span>
+                      <span
+                        class="font-medium cursor-pointer hover:underline"
+                        (click)="drawerService.open($safeNavigationMigration(event()?.creatorId)!)"
+                        >{{ event()?.creatorName }}</span
+                      >
                     </div>
                   </div>
                   <div class="flex justify-between">
                     <span class="text-surface-500">Gemaakt op</span>
-                    <span class="font-medium">{{ event()?.createdOn | date:'dd/MM/yyyy, HH:mm' }}</span>
+                    <span class="font-medium">{{
+                      $safeNavigationMigration(event()?.createdOn) | date: 'dd/MM/yyyy, HH:mm'
+                    }}</span>
                   </div>
                 </div>
               </p-card>
@@ -335,32 +490,34 @@ import { ReactionListComponent } from '../../../shared/components/reaction-list/
       }
     </div>
   `,
-  styles: [`
-    .custom-scrollbar {
-      scrollbar-width: thin;
-      scrollbar-color: var(--p-surface-300) transparent;
-    }
-    :host ::ng-deep .rich-text-content * {
-      word-break: normal !important;
-      overflow-wrap: break-word !important;
-      white-space: normal !important;
-    }
-    :host ::ng-deep .rich-text-content ul, 
-    :host ::ng-deep .rich-text-content ol {
-      margin-bottom: 1rem;
-      padding-left: 1.5rem;
-    }
-    :host ::ng-deep .rich-text-content ul {
-      list-style-type: disc;
-    }
-    :host ::ng-deep .rich-text-content ol {
-      list-style-type: decimal;
-    }
-    :host ::ng-deep .rich-text-content li {
-      margin-bottom: 0.5rem;
-    }
-  `],
-  changeDetection: ChangeDetectionStrategy.OnPush
+  styles: [
+    `
+      .custom-scrollbar {
+        scrollbar-width: thin;
+        scrollbar-color: var(--p-surface-300) transparent;
+      }
+      :host ::ng-deep .rich-text-content * {
+        word-break: normal !important;
+        overflow-wrap: break-word !important;
+        white-space: normal !important;
+      }
+      :host ::ng-deep .rich-text-content ul,
+      :host ::ng-deep .rich-text-content ol {
+        margin-bottom: 1rem;
+        padding-left: 1.5rem;
+      }
+      :host ::ng-deep .rich-text-content ul {
+        list-style-type: disc;
+      }
+      :host ::ng-deep .rich-text-content ol {
+        list-style-type: decimal;
+      }
+      :host ::ng-deep .rich-text-content li {
+        margin-bottom: 0.5rem;
+      }
+    `,
+  ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export default class EventDetailComponent implements OnInit {
   private readonly eventService = inject(EventService);
@@ -423,7 +580,7 @@ export default class EventDetailComponent implements OnInit {
     if (user.roles.includes('Admin')) return true;
     if (!evt.requiredRoles || evt.requiredRoles.length === 0) return true;
 
-    return evt.requiredRoles.some(role => user.roles.includes(role));
+    return evt.requiredRoles.some((role) => user.roles.includes(role));
   });
 
   ngOnInit(): void {
@@ -432,9 +589,12 @@ export default class EventDetailComponent implements OnInit {
       this.loadEvent(id);
     }
 
-    this.googleMapsService.load().pipe(take(1)).subscribe(loaded => {
-      this.apiLoaded.set(loaded);
-    });
+    this.googleMapsService
+      .load()
+      .pipe(take(1))
+      .subscribe((loaded) => {
+        this.apiLoaded.set(loaded);
+      });
   }
 
   loadEvent(id: string): void {
@@ -447,8 +607,12 @@ export default class EventDetailComponent implements OnInit {
       },
       error: () => {
         this.loading.set(false);
-        this.messageService.add({ severity: 'error', summary: 'Fout', detail: 'Kan evenement niet laden' });
-      }
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Fout',
+          detail: 'Kan evenement niet laden',
+        });
+      },
     });
   }
 
@@ -464,41 +628,46 @@ export default class EventDetailComponent implements OnInit {
     this.mapInitialized = true;
     const isDark = this.themeService.isDark();
 
-    this.googleMapsService.getMapId().pipe(take(1)).subscribe(async (mapId) => {
-      // Brief delay to ensure container is fully rendered
-      setTimeout(async () => {
-        const mapOptions: any = {
-          center: { lat, lng },
-          zoom: 15,
-          mapId: mapId,
-          colorScheme: isDark ? (google.maps as any).ColorScheme.DARK : (google.maps as any).ColorScheme.LIGHT,
-          zoomControl: false,
-          mapTypeControl: false,
-          streetViewControl: false,
-          fullscreenControl: false,
-          gestureHandling: 'none' // Make it "static looking"
-        };
+    this.googleMapsService
+      .getMapId()
+      .pipe(take(1))
+      .subscribe(async (mapId) => {
+        // Brief delay to ensure container is fully rendered
+        setTimeout(async () => {
+          const mapOptions: any = {
+            center: { lat, lng },
+            zoom: 15,
+            mapId: mapId,
+            colorScheme: isDark
+              ? (google.maps as any).ColorScheme.DARK
+              : (google.maps as any).ColorScheme.LIGHT,
+            zoomControl: false,
+            mapTypeControl: false,
+            streetViewControl: false,
+            fullscreenControl: false,
+            gestureHandling: 'none', // Make it "static looking"
+          };
 
-        // Only apply inline styles if no Map ID is provided, to avoid API warnings
-        if (!mapId) {
-          mapOptions.styles = [
-            { featureType: 'poi', elementType: 'labels', stylers: [{ visibility: 'off' }] }
-          ];
-        }
+          // Only apply inline styles if no Map ID is provided, to avoid API warnings
+          if (!mapId) {
+            mapOptions.styles = [
+              { featureType: 'poi', elementType: 'labels', stylers: [{ visibility: 'off' }] },
+            ];
+          }
 
-        this.map = new google.maps.Map(container, mapOptions);
+          this.map = new google.maps.Map(container, mapOptions);
 
-        const markerLib = await google.maps.importLibrary("marker") as any;
-        const AdvancedMarkerElement = markerLib.AdvancedMarkerElement;
+          const markerLib = (await google.maps.importLibrary('marker')) as any;
+          const AdvancedMarkerElement = markerLib.AdvancedMarkerElement;
 
-        const marker = new AdvancedMarkerElement({
-          position: { lat, lng },
-          map: this.map,
-          title: name
-        });
-        void marker;
-      }, 100);
-    });
+          const marker = new AdvancedMarkerElement({
+            position: { lat, lng },
+            map: this.map,
+            title: name,
+          });
+          void marker;
+        }, 100);
+      });
   }
 
   updateMetaTags(event: EventDto): void {
@@ -523,7 +692,7 @@ export default class EventDetailComponent implements OnInit {
 
   triggerImageUpload(): void {
     const imageUrl = this.event()?.imageUrl ?? null;
-    const resolvedImageUrl = imageUrl ? this.urlService.resolveApiUrl(imageUrl) ?? null : null;
+    const resolvedImageUrl = imageUrl ? (this.urlService.resolveApiUrl(imageUrl) ?? null) : null;
 
     this.imageDialogVisible.set(true);
     this.selectedImageFile.set(null);
@@ -532,7 +701,7 @@ export default class EventDetailComponent implements OnInit {
 
   closeImageModal(): void {
     const imageUrl = this.event()?.imageUrl ?? null;
-    const resolvedImageUrl = imageUrl ? this.urlService.resolveApiUrl(imageUrl) ?? null : null;
+    const resolvedImageUrl = imageUrl ? (this.urlService.resolveApiUrl(imageUrl) ?? null) : null;
 
     this.imageDialogVisible.set(false);
     this.selectedImageFile.set(null);
@@ -549,7 +718,7 @@ export default class EventDetailComponent implements OnInit {
 
     if (!file) {
       const imageUrl = this.event()?.imageUrl ?? null;
-      const resolvedImageUrl = imageUrl ? this.urlService.resolveApiUrl(imageUrl) ?? null : null;
+      const resolvedImageUrl = imageUrl ? (this.urlService.resolveApiUrl(imageUrl) ?? null) : null;
 
       this.selectedImageFile.set(null);
       this.imagePreview.set(resolvedImageUrl);
@@ -571,15 +740,23 @@ export default class EventDetailComponent implements OnInit {
     this.uploadingImage.set(true);
     this.eventService.updateEventImage(currentEvent.id, file).subscribe({
       next: () => {
-        this.messageService.add({ severity: 'success', summary: 'Succes', detail: 'Afbeelding bijgewerkt' });
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Succes',
+          detail: 'Afbeelding bijgewerkt',
+        });
         this.uploadingImage.set(false);
         this.closeImageModal();
         this.loadEvent(currentEvent.id);
       },
       error: () => {
         this.uploadingImage.set(false);
-        this.messageService.add({ severity: 'error', summary: 'Fout', detail: 'Afbeelding uploaden mislukt' });
-      }
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Fout',
+          detail: 'Afbeelding uploaden mislukt',
+        });
+      },
     });
   }
 
@@ -588,15 +765,21 @@ export default class EventDetailComponent implements OnInit {
     if (!currentEvent) return;
 
     if (navigator.share) {
-      navigator.share({
-        title: currentEvent.title,
-        text: "Meld je nu aan voor " + currentEvent.title + "!",
-        url: window.location.href
-      }).catch(err => console.error('Share failed', err));
+      navigator
+        .share({
+          title: currentEvent.title,
+          text: 'Meld je nu aan voor ' + currentEvent.title + '!',
+          url: window.location.href,
+        })
+        .catch((err) => console.error('Share failed', err));
     } else {
       // Fallback to clipboard
       navigator.clipboard.writeText(window.location.href).then(() => {
-        this.messageService.add({ severity: 'success', summary: 'Gekopieerd', detail: 'Link gekopieerd naar klembord' });
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Gekopieerd',
+          detail: 'Link gekopieerd naar klembord',
+        });
       });
     }
   }
@@ -618,13 +801,13 @@ export default class EventDetailComponent implements OnInit {
         this.messageService.add({
           severity: 'success',
           summary: 'Gedaan!',
-          detail: status === 'Accepted' ? 'Je bent aangemeld!' : 'Je bent afgemeld.'
+          detail: status === 'Accepted' ? 'Je bent aangemeld!' : 'Je bent afgemeld.',
         });
       },
       error: () => {
         this.rsvpLoading.set(false);
         this.messageService.add({ severity: 'error', summary: 'Fout', detail: 'RSVP mislukt' });
-      }
+      },
     });
   }
 
@@ -638,8 +821,12 @@ export default class EventDetailComponent implements OnInit {
           this.router.navigate(['/events']);
         },
         error: () => {
-          this.messageService.add({ severity: 'error', summary: 'Fout', detail: 'Verwijderen mislukt' });
-        }
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Fout',
+            detail: 'Verwijderen mislukt',
+          });
+        },
       });
     }
   }

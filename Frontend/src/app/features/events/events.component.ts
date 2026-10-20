@@ -1,4 +1,11 @@
-import { Component, ChangeDetectionStrategy, inject, signal, OnInit, computed } from '@angular/core';
+import {
+  Component,
+  ChangeDetectionStrategy,
+  inject,
+  signal,
+  OnInit,
+  computed,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { CardModule } from 'primeng/card';
@@ -31,41 +38,43 @@ import { UserProfileDrawerService } from '../../core/services/user-profile-drawe
     ToggleButtonModule,
     FormsModule,
     AvatarModule,
-    ResolveApiUrlPipe
+    ResolveApiUrlPipe,
   ],
   template: `
     <div class="flex flex-col gap-6">
       <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 class="text-3xl font-bold m-0 text-surface-900 dark:text-surface-0">{{ ls.t().events }}</h1>
+          <h1 class="text-3xl font-bold m-0 text-surface-900 dark:text-surface-0">
+            {{ ls.t().events }}
+          </h1>
           <p class="text-surface-500 m-0">{{ ls.t().no_events_desc }}</p>
         </div>
         <div class="flex items-center gap-3">
-          <p-toggleButton 
-            [(ngModel)]="futureOnly" 
-            onLabel="Toekomstig" 
-            offLabel="Alle" 
-            onIcon="pi pi-calendar" 
-            offIcon="pi pi-calendar-plus" 
+          <p-toggle-button
+            [(ngModel)]="futureOnly"
+            onLabel="Toekomstig"
+            offLabel="Alle"
+            onIcon="pi pi-calendar"
+            offIcon="pi pi-calendar-plus"
             (onChange)="loadEvents()"
           />
           @if (canCreate()) {
-            <p-button 
-              [label]="ls.t().create_event" 
-              icon="pi pi-plus" 
-              [routerLink]="['/events/new']" 
-              severity="primary" 
+            <p-button
+              [label]="ls.t().create_event"
+              icon="pi pi-plus"
+              [routerLink]="['/events/new']"
+              severity="primary"
             />
           }
         </div>
       </div>
 
-      <p-dataView 
-        [value]="events()" 
-        layout="grid" 
-        [paginator]="true" 
+      <p-data-view
+        [value]="events()"
+        layout="grid"
+        [paginator]="true"
         paginatorStyleClass="mt-6"
-        [rows]="rows" 
+        [rows]="rows"
         [totalRecords]="totalRecords()"
         [lazy]="true"
         (onLazyLoad)="onLazyLoad($event)"
@@ -75,40 +84,67 @@ import { UserProfileDrawerService } from '../../core/services/user-profile-drawe
           <div class="grid grid-cols-12 gap-6">
             @for (event of items; track event.id) {
               <div class="col-span-12 sm:col-span-6 lg:col-span-4 xl:col-span-3">
-                <p-card 
-                  [styleClass]="'h-full overflow-hidden hover:shadow-lg transition-all duration-300 border border-surface-200 dark:border-surface-700 cursor-pointer ' + (isPassed(event.endDateTime) ? 'opacity-60 grayscale-[0.5]' : '')"
+                <p-card
+                  [class]="
+                    'h-full overflow-hidden hover:shadow-lg transition-all duration-300 border border-surface-200 dark:border-surface-700 cursor-pointer ' +
+                    (isPassed(event.endDateTime) ? 'opacity-60 grayscale-[0.5]' : '')
+                  "
                   [routerLink]="['/events', event.id]"
                 >
-                  <ng-template pTemplate="header">
-                    <div class="relative h-48 w-full bg-surface-100 dark:bg-surface-800 flex items-center justify-center">
+                  <ng-template #header>
+                    <div
+                      class="relative h-48 w-full bg-surface-100 dark:bg-surface-800 flex items-center justify-center"
+                    >
                       @if (event.imageUrl) {
-                        <img [src]="event.imageUrl | resolveApiUrl" alt="Event Image" class="w-full h-full object-cover">
+                        <img
+                          [src]="event.imageUrl | resolveApiUrl"
+                          alt="Event Image"
+                          class="w-full h-full object-cover"
+                        />
                       } @else {
-                        <i class="pi pi-calendar text-5xl text-surface-300 dark:text-surface-600"></i>
+                        <i
+                          class="pi pi-calendar text-5xl text-surface-300 dark:text-surface-600"
+                        ></i>
                       }
                       <div class="absolute top-3 left-3">
                         @if (isPassed(event.endDateTime)) {
-                          <p-tag severity="secondary" icon="pi pi-history" [value]="ls.t().past"></p-tag>
+                          <p-tag
+                            severity="secondary"
+                            icon="pi pi-history"
+                            [value]="ls.t().past"
+                          ></p-tag>
                         }
                       </div>
                       <div class="absolute top-3 right-3">
                         @if (event.userResponse === 'Accepted') {
-                          <p-tag severity="success" styleClass="event-response-tag event-response-tag-success" icon="pi pi-check" value="Aangemeld"></p-tag>
+                          <p-tag
+                            severity="success"
+                            class="event-response-tag event-response-tag-success"
+                            icon="pi pi-check"
+                            value="Aangemeld"
+                          ></p-tag>
                         } @else if (event.userResponse === 'Declined') {
-                          <p-tag severity="danger" styleClass="event-response-tag event-response-tag-danger" icon="pi pi-times" value="Afgemeld"></p-tag>
+                          <p-tag
+                            severity="danger"
+                            class="event-response-tag event-response-tag-danger"
+                            icon="pi pi-times"
+                            value="Afgemeld"
+                          ></p-tag>
                         }
                       </div>
                     </div>
                   </ng-template>
 
                   <div class="flex flex-col gap-3">
-                    <h2 class="text-xl font-bold m-0 text-surface-900 dark:text-surface-0 line-clamp-1">
+                    <h2
+                      class="text-xl font-bold m-0 text-surface-900 dark:text-surface-0 line-clamp-1"
+                    >
                       {{ event.title }}
                     </h2>
-                    
+
                     <div class="flex items-center gap-2 text-surface-500 text-sm">
                       <i class="pi pi-clock"></i>
-                      <span>{{ event.startDateTime | date:'d MMM yyyy, HH:mm' }}</span>
+                      <span>{{ event.startDateTime | date: 'd MMM yyyy, HH:mm' }}</span>
                     </div>
 
                     @if (event.locationName) {
@@ -118,31 +154,43 @@ import { UserProfileDrawerService } from '../../core/services/user-profile-drawe
                       </div>
                     }
 
-                    <div 
+                    <div
                       class="flex mt-2 pt-4 border-t border-surface-200 dark:border-surface-700"
                       [class.justify-between]="event.acceptedUsers.length > 0"
                       [class.justify-center]="event.acceptedUsers.length === 0"
                       [class.items-center]="true"
                     >
                       <div class="flex -space-x-2">
-                         @for (user of event.acceptedUsers.slice(0, 3); track user.userId) {
-                           <p-avatar 
-                              [image]="(user.profilePictureUrl | resolveApiUrl) || undefined" 
-                              [label]="!user.profilePictureUrl ? user.userName?.substring(0,1) : undefined"
-                              shape="circle" 
-                              size="normal"
-                              styleClass="ring-2 ring-surface-0 dark:ring-surface-900 cursor-pointer"
-                              [title]="user.userName"
-                              (click)="$event.stopPropagation(); $event.preventDefault(); drawerService.open(user.userId)"
-                           ></p-avatar>
-                         }
-                         @if (event.acceptedUsers.length > 3) {
-                           <div class="flex h-8 w-8 rounded-full ring-2 ring-surface-0 dark:ring-surface-900 bg-surface-200 dark:bg-surface-700 items-center justify-center text-xs font-bold text-surface-600 dark:text-surface-300">
-                              +{{ event.acceptedUsers.length - 3 }}
-                           </div>
-                         }
+                        @for (user of event.acceptedUsers.slice(0, 3); track user.userId) {
+                          <p-avatar
+                            [image]="(user.profilePictureUrl | resolveApiUrl) || undefined"
+                            [label]="
+                              !user.profilePictureUrl
+                                ? $safeNavigationMigration(user.userName?.substring(0, 1))
+                                : undefined
+                            "
+                            shape="circle"
+                            size="normal"
+                            class="ring-2 ring-surface-0 dark:ring-surface-900 cursor-pointer"
+                            [title]="user.userName"
+                            (click)="
+                              $event.stopPropagation();
+                              $event.preventDefault();
+                              drawerService.open(user.userId)
+                            "
+                          ></p-avatar>
+                        }
+                        @if (event.acceptedUsers.length > 3) {
+                          <div
+                            class="flex h-8 w-8 rounded-full ring-2 ring-surface-0 dark:ring-surface-900 bg-surface-200 dark:bg-surface-700 items-center justify-center text-xs font-bold text-surface-600 dark:text-surface-300"
+                          >
+                            +{{ event.acceptedUsers.length - 3 }}
+                          </div>
+                        }
                       </div>
-                      <span class="text-xs text-surface-500">{{ event.acceptedUsers.length }} {{ ls.t().attendees }}</span>
+                      <span class="text-xs text-surface-500"
+                        >{{ event.acceptedUsers.length }} {{ ls.t().attendees }}</span
+                      >
                     </div>
                   </div>
                 </p-card>
@@ -152,38 +200,42 @@ import { UserProfileDrawerService } from '../../core/services/user-profile-drawe
         </ng-template>
 
         <ng-template #emptymessage>
-          <div class="flex flex-col items-center justify-center p-12 text-surface-500 bg-surface-50 dark:bg-surface-800/50 rounded-xl border border-dashed border-surface-300 dark:border-surface-600 w-full">
+          <div
+            class="flex flex-col items-center justify-center p-12 text-surface-500 bg-surface-50 dark:bg-surface-800/50 rounded-xl border border-dashed border-surface-300 dark:border-surface-600 w-full"
+          >
             <i class="pi pi-calendar-times text-6xl mb-4 opacity-20"></i>
             <p class="text-lg font-medium">{{ ls.t().no_events }}</p>
           </div>
         </ng-template>
-      </p-dataView>
+      </p-data-view>
     </div>
   `,
-  styles: [`
-    :host ::ng-deep .p-dataview-content {
-      background: transparent !important;
-      border: none !important;
-    }
+  styles: [
+    `
+      :host ::ng-deep .p-dataview-content {
+        background: transparent !important;
+        border: none !important;
+      }
 
-    :host ::ng-deep .event-response-tag {
-      border: 1px solid rgba(255, 255, 255, 0.9);
-      border-radius: 9999px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.55);
-      color: #ffffff;
-      font-weight: 700;
-      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
-    }
+      :host ::ng-deep .event-response-tag {
+        border: 1px solid rgba(255, 255, 255, 0.9);
+        border-radius: 9999px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.55);
+        color: #ffffff;
+        font-weight: 700;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+      }
 
-    :host ::ng-deep .event-response-tag-success {
-      background: #166534;
-    }
+      :host ::ng-deep .event-response-tag-success {
+        background: #166534;
+      }
 
-    :host ::ng-deep .event-response-tag-danger {
-      background: #991b1b;
-    }
-  `],
-  changeDetection: ChangeDetectionStrategy.OnPush
+      :host ::ng-deep .event-response-tag-danger {
+        background: #991b1b;
+      }
+    `,
+  ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export default class EventsComponent implements OnInit {
   private readonly eventService = inject(EventService);
@@ -229,7 +281,7 @@ export default class EventsComponent implements OnInit {
         this.totalRecords.set(response.totalCount);
         this.loading.set(false);
       },
-      error: () => this.loading.set(false)
+      error: () => this.loading.set(false),
     });
   }
 }

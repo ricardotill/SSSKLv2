@@ -40,7 +40,7 @@ import { BrandingComponent } from '../../shared/components/branding/branding.com
 
           <div class="field mt-4">
             <label for="newPassword" class="block">{{ lang.t().new_password }}</label>
-            <p-password id="newPassword" formControlName="newPassword" [feedback]="true" [toggleMask]="true" styleClass="w-full" inputStyleClass="w-full" autocomplete="new-password"></p-password>
+            <p-password id="newPassword" formControlName="newPassword" [feedback]="true" [toggleMask]="true" class="w-full" inputStyleClass="w-full" autocomplete="new-password"></p-password>
             @if (resetPasswordForm.controls.newPassword.invalid && resetPasswordForm.controls.newPassword.touched) {
               <small class="p-error block mt-1">{{ lang.t().password_required }}</small>
             }
@@ -48,18 +48,18 @@ import { BrandingComponent } from '../../shared/components/branding/branding.com
 
           <div class="field mt-4">
             <label for="confirmPassword" class="block">Nieuw wachtwoord bevestigen</label>
-            <p-password id="confirmPassword" formControlName="confirmPassword" [feedback]="false" [toggleMask]="true" styleClass="w-full" inputStyleClass="w-full" autocomplete="new-password"></p-password>
+            <p-password id="confirmPassword" formControlName="confirmPassword" [feedback]="false" [toggleMask]="true" class="w-full" inputStyleClass="w-full" autocomplete="new-password"></p-password>
             @if (resetPasswordForm.hasError('passwordMismatch') && resetPasswordForm.controls.confirmPassword.touched) {
               <small class="p-error block mt-1">De wachtwoorden komen niet overeen.</small>
             }
           </div>
 
           @if (successMessage()) {
-            <p-message severity="success" [text]="successMessage()" styleClass="w-full mt-4"></p-message>
+            <p-message severity="success" class="w-full mt-4">{{ successMessage() }}</p-message>
           }
 
           @if (errorMessage()) {
-            <p-message severity="error" [text]="errorMessage()" styleClass="w-full mt-4"></p-message>
+            <p-message severity="error" class="w-full mt-4">{{ errorMessage() }}</p-message>
           }
 
           <div class="mt-4 flex gap-2">

@@ -34,21 +34,21 @@ import { finalize } from 'rxjs';
         [rowsPerPageOptions]="[15, 30, 50]"
         [showCurrentPageReport]="true"
         [currentPageReportTemplate]="ls.translate('showing_top_ups_report', { first: '{first}', last: '{last}', total: '{totalRecords}' })"
-        responsiveLayout="scroll"
+
       >
-        <ng-template pTemplate="header">
+        <ng-template #header>
           <tr>
             <th>{{ ls.t().date }}</th>
             <th>{{ ls.t().amount }}</th>
           </tr>
         </ng-template>
-        <ng-template pTemplate="body" let-topUp>
+        <ng-template #body let-topUp>
           <tr>
             <td>{{ topUp.createdOn | date: 'dd-MM-yyyy HH:mm' }}</td>
             <td class="font-medium text-primary">{{ topUp.saldo | currency: 'EUR' }}</td>
           </tr>
         </ng-template>
-        <ng-template pTemplate="emptymessage">
+        <ng-template #emptymessage>
           <tr>
             <td colspan="2" class="text-center p-8 text-surface-400">{{ ls.t().no_top_ups }}</td>
           </tr>

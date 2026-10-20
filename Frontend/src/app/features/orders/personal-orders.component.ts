@@ -18,7 +18,7 @@ import { CardModule } from 'primeng/card';
   imports: [CommonModule, TableModule, ButtonModule, DatePipe, CurrencyPipe, ConfirmDialogModule, CardModule],
   providers: [ConfirmationService],
   template: `
-    <p-confirmDialog />
+    <p-confirm-dialog />
     
     <div class="flex justify-between items-center mb-4">
       <h1 class="text-2xl font-bold m-0 text-surface-900 dark:text-surface-0">{{ ls.t().my_orders }}</h1>
@@ -39,9 +39,9 @@ import { CardModule } from 'primeng/card';
         [rowsPerPageOptions]="[15, 30, 50]"
         [showCurrentPageReport]="true"
         [currentPageReportTemplate]="ls.translate('showing_orders_report', { first: '{first}', last: '{last}', total: '{totalRecords}' })"
-        responsiveLayout="scroll"
+
       >
-        <ng-template pTemplate="header">
+        <ng-template #header>
           <tr>
             <th>{{ ls.t().date }}</th>
             <th>{{ ls.t().product }}</th>
@@ -50,7 +50,7 @@ import { CardModule } from 'primeng/card';
             <th class="w-32">{{ ls.t().actions }}</th>
           </tr>
         </ng-template>
-        <ng-template pTemplate="body" let-order>
+        <ng-template #body let-order>
           <tr>
             <td>{{ order.createdOn | date: 'dd-MM-yyyy HH:mm' }}</td>
             <td>{{ order.productName }}</td>
@@ -69,7 +69,7 @@ import { CardModule } from 'primeng/card';
             </td>
           </tr>
         </ng-template>
-        <ng-template pTemplate="emptymessage">
+        <ng-template #emptymessage>
           <tr>
             <td colspan="5" class="text-center p-8 text-surface-400">{{ ls.t().no_orders }}</td>
           </tr>

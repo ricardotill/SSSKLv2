@@ -27,15 +27,15 @@ import { BrandingComponent } from '../../shared/components/branding/branding.com
         </div>
 
         @if (isLoading()) {
-          <p-message severity="info" [text]="lang.t().loading" styleClass="w-full"></p-message>
+          <p-message severity="info" class="w-full">{{ lang.t().loading }}</p-message>
         }
 
         @if (successMessage()) {
-          <p-message severity="success" [text]="successMessage()" styleClass="w-full"></p-message>
+          <p-message severity="success" class="w-full">{{ successMessage() }}</p-message>
         }
 
         @if (errorMessage()) {
-          <p-message severity="error" [text]="errorMessage()" styleClass="w-full"></p-message>
+          <p-message severity="error" class="w-full">{{ errorMessage() }}</p-message>
         }
 
         <div class="mt-4 flex gap-2">

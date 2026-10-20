@@ -53,12 +53,12 @@ import { TierBadgeComponent } from '../../shared/components/tier-badge/tier-badg
             class="w-full"
             (onChange)="onUserChange($event.value)"
           >
-            <ng-template pTemplate="selectedItem" let-selectedOption>
+            <ng-template #selectedItem let-selectedOption>
                 <div class="flex items-center gap-2" *ngIf="selectedOption">
                     <div>{{ selectedOption.fullName }}</div>
                 </div>
             </ng-template>
-            <ng-template let-user pTemplate="item">
+            <ng-template let-user #item>
                 <div class="flex items-center gap-2">
                     <div>{{ user.fullName }}</div>
                 </div>
@@ -69,10 +69,10 @@ import { TierBadgeComponent } from '../../shared/components/tier-badge/tier-badg
 
       @if (loading()) {
         <div class="flex justify-center items-center p-12">
-          <p-progressSpinner ariaLabel="loading"></p-progressSpinner>
+          <p-progress-spinner ariaLabel="loading"></p-progress-spinner>
         </div>
       } @else {
-        <p-dataView [value]="sortedEntries()" layout="grid">
+        <p-data-view [value]="sortedEntries()" layout="grid">
           <ng-template #grid let-items>
             <div class="grid grid-cols-12 gap-4">
               @for (entry of items; track entry.name) {
@@ -81,7 +81,7 @@ import { TierBadgeComponent } from '../../shared/components/tier-badge/tier-badg
                   [routerLink]="['/achievements', entry.id]"
                 >
                   <p-card class="h-full achievement-card" [class.locked]="!entry.completed" [ngClass]="'tier-accent-' + entry.tier.toLowerCase()">
-                    <ng-template pTemplate="header">
+                    <ng-template #header>
                       <div class="tier-strip h-1.5 w-full rounded-t-lg" [ngClass]="'tier-strip-' + entry.tier.toLowerCase()"></div>
                       <div class="flex justify-center bg-surface-50/50 dark:bg-surface-800/50 items-center overflow-hidden min-h-[12rem]">
                         @if (entry.imageUrl) {
@@ -146,7 +146,7 @@ import { TierBadgeComponent } from '../../shared/components/tier-badge/tier-badg
               <p>{{ ls.t()['no_achievements'] }}</p>
             </div>
           </ng-template>
-        </p-dataView>
+        </p-data-view>
       }
     </div>
   `,

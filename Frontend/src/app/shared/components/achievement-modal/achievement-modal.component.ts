@@ -43,8 +43,8 @@ import { TierBadgeComponent } from '../tier-badge/tier-badge.component';
           <!-- Content Carousel if multiple, otherwise single -->
           <div class="py-6 px-6 bg-surface-50 dark:bg-surface-800 rounded-2xl mx-6 mb-2">
             @if (entries.length > 1) {
-              <p-carousel styleClass="rounded-full" [value]="entries" [numVisible]="1" [numScroll]="1" [circular]="false" [autoplayInterval]="0">
-                <ng-template pTemplate="item" let-entry>
+              <p-carousel class="rounded-full" [value]="entries" [numVisible]="1" [numScroll]="1" [circular]="false" [autoplayInterval]="0">
+                <ng-template #item let-entry>
                   <div class="flex flex-col items-center justify-center p-4">
                     <div class="relative w-32 h-32 mb-6">
                       <div class="w-32 h-32 rounded-full overflow-hidden shadow-lg border-4 border-primary/20 flex items-center justify-center bg-surface-100 dark:bg-surface-700">

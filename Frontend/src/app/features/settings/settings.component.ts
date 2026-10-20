@@ -382,7 +382,7 @@ import { CardModule } from 'primeng/card';
             </p-tabpanel>
         </p-tabpanels>
       </p-tabs>
-      <p-confirmDialog />
+      <p-confirm-dialog />
       
       <p-dialog [(visible)]="showPasskeyDialog" [header]="ls.t().passkey_name" [modal]="true" [style]="{width: '450px'}">
         <div class="flex flex-col gap-4 mt-2">

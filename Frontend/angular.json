@@ -29,7 +29,8 @@
             "styles": ["src/styles.css"],
             "define": {
               "CUSTOM_API_URL": "''",
-              "PRIMEUI_LICENSE_KEY": "''"
+              "PRIMEUI_LICENSE_KEY": "''",
+              "TURNSTILE_SITE_KEY": "''"
             },
             "allowedCommonJsDependencies": [
               "qrcode",

@@ -1,4 +1,4 @@
-import { Component, inject, signal, ChangeDetectionStrategy } from '@angular/core';
+import { Component, inject, signal, ChangeDetectionStrategy, viewChild } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterModule, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../core/auth/auth.service';
@@ -9,6 +9,8 @@ import { CardModule } from 'primeng/card';
 import { MessageModule } from 'primeng/message';
 import { BrandingComponent } from '../../shared/components/branding/branding.component';
 import { LanguageService } from '../../core/services/language.service';
+import { TurnstileComponent } from '../../shared/components/turnstile/turnstile.component';
+import { TurnstileService, isTurnstileFailure } from '../../core/services/turnstile.service';
 
 @Component({
   selector: 'app-register',
@@ -21,7 +23,8 @@ import { LanguageService } from '../../core/services/language.service';
     CardModule,
     MessageModule,
     RouterModule,
-    BrandingComponent
+    BrandingComponent,
+    TurnstileComponent
   ],
   template: `
     <div class="register-wrapper">
@@ -115,6 +118,10 @@ import { LanguageService } from '../../core/services/language.service';
             }
           </div>
 
+          @if (turnstile.enabled) {
+            <app-turnstile action="register" (tokenChange)="turnstileToken.set($event)" />
+          }
+
           @if (errorMessage()) {
              <p-message severity="error" class="w-full mt-4">{{ errorMessage() }}</p-message>
           }
@@ -131,7 +138,7 @@ import { LanguageService } from '../../core/services/language.service';
             <p-button 
               [label]="lang.t().register" 
               type="submit" 
-              [disabled]="registerForm.invalid || isLoading()" 
+              [disabled]="registerForm.invalid || isLoading() || (turnstile.enabled && !turnstileToken())" 
               [loading]="isLoading()"
               styleClass="w-full">
             </p-button>
@@ -202,6 +209,10 @@ export default class RegisterComponent {
   errorMessage = signal('');
   successMessage = signal('');
 
+  protected readonly turnstile = inject(TurnstileService);
+  protected readonly turnstileToken = signal<string | null>(null);
+  private readonly turnstileWidget = viewChild(TurnstileComponent);
+
   onSubmit(): void {
     if (this.registerForm.invalid) {
       this.registerForm.markAllAsTouched();
@@ -214,14 +225,18 @@ export default class RegisterComponent {
 
     const userData = this.registerForm.getRawValue();
 
-    this.authService.register(userData).subscribe({
+    this.authService.register(userData, this.turnstileToken()).subscribe({
       next: () => {
         this.isLoading.set(false);
+        this.turnstileWidget()?.reset();
         this.successMessage.set('Registratie succesvol! Controleer je mailbox om je e-mailadres te bevestigen.');
       },
       error: (err) => {
         this.isLoading.set(false);
-        if (err.error?.errors) {
+        this.turnstileWidget()?.reset();
+        if (isTurnstileFailure(err)) {
+            this.errorMessage.set(this.lang.t().turnstile_failed);
+        } else if (err.error?.errors) {
             const errors = err.error.errors;
             const firstErrorKey = Object.keys(errors)[0];
             this.errorMessage.set(errors[firstErrorKey][0]);

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal, viewChild } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -8,11 +8,13 @@ import { InputTextModule } from 'primeng/inputtext';
 import { MessageModule } from 'primeng/message';
 import { LanguageService } from '../../core/services/language.service';
 import { BrandingComponent } from '../../shared/components/branding/branding.component';
+import { TurnstileComponent } from '../../shared/components/turnstile/turnstile.component';
+import { TurnstileService, isTurnstileFailure } from '../../core/services/turnstile.service';
 
 @Component({
   selector: 'app-forgot-password',
   standalone: true,
-  imports: [ReactiveFormsModule, InputTextModule, ButtonModule, CardModule, MessageModule, RouterModule, BrandingComponent],
+  imports: [ReactiveFormsModule, InputTextModule, ButtonModule, CardModule, MessageModule, RouterModule, BrandingComponent, TurnstileComponent],
   template: `
     <div class="auth-wrapper">
       <p-card class="auth-card">
@@ -41,12 +43,16 @@ import { BrandingComponent } from '../../shared/components/branding/branding.com
             <p-message severity="success" class="w-full mt-4">{{ successMessage() }}</p-message>
           }
 
+          @if (turnstile.enabled) {
+            <app-turnstile action="forgot-password" (tokenChange)="turnstileToken.set($event)" />
+          }
+
           @if (errorMessage()) {
             <p-message severity="error" class="w-full mt-4">{{ errorMessage() }}</p-message>
           }
 
           <div class="mt-4">
-            <p-button label="Herstellink versturen" type="submit" [disabled]="forgotPasswordForm.invalid || isLoading()" [loading]="isLoading()" styleClass="w-full"></p-button>
+            <p-button label="Herstellink versturen" type="submit" [disabled]="forgotPasswordForm.invalid || isLoading() || (turnstile.enabled && !turnstileToken())" [loading]="isLoading()" styleClass="w-full"></p-button>
           </div>
         </form>
       </p-card>
@@ -96,6 +102,10 @@ export default class ForgotPasswordComponent {
   successMessage = signal('');
   errorMessage = signal('');
 
+  protected readonly turnstile = inject(TurnstileService);
+  protected readonly turnstileToken = signal<string | null>(null);
+  private readonly turnstileWidget = viewChild(TurnstileComponent);
+
   onSubmit(): void {
     if (this.forgotPasswordForm.invalid) {
       this.forgotPasswordForm.markAllAsTouched();
@@ -106,13 +116,19 @@ export default class ForgotPasswordComponent {
     this.successMessage.set('');
     this.errorMessage.set('');
 
-    this.http.post('/api/v1/identity/forgotPassword', this.forgotPasswordForm.getRawValue()).subscribe({
+    this.http.post('/api/v1/identity/forgotPassword', this.forgotPasswordForm.getRawValue(), { headers: this.turnstile.headers(this.turnstileToken()) }).subscribe({
       next: () => {
         this.isLoading.set(false);
+        this.turnstileWidget()?.reset();
         this.successMessage.set('Als dit e-mailadres bij een bevestigd account hoort, is er een herstellink verstuurd.');
       },
-      error: () => {
+      error: (err) => {
         this.isLoading.set(false);
+        this.turnstileWidget()?.reset();
+        if (isTurnstileFailure(err)) {
+          this.errorMessage.set(this.lang.t().turnstile_failed);
+          return;
+        }
         this.errorMessage.set('De herstellink kon niet worden verstuurd. Probeer het later opnieuw.');
       }
     });

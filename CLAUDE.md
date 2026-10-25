@@ -30,7 +30,7 @@ npm run test:coverage
 npm run test:update        # update snapshots
 npx ng test --no-watch --include src/app/features/orders/services/order.service.spec.ts   # single spec
 ```
-- `npm start` and `npm run build` go through `ng-env.js`, which injects `PRIMEUI_LICENSE_KEY` (from the environment or gitignored `Frontend/.env`, see `.env.example`) as a build-time define. The Static Web Apps deploy reads it from the `PRIMEUI_LICENSE_KEY` repo secret; without it the app builds but PrimeUI shows a license banner.
+- `npm start` and `npm run build` go through `ng-env.js`, which injects `PRIMEUI_LICENSE_KEY` (from the environment or gitignored `Frontend/.env`, see `.env.example`) as a build-time define. The Static Web Apps deploy reads it from the `PRIMEUI_LICENSE_KEY` repo secret; without it the app builds but PrimeUI shows a license banner. `TURNSTILE_SITE_KEY` is passed the same way (repo variable `vars.TURNSTILE_SITE_KEY` in the deploy); the API side needs `Turnstile:SecretKey`. With both empty, Turnstile is disabled.
 
 ## Backend architecture
 

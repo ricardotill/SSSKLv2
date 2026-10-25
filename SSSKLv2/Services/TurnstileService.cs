@@ -1,30 +1,52 @@
 using System.Text.Json.Serialization;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
+using SSSKLv2.Data;
+using SSSKLv2.Data.Constants;
 using SSSKLv2.Services.Interfaces;
 
 namespace SSSKLv2.Services;
 
 /// <summary>
-/// Server-side Cloudflare Turnstile verification. The browser only obtains a token; it is redeemed here,
-/// never from the client, so the secret key stays on the server.
+/// Server-side Cloudflare Turnstile verification, configured in Global Settings. The browser only obtains
+/// a token; it is redeemed here, never from the client, so the secret key stays on the server.
 /// </summary>
 public class TurnstileService(
     HttpClient httpClient,
+    IDbContextFactory<ApplicationDbContext> dbContextFactory,
+    IMemoryCache cache,
     IOptions<TurnstileOptions> options,
     ILogger<TurnstileService> logger) : ITurnstileService
 {
     public const string SiteverifyUrl = "https://challenges.cloudflare.com/turnstile/v0/siteverify";
 
+    // Settings are edited in Global Settings; a short cache keeps login traffic off the settings table
+    // while letting an admin's change apply within half a minute.
+    private const string CacheKey = "turnstile-settings";
+    private static readonly TimeSpan CacheDuration = TimeSpan.FromSeconds(30);
+
     // Tokens are at most 2048 characters per Cloudflare's documentation
     private const int MaxTokenLength = 2048;
 
-    private readonly TurnstileOptions _options = options.Value;
+    private static readonly string[] SettingKeys =
+    [
+        GlobalSettingsKeys.TurnstileEnabled,
+        GlobalSettingsKeys.TurnstileSiteKey,
+        GlobalSettingsKeys.TurnstileSecretKey,
+        GlobalSettingsKeys.TurnstileAllowedHostnames
+    ];
 
-    public bool IsEnabled => !string.IsNullOrWhiteSpace(_options.SecretKey);
+    public async Task<TurnstileClientConfig> GetClientConfigAsync(CancellationToken cancellationToken = default)
+    {
+        var settings = await GetSettingsAsync(cancellationToken);
+        return new TurnstileClientConfig(settings.Enabled, settings.Enabled ? settings.SiteKey : null);
+    }
 
     public async Task<TurnstileVerificationResult> VerifyAsync(string? token, string expectedAction, string? remoteIp, CancellationToken cancellationToken = default)
     {
-        if (!IsEnabled) return TurnstileVerificationResult.Passed;
+        var settings = await GetSettingsAsync(cancellationToken);
+        if (!settings.Enabled) return TurnstileVerificationResult.Passed;
 
         if (string.IsNullOrWhiteSpace(token) || token.Length > MaxTokenLength)
         {
@@ -33,7 +55,7 @@ public class TurnstileService(
 
         var form = new Dictionary<string, string>
         {
-            ["secret"] = _options.SecretKey!,
+            ["secret"] = settings.SecretKey!,
             ["response"] = token,
             // Lets the HTTP resilience handler retry a timed-out call without the retry being
             // rejected as an already redeemed token
@@ -61,16 +83,17 @@ public class TurnstileService(
 
         if (result is null || !result.Success)
         {
-            var codes = result?.ErrorCodes is { Length: > 0 } c ? string.Join(",", c) : "unknown";
+            var codes = result?.ErrorCodes ?? [];
             if (codes.Contains("invalid-input-secret") || codes.Contains("missing-input-secret"))
             {
-                logger.LogError("Turnstile secret key was rejected by Cloudflare ({ErrorCodes})", codes);
+                // A wrong secret in Global Settings is an admin mistake, not a bot. Letting requests through
+                // keeps admins able to sign in and fix it; the error log makes the misconfiguration visible.
+                logger.LogError("Turnstile secret key in Global Settings was rejected by Cloudflare; verification is skipped until it is fixed");
+                return TurnstileVerificationResult.Passed;
             }
-            else
-            {
-                logger.LogWarning("Turnstile verification failed for action {Action}: {ErrorCodes}", expectedAction, codes);
-            }
-            return TurnstileVerificationResult.Failed(codes);
+            var joined = codes.Length > 0 ? string.Join(",", codes) : "unknown";
+            logger.LogWarning("Turnstile verification failed for action {Action}: {ErrorCodes}", expectedAction, joined);
+            return TurnstileVerificationResult.Failed(joined);
         }
 
         if (!string.Equals(result.Action, expectedAction, StringComparison.Ordinal))
@@ -79,7 +102,7 @@ public class TurnstileService(
             return TurnstileVerificationResult.Failed("action-mismatch");
         }
 
-        if (!_options.AllowedHostnames.Contains(result.Hostname, StringComparer.OrdinalIgnoreCase))
+        if (!settings.AllowedHostnames.Contains(result.Hostname, StringComparer.OrdinalIgnoreCase))
         {
             logger.LogWarning("Turnstile hostname {Hostname} is not in the allowed list", result.Hostname);
             return TurnstileVerificationResult.Failed("hostname-mismatch");
@@ -87,6 +110,33 @@ public class TurnstileService(
 
         return TurnstileVerificationResult.Passed;
     }
+
+    private async Task<TurnstileSettings> GetSettingsAsync(CancellationToken cancellationToken)
+    {
+        if (cache.TryGetValue(CacheKey, out TurnstileSettings? cached) && cached is not null) return cached;
+
+        await using var context = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+        var values = await context.GlobalSetting
+            .Where(s => SettingKeys.Contains(s.Key))
+            .ToDictionaryAsync(s => s.Key, s => s.Value.Trim(), cancellationToken);
+
+        var siteKey = values.GetValueOrDefault(GlobalSettingsKeys.TurnstileSiteKey);
+        var secretKey = values.GetValueOrDefault(GlobalSettingsKeys.TurnstileSecretKey);
+        var switchedOn = bool.TryParse(values.GetValueOrDefault(GlobalSettingsKeys.TurnstileEnabled), out var on) && on;
+        var hostnames = values.GetValueOrDefault(GlobalSettingsKeys.TurnstileAllowedHostnames)?
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+        var settings = new TurnstileSettings(
+            Enabled: switchedOn && !string.IsNullOrEmpty(siteKey) && !string.IsNullOrEmpty(secretKey),
+            SiteKey: siteKey,
+            SecretKey: secretKey,
+            AllowedHostnames: hostnames is { Length: > 0 } ? hostnames : options.Value.AllowedHostnames);
+
+        cache.Set(CacheKey, settings, CacheDuration);
+        return settings;
+    }
+
+    private sealed record TurnstileSettings(bool Enabled, string? SiteKey, string? SecretKey, string[] AllowedHostnames);
 
     private sealed class SiteverifyResponse
     {

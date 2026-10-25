@@ -14,8 +14,6 @@ public sealed class TurnstileEndpointFilter(string action) : IEndpointFilter
     {
         var httpContext = context.HttpContext;
         var turnstile = httpContext.RequestServices.GetRequiredService<ITurnstileService>();
-        if (!turnstile.IsEnabled) return await next(context);
-
         var token = httpContext.Request.Headers[HeaderName].ToString();
         var result = await turnstile.VerifyAsync(
             token, action, httpContext.Connection.RemoteIpAddress?.ToString(), httpContext.RequestAborted);

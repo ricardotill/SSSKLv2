@@ -4,7 +4,7 @@
 
 ### Added
 
-- Cloudflare Turnstile on login, register, forgot-password and resend-confirmation (off until `Turnstile:SecretKey` and `TURNSTILE_SITE_KEY` are set).
+- Cloudflare Turnstile on login, register, forgot-password and resend-confirmation (configured and switched on in Global Settings).
 - Per-IP rate limiting on login and email-sending identity endpoints.
 - Global ProblemDetails exception handler with trace ids.
 - Blob storage readiness check and `/healthz/live` liveness endpoint.

@@ -43,16 +43,14 @@ import { TurnstileService, isTurnstileFailure } from '../../core/services/turnst
             <p-message severity="success" class="w-full mt-4">{{ successMessage() }}</p-message>
           }
 
-          @if (turnstile.enabled) {
-            <app-turnstile action="forgot-password" (tokenChange)="turnstileToken.set($event)" />
-          }
+          <app-turnstile action="forgot-password" (tokenChange)="turnstileToken.set($event)" />
 
           @if (errorMessage()) {
             <p-message severity="error" class="w-full mt-4">{{ errorMessage() }}</p-message>
           }
 
           <div class="mt-4">
-            <p-button label="Herstellink versturen" type="submit" [disabled]="forgotPasswordForm.invalid || isLoading() || (turnstile.enabled && !turnstileToken())" [loading]="isLoading()" styleClass="w-full"></p-button>
+            <p-button label="Herstellink versturen" type="submit" [disabled]="forgotPasswordForm.invalid || isLoading() || turnstile.blocksSubmit(turnstileToken())" [loading]="isLoading()" styleClass="w-full"></p-button>
           </div>
         </form>
       </p-card>
@@ -125,11 +123,7 @@ export default class ForgotPasswordComponent {
       error: (err) => {
         this.isLoading.set(false);
         this.turnstileWidget()?.reset();
-        if (isTurnstileFailure(err)) {
-          this.errorMessage.set(this.lang.t().turnstile_failed);
-          return;
-        }
-        this.errorMessage.set('De herstellink kon niet worden verstuurd. Probeer het later opnieuw.');
+        this.errorMessage.set(isTurnstileFailure(err) ? this.lang.t().turnstile_failed : 'De herstellink kon niet worden verstuurd. Probeer het later opnieuw.');
       }
     });
   }

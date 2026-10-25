@@ -44,7 +44,6 @@ public class TurnstileIntegrationTests
     private static ITurnstileService EnabledTurnstile()
     {
         var turnstile = Substitute.For<ITurnstileService>();
-        turnstile.IsEnabled.Returns(true);
         turnstile.VerifyAsync(Arg.Any<string?>(), Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
             .Returns(TurnstileVerificationResult.Failed("missing-input-response"));
         turnstile.VerifyAsync("good-token", Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
@@ -105,5 +104,30 @@ public class TurnstileIntegrationTests
 
         Assert.AreNotEqual(HttpStatusCode.Forbidden, response.StatusCode);
         await turnstile.DidNotReceiveWithAnyArgs().VerifyAsync(default, default!, default, default);
+    }
+
+    [TestMethod]
+    public async Task PublicTurnstileConfig_IsAnonymousAndReturnsSiteKey()
+    {
+        var turnstile = EnabledTurnstile();
+        turnstile.GetClientConfigAsync(Arg.Any<CancellationToken>()).Returns(new TurnstileClientConfig(true, "site-key"));
+        await using var factory = CreateFactory(turnstile);
+        var client = factory.CreateClient();
+
+        var config = await client.GetFromJsonAsync<Dictionary<string, object>>("/api/v1/GlobalSettings/public/turnstile");
+
+        Assert.AreEqual("True", config!["enabled"].ToString());
+        Assert.AreEqual("site-key", config["siteKey"].ToString());
+    }
+
+    [TestMethod]
+    public async Task TurnstileSecret_CannotBeReadBack()
+    {
+        await using var factory = CreateFactory(EnabledTurnstile());
+        var client = factory.CreateClient();
+
+        var response = await client.GetAsync("/api/v1/GlobalSettings/TurnstileSecretKey");
+
+        Assert.AreNotEqual(HttpStatusCode.OK, response.StatusCode);
     }
 }

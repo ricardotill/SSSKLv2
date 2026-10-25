@@ -11,3 +11,9 @@ public class GlobalSettingUpdateDto
 {
     public string Value { get; set; } = string.Empty;
 }
+
+public class TurnstileConfigDto
+{
+    public bool Enabled { get; set; }
+    public string? SiteKey { get; set; }
+}

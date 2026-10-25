@@ -1,6 +1,5 @@
-import { DOCUMENT, Injectable, inject } from '@angular/core';
-import { HttpHeaders } from '@angular/common/http';
-import { environment } from '../../../environments/environment';
+import { DOCUMENT, Injectable, computed, inject, signal } from '@angular/core';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 
 /** Minimal typing for the parts of the Cloudflare Turnstile API we use. */
 export interface TurnstileApi {
@@ -21,16 +20,38 @@ export interface TurnstileRenderOptions {
 
 const SCRIPT_URL = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
 
+export interface TurnstileConfig {
+  enabled: boolean;
+  siteKey: string | null;
+}
+
 /** Header the API reads the Turnstile token from (see TurnstileEndpointFilter). */
 export const TURNSTILE_HEADER = 'X-Turnstile-Token';
 
 @Injectable({ providedIn: 'root' })
 export class TurnstileService {
   private readonly document = inject(DOCUMENT);
+  private readonly http = inject(HttpClient);
   private scriptPromise: Promise<TurnstileApi> | null = null;
+  private configRequested = false;
 
-  readonly siteKey = environment.turnstileSiteKey;
-  readonly enabled = !!this.siteKey;
+  /** Set by admins in Global Settings; fetched once per app load. Null until it arrives. */
+  readonly config = signal<TurnstileConfig | null>(null);
+  readonly enabled = computed(() => !!this.config()?.enabled && !!this.config()?.siteKey);
+  readonly siteKey = computed(() => this.config()?.siteKey ?? '');
+
+  /** Fetches the public Turnstile settings once. A failed fetch leaves Turnstile off; the API still decides. */
+  loadConfig(): void {
+    if (this.configRequested) return;
+    this.configRequested = true;
+    this.http.get<TurnstileConfig>('/api/v1/GlobalSettings/public/turnstile').subscribe({
+      next: (config) => this.config.set(config),
+      error: () => {
+        this.configRequested = false;
+        this.config.set({ enabled: false, siteKey: null });
+      }
+    });
+  }
 
   /** Loads the Turnstile script once and resolves with the global API. */
   load(): Promise<TurnstileApi> {
@@ -53,9 +74,14 @@ export class TurnstileService {
     return this.scriptPromise;
   }
 
+  /** True while a gated form must wait for the visitor to pass the check. */
+  blocksSubmit(token: string | null): boolean {
+    return this.enabled() && !token;
+  }
+
   /** Headers carrying the token for a gated request; empty when Turnstile is disabled. */
   headers(token: string | null): HttpHeaders {
-    return this.enabled && token ? new HttpHeaders({ [TURNSTILE_HEADER]: token }) : new HttpHeaders();
+    return this.enabled() && token ? new HttpHeaders({ [TURNSTILE_HEADER]: token }) : new HttpHeaders();
   }
 }
 

@@ -6,6 +6,7 @@ using SSSKLv2.Data.Constants;
 using SSSKLv2.Dto.Api.v1;
 using Ganss.Xss;
 using Microsoft.AspNetCore.Identity;
+using SSSKLv2.Services.Interfaces;
 
 namespace SSSKLv2.Controllers.v1;
 
@@ -18,6 +19,15 @@ public class GlobalSettingsController : ControllerBase
     public GlobalSettingsController(ApplicationDbContext context)
     {
         _context = context;
+    }
+
+    // GET v1/globalsettings/public/turnstile - what the login and sign-up pages need to render Turnstile
+    [AllowAnonymous]
+    [HttpGet("public/turnstile")]
+    public async Task<ActionResult<TurnstileConfigDto>> GetTurnstileConfig([FromServices] ITurnstileService turnstile)
+    {
+        var config = await turnstile.GetClientConfigAsync(HttpContext.RequestAborted);
+        return Ok(new TurnstileConfigDto { Enabled = config.Enabled, SiteKey = config.SiteKey });
     }
 
     [HttpGet("{key}")]

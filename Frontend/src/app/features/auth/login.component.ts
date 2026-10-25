@@ -103,9 +103,7 @@ import { TurnstileService, isTurnstileFailure } from '../../core/services/turnst
             </div>
           }
 
-          @if (turnstile.enabled) {
-            <app-turnstile action="login" (tokenChange)="turnstileToken.set($event)" />
-          }
+          <app-turnstile action="login" (tokenChange)="turnstileToken.set($event)" />
 
           @if (errorMessage()) {
              <p-message severity="error" class="w-full mt-4">{{ errorMessage() }}</p-message>
@@ -115,7 +113,7 @@ import { TurnstileService, isTurnstileFailure } from '../../core/services/turnst
             <p-button 
               [label]="lang.t().login" 
               type="submit" 
-              [disabled]="loginForm.invalid || isLoading() || (turnstile.enabled && !turnstileToken())" 
+              [disabled]="loginForm.invalid || isLoading() || turnstile.blocksSubmit(turnstileToken())" 
               [loading]="isLoading()"
               styleClass="flex-1">
             </p-button>

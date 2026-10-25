@@ -1,11 +1,11 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, afterNextRender, inject, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, afterRenderEffect, inject, input, output, signal } from '@angular/core';
 import { TurnstileApi, TurnstileService } from '../../../core/services/turnstile.service';
 import { LanguageService } from '../../../core/services/language.service';
 
 /**
  * Cloudflare Turnstile widget. Emits a token once the visitor passes the check, and null when it expires
  * or fails. Tokens are single-use: call reset() after each request that consumed one.
- * Renders nothing when no sitekey is configured.
+ * Renders nothing (and stays hidden) unless Turnstile is switched on in Global Settings.
  */
 @Component({
   selector: 'app-turnstile',
@@ -15,7 +15,7 @@ import { LanguageService } from '../../../core/services/language.service';
       <small class="p-error block mt-1" role="alert">{{ lang.t().turnstile_load_failed }}</small>
     }
   `,
-  host: { class: 'block mt-4' },
+  host: { '[class]': "enabled() ? 'block mt-4' : 'hidden'" },
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class TurnstileComponent {
@@ -27,13 +27,19 @@ export class TurnstileComponent {
   protected readonly loadFailed = signal(false);
 
   private readonly turnstile = inject(TurnstileService);
+  protected readonly enabled = this.turnstile.enabled;
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private api: TurnstileApi | null = null;
   private widgetId: string | null = null;
 
+  private rendering = false;
+
   constructor() {
-    afterNextRender(() => {
-      if (this.turnstile.enabled) {
+    this.turnstile.loadConfig();
+    // The config arrives asynchronously; render once it says Turnstile is on
+    afterRenderEffect(() => {
+      if (this.enabled() && !this.rendering) {
+        this.rendering = true;
         void this.render();
       }
     });
@@ -61,7 +67,7 @@ export class TurnstileComponent {
     const container = this.host.nativeElement.querySelector('div');
     if (!container) return;
     this.widgetId = this.api.render(container, {
-      sitekey: this.turnstile.siteKey,
+      sitekey: this.turnstile.siteKey(),
       action: this.action(),
       theme: 'auto',
       language: 'nl',

@@ -1,17 +1,20 @@
 import { TestBed } from '@angular/core/testing';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { environment } from '../../../../environments/environment';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { TurnstileComponent } from './turnstile.component';
-import { TurnstileRenderOptions } from '../../../core/services/turnstile.service';
+import { TurnstileRenderOptions, TurnstileService } from '../../../core/services/turnstile.service';
 
 describe('TurnstileComponent', () => {
-  let originalSiteKey: string;
   let renderOptions: TurnstileRenderOptions | undefined;
   let api: { render: ReturnType<typeof vi.fn>; reset: ReturnType<typeof vi.fn>; remove: ReturnType<typeof vi.fn> };
 
   beforeEach(() => {
-    originalSiteKey = environment.turnstileSiteKey;
-    (environment as any).turnstileSiteKey = 'site-key';
+    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
+    const service = TestBed.inject(TurnstileService);
+    // Pretend the config was already fetched
+    (service as any).configRequested = true;
+    service.config.set({ enabled: true, siteKey: 'site-key' });
     api = {
       render: vi.fn((_el: HTMLElement, options: TurnstileRenderOptions) => {
         renderOptions = options;
@@ -24,7 +27,6 @@ describe('TurnstileComponent', () => {
   });
 
   afterEach(() => {
-    (environment as any).turnstileSiteKey = originalSiteKey;
     delete (window as any).turnstile;
     renderOptions = undefined;
   });
@@ -37,6 +39,7 @@ describe('TurnstileComponent', () => {
     fixture.detectChanges();
     await fixture.whenStable();
     await Promise.resolve();
+    fixture.detectChanges();
     return { fixture, tokens };
   }
 
@@ -49,7 +52,8 @@ describe('TurnstileComponent', () => {
 
     renderOptions?.callback?.('tok');
     renderOptions?.['expired-callback']?.();
-    expect(tokens).toEqual(['tok', null]);
+    renderOptions?.['error-callback']?.();
+    expect(tokens).toEqual(['tok', null, null]);
   });
 
   it('reset clears the token and resets the widget', async () => {
@@ -67,5 +71,17 @@ describe('TurnstileComponent', () => {
     fixture.destroy();
 
     expect(api.remove).toHaveBeenCalledWith('widget-1');
+  });
+
+  it('shows an error when the script cannot load', async () => {
+    delete (window as any).turnstile;
+    const service = TestBed.inject(TurnstileService);
+    vi.spyOn(service, 'load').mockRejectedValue(new Error('blocked'));
+
+    const { fixture } = await create();
+    await Promise.resolve();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('[role="alert"]')).not.toBeNull();
   });
 });

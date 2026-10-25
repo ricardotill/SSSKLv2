@@ -148,7 +148,8 @@ var frontendOrigins = new[]
     "https://localhost:5173",
     "https://sssklv2-app.azurewebsites.net",
     $"https://{websiteDomain}",
-    "https://ambitious-desert-07f83a203.2.azurestaticapps.net"
+    "https://ambitious-desert-07f83a203.2.azurestaticapps.net",
+    "https://ssskl.ricardotill.nl"
 };
 
 builder.Services.AddCors(options =>

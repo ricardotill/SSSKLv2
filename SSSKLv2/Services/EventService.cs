@@ -96,8 +96,8 @@ public class EventService(IEventRepository eventRepository, IBlobStorageAgent bl
 
         e.Title = dto.Title;
         e.Description = sanitizer.Sanitize(dto.Description);
-        e.StartDateTime = dto.StartDateTime;
-        e.EndDateTime = dto.EndDateTime;
+        e.StartDateTime = dto.StartDateTime.GetValueOrDefault();
+        e.EndDateTime = dto.EndDateTime.GetValueOrDefault();
         e.LocationName = dto.LocationName;
         e.Latitude = dto.Latitude;
         e.Longitude = dto.Longitude;
@@ -166,8 +166,8 @@ public class EventService(IEventRepository eventRepository, IBlobStorageAgent bl
         {
             Title = dto.Title,
             Description = sanitizer.Sanitize(dto.Description),
-            StartDateTime = dto.StartDateTime,
-            EndDateTime = dto.EndDateTime,
+            StartDateTime = dto.StartDateTime.GetValueOrDefault(),
+            EndDateTime = dto.EndDateTime.GetValueOrDefault(),
             CreatorId = creatorId,
             LocationName = dto.LocationName,
             Latitude = dto.Latitude,

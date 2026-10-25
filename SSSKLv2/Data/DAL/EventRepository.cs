@@ -16,6 +16,7 @@ public class EventRepository(IDbContextFactory<ApplicationDbContext> dbContextFa
             .Include(e => e.RequiredRoles)
             .Include(e => e.Responses)
                 .ThenInclude(r => r.User)
+            .AsSplitQuery()
             .AsQueryable();
 
         var now = DateTime.UtcNow;
@@ -39,6 +40,7 @@ public class EventRepository(IDbContextFactory<ApplicationDbContext> dbContextFa
             .OrderBy(e => e.EndDateTime < now ? 1 : 0) // Groups: Active (0) first
             .ThenBy(e => e.EndDateTime < now ? DateTime.MinValue : e.StartDateTime) // Active: ASC, Past: pinned to Min
             .ThenByDescending(e => e.StartDateTime) // Past: DESC
+            .ThenBy(e => e.Id)
             .Skip(skip)
             .Take(take)
             .ToListAsync();
@@ -79,6 +81,7 @@ public class EventRepository(IDbContextFactory<ApplicationDbContext> dbContextFa
             .Include(e => e.RequiredRoles)
             .Include(e => e.Responses)
                 .ThenInclude(r => r.User)
+            .AsSplitQuery()
             .FirstOrDefaultAsync(e => e.Id == id);
     }
 

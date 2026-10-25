@@ -1,4 +1,5 @@
 using System.Net.Mime;
+using System.Text.Json.Serialization;
 using SSSKLv2.Data;
 
 namespace SSSKLv2.Dto.Api;
@@ -30,8 +31,9 @@ public class EventCreateDto
     public string Description { get; set; } = string.Empty;
     public Stream? ImageContent { get; set; }
     public ContentType? ImageContentType { get; set; }
-    public DateTime StartDateTime { get; set; }
-    public DateTime EndDateTime { get; set; }
+    // Nullable so a missing form field is caught by EventCreateDtoValidator instead of defaulting.
+    public DateTime? StartDateTime { get; set; }
+    public DateTime? EndDateTime { get; set; }
     public string? LocationName { get; set; }
     public double? Latitude { get; set; }
     public double? Longitude { get; set; }
@@ -40,6 +42,7 @@ public class EventCreateDto
 
 public class EventResponseDto
 {
+    [JsonRequired]
     public EventResponseStatus Status { get; set; }
 }
 

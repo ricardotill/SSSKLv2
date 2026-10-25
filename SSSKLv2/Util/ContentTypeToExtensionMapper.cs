@@ -24,7 +24,7 @@ namespace SSSKLv2.Util
             { ".heif", "image/heif" }
         };
 
-        public static readonly HashSet<string> AllowedContentTypes = new(StringComparer.OrdinalIgnoreCase)
+        private static readonly HashSet<string> AllowedContentTypes = new(StringComparer.OrdinalIgnoreCase)
         {
             "image/jpeg",
             "image/jpg",

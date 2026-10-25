@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { Router } from '@angular/router';
@@ -30,5 +31,26 @@ describe('BrandingComponent', () => {
     fixture.detectChanges();
 
     expect(fixture.nativeElement.textContent).not.toContain('v3.8.3');
+  });
+
+  it('navigates to the POS when signed in', () => {
+    const navigate = vi.fn(() => Promise.resolve(true));
+    TestBed.overrideProvider(Router, { useValue: { navigate } });
+    TestBed.overrideProvider(AuthService, { useValue: { isAuthenticated: signal(true) } });
+    const component = TestBed.createComponent(BrandingComponent).componentInstance;
+
+    component.onClick();
+
+    expect(navigate).toHaveBeenCalledWith(['/pos']);
+  });
+
+  it('stays put when signed out', () => {
+    const navigate = vi.fn(() => Promise.resolve(true));
+    TestBed.overrideProvider(Router, { useValue: { navigate } });
+    const component = TestBed.createComponent(BrandingComponent).componentInstance;
+
+    component.onClick();
+
+    expect(navigate).not.toHaveBeenCalled();
   });
 });

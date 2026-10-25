@@ -14,6 +14,7 @@ using Microsoft.Azure.SignalR.Common;
 using Microsoft.Extensions.Azure;
 using SSSKLv2.Data.Constants;
 using Azure.Identity;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -55,7 +56,9 @@ builder.Services.AddOpenApi(opt =>
 
 // Add services to the container.
 
-builder.Services.AddHealthChecks();
+// The "self" liveness check comes from AddServiceDefaults and the SQL check from EnrichSqlServerDbContext;
+// blob storage is added below once we know a BlobServiceClient is registered.
+var healthChecks = builder.Services.AddHealthChecks();
 
 var authBuilder = builder.Services.AddAuthentication(options =>
 {
@@ -232,6 +235,13 @@ else if (!string.IsNullOrWhiteSpace(storageServiceUri))
     });
 }
 
+if (!string.IsNullOrWhiteSpace(connectionStringBlobs)
+    || !string.IsNullOrWhiteSpace(storageConnectionString)
+    || !string.IsNullOrWhiteSpace(storageServiceUri))
+{
+    healthChecks.AddCheck<BlobStorageHealthCheck>("blob-storage", tags: ["ready"]);
+}
+
 builder.Services.AddIdentityCore<ApplicationUser>(options =>
     {
         options.SignIn.RequireConfirmedAccount = true;
@@ -404,7 +414,13 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
+// /healthz: everything (database, blob storage). /healthz/live: process only, for restart decisions,
+// so a database outage doesn't make the platform recycle otherwise healthy instances.
 app.MapHealthChecks("/healthz");
+app.MapHealthChecks("/healthz/live", new HealthCheckOptions
+{
+    Predicate = r => r.Tags.Contains("live")
+});
 
 CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.InvariantCulture;
 CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;

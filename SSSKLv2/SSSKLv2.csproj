@@ -48,8 +48,6 @@
     </PackageReference>
     <PackageReference Include="Microsoft.Extensions.Logging.ApplicationInsights" />
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" />
-    <PackageReference Include="Polly" />
-    <PackageReference Include="Polly.Contrib.WaitAndRetry" />
     <PackageReference Include="QRCoder" />
     <PackageReference Include="Scalar.AspNetCore" />
     <PackageReference Include="Scalar.AspNetCore.Microsoft" />

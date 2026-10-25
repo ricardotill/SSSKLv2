@@ -2,15 +2,12 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using SSSKLv2.Data;
 using System.Globalization;
-using Polly;
-using Polly.Contrib.WaitAndRetry;
 using Scalar.AspNetCore;
 using SSSKLv2.Agents;
 using SSSKLv2.Data.DAL;
 using SSSKLv2.Registrations;
 using SSSKLv2.Services;
 using Microsoft.OpenApi;
-using Microsoft.Azure.SignalR.Common;
 using Microsoft.Extensions.Azure;
 using SSSKLv2.Data.Constants;
 using Azure.Identity;
@@ -193,17 +190,11 @@ if (!builder.Environment.IsEnvironment("IntegrationTest"))
 
 if (builder.Environment.IsProduction())
 {
-    Policy.Handle<AzureSignalRException>()
-        .WaitAndRetry(Backoff.LinearBackoff(TimeSpan.FromMilliseconds(100), retryCount: 5),
-            (ex, _, retryCount, _) => { Console.WriteLine($"Failed Attempt {retryCount}: {ex.GetType().Name}"); })
-        .Execute(() =>
-        {
-            builder.Services.AddSignalR().AddAzureSignalR(options =>
-            {
-                options.ServerStickyMode =
-                    Microsoft.Azure.SignalR.ServerStickyMode.Required;
-            });
-        });
+    // Registration doesn't connect; the Azure SignalR SDK reconnects to the service on its own.
+    builder.Services.AddSignalR().AddAzureSignalR(options =>
+    {
+        options.ServerStickyMode = Microsoft.Azure.SignalR.ServerStickyMode.Required;
+    });
 }
 
 if (isIntegrationLikeEnvironment)
@@ -298,22 +289,6 @@ builder.Services.Configure<CookiePolicyOptions>(options =>
 var app = builder.Build();
 
 app.MapDefaultEndpoints();
-
-// Diagnostic: when running integration tests, log the concrete IEmailSender implementation to help debug which
-// email sender implementation was registered.
-if (isIntegrationLikeEnvironment)
-{
-    using var _diagScope = app.Services.CreateScope();
-    try
-    {
-        var _emailSender = _diagScope.ServiceProvider.GetService<IEmailSender<ApplicationUser>>();
-        Console.WriteLine($"DI Diagnostic: IEmailSender<ApplicationUser> = {(_emailSender?.GetType().FullName ?? "<none>")}");
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"DI Diagnostic: failed to resolve IEmailSender<ApplicationUser>: {ex.GetType().FullName}: {ex.Message}");
-    }
-}
 
 app.UseForwardedHeaders();
 app.UsePathBase("/");
@@ -425,14 +400,6 @@ app.MapHealthChecks("/healthz/live", new HealthCheckOptions
 
 CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.InvariantCulture;
 CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
-
-using (var scope = app.Services.GetService<IServiceScopeFactory>()!.CreateScope())
-{
-    if (!app.Environment.IsEnvironment("IntegrationTest"))
-    {
-        await scope.ServiceProvider.GetRequiredService<ApplicationDbContext>().Database.MigrateAsync();
-    }
-}
 
 await app.RunAsync();
 

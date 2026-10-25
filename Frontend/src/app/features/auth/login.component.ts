@@ -1,4 +1,4 @@
-import { Component, inject, signal, ChangeDetectionStrategy } from '@angular/core';
+import { Component, inject, signal, ChangeDetectionStrategy, viewChild } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterModule, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../core/auth/auth.service';
@@ -11,6 +11,8 @@ import { CardModule } from 'primeng/card';
 import { MessageModule } from 'primeng/message';
 import { CheckboxModule } from 'primeng/checkbox';
 import { BrandingComponent } from '../../shared/components/branding/branding.component';
+import { TurnstileComponent } from '../../shared/components/turnstile/turnstile.component';
+import { TurnstileService, isTurnstileFailure } from '../../core/services/turnstile.service';
 
 @Component({
   selector: 'app-login',
@@ -24,7 +26,8 @@ import { BrandingComponent } from '../../shared/components/branding/branding.com
     MessageModule,
     CheckboxModule,
     RouterModule,
-    BrandingComponent
+    BrandingComponent,
+    TurnstileComponent
   ],
   template: `
     <div class="login-wrapper">
@@ -100,6 +103,8 @@ import { BrandingComponent } from '../../shared/components/branding/branding.com
             </div>
           }
 
+          <app-turnstile action="login" (tokenChange)="turnstileToken.set($event)" />
+
           @if (errorMessage()) {
              <p-message severity="error" class="w-full mt-4">{{ errorMessage() }}</p-message>
           }
@@ -108,7 +113,7 @@ import { BrandingComponent } from '../../shared/components/branding/branding.com
             <p-button 
               [label]="lang.t().login" 
               type="submit" 
-              [disabled]="loginForm.invalid || isLoading()" 
+              [disabled]="loginForm.invalid || isLoading() || turnstile.blocksSubmit(turnstileToken())" 
               [loading]="isLoading()"
               styleClass="flex-1">
             </p-button>
@@ -182,6 +187,10 @@ export default class LoginComponent {
   errorMessage = signal('');
   requires2FA = signal(false);
 
+  protected readonly turnstile = inject(TurnstileService);
+  protected readonly turnstileToken = signal<string | null>(null);
+  private readonly turnstileWidget = viewChild(TurnstileComponent);
+
   onSubmit(): void {
     if (this.loginForm.invalid) {
       return;
@@ -203,9 +212,10 @@ export default class LoginComponent {
 
     const rememberMe = this.loginForm.value.rememberMe ?? false;
 
-    this.authService.login(credentials, rememberMe).subscribe({
+    this.authService.login(credentials, rememberMe, this.turnstileToken()).subscribe({
       next: () => {
         this.isLoading.set(false);
+        this.turnstileWidget()?.reset();
         let returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/pos';
         if (returnUrl === '/') {
           returnUrl = '/pos';
@@ -214,6 +224,12 @@ export default class LoginComponent {
       },
       error: (err) => {
         this.isLoading.set(false);
+        // The token was consumed by this attempt; a retry (or the 2FA step) needs a fresh one
+        this.turnstileWidget()?.reset();
+        if (isTurnstileFailure(err)) {
+          this.errorMessage.set(this.lang.t().turnstile_failed);
+          return;
+        }
         if (err.status === 403) {
           this.requires2FA.set(true);
           this.errorMessage.set(''); // Clear any previous error

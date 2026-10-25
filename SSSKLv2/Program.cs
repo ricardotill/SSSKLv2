@@ -2,18 +2,16 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using SSSKLv2.Data;
 using System.Globalization;
-using Polly;
-using Polly.Contrib.WaitAndRetry;
 using Scalar.AspNetCore;
 using SSSKLv2.Agents;
 using SSSKLv2.Data.DAL;
 using SSSKLv2.Registrations;
 using SSSKLv2.Services;
 using Microsoft.OpenApi;
-using Microsoft.Azure.SignalR.Common;
 using Microsoft.Extensions.Azure;
 using SSSKLv2.Data.Constants;
 using Azure.Identity;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -27,6 +25,13 @@ var isIntegrationLikeEnvironment = builder.Environment.IsDevelopment() || builde
 var websiteDomain = builder.Configuration["WEBSITE_DOMAIN"] ?? (builder.Environment.IsDevelopment() ? "localhost" : "ssskl.scoutingwilo.nl");
 
 builder.Services.AddControllers();
+
+// Uniform RFC 7807 error responses; unhandled exceptions are mapped in GlobalExceptionHandler.
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+
+// Per-IP limits on login and email-sending identity endpoints
+builder.Services.AddRateLimitingRegistrations();
 
 // Register all FluentValidation validators from this assembly
 builder.Services.AddFluentValidationsRegistrations();
@@ -48,7 +53,9 @@ builder.Services.AddOpenApi(opt =>
 
 // Add services to the container.
 
-builder.Services.AddHealthChecks();
+// The "self" liveness check comes from AddServiceDefaults and the SQL check from EnrichSqlServerDbContext;
+// blob storage is added below once we know a BlobServiceClient is registered.
+var healthChecks = builder.Services.AddHealthChecks();
 
 var authBuilder = builder.Services.AddAuthentication(options =>
 {
@@ -141,7 +148,8 @@ var frontendOrigins = new[]
     "https://localhost:5173",
     "https://sssklv2-app.azurewebsites.net",
     $"https://{websiteDomain}",
-    "https://ambitious-desert-07f83a203.2.azurestaticapps.net"
+    "https://ambitious-desert-07f83a203.2.azurestaticapps.net",
+    "https://ssskl.ricardotill.nl"
 };
 
 builder.Services.AddCors(options =>
@@ -183,17 +191,11 @@ if (!builder.Environment.IsEnvironment("IntegrationTest"))
 
 if (builder.Environment.IsProduction())
 {
-    Policy.Handle<AzureSignalRException>()
-        .WaitAndRetry(Backoff.LinearBackoff(TimeSpan.FromMilliseconds(100), retryCount: 5),
-            (ex, _, retryCount, _) => { Console.WriteLine($"Failed Attempt {retryCount}: {ex.GetType().Name}"); })
-        .Execute(() =>
-        {
-            builder.Services.AddSignalR().AddAzureSignalR(options =>
-            {
-                options.ServerStickyMode =
-                    Microsoft.Azure.SignalR.ServerStickyMode.Required;
-            });
-        });
+    // Registration doesn't connect; the Azure SignalR SDK reconnects to the service on its own.
+    builder.Services.AddSignalR().AddAzureSignalR(options =>
+    {
+        options.ServerStickyMode = Microsoft.Azure.SignalR.ServerStickyMode.Required;
+    });
 }
 
 if (isIntegrationLikeEnvironment)
@@ -223,6 +225,13 @@ else if (!string.IsNullOrWhiteSpace(storageServiceUri))
         clientBuilder.AddBlobServiceClient(new Uri(storageServiceUri));
         clientBuilder.UseCredential(new DefaultAzureCredential());
     });
+}
+
+if (!string.IsNullOrWhiteSpace(connectionStringBlobs)
+    || !string.IsNullOrWhiteSpace(storageConnectionString)
+    || !string.IsNullOrWhiteSpace(storageServiceUri))
+{
+    healthChecks.AddCheck<BlobStorageHealthCheck>("blob-storage", tags: ["ready"]);
 }
 
 builder.Services.AddIdentityCore<ApplicationUser>(options =>
@@ -282,22 +291,7 @@ var app = builder.Build();
 
 app.MapDefaultEndpoints();
 
-// Diagnostic: when running integration tests, log the concrete IEmailSender implementation to help debug which
-// email sender implementation was registered.
-if (isIntegrationLikeEnvironment)
-{
-    using var _diagScope = app.Services.CreateScope();
-    try
-    {
-        var _emailSender = _diagScope.ServiceProvider.GetService<IEmailSender<ApplicationUser>>();
-        Console.WriteLine($"DI Diagnostic: IEmailSender<ApplicationUser> = {(_emailSender?.GetType().FullName ?? "<none>")}");
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"DI Diagnostic: failed to resolve IEmailSender<ApplicationUser>: {ex.GetType().FullName}: {ex.Message}");
-    }
-}
-
+app.UseForwardedHeaders();
 app.UsePathBase("/");
 
 await using (var scope = app.Services.CreateAsyncScope())
@@ -321,7 +315,8 @@ if (app.Environment.IsDevelopment())
 }
 else
 {
-    app.UseExceptionHandler("/error", createScopeForErrors: true);
+    app.UseExceptionHandler();
+    app.UseHsts();
 }
 
 
@@ -362,6 +357,7 @@ app.Use(async (context, next) =>
 
 // Apply CORS policy.
 app.UseCors("AllowFrontend");
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseAntiforgery();
@@ -395,18 +391,16 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
+// /healthz: everything (database, blob storage). /healthz/live: process only, for restart decisions,
+// so a database outage doesn't make the platform recycle otherwise healthy instances.
 app.MapHealthChecks("/healthz");
+app.MapHealthChecks("/healthz/live", new HealthCheckOptions
+{
+    Predicate = r => r.Tags.Contains("live")
+});
 
 CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.InvariantCulture;
 CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
-
-using (var scope = app.Services.GetService<IServiceScopeFactory>()!.CreateScope())
-{
-    if (!app.Environment.IsEnvironment("IntegrationTest"))
-    {
-        await scope.ServiceProvider.GetRequiredService<ApplicationDbContext>().Database.MigrateAsync();
-    }
-}
 
 await app.RunAsync();
 

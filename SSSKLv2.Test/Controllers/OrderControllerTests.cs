@@ -367,7 +367,7 @@ public class OrderControllerTests
     }
 
     [TestMethod]
-    public async Task Create_WhenServiceThrowsGenericException_ReturnsProblem()
+    public async Task Create_WhenServiceThrowsGenericException_PropagatesToGlobalHandler()
     {
         // Arrange
         var dto = new OrderSubmitDto();
@@ -376,10 +376,10 @@ public class OrderControllerTests
         _orderService.CreateOrder(dto, userId).Throws(new Exception("Fail"));
 
         // Act
-        var result = await _sut.Create(dto);
+        var act = () => _sut.Create(dto);
 
         // Assert
-        result.Should().BeOfType<ObjectResult>().Which.StatusCode.Should().Be(500);
+        await act.Should().ThrowAsync<Exception>().WithMessage("Fail");
     }
 
     [TestMethod]

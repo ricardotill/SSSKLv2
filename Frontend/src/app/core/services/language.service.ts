@@ -12,6 +12,8 @@ export class LanguageService {
     // General
     'success': 'Succes',
     'error': 'Fout',
+    'turnstile_load_failed': 'De beveiligingscontrole kon niet worden geladen. Controleer je verbinding en herlaad de pagina.',
+    'turnstile_failed': 'De beveiligingscontrole is mislukt. Probeer het opnieuw.',
     'confirm': 'Bevestigen',
     'cancel': 'Annuleren',
     'save': 'Opslaan',

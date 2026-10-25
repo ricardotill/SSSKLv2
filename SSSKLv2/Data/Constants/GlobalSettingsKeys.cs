@@ -9,6 +9,12 @@ public static class GlobalSettingsKeys
     public const string EmailSmtpUsername = "EmailSmtpUsername";
     public const string EmailSmtpPassword = "EmailSmtpPassword";
 
+    // Cloudflare Turnstile. The sitekey and enabled flag are public (the login page needs them).
+    public const string TurnstileEnabled = "TurnstileEnabled";
+    public const string TurnstileSiteKey = "TurnstileSiteKey";
+    public const string TurnstileSecretKey = "TurnstileSecretKey";
+    public const string TurnstileAllowedHostnames = "TurnstileAllowedHostnames";
+
     /// <summary>
     /// Keys that are sensitive: they can be stored and used internally, but
     /// can only be retrieved by admins.
@@ -21,6 +27,7 @@ public static class GlobalSettingsKeys
         EmailSenderEmail,
         EmailSmtpUsername,
         EmailSmtpPassword,
+        TurnstileSecretKey,
         "GoogleMapsApiKey" // Existing sensitive key found in controller
     };
 
@@ -30,6 +37,7 @@ public static class GlobalSettingsKeys
     /// </summary>
     public static readonly IReadOnlyList<string> WriteOnlyKeys = new List<string>
     {
-        EmailSmtpPassword
+        EmailSmtpPassword,
+        TurnstileSecretKey
     };
 }

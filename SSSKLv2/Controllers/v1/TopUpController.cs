@@ -65,7 +65,7 @@ public class TopUpController : ControllerBase
 
     // GET v1/topup/{id}
     [Authorize(Roles = "Admin")]
-    [HttpGet("{id}")]
+    [HttpGet("{id:guid}")]
     public async Task<ActionResult<TopUpDto>> GetById(string id)
     {
         _logger.LogInformation("{Controller}: Get topup by id {Id}", nameof(TopUpController), id);
@@ -74,9 +74,8 @@ public class TopUpController : ControllerBase
             var topup = await _topUpService.GetById(id);
             return Ok(MapToDto(topup));
         }
-        catch (Exception ex)
+        catch (NotFoundException)
         {
-            _logger.LogWarning(ex, "{Controller}: TopUp not found {Id}", nameof(TopUpController), id);
             return NotFound();
         }
     }
@@ -114,11 +113,6 @@ public class TopUpController : ControllerBase
         {
             return NotFound($"User '{dto.UserName}' not found.");
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "{Controller}: Failed to create topup", nameof(TopUpController));
-            return Problem("Failed to create topup");
-        }
     }
 
     // DELETE v1/topup/{id}
@@ -133,7 +127,7 @@ public class TopUpController : ControllerBase
             var existing = await _topUpService.GetById(id.ToString());
             if (existing == null) return NotFound();
         }
-        catch (Exception)
+        catch (NotFoundException)
         {
             return NotFound();
         }

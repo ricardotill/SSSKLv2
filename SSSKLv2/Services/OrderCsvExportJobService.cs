@@ -1,7 +1,9 @@
+using System.Diagnostics;
 using System.Collections.Concurrent;
 using System.Text;
 using SSSKLv2.Dto.Api.v1;
 using SSSKLv2.Services.Interfaces;
+using SSSKLv2.Telemetry;
 
 namespace SSSKLv2.Services;
 
@@ -64,6 +66,9 @@ public class OrderCsvExportJobService(
     private async Task RunJobAsync(JobState job)
     {
         job.Status = CsvExportJobStatus.Running;
+        using var activity = SssklTelemetry.ActivitySource.StartActivity("OrderCsvExportJob");
+        activity?.SetTag("job.id", job.Id);
+        logger.LogInformation("Order CSV export job {JobId} started", job.Id);
 
         try
         {
@@ -72,17 +77,25 @@ public class OrderCsvExportJobService(
             var csv = await orderService.ExportAllOrdersToCsvAsync();
 
             job.CsvBytes = Encoding.UTF8.GetBytes(csv);
+            // Stamp CompletedAt before publishing the terminal status: pollers read both without a lock
+            job.CompletedAt = DateTime.UtcNow;
             job.Status = CsvExportJobStatus.Completed;
         }
         catch (Exception ex)
         {
-            job.Status = CsvExportJobStatus.Failed;
             job.ErrorMessage = ex.Message;
+            job.CompletedAt = DateTime.UtcNow;
+            job.Status = CsvExportJobStatus.Failed;
+            activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
             logger.LogError(ex, "Order CSV export job {JobId} failed", job.Id);
         }
         finally
         {
-            job.CompletedAt = DateTime.UtcNow;
+            job.CompletedAt ??= DateTime.UtcNow;
+            var duration = job.CompletedAt.Value - job.StartedAt;
+            SssklTelemetry.RecordJob("order_csv_export", job.Status.ToString().ToLowerInvariant(), duration);
+            logger.LogInformation("Order CSV export job {JobId} finished as {Status} in {DurationMs} ms",
+                job.Id, job.Status, (long)duration.TotalMilliseconds);
         }
     }
 

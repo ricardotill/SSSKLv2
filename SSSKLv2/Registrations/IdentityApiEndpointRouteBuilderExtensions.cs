@@ -96,7 +96,7 @@ public static class IdentityApiEndpointRouteBuilderExtensions
 
             await SendConfirmationEmailAsync(user, userManager, context, email);
             return TypedResults.Ok();
-        });
+        }).RequireTurnstile("register");
 
         routeGroup.MapPost("/login", async Task<Results<Ok<AccessTokenResponse>, EmptyHttpResult, ProblemHttpResult>>
             ([FromBody] LoginRequest login, [FromQuery] bool? useCookies, [FromQuery] bool? useSessionCookies, [FromServices] IServiceProvider sp) =>
@@ -134,7 +134,7 @@ public static class IdentityApiEndpointRouteBuilderExtensions
 
             // The signInManager already produced the needed response in the form of a cookie or bearer token.
             return TypedResults.Empty;
-        });
+        }).RequireTurnstile("login");
 
         // POST /logout: sign the user out. If using cookie authentication this will clear the authentication cookie.
         routeGroup.MapPost("/logout", async Task<Results<Ok, EmptyHttpResult>>
@@ -251,7 +251,7 @@ public static class IdentityApiEndpointRouteBuilderExtensions
 
             await SendConfirmationEmailAsync(user, userManager, context, resendRequest.Email);
             return TypedResults.Ok();
-        });
+        }).RequireTurnstile("resend-confirmation");
 
         routeGroup.MapPost("/forgotPassword", async Task<Results<Ok, ValidationProblem>>
             ([FromBody] ForgotPasswordRequest resetRequest, [FromServices] IServiceProvider sp) =>
@@ -276,7 +276,7 @@ public static class IdentityApiEndpointRouteBuilderExtensions
             // Don't reveal that the user does not exist or is not confirmed, so don't return a 200 if we would have
             // returned a 400 for an invalid code given a valid user email.
             return TypedResults.Ok();
-        });
+        }).RequireTurnstile("forgot-password");
 
         routeGroup.MapPost("/resetPassword", async Task<Results<Ok, ValidationProblem>>
             ([FromBody] ResetPasswordRequest resetRequest, [FromServices] IServiceProvider sp) =>

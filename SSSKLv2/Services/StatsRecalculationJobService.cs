@@ -1,7 +1,9 @@
+using System.Diagnostics;
 using System.Collections.Concurrent;
 using SSSKLv2.Data.DAL.Interfaces;
 using SSSKLv2.Dto.Api.v1;
 using SSSKLv2.Services.Interfaces;
+using SSSKLv2.Telemetry;
 
 namespace SSSKLv2.Services;
 
@@ -53,6 +55,9 @@ public class StatsRecalculationJobService(
     private async Task RunJobAsync(JobState job)
     {
         job.Status = RecalculationJobStatus.Running;
+        using var activity = SssklTelemetry.ActivitySource.StartActivity("StatsRecalculationJob");
+        activity?.SetTag("job.id", job.Id);
+        logger.LogInformation("Bulk stats recalculation job {JobId} started", job.Id);
         try
         {
             using var scope = scopeFactory.CreateScope();
@@ -83,7 +88,11 @@ public class StatsRecalculationJobService(
                 }
             }
 
+            // Stamp CompletedAt before publishing the terminal status: pollers read both without a lock
+            job.CompletedAt = DateTime.UtcNow;
             job.Status = RecalculationJobStatus.Completed;
+            activity?.SetTag("job.users.total", job.TotalUsers);
+            activity?.SetTag("job.users.failed", job.FailedUsers);
 
             await notificationService.CreateNotificationAsync(
                 job.StartedByUserId,
@@ -93,8 +102,10 @@ public class StatsRecalculationJobService(
         }
         catch (Exception ex)
         {
-            job.Status = RecalculationJobStatus.Failed;
             job.ErrorMessage = ex.Message;
+            job.CompletedAt = DateTime.UtcNow;
+            job.Status = RecalculationJobStatus.Failed;
+            activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
             logger.LogError(ex, "Bulk stats recalculation job {JobId} failed", job.Id);
 
             using var scope = scopeFactory.CreateScope();
@@ -107,7 +118,11 @@ public class StatsRecalculationJobService(
         }
         finally
         {
-            job.CompletedAt = DateTime.UtcNow;
+            job.CompletedAt ??= DateTime.UtcNow;
+            var duration = job.CompletedAt.Value - job.StartedAt;
+            SssklTelemetry.RecordJob("stats_recalculation", job.Status.ToString().ToLowerInvariant(), duration);
+            logger.LogInformation("Bulk stats recalculation job {JobId} finished as {Status} in {DurationMs} ms ({FailedUsers}/{TotalUsers} users failed)",
+                job.Id, job.Status, (long)duration.TotalMilliseconds, job.FailedUsers, job.TotalUsers);
         }
     }
 

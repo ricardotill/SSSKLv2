@@ -1,3 +1,4 @@
+using SixLabors.ImageSharp;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SSSKLv2.Services;
@@ -371,9 +372,10 @@ public class ApplicationUserController : ControllerBase
         {
             return NotFound();
         }
-        catch (Exception ex)
+        catch (ImageFormatException ex)
         {
-            _logger.LogError(ex, "Failed to upload profile picture for user {Username}", username);
+            // Unknown or corrupt image data is a client error; anything else surfaces as a 500
+            _logger.LogWarning(ex, "Rejected invalid profile picture for user {Username}", username);
             return BadRequest(new { error = "Failed to upload profile picture" });
         }
     }
@@ -395,11 +397,6 @@ public class ApplicationUserController : ControllerBase
         {
             return NotFound();
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to delete profile picture for user {Username}", username);
-            return BadRequest(new { error = "Failed to delete profile picture" });
-        }
     }
 
     // DELETE v1/applicationuser/{id}/profile-picture - delete profile picture (Admin only)
@@ -415,11 +412,6 @@ public class ApplicationUserController : ControllerBase
         catch (NotFoundException)
         {
             return NotFound();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to delete profile picture for user {Id}", id);
-            return BadRequest(new { error = "Failed to delete profile picture" });
         }
     }
 

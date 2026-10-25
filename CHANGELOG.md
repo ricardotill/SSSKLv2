@@ -1,5 +1,23 @@
 # Changelog
 
+## 3.11.0 - 2026-10-25
+
+### Added
+
+- Cloudflare Turnstile on login, register, forgot-password and resend-confirmation (configured and switched on in Global Settings).
+- Per-IP rate limiting on login and email-sending identity endpoints.
+- Global ProblemDetails exception handler with trace ids.
+- Blob storage readiness check and `/healthz/live` liveness endpoint.
+- Business metrics (orders, revenue, top-ups, push outcomes, side-effect failures, job durations) and background job spans.
+- HSTS and basic security headers; Dependabot configuration.
+
+### Fixed
+
+- Saldo and stock updates are atomic, so concurrent orders for the same user or product no longer lose updates.
+- Failures in live updates, achievements or notifications after an order is saved no longer return an error (which invited double charges on retry).
+- Oversized images are rejected before decoding.
+- Startup no longer runs migrations twice.
+
 ## `feature/achievement-rework` - 2026-09-19
 
 ### Added

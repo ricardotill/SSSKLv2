@@ -1,3 +1,4 @@
+using SSSKLv2.Telemetry;
 using Lib.Net.Http.WebPush;
 using System.Runtime.CompilerServices;
 using Lib.Net.Http.WebPush.Authentication;
@@ -92,6 +93,7 @@ public class WebPushService : IWebPushService
                 };
 
                 await RequestPushMessageAsync(pushSubscription, pushMessage);
+                SssklTelemetry.RecordPush("success");
             }
             catch (PushServiceClientException ex)
             {
@@ -117,15 +119,18 @@ public class WebPushService : IWebPushService
                 {
                     // Subscription is no longer valid, remove it
                     _context.PushSubscription.Remove(subscription);
+                    SssklTelemetry.RecordPush("expired");
                     _logger.LogInformation("Removing invalid push subscription for user {UserId}. Reason: {PushReason}", userId, pushReason ?? "Gone/NotFound");
                 }
                 else
                 {
+                    SssklTelemetry.RecordPush("failed");
                     _logger.LogError(ex, "Error sending push notification to user {UserId}. Status: {StatusCode}, Reason: {PushReason}", userId, ex.StatusCode, pushReason ?? "Unknown");
                 }
             }
             catch (Exception ex)
             {
+                SssklTelemetry.RecordPush("failed");
                 _logger.LogError(ex, "Unexpected error sending push notification to user {UserId}", userId);
             }
         }

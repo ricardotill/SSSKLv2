@@ -6,6 +6,13 @@ namespace SSSKLv2.Services;
 
 public static class ServicesExtensions
 {
+    private static IServiceCollection AddTurnstile(this IServiceCollection services)
+    {
+        services.AddOptions<TurnstileOptions>().BindConfiguration(TurnstileOptions.SectionName);
+        services.AddHttpClient<ITurnstileService, TurnstileService>(client => client.Timeout = TimeSpan.FromSeconds(10));
+        return services;
+    }
+
     public static IServiceCollection AddServicesDI(this IServiceCollection services)
     {
         return services
@@ -31,6 +38,7 @@ public static class ServicesExtensions
             .AddScoped<IDomainEventHandler<QuoteCreatedEvent>, AchievementEventHandler>()
             .AddScoped<IDomainEventHandler<QuoteVotedEvent>, AchievementEventHandler>()
             .AddScoped<IDomainEventHandler<ReactionAddedEvent>, AchievementEventHandler>()
-            .AddHttpClient();
+            .AddHttpClient()
+            .AddTurnstile();
     }
 }

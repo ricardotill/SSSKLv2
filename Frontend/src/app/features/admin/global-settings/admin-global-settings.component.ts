@@ -11,6 +11,7 @@ import { MessageService } from 'primeng/api';
 import { GlobalSettingsService } from '../services/global-settings.service';
 import { LanguageService } from '../../../core/services/language.service';
 import { MultiSelectModule } from 'primeng/multiselect';
+import { ToggleSwitchModule } from 'primeng/toggleswitch';
 import { RoleService } from '../../admin/services/role.service';
 import { Role } from '../../../core/models/role.model';
 import { finalize, forkJoin, of, catchError } from 'rxjs';
@@ -27,7 +28,8 @@ import { finalize, forkJoin, of, catchError } from 'rxjs';
     InputTextModule,
     PasswordModule,
     DividerModule,
-    MultiSelectModule
+    MultiSelectModule,
+    ToggleSwitchModule
   ],
   template: `
     <div class="flex flex-col gap-6 max-w-4xl mx-auto pb-12">
@@ -128,6 +130,45 @@ import { finalize, forkJoin, of, catchError } from 'rxjs';
           </div>
         </p-card>
         
+        <!-- Cloudflare Turnstile -->
+        <p-card header="Beveiliging (Cloudflare Turnstile)" subheader="Botbescherming op inloggen, registreren, wachtwoord vergeten en bevestigingsmail opnieuw versturen.">
+          <div class="flex flex-col gap-4">
+            <div class="flex items-center gap-3">
+              <p-toggleswitch inputId="turnstileEnabled" formControlName="turnstileEnabled" />
+              <label for="turnstileEnabled" class="font-bold">Turnstile inschakelen</label>
+            </div>
+            <small class="text-surface-500">Werkt pas als zowel de sitekey als de geheime sleutel zijn ingevuld. Wijzigingen zijn binnen 30 seconden actief.</small>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="flex flex-col gap-2">
+                <label for="turnstileSiteKey" class="font-bold">Sitekey</label>
+                <input pInputText id="turnstileSiteKey" formControlName="turnstileSiteKey" placeholder="0x4AAAAAAA..." />
+              </div>
+              <div class="flex flex-col gap-2">
+                <label for="turnstileSecretKey" class="font-bold">Geheime sleutel</label>
+                <p-password
+                  inputId="turnstileSecretKey"
+                  formControlName="turnstileSecretKey"
+                  [toggleMask]="true"
+                  [feedback]="false"
+                  class="w-full"
+                  inputStyleClass="w-full"
+                  [placeholder]="turnstileSecretIsSet() ? '●●●●●●●● (reeds ingesteld)' : '0x4AAAAAAA...'"
+                ></p-password>
+                @if (turnstileSecretIsSet() && !globalSettingsForm.controls.turnstileSecretKey.dirty) {
+                  <small class="text-emerald-600 flex items-center gap-1"><i class="pi pi-lock"></i> Sleutel is ingesteld. Laat leeg om de huidige te behouden.</small>
+                }
+              </div>
+            </div>
+
+            <div class="flex flex-col gap-2">
+              <label for="turnstileAllowedHostnames" class="font-bold">Toegestane hostnamen</label>
+              <input pInputText id="turnstileAllowedHostnames" formControlName="turnstileAllowedHostnames" placeholder="ssskl.scoutingwilo.nl" />
+              <small class="text-surface-500">Kommagescheiden. Leeg laten om de standaard domeinen van de app te gebruiken. Gebruik nooit localhost in productie.</small>
+            </div>
+          </div>
+        </p-card>
+
         <!-- Quotes Feature Configuration -->
         <p-card header="Quotes Feature" subheader="Configureer wie de Quotes feature mag gebruiken.">
           <div class="flex flex-col gap-2">
@@ -183,6 +224,31 @@ import { finalize, forkJoin, of, catchError } from 'rxjs';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export default class AdminGlobalSettingsComponent implements OnInit {
+  /** Form control → GlobalSettings key. */
+  private static readonly settingKeys = {
+    whatsNewContent: 'WhatsNewContent',
+    googleMapsApiKey: 'GoogleMapsApiKey',
+    googleMapsMapId: 'GoogleMapsMapId',
+    quotesAllowedRoles: 'QuotesFeatureAllowedRoles',
+    emailSmtpServer: 'EmailSmtpServer',
+    emailSmtpPort: 'EmailSmtpPort',
+    emailSmtpUsername: 'EmailSmtpUsername',
+    emailSmtpPassword: 'EmailSmtpPassword',
+    emailSenderEmail: 'EmailSenderEmail',
+    emailSenderName: 'EmailSenderName',
+    turnstileEnabled: 'TurnstileEnabled',
+    turnstileSiteKey: 'TurnstileSiteKey',
+    turnstileSecretKey: 'TurnstileSecretKey',
+    turnstileAllowedHostnames: 'TurnstileAllowedHostnames'
+  } as const;
+
+  private static readonly writeOnly = new Set<string>(['emailSmtpPassword', 'turnstileSecretKey']);
+
+  private static serialize(value: string | boolean | string[]): string {
+    if (Array.isArray(value)) return value.join(',');
+    return String(value);
+  }
+
   private readonly settingsService = inject(GlobalSettingsService);
   private readonly fb = inject(FormBuilder);
   private readonly messageService = inject(MessageService);
@@ -191,6 +257,7 @@ export default class AdminGlobalSettingsComponent implements OnInit {
   saving = signal<boolean>(false);
   sendingTestEmail = signal<boolean>(false);
   passwordIsSet = signal<boolean>(false);
+  turnstileSecretIsSet = signal<boolean>(false);
 
   globalSettingsForm = this.fb.nonNullable.group({
     whatsNewContent: ['', Validators.required],
@@ -202,7 +269,11 @@ export default class AdminGlobalSettingsComponent implements OnInit {
     emailSmtpUsername: [''],
     emailSmtpPassword: [''],
     emailSenderEmail: [''],
-    emailSenderName: ['']
+    emailSenderName: [''],
+    turnstileEnabled: [false],
+    turnstileSiteKey: [''],
+    turnstileSecretKey: [''],
+    turnstileAllowedHostnames: ['']
   });
 
   availableRoles = signal<Role[]>([]);
@@ -221,21 +292,28 @@ export default class AdminGlobalSettingsComponent implements OnInit {
   }
 
   loadContent(): void {
+    const get = (key: string) => this.settingsService.getSetting(key).pipe(catchError(() => of({ value: '' })));
     forkJoin({
-      whatsNew: this.settingsService.getSetting('WhatsNewContent').pipe(catchError(() => of({ value: '' }))),
-      mapsKey: this.settingsService.getSetting('GoogleMapsApiKey').pipe(catchError(() => of({ value: '' }))),
-      mapId: this.settingsService.getSetting('GoogleMapsMapId').pipe(catchError(() => of({ value: '' }))),
-      quotesRoles: this.settingsService.getSetting('QuotesFeatureAllowedRoles').pipe(catchError(() => of({ value: '' }))),
-      emailServer: this.settingsService.getSetting('EmailSmtpServer').pipe(catchError(() => of({ value: '' }))),
-      emailPort: this.settingsService.getSetting('EmailSmtpPort').pipe(catchError(() => of({ value: '' }))),
-      emailUser: this.settingsService.getSetting('EmailSmtpUsername').pipe(catchError(() => of({ value: '' }))),
+      whatsNew: get('WhatsNewContent'),
+      mapsKey: get('GoogleMapsApiKey'),
+      mapId: get('GoogleMapsMapId'),
+      quotesRoles: get('QuotesFeatureAllowedRoles'),
+      emailServer: get('EmailSmtpServer'),
+      emailPort: get('EmailSmtpPort'),
+      emailUser: get('EmailSmtpUsername'),
       // EmailSmtpPassword is write-only: we check if it exists but never load its value
       emailPassExists: this.settingsService.settingExists('EmailSmtpPassword'),
-      emailFrom: this.settingsService.getSetting('EmailSenderEmail').pipe(catchError(() => of({ value: '' }))),
-      emailFromName: this.settingsService.getSetting('EmailSenderName').pipe(catchError(() => of({ value: '' })))
+      emailFrom: get('EmailSenderEmail'),
+      emailFromName: get('EmailSenderName'),
+      turnstileEnabled: get('TurnstileEnabled'),
+      turnstileSiteKey: get('TurnstileSiteKey'),
+      // TurnstileSecretKey is write-only, like the SMTP password
+      turnstileSecretExists: this.settingsService.settingExists('TurnstileSecretKey'),
+      turnstileHostnames: get('TurnstileAllowedHostnames')
     }).subscribe({
       next: (results) => {
         this.passwordIsSet.set(results.emailPassExists);
+        this.turnstileSecretIsSet.set(results.turnstileSecretExists);
         this.globalSettingsForm.patchValue({ 
           whatsNewContent: results.whatsNew.value,
           googleMapsApiKey: results.mapsKey.value,
@@ -246,7 +324,10 @@ export default class AdminGlobalSettingsComponent implements OnInit {
           emailSmtpUsername: results.emailUser.value,
           // password intentionally not patched — never retrieved from API
           emailSenderEmail: results.emailFrom.value,
-          emailSenderName: results.emailFromName.value
+          emailSenderName: results.emailFromName.value,
+          turnstileEnabled: results.turnstileEnabled.value === 'true',
+          turnstileSiteKey: results.turnstileSiteKey.value,
+          turnstileAllowedHostnames: results.turnstileHostnames.value
         });
         this.globalSettingsForm.markAsPristine();
       },
@@ -281,39 +362,14 @@ export default class AdminGlobalSettingsComponent implements OnInit {
     this.saving.set(true);
     const formValue = this.globalSettingsForm.getRawValue();
 
-    const updates = [];
     const controls = this.globalSettingsForm.controls;
-
-    if (controls.whatsNewContent.dirty) {
-      updates.push(this.settingsService.updateSetting('WhatsNewContent', { value: formValue.whatsNewContent }));
-    }
-    if (controls.googleMapsApiKey.dirty) {
-      updates.push(this.settingsService.updateSetting('GoogleMapsApiKey', { value: formValue.googleMapsApiKey }));
-    }
-    if (controls.googleMapsMapId.dirty) {
-      updates.push(this.settingsService.updateSetting('GoogleMapsMapId', { value: formValue.googleMapsMapId }));
-    }
-    if (controls.quotesAllowedRoles.dirty) {
-      updates.push(this.settingsService.updateSetting('QuotesFeatureAllowedRoles', { value: formValue.quotesAllowedRoles.join(',') }));
-    }
-    if (controls.emailSmtpServer.dirty) {
-      updates.push(this.settingsService.updateSetting('EmailSmtpServer', { value: formValue.emailSmtpServer }));
-    }
-    if (controls.emailSmtpPort.dirty) {
-      updates.push(this.settingsService.updateSetting('EmailSmtpPort', { value: formValue.emailSmtpPort }));
-    }
-    if (controls.emailSmtpUsername.dirty) {
-      updates.push(this.settingsService.updateSetting('EmailSmtpUsername', { value: formValue.emailSmtpUsername }));
-    }
-    if (controls.emailSmtpPassword.dirty && formValue.emailSmtpPassword.trim() !== '') {
-      updates.push(this.settingsService.updateSetting('EmailSmtpPassword', { value: formValue.emailSmtpPassword }));
-    }
-    if (controls.emailSenderEmail.dirty) {
-      updates.push(this.settingsService.updateSetting('EmailSenderEmail', { value: formValue.emailSenderEmail }));
-    }
-    if (controls.emailSenderName.dirty) {
-      updates.push(this.settingsService.updateSetting('EmailSenderName', { value: formValue.emailSenderName }));
-    }
+    const updates = (Object.keys(AdminGlobalSettingsComponent.settingKeys) as (keyof typeof controls)[])
+      .filter(name => controls[name].dirty)
+      // Write-only secrets are only sent when a new value was typed; empty keeps the stored one
+      .filter(name => !AdminGlobalSettingsComponent.writeOnly.has(name) || String(formValue[name]).trim() !== '')
+      .map(name => this.settingsService.updateSetting(
+        AdminGlobalSettingsComponent.settingKeys[name],
+        { value: AdminGlobalSettingsComponent.serialize(formValue[name]) }));
 
     if (updates.length === 0) {
       this.saving.set(false);
@@ -325,6 +381,10 @@ export default class AdminGlobalSettingsComponent implements OnInit {
       .subscribe({
         next: () => {
           this.messageService.add({ severity: 'success', summary: this.ls.t().success, detail: this.ls.t().global_settings_updated });
+          if (formValue.emailSmtpPassword.trim()) this.passwordIsSet.set(true);
+          if (formValue.turnstileSecretKey.trim()) this.turnstileSecretIsSet.set(true);
+          controls.emailSmtpPassword.reset('');
+          controls.turnstileSecretKey.reset('');
           this.globalSettingsForm.markAsPristine();
         },
         error: () => {

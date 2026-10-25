@@ -5,6 +5,7 @@ import { BehaviorSubject, from, Observable, switchMap, throwError } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { PasskeyDto } from '../models/passkey.model';
 import { fileToBase64 } from '../../shared/utils/file-to-base64';
+import { TurnstileService } from '../services/turnstile.service';
 
 export interface AccessTokenResponse {
     tokenType: string | null;
@@ -75,6 +76,7 @@ export interface TwoFactorResponse {
 export class AuthService {
     private http = inject(HttpClient);
     private router = inject(Router);
+    private turnstile = inject(TurnstileService);
 
     private readonly API_URL = `/api/v1/identity`;
     private readonly USER_API_URL = `/api/v1/ApplicationUser`;
@@ -112,8 +114,8 @@ export class AuthService {
         }
     }
 
-    login(credentials: { userName?: string, password?: string, twoFactorCode?: string, twoFactorRecoveryCode?: string }, rememberMe: boolean = false): Observable<AccessTokenResponse> {
-        return this.http.post<AccessTokenResponse>(`${this.API_URL}/login`, credentials).pipe(
+    login(credentials: { userName?: string, password?: string, twoFactorCode?: string, twoFactorRecoveryCode?: string }, rememberMe: boolean = false, turnstileToken: string | null = null): Observable<AccessTokenResponse> {
+        return this.http.post<AccessTokenResponse>(`${this.API_URL}/login`, credentials, { headers: this.turnstile.headers(turnstileToken) }).pipe(
             tap(response => {
                 this.setTokens(response, rememberMe);
             }),
@@ -125,8 +127,8 @@ export class AuthService {
         );
     }
 
-    register(userData: any): Observable<any> {
-        return this.http.post(`${this.API_URL}/register`, userData);
+    register(userData: any, turnstileToken: string | null = null): Observable<any> {
+        return this.http.post(`${this.API_URL}/register`, userData, { headers: this.turnstile.headers(turnstileToken) });
     }
 
     logout(): void {

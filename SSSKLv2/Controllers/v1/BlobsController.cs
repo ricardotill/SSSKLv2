@@ -88,7 +88,7 @@ public class BlobsController : ControllerBase
         }
 
         using var stream = await _blobAgent.OpenDownloadStreamAsync(image.FileName);
-        using var sourceImage = await Image.LoadAsync(stream);
+        using var sourceImage = await SafeImageLoader.LoadAsync(stream);
 
         // Target aspect ratio 1.91:1 (Industry standard for Open Graph images)
         const double targetRatio = 1.91;

@@ -1,3 +1,4 @@
+using SSSKLv2.Util;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
@@ -311,7 +312,7 @@ public class ApplicationUserService(
         if (user == null) throw new Data.DAL.Exceptions.NotFoundException("User not found");
 
         // Resize and crop to 400x400 using ImageSharp
-        using var image = await Image.LoadAsync(imageStream);
+        using var image = await SafeImageLoader.LoadAsync(imageStream);
         image.Mutate(x => x.Resize(new ResizeOptions
         {
             Size = new Size(400, 400),

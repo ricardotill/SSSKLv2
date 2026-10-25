@@ -32,6 +32,9 @@ builder.Services.AddControllers();
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
+// Per-IP limits on login and email-sending identity endpoints
+builder.Services.AddRateLimitingRegistrations();
+
 // Register all FluentValidation validators from this assembly
 builder.Services.AddFluentValidationsRegistrations();
 
@@ -302,6 +305,7 @@ if (isIntegrationLikeEnvironment)
     }
 }
 
+app.UseForwardedHeaders();
 app.UsePathBase("/");
 
 await using (var scope = app.Services.CreateAsyncScope())
@@ -366,6 +370,7 @@ app.Use(async (context, next) =>
 
 // Apply CORS policy.
 app.UseCors("AllowFrontend");
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseAntiforgery();

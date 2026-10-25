@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using SSSKLv2.Telemetry;
 
 namespace SSSKLv2.Events;
 
@@ -24,6 +25,7 @@ public class DomainEventDispatcher(IServiceProvider serviceProvider, ILogger<Dom
             }
             catch (Exception ex)
             {
+                SssklTelemetry.RecordSideEffectFailure(handler.GetType().Name);
                 logger.LogError(ex, "Domain event handler {Handler} failed for {Event}",
                     handler.GetType().Name, typeof(TEvent).Name);
             }

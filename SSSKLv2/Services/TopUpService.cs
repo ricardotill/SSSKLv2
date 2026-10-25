@@ -1,3 +1,4 @@
+using SSSKLv2.Telemetry;
 using SSSKLv2.Data;
 using SSSKLv2.Events;
 using SSSKLv2.Data.DAL.Interfaces;
@@ -61,6 +62,7 @@ public class TopUpService(
     {
         logger.LogInformation($"{GetType()}: Create TopUp for user {topup.User.UserName} with amount {topup.Saldo}");
         await topUpRepository.Create(topup);
+        SssklTelemetry.RecordTopUp(topup.Saldo);
         await eventDispatcher.DispatchAsync(new TopUpEvent(topup));
     }
     

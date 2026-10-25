@@ -1,3 +1,4 @@
+using SSSKLv2.Telemetry;
 using System.Globalization;
 using System.Text;
 using SSSKLv2.Events;
@@ -86,6 +87,7 @@ public class OrderService(
         }
 
         await orderRepository.CreateRange(orders);
+        SssklTelemetry.RecordOrders(orders);
 
         // The orders are committed at this point. Everything below is best effort: a failure in
         // live updates, achievements or notifications must not report the order as failed,
@@ -193,6 +195,7 @@ public class OrderService(
         }
         catch (Exception ex)
         {
+            SssklTelemetry.RecordSideEffectFailure(name);
             logger.LogError(ex, "{Type}: {SideEffect} failed after order was saved", nameof(OrderService), name);
         }
     }

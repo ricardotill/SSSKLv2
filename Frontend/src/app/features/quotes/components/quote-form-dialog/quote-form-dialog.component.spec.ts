@@ -88,7 +88,7 @@ describe('QuoteFormDialogComponent', () => {
     ]);
 
     component.searchAuthors({ query: 'Jan Jansen' } as any);
-    expect(component.filteredAuthors().length).toBe(1);
+    expect(component.filteredAuthors()).toHaveLength(1);
   });
 
   it('adds authors once and removes them', () => {
@@ -96,7 +96,7 @@ describe('QuoteFormDialogComponent', () => {
     component.addAuthor({ value: { id: 'u1', name: 'Jan Jansen', isUser: true, user: users[0] } });
     component.authorInput = 'Jan';
     component.addAuthor({ value: { id: 'u1', name: 'Jan Jansen', isUser: true } });
-    expect(component.selectedAuthors().length).toBe(1);
+    expect(component.selectedAuthors()).toHaveLength(1);
     expect(component.authorInput).toBe('');
 
     component.removeAuthor(component.selectedAuthors()[0]);

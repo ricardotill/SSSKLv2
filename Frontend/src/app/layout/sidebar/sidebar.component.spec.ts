@@ -91,7 +91,7 @@ describe('SidebarComponent', () => {
     fixture.detectChanges();
     expect(links()).toContain('/admin/users');
     expect(links()).toContain('/admin/global-settings');
-    expect(labels().length).toBe(2);
+    expect(labels()).toHaveLength(2);
   });
 
   it('opens the own profile and closes the sidebar', () => {

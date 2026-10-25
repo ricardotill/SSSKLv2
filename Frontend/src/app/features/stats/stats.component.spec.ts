@@ -53,7 +53,7 @@ describe('StatsComponent', () => {
     create();
     expect(userService.getUserStats).toHaveBeenCalledWith('me');
     expect(component.stats()).toEqual(stats);
-    expect(component.achievements().length).toBe(1);
+    expect(component.achievements()).toHaveLength(1);
     expect(component.viewingOwnStats()).toBe(true);
     expect(component.loading()).toBe(false);
     expect(userService.getUser).not.toHaveBeenCalled();

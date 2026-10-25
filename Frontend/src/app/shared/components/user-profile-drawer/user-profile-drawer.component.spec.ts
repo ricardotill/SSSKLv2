@@ -231,7 +231,7 @@ describe('UserProfileDrawerComponent', () => {
       open({ id: 'user-123', userName: 'testuser', roles: [] });
 
       expect(component.achievements().map(a => a.id)).toEqual(['e2', 'e1']);
-      expect(component.quotes().length).toBe(1);
+      expect(component.quotes()).toHaveLength(1);
       expect(document.body.textContent).toContain('Test User');
       expect(document.body.textContent).toContain('Hello');
     });

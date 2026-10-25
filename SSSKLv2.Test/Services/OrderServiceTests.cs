@@ -442,6 +442,39 @@ public class OrderServiceTests
     }
 
     [TestMethod]
+    public async Task CreateOrder_WhenSideEffectsFailAfterSave_DoesNotThrow()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var productId = Guid.NewGuid();
+        var user = CreateUser("testuser");
+        var otherUser = CreateUser("other");
+        var product = CreateProduct(productId, "Product 1", 10.00m);
+        var dto = new OrderSubmitDto
+        {
+            Users = new List<Guid> { userId, Guid.NewGuid() },
+            Products = new List<Guid> { productId },
+            Amount = 1,
+            Split = false
+        };
+
+        _applicationUserService.GetUsersByIds(Arg.Any<IEnumerable<string>>()).Returns(new List<ApplicationUser> { user, otherUser });
+        _productService.GetProductsByIds(Arg.Any<IEnumerable<Guid>>()).Returns(new List<Product> { product });
+        _purchaseNotifier.NotifyUserPurchaseAsync(Arg.Any<UserPurchaseEvent>())
+            .Returns(Task.FromException(new InvalidOperationException("SignalR down")));
+        _applicationUserService.GetUserById(Arg.Any<string>())
+            .Returns(Task.FromException<ApplicationUser>(new InvalidOperationException("DB hiccup")));
+
+        // Act
+        Func<Task> act = async () => await _sut.CreateOrder(dto, "acting-user");
+
+        // Assert
+        await act.Should().NotThrowAsync();
+        await _mockOrderRepository.Received(1).CreateRange(Arg.Any<IEnumerable<Order>>());
+        await _mockEventDispatcher.Received(2).DispatchAsync(Arg.Any<OrderPlacedEvent>());
+    }
+
+    [TestMethod]
     public async Task CreateOrder_MultipleUsersDutchSplit_ShouldCalculateCorrectPrices()
     {
         // Arrange

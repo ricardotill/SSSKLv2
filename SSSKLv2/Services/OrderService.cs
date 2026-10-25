@@ -86,8 +86,12 @@ public class OrderService(
         }
 
         await orderRepository.CreateRange(orders);
-        await NotifyPurchase(orders);
-        
+
+        // The orders are committed at this point. Everything below is best effort: a failure in
+        // live updates, achievements or notifications must not report the order as failed,
+        // because the kiosk would then retry and charge the users twice.
+        await RunSideEffect("live purchase broadcast", () => NotifyPurchase(orders));
+
         foreach (var o in orders)
         {
             await eventDispatcher.DispatchAsync(new OrderPlacedEvent(o));
@@ -96,22 +100,25 @@ public class OrderService(
         // Notify users if someone ordered on their behalf
         if (!string.IsNullOrEmpty(actingUserId))
         {
-            var actingUser = await applicationUserService.GetUserById(actingUserId);
-            var actingUserName = actingUser?.FullName ?? "Iemand";
-            var productNames = string.Join(", ", products.Select(p => p.Name));
-
-            foreach (var u in users)
+            await RunSideEffect("on-behalf notifications", async () =>
             {
-                if (u.Id != actingUserId)
+                var actingUser = await applicationUserService.GetUserById(actingUserId);
+                var actingUserName = actingUser?.FullName ?? "Iemand";
+                var productNames = string.Join(", ", products.Select(p => p.Name));
+
+                foreach (var u in users)
                 {
-                    await notificationService.CreateNotificationAsync(
-                        u.Id,
-                        "Nieuwe bestelling!",
-                        $"{actingUserName} heeft {productNames} voor je besteld!",
-                        "/orders/personal",
-                        sendPush: true);
+                    if (u.Id != actingUserId)
+                    {
+                        await notificationService.CreateNotificationAsync(
+                            u.Id,
+                            "Nieuwe bestelling!",
+                            $"{actingUserName} heeft {productNames} voor je besteld!",
+                            "/orders/personal",
+                            sendPush: true);
+                    }
                 }
-            }
+            });
         }
 
         // Achievements are now handled via events
@@ -176,6 +183,18 @@ public class OrderService(
         }
 
         return list;
+    }
+
+    private async Task RunSideEffect(string name, Func<Task> action)
+    {
+        try
+        {
+            await action();
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "{Type}: {SideEffect} failed after order was saved", nameof(OrderService), name);
+        }
     }
 
     private async Task NotifyPurchase(IEnumerable<Order> orders)

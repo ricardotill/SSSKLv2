@@ -7,7 +7,7 @@ public interface IDomainEventDispatcher
     Task DispatchAsync<TEvent>(TEvent domainEvent) where TEvent : IDomainEvent;
 }
 
-public class DomainEventDispatcher(IServiceProvider serviceProvider) : IDomainEventDispatcher
+public class DomainEventDispatcher(IServiceProvider serviceProvider, ILogger<DomainEventDispatcher> logger) : IDomainEventDispatcher
 {
     public async Task DispatchAsync<TEvent>(TEvent domainEvent) where TEvent : IDomainEvent
     {
@@ -16,7 +16,17 @@ public class DomainEventDispatcher(IServiceProvider serviceProvider) : IDomainEv
 
         foreach (var handler in handlers)
         {
-            await handler.HandleAsync(domainEvent);
+            // Events are dispatched after the triggering change is committed. A failing handler
+            // (achievements, stats) must not turn an already-saved order or top-up into an error response.
+            try
+            {
+                await handler.HandleAsync(domainEvent);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Domain event handler {Handler} failed for {Event}",
+                    handler.GetType().Name, typeof(TEvent).Name);
+            }
         }
     }
 }

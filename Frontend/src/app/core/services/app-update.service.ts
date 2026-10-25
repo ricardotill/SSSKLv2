@@ -16,11 +16,14 @@ export class AppUpdateService {
   private readonly windowRef = inject(WINDOW);
   private readonly appVersionService = inject(AppVersionService);
   private updateCheckInProgress = false;
+  private started = false;
 
-  constructor() {
-    if (!this.swUpdate.isEnabled) {
+  /** Starts listening for and polling for app updates. Safe to call more than once. */
+  start(): void {
+    if (this.started || !this.swUpdate.isEnabled) {
       return;
     }
+    this.started = true;
 
     this.swUpdate.versionUpdates
       .pipe(filter((event): event is VersionReadyEvent => event.type === 'VERSION_READY'))

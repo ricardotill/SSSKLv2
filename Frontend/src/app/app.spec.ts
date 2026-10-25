@@ -50,7 +50,7 @@ describe('App', () => {
           provide: PushNotificationService,
           useValue: { showPrompt: signal(false), isSupported: signal(false), isEnabled: signal(false) }
         },
-        { provide: AppUpdateService, useValue: {} }
+        { provide: AppUpdateService, useValue: { start: vi.fn() } }
       ]
     }).compileComponents();
   });

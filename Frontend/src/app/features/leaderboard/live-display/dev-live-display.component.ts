@@ -391,7 +391,7 @@ export class DevLiveDisplayComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.generateMockData();
     this.startManualCycle();
-    this.generateQRCode('https://localhost:4200/dev');
+    void this.generateQRCode('https://localhost:4200/dev');
   }
 
   generateMockData() {

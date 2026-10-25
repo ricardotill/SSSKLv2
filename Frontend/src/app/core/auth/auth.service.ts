@@ -139,7 +139,7 @@ export class AuthService {
         }
         this.clearTokens();
         this.currentUserSignal.set(null);
-        this.router.navigate(['/']);
+        void this.router.navigate(['/']);
     }
 
     refreshTokens(): Observable<AccessTokenResponse> {

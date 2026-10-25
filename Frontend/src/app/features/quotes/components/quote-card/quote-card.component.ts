@@ -175,6 +175,6 @@ export class QuoteCardComponent {
 
   navigateToDetail(event: MouseEvent): void {
     // Navigate to detail page
-    this.router.navigate(['/quotes', this.quote.id]);
+    void this.router.navigate(['/quotes', this.quote.id]);
   }
 }

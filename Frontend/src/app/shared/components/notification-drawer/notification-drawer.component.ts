@@ -175,12 +175,12 @@ export class NotificationDrawerComponent {
     const linkUri = notification.linkUri;
     if (linkUri) {
       this.drawerService.close();
-      this.router.navigateByUrl(linkUri);
+      void this.router.navigateByUrl(linkUri);
     }
   }
 
   viewAll() {
     this.drawerService.close();
-    this.router.navigate(['/notifications']);
+    void this.router.navigate(['/notifications']);
   }
 }

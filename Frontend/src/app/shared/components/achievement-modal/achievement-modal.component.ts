@@ -153,7 +153,7 @@ export class AchievementModalComponent {
     const end = Date.now() + duration;
 
     const frame = () => {
-      confetti({
+      void confetti({
         particleCount: 5,
         angle: 60,
         spread: 55,
@@ -161,7 +161,7 @@ export class AchievementModalComponent {
         colors: ['#26ccff', '#a25afd', '#ff5e7e', '#88ff5a', '#fcff42', '#ffa62d', '#ff36ff'],
         zIndex: 9999
       });
-      confetti({
+      void confetti({
         particleCount: 5,
         angle: 120,
         spread: 55,

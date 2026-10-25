@@ -502,7 +502,7 @@ export class UserProfileDrawerComponent {
   
   goToSettings() {
     this.drawerService.close();
-    this.router.navigate(['/settings']);
+    void this.router.navigate(['/settings']);
   }
 
   goToStats() {
@@ -511,33 +511,33 @@ export class UserProfileDrawerComponent {
 
     this.drawerService.close();
     if (this.isCurrentUser()) {
-      this.router.navigate(['/stats']);
+      void this.router.navigate(['/stats']);
       return;
     }
 
-    this.router.navigate(['/stats'], { queryParams: { userId: user.id } });
+    void this.router.navigate(['/stats'], { queryParams: { userId: user.id } });
   }
 
   navigateToAchievements() {
     const userId = this.user()?.id;
     this.drawerService.close();
-    this.router.navigate(['/achievements'], { queryParams: { userId } });
+    void this.router.navigate(['/achievements'], { queryParams: { userId } });
   }
 
   navigateToAchievementDetail(achievementId: string) {
     this.drawerService.close();
-    this.router.navigate(['/achievements', achievementId]);
+    void this.router.navigate(['/achievements', achievementId]);
   }
 
   navigateToQuotes() {
     const userId = this.user()?.id;
     this.drawerService.close();
-    this.router.navigate(['/quotes'], { queryParams: { userId } });
+    void this.router.navigate(['/quotes'], { queryParams: { userId } });
   }
 
   navigateToQuoteDetail(quoteId: string) {
     this.drawerService.close();
-    this.router.navigate(['/quotes', quoteId]);
+    void this.router.navigate(['/quotes', quoteId]);
   }
 
   // Profile Picture Methods

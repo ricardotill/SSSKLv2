@@ -220,7 +220,7 @@ export default class LoginComponent {
         if (returnUrl === '/') {
           returnUrl = '/pos';
         }
-        this.router.navigateByUrl(returnUrl);
+        void this.router.navigateByUrl(returnUrl);
       },
       error: (err) => {
         this.isLoading.set(false);
@@ -246,7 +246,7 @@ export default class LoginComponent {
     });
   }
 
-  async onPasskeyLogin(): Promise<void> {
+  onPasskeyLogin(): void {
     const userName = this.loginForm.get('userName')?.value;
     if (!userName) {
       this.errorMessage.set(this.lang.t().enter_username_first);
@@ -263,7 +263,7 @@ export default class LoginComponent {
         if (returnUrl === '/') {
           returnUrl = '/pos';
         }
-        this.router.navigateByUrl(returnUrl);
+        void this.router.navigateByUrl(returnUrl);
       },
       error: (err) => {
         this.isLoading.set(false);

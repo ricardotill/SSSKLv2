@@ -15,6 +15,8 @@ public class QuoteRepositoryTests : RepositoryTest
     private QuoteRepository _repository = null!;
     private IdentityRole _leiding = null!;
 
+    public TestContext TestContext { get; set; } = null!;
+
     [TestInitialize]
     public void Init()
     {
@@ -120,10 +122,10 @@ public class QuoteRepositoryTests : RepositoryTest
 
         quote.Text = "Aangepast";
         await _repository.Update(quote);
-        (await _context.Quote.AsNoTracking().SingleAsync()).Text.Should().Be("Aangepast");
+        (await _context.Quote.AsNoTracking().SingleAsync(TestContext.CancellationToken)).Text.Should().Be("Aangepast");
 
         await _repository.Delete(Guid.NewGuid());
         await _repository.Delete(quote.Id);
-        (await _context.Quote.CountAsync()).Should().Be(0);
+        (await _context.Quote.CountAsync(TestContext.CancellationToken)).Should().Be(0);
     }
 }

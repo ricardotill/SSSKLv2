@@ -88,6 +88,8 @@ public class StatsRecalculationJobService(
                 }
             }
 
+            // Stamp CompletedAt before publishing the terminal status: pollers read both without a lock
+            job.CompletedAt = DateTime.UtcNow;
             job.Status = RecalculationJobStatus.Completed;
             activity?.SetTag("job.users.total", job.TotalUsers);
             activity?.SetTag("job.users.failed", job.FailedUsers);
@@ -100,8 +102,9 @@ public class StatsRecalculationJobService(
         }
         catch (Exception ex)
         {
-            job.Status = RecalculationJobStatus.Failed;
             job.ErrorMessage = ex.Message;
+            job.CompletedAt = DateTime.UtcNow;
+            job.Status = RecalculationJobStatus.Failed;
             activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
             logger.LogError(ex, "Bulk stats recalculation job {JobId} failed", job.Id);
 
@@ -115,7 +118,7 @@ public class StatsRecalculationJobService(
         }
         finally
         {
-            job.CompletedAt = DateTime.UtcNow;
+            job.CompletedAt ??= DateTime.UtcNow;
             var duration = job.CompletedAt.Value - job.StartedAt;
             SssklTelemetry.RecordJob("stats_recalculation", job.Status.ToString().ToLowerInvariant(), duration);
             logger.LogInformation("Bulk stats recalculation job {JobId} finished as {Status} in {DurationMs} ms ({FailedUsers}/{TotalUsers} users failed)",

@@ -115,14 +115,57 @@ public class OrderRepository(IDbContextFactory<ApplicationDbContext> dbContextFa
 
     public async Task CreateRange(IEnumerable<Order> orders)
     {
-        await using var context = await dbContextFactory.CreateDbContextAsync();
-        foreach (var obj in orders)
+        var orderList = orders.ToList();
+        if (orderList.Count == 0) return;
+
+        var now = DateTime.Now;
+        var saldoDeltas = orderList
+            .GroupBy(o => o.User.Id)
+            .Select(g => (UserId: g.Key, Delta: g.Sum(o => o.Paid)))
+            .ToList();
+        var stockDeltas = orderList
+            .Where(o => o.Product != null)
+            .GroupBy(o => o.Product!.Id)
+            .Select(g => (ProductId: g.Key, Delta: g.Sum(o => o.Amount)))
+            .ToList();
+
+        await using var strategyContext = await dbContextFactory.CreateDbContextAsync();
+        var strategy = strategyContext.Database.CreateExecutionStrategy();
+        await strategy.ExecuteAsync(async () =>
         {
-            UpdateUserSaldo(obj, context);
-            if (obj.Product != null) UpdateProductInventory(obj, obj.Product, context);
-            context.Order.Add(obj);
+            await using var context = await dbContextFactory.CreateDbContextAsync();
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
+            // Saldo and stock are adjusted with atomic UPDATE ... SET x = x - delta statements so
+            // concurrent orders for the same user or product can't overwrite each other.
+            foreach (var (userId, delta) in saldoDeltas)
+            {
+                await context.Users
+                    .Where(u => u.Id == userId)
+                    .ExecuteUpdateAsync(s => s
+                        .SetProperty(u => u.Saldo, u => u.Saldo - delta)
+                        .SetProperty(u => u.LastOrdered, now));
+            }
+            foreach (var (productId, delta) in stockDeltas)
+            {
+                await context.Product
+                    .Where(p => p.Id == productId)
+                    .ExecuteUpdateAsync(s => s.SetProperty(p => p.Stock, p => p.Stock - delta));
+            }
+
+            AttachExisting(context, orderList);
+            context.Order.AddRange(orderList);
+            await context.SaveChangesAsync();
+            await transaction.CommitAsync();
+        });
+
+        // Keep the in-memory entities in line with what was written
+        foreach (var o in orderList)
+        {
+            o.User.Saldo -= o.Paid;
+            o.User.LastOrdered = now;
+            if (o.Product != null) o.Product.Stock -= o.Amount;
         }
-        await context.SaveChangesAsync();
     }
 
     public async Task<IList<OrderAggregate>> GetAmountAggregates(Guid productId, DateTime from, DateTime? to = null, IEnumerable<string>? userIds = null)
@@ -147,45 +190,40 @@ public class OrderRepository(IDbContextFactory<ApplicationDbContext> dbContextFa
 
     public async Task Delete(Guid id)
     {
-        await using var context = await dbContextFactory.CreateDbContextAsync();
-        var entry = await context.Order
-            .Include(x => x.User)
-            .SingleOrDefaultAsync(x => x.Id == id);
-        
-        if (entry != null)
+        await using var strategyContext = await dbContextFactory.CreateDbContextAsync();
+        var strategy = strategyContext.Database.CreateExecutionStrategy();
+        await strategy.ExecuteAsync(async () =>
         {
-            UpdateUserSaldo(entry, context, false);
-            var product = await context.Product
-                .SingleOrDefaultAsync(x => x.Name == entry.ProductNaam);
-            if (product != null) UpdateProductInventory(entry, product, context, false);
+            await using var context = await dbContextFactory.CreateDbContextAsync();
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
+            var entry = await context.Order
+                .Include(x => x.User)
+                .SingleOrDefaultAsync(x => x.Id == id);
+            if (entry == null) throw new NotFoundException("Order Not Found");
+
+            await context.Users
+                .Where(u => u.Id == entry.User.Id)
+                .ExecuteUpdateAsync(s => s.SetProperty(u => u.Saldo, u => u.Saldo + entry.Paid));
+            await context.Product
+                .Where(p => p.Name == entry.ProductNaam)
+                .ExecuteUpdateAsync(s => s.SetProperty(p => p.Stock, p => p.Stock + entry.Amount));
+
             context.Order.Remove(entry);
             await context.SaveChangesAsync();
+            await transaction.CommitAsync();
+        });
+    }
+
+    // Orders reference users and products loaded by another context; attach them as unchanged so
+    // EF neither inserts them nor overwrites their columns with stale values.
+    private static void AttachExisting(ApplicationDbContext context, IEnumerable<Order> orders)
+    {
+        foreach (var order in orders)
+        {
+            if (context.Entry(order.User).State == EntityState.Detached) context.Attach(order.User);
+            if (order.Product != null && context.Entry(order.Product).State == EntityState.Detached)
+                context.Attach(order.Product);
         }
-        else throw new NotFoundException("Order Not Found");
     }
-
-    private static void UpdateUserSaldo(
-        Order order, 
-        ApplicationDbContext context, 
-        bool isNegative = true)
-    {
-        var money = order.Paid;
-        if (isNegative) money = Decimal.Negate(money);
-        order.User.Saldo += money;
-        order.User.LastOrdered = DateTime.Now;
-        context.Users.Update(order.User);
-    }
-    
-    private static void UpdateProductInventory(
-        Order order, 
-        Product product, 
-        ApplicationDbContext context, 
-        bool isNegative = true)
-    {
-        var inventory = order.Amount;
-        if (isNegative) inventory *= -1;
-        product.Stock += inventory;
-        context.Product.Update(product);
-    }
-
 }

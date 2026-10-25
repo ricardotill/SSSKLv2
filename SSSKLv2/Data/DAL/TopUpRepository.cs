@@ -94,26 +94,48 @@ public class TopUpRepository(
 
     public async Task Create(TopUp topup)
     {
-        await using var context = await dbContextFactory.CreateDbContextAsync();
+        await using var strategyContext = await dbContextFactory.CreateDbContextAsync();
+        var strategy = strategyContext.Database.CreateExecutionStrategy();
+        await strategy.ExecuteAsync(async () =>
+        {
+            await using var context = await dbContextFactory.CreateDbContextAsync();
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
+            // Atomic increment so concurrent orders/top-ups for the same user can't overwrite each other
+            await context.Users
+                .Where(u => u.Id == topup.User.Id)
+                .ExecuteUpdateAsync(s => s.SetProperty(u => u.Saldo, u => u.Saldo + topup.Saldo));
+
+            if (context.Entry(topup.User).State == EntityState.Detached) context.Attach(topup.User);
+            context.TopUp.Add(topup);
+            await context.SaveChangesAsync();
+            await transaction.CommitAsync();
+        });
+
         topup.User.Saldo += topup.Saldo;
-        context.Users.Update(topup.User);
-        context.TopUp.Add(topup);
-        await context.SaveChangesAsync();
     }
 
     public async Task Delete(Guid id)
     {
-        await using var context = await dbContextFactory.CreateDbContextAsync();
-        var entry = await context.TopUp
-            .Include(x => x.User)
-            .FirstOrDefaultAsync(x => x.Id == id);
-        if (entry != null)
+        await using var strategyContext = await dbContextFactory.CreateDbContextAsync();
+        var strategy = strategyContext.Database.CreateExecutionStrategy();
+        await strategy.ExecuteAsync(async () =>
         {
-            entry.User.Saldo -= entry.Saldo;
-            context.Users.Update(entry.User);
+            await using var context = await dbContextFactory.CreateDbContextAsync();
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
+            var entry = await context.TopUp
+                .Include(x => x.User)
+                .FirstOrDefaultAsync(x => x.Id == id);
+            if (entry == null) throw new NotFoundException("TopUp Not Found");
+
+            await context.Users
+                .Where(u => u.Id == entry.User.Id)
+                .ExecuteUpdateAsync(s => s.SetProperty(u => u.Saldo, u => u.Saldo - entry.Saldo));
+
             context.TopUp.Remove(entry);
             await context.SaveChangesAsync();
-        }
-        else throw new NotFoundException("TopUp Not Found");
+            await transaction.CommitAsync();
+        });
     }
 }

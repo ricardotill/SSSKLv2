@@ -303,6 +303,59 @@ public class OrderRepositoryTests : RepositoryTest
         Assert.AreEqual(45, updatedProduct!.Stock); // 50 - 5
     }
 
+    [TestMethod]
+    public async Task CreateRange_WithStaleUserAndProductInstances_DoesNotLoseUpdates()
+    {
+        // Arrange
+        TestUser.Saldo = 100m;
+        TestProduct.Stock = 50;
+        await UpdateUserDirectly(TestUser);
+        await UpdateProductDirectly(TestProduct);
+
+        // Two requests that each loaded the user and product before either order was saved
+        ApplicationUser staleUser1, staleUser2;
+        Product staleProduct1, staleProduct2;
+        await using (var context = await _dbContextFactory.CreateDbContextAsync())
+        {
+            staleUser1 = await context.Users.AsNoTracking().SingleAsync(u => u.Id == TestUser.Id);
+            staleUser2 = await context.Users.AsNoTracking().SingleAsync(u => u.Id == TestUser.Id);
+            staleProduct1 = await context.Product.AsNoTracking().SingleAsync(p => p.Id == TestProduct.Id);
+            staleProduct2 = await context.Product.AsNoTracking().SingleAsync(p => p.Id == TestProduct.Id);
+        }
+
+        // Act
+        await _sut.CreateRange([new Order { User = staleUser1, Product = staleProduct1, ProductNaam = TestProduct.Name, Amount = 5, Paid = 25m }]);
+        await _sut.CreateRange([new Order { User = staleUser2, Product = staleProduct2, ProductNaam = TestProduct.Name, Amount = 2, Paid = 10m }]);
+
+        // Assert
+        await using var assertContext = await _dbContextFactory.CreateDbContextAsync();
+        var updatedUser = await assertContext.Users.FindAsync(TestUser.Id);
+        var updatedProduct = await assertContext.Product.FindAsync(TestProduct.Id);
+        Assert.AreEqual(65m, updatedUser!.Saldo); // 100 - 25 - 10
+        Assert.AreEqual(43, updatedProduct!.Stock); // 50 - 5 - 2
+        Assert.AreEqual(2, (await GetOrdersDirectly()).Count);
+    }
+
+    [TestMethod]
+    public async Task CreateRange_SplitOrderForSameUser_DeductsEveryOrder()
+    {
+        // Arrange
+        TestUser.Saldo = 100m;
+        await UpdateUserDirectly(TestUser);
+
+        // Act
+        await _sut.CreateRange([
+            new Order { User = TestUser, ProductNaam = "A", Amount = 1, Paid = 5m },
+            new Order { User = TestUser, ProductNaam = "B", Amount = 1, Paid = 7m }
+        ]);
+
+        // Assert
+        await using var context = await _dbContextFactory.CreateDbContextAsync();
+        var updatedUser = await context.Users.FindAsync(TestUser.Id);
+        Assert.AreEqual(88m, updatedUser!.Saldo);
+        Assert.AreEqual(88m, TestUser.Saldo);
+    }
+
     #endregion
 
     #region Delete Tests

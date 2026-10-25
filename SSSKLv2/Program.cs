@@ -28,6 +28,10 @@ var websiteDomain = builder.Configuration["WEBSITE_DOMAIN"] ?? (builder.Environm
 
 builder.Services.AddControllers();
 
+// Uniform RFC 7807 error responses; unhandled exceptions are mapped in GlobalExceptionHandler.
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+
 // Register all FluentValidation validators from this assembly
 builder.Services.AddFluentValidationsRegistrations();
 
@@ -321,7 +325,7 @@ if (app.Environment.IsDevelopment())
 }
 else
 {
-    app.UseExceptionHandler("/error", createScopeForErrors: true);
+    app.UseExceptionHandler();
 }
 
 

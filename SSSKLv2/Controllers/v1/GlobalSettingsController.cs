@@ -94,7 +94,7 @@ public class GlobalSettingsController : ControllerBase
 
     [Authorize(Roles = Roles.Admin)]
     [HttpPost("test-email")]
-    public async Task<IActionResult> SendTestEmail([FromServices] IEmailSender<ApplicationUser> emailSender, [FromServices] UserManager<ApplicationUser> userManager)
+    public async Task<IActionResult> SendTestEmail([FromServices] IEmailSender<ApplicationUser> emailSender, [FromServices] UserManager<ApplicationUser> userManager, [FromServices] ILogger<GlobalSettingsController> logger)
     {
         var user = await userManager.GetUserAsync(User);
         if (user == null || string.IsNullOrEmpty(user.Email))
@@ -104,18 +104,13 @@ public class GlobalSettingsController : ControllerBase
 
         try
         {
-            var testMessage = $@"
-                <h2>Test Geslaagd! 🚀</h2>
-                <p>Gefeliciteerd! Je SMTP-instellingen zijn correct geconfigureerd.</p>
-                <p>Deze email is verzonden naar <b>{user.Email}</b> om de verbinding met de mailserver te verifiëren.</p>
-                <p>Je kunt nu veilig doorgaan met het gebruik van de applicatie.</p>";
-
             await emailSender.SendConfirmationLinkAsync(user, user.Email, "https://ssskl.scoutingwilo.nl"); 
             return Ok(new { message = $"Test email succesvol verzonden naar {user.Email}" });
         }
         catch (Exception ex)
         {
-            return StatusCode(500, new { message = "Failed to send email. Check your SMTP settings and logs.", error = ex.Message });
+            logger.LogError(ex, "Test email to {UserId} failed", user.Id);
+            return StatusCode(500, new { message = "Failed to send email. Check your SMTP settings and logs." });
         }
     }
 }

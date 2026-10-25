@@ -84,17 +84,9 @@ public class ProductController : ControllerBase
             EnableLeaderboard = dto.EnableLeaderboard
         };
 
-        try
-        {
-            await _productService.CreateProduct(product);
-            var outDto = MapToDto(product);
-            return CreatedAtAction(nameof(GetById), new { id = product.Id }, outDto);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "{Controller}: Failed to create product", nameof(ProductController));
-            return Problem("Failed to create product");
-        }
+        await _productService.CreateProduct(product);
+        var outDto = MapToDto(product);
+        return CreatedAtAction(nameof(GetById), new { id = product.Id }, outDto);
     }
 
     // PUT v1/product/{id}
@@ -126,11 +118,6 @@ public class ProductController : ControllerBase
         catch (NotFoundException)
         {
             return NotFound();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "{Controller}: Failed to update product", nameof(ProductController));
-            return Problem("Failed to update product");
         }
     }
 

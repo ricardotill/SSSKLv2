@@ -113,7 +113,7 @@ public class TopUpControllerTests
     public async Task GetById_WhenNotFound_ReturnsNotFound()
     {
         // Arrange
-        _mockService.GetById(Arg.Any<string>()).Returns(Task.FromException<TopUp>(new Exception("not found")));
+        _mockService.GetById(Arg.Any<string>()).Returns(Task.FromException<TopUp>(new NotFoundException("not found")));
 
         // Act
         var result = await _sut.GetById(Guid.NewGuid().ToString());
@@ -185,7 +185,7 @@ public class TopUpControllerTests
     public async Task Delete_WhenNotFound_ReturnsNotFound()
     {
         // Arrange
-        _mockService.GetById(Arg.Any<string>()).Returns(Task.FromException<TopUp>(new Exception("not found")));
+        _mockService.GetById(Arg.Any<string>()).Returns(Task.FromException<TopUp>(new NotFoundException("not found")));
 
         // Act
         var result = await _sut.Delete(Guid.NewGuid());
@@ -234,7 +234,7 @@ public class TopUpControllerTests
     }
 
     [TestMethod]
-    public async Task Create_WhenServiceThrows_ReturnsProblem()
+    public async Task Create_WhenServiceThrows_PropagatesToGlobalHandler()
     {
         // Arrange
         var dto = new TopUpCreateDto { UserName = "u1", Saldo = 10m };
@@ -242,10 +242,10 @@ public class TopUpControllerTests
         _mockService.CreateTopUp(Arg.Any<TopUp>()).Returns(Task.FromException(new Exception("Fail")));
 
         // Act
-        var result = await _sut.Create(dto);
+        var act = () => _sut.Create(dto);
 
         // Assert
-        result.Result.Should().BeOfType<ObjectResult>().Which.StatusCode.Should().Be(500);
+        await act.Should().ThrowAsync<Exception>().WithMessage("Fail");
     }
 
     [TestMethod]

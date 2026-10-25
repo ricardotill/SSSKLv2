@@ -239,21 +239,21 @@ public class ProductControllerTests
         await _mockService.DidNotReceive().UpdateProduct(Arg.Any<Product>());
     }
     [TestMethod]
-    public async Task Create_WhenServiceThrows_ReturnsProblem()
+    public async Task Create_WhenServiceThrows_PropagatesToGlobalHandler()
     {
         // Arrange
         var prodDto = new ProductCreateDto { Name = "New", Price = 2.0m, Stock = 20 };
         _mockService.CreateProduct(Arg.Any<Product>()).Returns(Task.FromException(new Exception("Fail")));
 
         // Act
-        var result = await _sut.Create(prodDto);
+        var act = () => _sut.Create(prodDto);
 
         // Assert
-        result.Result.Should().BeOfType<ObjectResult>().Which.StatusCode.Should().Be(StatusCodes.Status500InternalServerError);
+        await act.Should().ThrowAsync<Exception>().WithMessage("Fail");
     }
 
     [TestMethod]
-    public async Task Update_WhenServiceThrows_ReturnsProblem()
+    public async Task Update_WhenServiceThrows_PropagatesToGlobalHandler()
     {
         // Arrange
         var id = Guid.NewGuid();
@@ -263,10 +263,10 @@ public class ProductControllerTests
         var dto = new ProductUpdateDto { Id = id, Name = "Upd", Price = 3.0m, Stock = 7 };
 
         // Act
-        var result = await _sut.Update(id, dto);
+        var act = () => _sut.Update(id, dto);
 
         // Assert
-        result.Should().BeOfType<ObjectResult>().Which.StatusCode.Should().Be(StatusCodes.Status500InternalServerError);
+        await act.Should().ThrowAsync<Exception>().WithMessage("Fail");
     }
 
     [TestMethod]

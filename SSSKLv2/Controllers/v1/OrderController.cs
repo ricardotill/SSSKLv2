@@ -102,34 +102,26 @@ public class OrderController : ControllerBase
     public async Task<IActionResult> GetOrderInitialize()
     {
         _logger.LogInformation("{Controller}: Initialize order data", nameof(OrderController));
-        try
-        {
-            var products = await _productService.GetAllAvailable();
-            var users = await _applicationUserService.GetAllUsers();
+        var products = await _productService.GetAllAvailable();
+        var users = await _applicationUserService.GetAllUsers();
 
-            var dto = new OrderInitializeDto()
+        var dto = new OrderInitializeDto()
+        {
+            Products = products.Select(p => new OrderInitializeProductDto
             {
-                Products = products.Select(p => new OrderInitializeProductDto
-                {
-                    Id = p.Id,
-                    Name = p.Name,
-                    Stock = p.Stock,
-                    Price = p.Price
-                }).ToList(),
-                Users = users.Select(u => new OrderInitializeUserDto
-                {
-                    Id = u.Id,
-                    FullName = u.FullName
-                }).ToList()
-            };
+                Id = p.Id,
+                Name = p.Name,
+                Stock = p.Stock,
+                Price = p.Price
+            }).ToList(),
+            Users = users.Select(u => new OrderInitializeUserDto
+            {
+                Id = u.Id,
+                FullName = u.FullName
+            }).ToList()
+        };
 
-            return Ok(dto);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "{Controller}: Failed to initialize order data", nameof(OrderController));
-            return Problem("Failed to initialize order data");
-        }
+        return Ok(dto);
     }
 
     // POST v1/order
@@ -153,11 +145,6 @@ public class OrderController : ControllerBase
         catch (NotFoundException)
         {
             return NotFound();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "{Controller}: Failed to create order", nameof(OrderController));
-            return Problem("Failed to create order");
         }
     }
 

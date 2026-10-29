@@ -1,27 +1,21 @@
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SSSKL.Application.Features.Products.Commands.CreateProduct;
+using SSSKL.Application.Features.Products.Commands.DeleteProduct;
+using SSSKL.Application.Features.Products.Commands.UpdateProduct;
+using SSSKL.Application.Features.Products.Queries.GetAllProducts;
+using SSSKL.Application.Features.Products.Queries.GetProductById;
+using SSSKL.Application.Features.Products.Queries.GetProducts;
 using SSSKL.Contracts.Dto.Api.v1;
-using SSSKL.Contracts.Services;
-using SSSKL.Domain.Constants;
-using SSSKL.Domain.Entities;
-using SSSKL.Domain.Exceptions;
 
 namespace SSSKL.Web.Controllers.v1;
 
 [Authorize]
 [Route("v1/[controller]")]
 [ApiController]
-public class ProductController : ControllerBase
+public class ProductController(ISender sender) : ControllerBase
 {
-    private readonly IProductService _productService;
-    private readonly ILogger<ProductController> _logger;
-
-    public ProductController(IProductService productService, ILogger<ProductController> logger)
-    {
-        _productService = productService;
-        _logger = logger;
-    }
-
     // GET v1/product
     [AllowAnonymous]
     [HttpGet]
@@ -29,20 +23,10 @@ public class ProductController : ControllerBase
     {
         if (all)
         {
-            _logger.LogInformation("{Controller}: Get all products (unpaginated)", nameof(ProductController));
-            var allProducts = await _productService.GetAll();
-            return Ok(allProducts.Select(MapToDto));
+            return Ok(await sender.Send(new GetAllProductsQuery()));
         }
 
-        _logger.LogInformation("{Controller}: Get all products skip={Skip} take={Take}", nameof(ProductController), skip, take);
-        var products = await _productService.GetAll(skip, take);
-        var totalCount = await _productService.GetCount();
-        
-        return Ok(new PaginationObject<ProductDto>()
-        {
-            Items = products.Select(MapToDto),
-            TotalCount = totalCount
-        });
+        return Ok(await sender.Send(new GetProductsQuery(skip, take)));
     }
 
     // GET v1/product/{id}
@@ -50,16 +34,7 @@ public class ProductController : ControllerBase
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<ProductDto>> GetById(Guid id)
     {
-        _logger.LogInformation("{Controller}: Get product by id {Id}", nameof(ProductController), id);
-        try
-        {
-            var product = await _productService.GetProductById(id);
-            return Ok(MapToDto(product));
-        }
-        catch (NotFoundException)
-        {
-            return NotFound();
-        }
+        return Ok(await sender.Send(new GetProductByIdQuery(id)));
     }
 
     // POST v1/product
@@ -69,25 +44,13 @@ public class ProductController : ControllerBase
     {
         if (dto == null) return BadRequest();
 
-        _logger.LogInformation("{Controller}: Create product with name {Name}", nameof(ProductController), dto.Name);
-        
         if (ModelState.Values.SelectMany(v => v.Errors).Any())
         {
             return BadRequest(ModelState);
         }
 
-        var product = new Product
-        {
-            Name = dto.Name,
-            Description = dto.Description ?? string.Empty,
-            Price = dto.Price,
-            Stock = dto.Stock,
-            EnableLeaderboard = dto.EnableLeaderboard
-        };
-
-        await _productService.CreateProduct(product);
-        var outDto = MapToDto(product);
-        return CreatedAtAction(nameof(GetById), new { id = product.Id }, outDto);
+        var product = await sender.Send(new CreateProductCommand(dto));
+        return CreatedAtAction(nameof(GetById), new { id = product.Id }, product);
     }
 
     // PUT v1/product/{id}
@@ -95,31 +58,13 @@ public class ProductController : ControllerBase
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(Guid id, [FromBody] ProductUpdateDto dto)
     {
-        _logger.LogInformation("{Controller}: Update product {Id}", nameof(ProductController), id);
-        
         if (ModelState.Values.SelectMany(v => v.Errors).Any())
         {
             return BadRequest(ModelState);
         }
 
-        try
-        {
-            var existing = await _productService.GetProductById(id);
-            if (existing == null) return NotFound();
-
-            existing.Name = dto.Name;
-            existing.Description = dto.Description ?? string.Empty;
-            existing.Price = dto.Price;
-            existing.Stock = dto.Stock;
-            existing.EnableLeaderboard = dto.EnableLeaderboard;
-
-            await _productService.UpdateProduct(existing);
-            return NoContent();
-        }
-        catch (NotFoundException)
-        {
-            return NotFound();
-        }
+        await sender.Send(new UpdateProductCommand(id, dto));
+        return NoContent();
     }
 
     // DELETE v1/product/{id}
@@ -127,28 +72,7 @@ public class ProductController : ControllerBase
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id)
     {
-        _logger.LogInformation("{Controller}: Delete product {Id}", nameof(ProductController), id);
-        try
-        {
-            var existing = await _productService.GetProductById(id);
-            if (existing == null) return NotFound();
-        }
-        catch (NotFoundException)
-        {
-            return NotFound();
-        }
-
-        await _productService.DeleteProduct(id);
+        await sender.Send(new DeleteProductCommand(id));
         return NoContent();
     }
-
-    private static ProductDto MapToDto(Product p) => new ProductDto
-    {
-        Id = p.Id,
-        Name = p.Name,
-        Description = p.Description,
-        Price = p.Price,
-        Stock = p.Stock,
-        EnableLeaderboard = p.EnableLeaderboard
-    };
 }

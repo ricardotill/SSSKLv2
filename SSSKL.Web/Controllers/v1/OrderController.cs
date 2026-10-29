@@ -1,6 +1,8 @@
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using SSSKL.Application.Features.Orders.Queries.GetOrderInitialize;
 using SSSKL.Contracts.Dto.Api.v1;
 using SSSKL.Contracts.Services;
 using SSSKL.Domain.Constants;
@@ -15,20 +17,17 @@ public class OrderController : ControllerBase
 {
     private readonly IOrderService _orderService;
     private readonly ILogger<OrderController> _logger;
-    private readonly IProductService _productService;
-    private readonly IApplicationUserService _applicationUserService;
+    private readonly ISender _sender;
     private readonly IOrderCsvExportJobService _orderCsvExportJobService;
 
     public OrderController(IOrderService orderService,
         ILogger<OrderController> logger,
-        IProductService productService,
-        IApplicationUserService applicationUserService,
+        ISender sender,
         IOrderCsvExportJobService orderCsvExportJobService)
     {
         _orderService = orderService;
         _logger = logger;
-        _productService = productService;
-        _applicationUserService = applicationUserService;
+        _sender = sender;
         _orderCsvExportJobService = orderCsvExportJobService;
     }
 
@@ -103,26 +102,7 @@ public class OrderController : ControllerBase
     public async Task<IActionResult> GetOrderInitialize()
     {
         _logger.LogInformation("{Controller}: Initialize order data", nameof(OrderController));
-        var products = await _productService.GetAllAvailable();
-        var users = await _applicationUserService.GetAllUsers();
-
-        var dto = new OrderInitializeDto()
-        {
-            Products = products.Select(p => new OrderInitializeProductDto
-            {
-                Id = p.Id,
-                Name = p.Name,
-                Stock = p.Stock,
-                Price = p.Price
-            }).ToList(),
-            Users = users.Select(u => new OrderInitializeUserDto
-            {
-                Id = u.Id,
-                FullName = u.FullName
-            }).ToList()
-        };
-
-        return Ok(dto);
+        return Ok(await _sender.Send(new GetOrderInitializeQuery()));
     }
 
     // POST v1/order

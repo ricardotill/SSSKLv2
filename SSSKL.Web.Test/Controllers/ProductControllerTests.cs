@@ -1,12 +1,15 @@
 using FluentAssertions;
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NSubstitute;
-using Microsoft.AspNetCore.Http;
+using NSubstitute.ExceptionExtensions;
+using SSSKL.Application.Features.Products.Commands.CreateProduct;
+using SSSKL.Application.Features.Products.Commands.DeleteProduct;
+using SSSKL.Application.Features.Products.Commands.UpdateProduct;
+using SSSKL.Application.Features.Products.Queries.GetAllProducts;
+using SSSKL.Application.Features.Products.Queries.GetProductById;
+using SSSKL.Application.Features.Products.Queries.GetProducts;
 using SSSKL.Contracts.Dto.Api.v1;
-using SSSKL.Contracts.Services;
-using SSSKL.Domain.Entities;
 using SSSKL.Domain.Exceptions;
 using SSSKL.Web.Controllers.v1;
 
@@ -15,62 +18,51 @@ namespace SSSKL.Web.Test.Controllers;
 [TestClass]
 public class ProductControllerTests
 {
-    private IProductService _mockService = null!;
-    private ILogger<ProductController> _mockLogger = null!;
+    private ISender _sender = null!;
     private ProductController _sut = null!;
 
     [TestInitialize]
     public void Init()
     {
-        _mockService = Substitute.For<IProductService>();
-        _mockLogger = Substitute.For<ILogger<ProductController>>();
-        _sut = new ProductController(_mockService, _mockLogger);
+        _sender = Substitute.For<ISender>();
+        _sut = new ProductController(_sender);
     }
 
     [TestMethod]
-    public async Task GetAll_ReturnsOkWithItems()
+    public async Task GetAll_ReturnsOkWithPagedItems()
     {
         // Arrange
-        var items = new List<Product>
+        var page = new PaginationObject<ProductDto>
         {
-            new Product { Id = Guid.NewGuid(), Name = "P1", Price = 1.0m, Stock = 5 },
-            new Product { Id = Guid.NewGuid(), Name = "P2", Price = 2.0m, Stock = 3 }
+            Items = [new ProductDto { Id = Guid.NewGuid(), Name = "P1", Price = 1.0m, Stock = 5 }],
+            TotalCount = 1
         };
-        // Controller calls GetAll(skip,take) and GetCount()
-        _mockService.GetAll(Arg.Any<int>(), Arg.Any<int>()).Returns(Task.FromResult<IList<Product>>(items));
-        _mockService.GetCount().Returns(Task.FromResult(items.Count));
+        _sender.Send(new GetProductsQuery(0, 15), Arg.Any<CancellationToken>()).Returns(page);
 
         // Act
         var result = await _sut.GetAll();
 
         // Assert
-        var ok = result as OkObjectResult;
-        ok.Should().NotBeNull();
-        var expectedDtos = items.Select(p => new ProductDto { Id = p.Id, Name = p.Name, Description = p.Description, Price = p.Price, Stock = p.Stock, EnableLeaderboard = p.EnableLeaderboard }).ToList();
-        ok!.Value.Should().BeEquivalentTo(new PaginationObject<ProductDto> { Items = expectedDtos, TotalCount = items.Count });
+        result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeSameAs(page);
     }
 
     [TestMethod]
     public async Task GetAll_WithAllTrue_ReturnsOkWithUnpaginatedItems()
     {
         // Arrange
-        var items = new List<Product>
-        {
-            new Product { Id = Guid.NewGuid(), Name = "P1", Price = 1.0m, Stock = 5 },
-            new Product { Id = Guid.NewGuid(), Name = "P2", Price = 2.0m, Stock = 3 }
-        };
-        _mockService.GetAll().Returns(Task.FromResult<IList<Product>>(items));
+        IReadOnlyList<ProductDto> items =
+        [
+            new ProductDto { Id = Guid.NewGuid(), Name = "P1", Price = 1.0m, Stock = 5 },
+            new ProductDto { Id = Guid.NewGuid(), Name = "P2", Price = 2.0m, Stock = 3 }
+        ];
+        _sender.Send(Arg.Any<GetAllProductsQuery>(), Arg.Any<CancellationToken>()).Returns(items);
 
         // Act
         var result = await _sut.GetAll(all: true);
 
         // Assert
-        var ok = result as OkObjectResult;
-        ok.Should().NotBeNull();
-        var expectedDtos = items.Select(p => new ProductDto { Id = p.Id, Name = p.Name, Description = p.Description, Price = p.Price, Stock = p.Stock, EnableLeaderboard = p.EnableLeaderboard }).ToList();
-        ok!.Value.Should().BeEquivalentTo(expectedDtos);
-        await _mockService.Received(1).GetAll();
-        await _mockService.DidNotReceive().GetAll(Arg.Any<int>(), Arg.Any<int>());
+        result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeSameAs(items);
+        await _sender.DidNotReceive().Send(Arg.Any<GetProductsQuery>(), Arg.Any<CancellationToken>());
     }
 
     [TestMethod]
@@ -78,49 +70,45 @@ public class ProductControllerTests
     {
         // Arrange
         var id = Guid.NewGuid();
-        var prod = new Product { Id = id, Name = "Found", Price = 1.5m, Stock = 10 };
-        _mockService.GetProductById(id).Returns(Task.FromResult<Product>(prod));
+        var dto = new ProductDto { Id = id, Name = "Found", Price = 1.5m, Stock = 10 };
+        _sender.Send(new GetProductByIdQuery(id), Arg.Any<CancellationToken>()).Returns(dto);
 
         // Act
         var result = await _sut.GetById(id);
 
         // Assert
-        var ok = result.Result as OkObjectResult;
-        ok.Should().NotBeNull();
-        var dto = ok!.Value as ProductDto;
-        dto.Should().NotBeNull();
-        dto!.Should().BeEquivalentTo(new ProductDto { Id = prod.Id, Name = prod.Name, Description = prod.Description, Price = prod.Price, Stock = prod.Stock, EnableLeaderboard = prod.EnableLeaderboard });
+        result.Result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeSameAs(dto);
     }
 
     [TestMethod]
-    public async Task GetById_WhenNotFound_ReturnsNotFound()
+    public async Task GetById_WhenNotFound_PropagatesNotFoundException()
     {
         // Arrange
         var id = Guid.NewGuid();
-        _mockService.GetProductById(id).Returns(Task.FromException<Product>(new NotFoundException("Product not found")));
+        _sender.Send(new GetProductByIdQuery(id), Arg.Any<CancellationToken>()).Throws(new NotFoundException("Product not found"));
 
         // Act
-        var result = await _sut.GetById(id);
+        var act = () => _sut.GetById(id);
 
         // Assert
-        result.Result.Should().BeOfType<NotFoundResult>();
+        await act.Should().ThrowAsync<NotFoundException>();
     }
 
     [TestMethod]
-    public async Task Create_WithValidProduct_ReturnsCreated_And_CallsService()
+    public async Task Create_WithValidProduct_ReturnsCreated_And_SendsCommand()
     {
         // Arrange
         var prodDto = new ProductCreateDto { Name = "New", Price = 2.0m, Stock = 20 };
+        var created = new ProductDto { Id = Guid.NewGuid(), Name = "New", Price = 2.0m, Stock = 20 };
+        _sender.Send(Arg.Is<CreateProductCommand>(c => c.Product == prodDto), Arg.Any<CancellationToken>()).Returns(created);
 
         // Act
         var result = await _sut.Create(prodDto);
 
         // Assert
-        var created = result.Result as CreatedAtActionResult;
-        created.Should().NotBeNull();
-        var outDto = created!.Value as ProductDto;
-        outDto.Should().NotBeNull();
-        await _mockService.Received(1).CreateProduct(Arg.Any<Product>());
+        var createdResult = result.Result.Should().BeOfType<CreatedAtActionResult>().Subject;
+        createdResult.Value.Should().BeSameAs(created);
+        createdResult.RouteValues!["id"].Should().Be(created.Id);
     }
 
     [TestMethod]
@@ -131,16 +119,14 @@ public class ProductControllerTests
 
         // Assert
         result.Result.Should().BeOfType<BadRequestResult>();
-        await _mockService.DidNotReceive().CreateProduct(Arg.Any<Product>());
+        await _sender.DidNotReceive().Send(Arg.Any<CreateProductCommand>(), Arg.Any<CancellationToken>());
     }
 
     [TestMethod]
-    public async Task Update_WithValidProduct_ReturnsNoContent_And_CallsService()
+    public async Task Update_WithValidProduct_ReturnsNoContent_And_SendsCommand()
     {
         // Arrange
         var id = Guid.NewGuid();
-        var prod = new Product { Id = id, Name = "Upd", Price = 3.0m, Stock = 7 };
-        _mockService.GetProductById(id).Returns(Task.FromResult<Product>(prod));
         var dto = new ProductUpdateDto { Id = id, Name = "Upd", Price = 3.0m, Stock = 7 };
 
         // Act
@@ -148,56 +134,54 @@ public class ProductControllerTests
 
         // Assert
         result.Should().BeOfType<NoContentResult>();
-        await _mockService.Received(1).UpdateProduct(Arg.Any<Product>());
+        await _sender.Received(1).Send(new UpdateProductCommand(id, dto), Arg.Any<CancellationToken>());
     }
 
     [TestMethod]
-    public async Task Update_WhenNotFound_ReturnsNotFound()
+    public async Task Update_WhenNotFound_PropagatesNotFoundException()
     {
         // Arrange
         var id = Guid.NewGuid();
         var dto = new ProductUpdateDto { Id = id, Name = "X", Price = 1m, Stock = 1 };
-        _mockService.GetProductById(id).Returns(Task.FromException<Product>(new NotFoundException("Not found")));
+        _sender.Send(Arg.Any<UpdateProductCommand>(), Arg.Any<CancellationToken>()).Throws(new NotFoundException("Not found"));
 
         // Act
-        var result = await _sut.Update(id, dto);
+        var act = () => _sut.Update(id, dto);
 
         // Assert
-        result.Should().BeOfType<NotFoundResult>();
+        await act.Should().ThrowAsync<NotFoundException>();
     }
 
     [TestMethod]
-    public async Task Delete_WhenFound_ReturnsNoContent_And_CallsService()
+    public async Task Delete_ReturnsNoContent_And_SendsCommand()
     {
         // Arrange
         var id = Guid.NewGuid();
-        var prod = new Product { Id = id, Name = "X", Price = 1m, Stock = 1 };
-        _mockService.GetProductById(id).Returns(Task.FromResult<Product>(prod));
 
         // Act
         var result = await _sut.Delete(id);
 
         // Assert
         result.Should().BeOfType<NoContentResult>();
-        await _mockService.Received(1).DeleteProduct(id);
+        await _sender.Received(1).Send(new DeleteProductCommand(id), Arg.Any<CancellationToken>());
     }
 
     [TestMethod]
-    public async Task Delete_WhenNotFound_ReturnsNotFound()
+    public async Task Delete_WhenNotFound_PropagatesNotFoundException()
     {
         // Arrange
         var id = Guid.NewGuid();
-        _mockService.GetProductById(id).Returns(Task.FromException<Product>(new NotFoundException("Not found")));
+        _sender.Send(Arg.Any<DeleteProductCommand>(), Arg.Any<CancellationToken>()).Throws(new NotFoundException("Not found"));
 
         // Act
-        var result = await _sut.Delete(id);
+        var act = () => _sut.Delete(id);
 
         // Assert
-        result.Should().BeOfType<NotFoundResult>();
+        await act.Should().ThrowAsync<NotFoundException>();
     }
 
     [TestMethod]
-    public async Task Create_WithInvalidDto_ReturnsBadRequest_And_DoesNotCallService()
+    public async Task Create_WithInvalidDto_ReturnsBadRequest_And_DoesNotSendCommand()
     {
         // Arrange: missing name and negative price
         var prodDto = new ProductCreateDto { Name = "", Price = -1.0m, Stock = -5 };
@@ -205,82 +189,42 @@ public class ProductControllerTests
         // Simulate model validation errors (FluentValidation would populate ModelState in runtime)
         _sut.ModelState.AddModelError("Name", "Naam is verplicht.");
         _sut.ModelState.AddModelError("Price", "Prijs moet groter of gelijk aan 0 zijn.");
-        _sut.ModelState.AddModelError("Stock", "Voorraad moet groter of gelijk aan 0 zijn.");
 
         // Act
         var result = await _sut.Create(prodDto);
 
         // Assert
         result.Result.Should().BeOfType<BadRequestObjectResult>();
-        await _mockService.DidNotReceive().CreateProduct(Arg.Any<Product>());
+        await _sender.DidNotReceive().Send(Arg.Any<CreateProductCommand>(), Arg.Any<CancellationToken>());
     }
 
     [TestMethod]
-    public async Task Update_WithInvalidDto_ReturnsBadRequest_And_DoesNotCallService()
+    public async Task Update_WithInvalidDto_ReturnsBadRequest_And_DoesNotSendCommand()
     {
         // Arrange
         var id = Guid.NewGuid();
-        var existing = new Product { Id = id, Name = "Valid", Price = 1.0m, Stock = 5 };
-        _mockService.GetProductById(id).Returns(Task.FromResult<Product>(existing));
-
-        // Invalid update dto: empty name and negative price
         var dto = new ProductUpdateDto { Id = id, Name = "", Price = -10m, Stock = -1 };
-
-        // Simulate model validation errors
         _sut.ModelState.AddModelError("Name", "Naam is verplicht.");
-        _sut.ModelState.AddModelError("Price", "Prijs moet groter of gelijk aan 0 zijn.");
-        _sut.ModelState.AddModelError("Stock", "Voorraad moet groter of gelijk aan 0 zijn.");
 
         // Act
         var result = await _sut.Update(id, dto);
 
         // Assert
         result.Should().BeOfType<BadRequestObjectResult>();
-        await _mockService.DidNotReceive().UpdateProduct(Arg.Any<Product>());
+        await _sender.DidNotReceive().Send(Arg.Any<UpdateProductCommand>(), Arg.Any<CancellationToken>());
     }
+
     [TestMethod]
-    public async Task Create_WhenServiceThrows_PropagatesToGlobalHandler()
+    public async Task Create_WhenHandlerThrows_PropagatesToGlobalHandler()
     {
         // Arrange
         var prodDto = new ProductCreateDto { Name = "New", Price = 2.0m, Stock = 20 };
-        _mockService.CreateProduct(Arg.Any<Product>()).Returns(Task.FromException(new Exception("Fail")));
+        _sender.Send(Arg.Any<CreateProductCommand>(), Arg.Any<CancellationToken>()).Throws(new Exception("Fail"));
 
         // Act
         var act = () => _sut.Create(prodDto);
 
         // Assert
         await act.Should().ThrowAsync<Exception>().WithMessage("Fail");
-    }
-
-    [TestMethod]
-    public async Task Update_WhenServiceThrows_PropagatesToGlobalHandler()
-    {
-        // Arrange
-        var id = Guid.NewGuid();
-        var prod = new Product { Id = id, Name = "Upd", Price = 3.0m, Stock = 7 };
-        _mockService.GetProductById(id).Returns(Task.FromResult<Product>(prod));
-        _mockService.UpdateProduct(Arg.Any<Product>()).Returns(Task.FromException(new Exception("Fail")));
-        var dto = new ProductUpdateDto { Id = id, Name = "Upd", Price = 3.0m, Stock = 7 };
-
-        // Act
-        var act = () => _sut.Update(id, dto);
-
-        // Assert
-        await act.Should().ThrowAsync<Exception>().WithMessage("Fail");
-    }
-
-    [TestMethod]
-    public async Task Update_WhenExistingIsNull_ReturnsNotFound()
-    {
-        // Arrange
-        var id = Guid.NewGuid();
-        var dto = new ProductUpdateDto { Id = id, Name = "Upd", Price = 3.0m, Stock = 7 };
-        _mockService.GetProductById(id).Returns(Task.FromResult<Product>(null!));
-
-        // Act
-        var result = await _sut.Update(id, dto);
-
-        // Assert
-        result.Should().BeOfType<NotFoundResult>();
     }
 }

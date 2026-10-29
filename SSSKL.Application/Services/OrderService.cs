@@ -15,7 +15,7 @@ public class OrderService(
     IOrderRepository orderRepository,
     IAchievementService achievementService,
     IPurchaseNotifier purchaseNotifier,
-    IProductService productService,
+    IProductRepository productRepository,
     IApplicationUserService applicationUserService,
     INotificationService notificationService,
     IDomainEventDispatcher eventDispatcher,
@@ -56,7 +56,7 @@ public class OrderService(
         if (order == null) throw new ArgumentNullException(nameof(order));
 
         // Batch-fetch products and users instead of one query per id
-        var products = await productService.GetProductsByIds(order.Products);
+        var products = await productRepository.GetByIds(order.Products);
         if (products.Count != order.Products.Count)
             throw new NotFoundException("Product not found");
 

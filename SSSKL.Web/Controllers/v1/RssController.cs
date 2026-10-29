@@ -1,20 +1,22 @@
 using System.ServiceModel.Syndication;
 using System.Text;
 using System.Xml;
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using SSSKL.Application.Features.Products.Queries.GetAvailableProducts;
 using SSSKL.Contracts.Services;
 
 namespace SSSKL.Web.Controllers.v1;
 
 [Route("v1/rss")]
-public class RssController(IProductService productService, IAnnouncementService announcementService) : ControllerBase
+public class RssController(ISender sender, IAnnouncementService announcementService) : ControllerBase
 {
     [ResponseCache(Duration = 1200)]
     [HttpGet]
     [Route("products.rss")]
     public async Task<IActionResult> GetProductsFeed()
     {
-        var products = await productService.GetAllAvailable();
+        var products = await sender.Send(new GetAvailableProductsQuery());
         var url = $"{Request.Scheme}://{Request.Host}{Request.PathBase}";
         
         var feed = new SyndicationFeed(

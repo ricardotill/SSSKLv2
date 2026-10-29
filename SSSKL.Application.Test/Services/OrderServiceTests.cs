@@ -26,7 +26,7 @@ public class OrderServiceTests
     private IOrderRepository _mockOrderRepository = null!;
     private IPurchaseNotifier _purchaseNotifier = null!;
     private IAchievementService _achievementService = null!;
-    private IProductService _productService = null!;
+    private IProductRepository _productRepository = null!;
     private IApplicationUserService _applicationUserService = null!;
     private INotificationService _notificationService = null!;
     private IDomainEventDispatcher _mockEventDispatcher = null!;
@@ -40,7 +40,7 @@ public class OrderServiceTests
         _mockOrderRepository = Substitute.For<IOrderRepository>();
         _purchaseNotifier = Substitute.For<IPurchaseNotifier>();
         _achievementService = Substitute.For<IAchievementService>();
-        _productService = Substitute.For<IProductService>();
+        _productRepository = Substitute.For<IProductRepository>();
         _applicationUserService = Substitute.For<IApplicationUserService>();
         _notificationService = Substitute.For<INotificationService>();
         _mockEventDispatcher = Substitute.For<IDomainEventDispatcher>();
@@ -49,7 +49,7 @@ public class OrderServiceTests
         _sut = new OrderService(_mockOrderRepository,
             _achievementService,
             _purchaseNotifier,
-            _productService,
+            _productRepository,
             _applicationUserService,
             _notificationService,
             _mockEventDispatcher,
@@ -317,7 +317,7 @@ public class OrderServiceTests
         };
 
         _applicationUserService.GetUsersByIds(Arg.Any<IEnumerable<string>>()).Returns(new List<ApplicationUser> { user });
-        _productService.GetProductsByIds(Arg.Any<IEnumerable<Guid>>()).Returns(new List<Product> { product });
+        _productRepository.GetByIds(Arg.Any<IEnumerable<Guid>>()).Returns(new List<Product> { product });
 
         // Act
         await _sut.CreateOrder(dto, userId.ToString());
@@ -349,7 +349,7 @@ public class OrderServiceTests
         };
 
         _applicationUserService.GetUsersByIds(Arg.Any<IEnumerable<string>>()).Returns(new List<ApplicationUser> { user, otherUser });
-        _productService.GetProductsByIds(Arg.Any<IEnumerable<Guid>>()).Returns(new List<Product> { product });
+        _productRepository.GetByIds(Arg.Any<IEnumerable<Guid>>()).Returns(new List<Product> { product });
         _purchaseNotifier.NotifyUserPurchaseAsync(Arg.Any<UserPurchaseEvent>())
             .Returns(Task.FromException(new InvalidOperationException("SignalR down")));
         _applicationUserService.GetUserById(Arg.Any<string>())
@@ -384,7 +384,7 @@ public class OrderServiceTests
         };
 
         _applicationUserService.GetUsersByIds(Arg.Any<IEnumerable<string>>()).Returns(new List<ApplicationUser> { user1, user2 });
-        _productService.GetProductsByIds(Arg.Any<IEnumerable<Guid>>()).Returns(new List<Product> { product });
+        _productRepository.GetByIds(Arg.Any<IEnumerable<Guid>>()).Returns(new List<Product> { product });
 
         // Act
         await _sut.CreateOrder(dto, user1Id.ToString());
@@ -416,7 +416,7 @@ public class OrderServiceTests
         };
 
         _applicationUserService.GetUsersByIds(Arg.Any<IEnumerable<string>>()).Returns(new List<ApplicationUser> { user1, user2 });
-        _productService.GetProductsByIds(Arg.Any<IEnumerable<Guid>>()).Returns(new List<Product> { product });
+        _productRepository.GetByIds(Arg.Any<IEnumerable<Guid>>()).Returns(new List<Product> { product });
 
         // Act
         await _sut.CreateOrder(dto, user1Id.ToString());
@@ -445,7 +445,7 @@ public class OrderServiceTests
         };
 
         _applicationUserService.GetUserById(userId.ToString()).Returns(user);
-        _productService.GetProductById(productId).Throws(new NotFoundException("Product not found"));
+        _productRepository.GetById(productId).Throws(new NotFoundException("Product not found"));
 
         // Act
         Func<Task> act = async () => await _sut.CreateOrder(dto, userId.ToString());
@@ -470,7 +470,7 @@ public class OrderServiceTests
             Amount = 1
         };
 
-        _productService.GetProductsByIds(Arg.Any<IEnumerable<Guid>>()).Returns(new List<Product> { product });
+        _productRepository.GetByIds(Arg.Any<IEnumerable<Guid>>()).Returns(new List<Product> { product });
         _applicationUserService.GetUsersByIds(Arg.Any<IEnumerable<string>>()).Returns(new List<ApplicationUser>());
 
         // Act
@@ -509,7 +509,7 @@ public class OrderServiceTests
 
         _applicationUserService.GetUserById(actingUserId.ToString()).Returns(actingUser);
         _applicationUserService.GetUsersByIds(Arg.Any<IEnumerable<string>>()).Returns(new List<ApplicationUser> { actingUser, targetUser });
-        _productService.GetProductsByIds(Arg.Any<IEnumerable<Guid>>()).Returns(new List<Product> { product });
+        _productRepository.GetByIds(Arg.Any<IEnumerable<Guid>>()).Returns(new List<Product> { product });
 
         // Act
         await _sut.CreateOrder(dto, actingUserId.ToString());
@@ -552,7 +552,7 @@ public class OrderServiceTests
 
         _applicationUserService.GetUserById(actingUserId.ToString()).Returns((ApplicationUser)null!);
         _applicationUserService.GetUsersByIds(Arg.Any<IEnumerable<string>>()).Returns(new List<ApplicationUser> { targetUser });
-        _productService.GetProductsByIds(Arg.Any<IEnumerable<Guid>>()).Returns(new List<Product> { product });
+        _productRepository.GetByIds(Arg.Any<IEnumerable<Guid>>()).Returns(new List<Product> { product });
 
         // Act
         await _sut.CreateOrder(dto, actingUserId.ToString());
@@ -592,7 +592,7 @@ public class OrderServiceTests
 
         _applicationUserService.GetUserById(actingUserId.ToString()).Returns(actingUser);
         _applicationUserService.GetUsersByIds(Arg.Any<IEnumerable<string>>()).Returns(new List<ApplicationUser> { actingUser, target1, target2 });
-        _productService.GetProductsByIds(Arg.Any<IEnumerable<Guid>>()).Returns(new List<Product> { product });
+        _productRepository.GetByIds(Arg.Any<IEnumerable<Guid>>()).Returns(new List<Product> { product });
 
         // Act
         await _sut.CreateOrder(dto, actingUserId.ToString());

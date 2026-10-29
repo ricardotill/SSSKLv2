@@ -23,7 +23,6 @@ public static class ApplicationServiceCollectionExtensions
             .AddTransient<IApplicationUserService, ApplicationUserService>()
             .AddTransient<IOldUserMigrationService, OldUserMigrationService>()
             .AddTransient<IOrderService, OrderService>()
-            .AddTransient<IProductService, ProductService>()
             .AddTransient<ITopUpService, TopUpService>()
             .AddTransient<IAnnouncementService, AnnouncementService>()
             .AddTransient<IAchievementService, AchievementService>()

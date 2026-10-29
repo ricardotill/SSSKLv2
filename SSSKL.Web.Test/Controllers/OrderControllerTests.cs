@@ -1,10 +1,12 @@
 using System.Security.Claims;
 using FluentAssertions;
+using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
+using SSSKL.Application.Features.Orders.Queries.GetOrderInitialize;
 using SSSKL.Contracts.Dto.Api.v1;
 using SSSKL.Contracts.Services;
 using SSSKL.Domain.Entities;
@@ -18,8 +20,7 @@ public class OrderControllerTests
 {
     private IOrderService _orderService = null!;
     private ILogger<OrderController> _logger = null!;
-    private IProductService _productService = null!;
-    private IApplicationUserService _applicationUserService = null!;
+    private ISender _sender = null!;
     private IOrderCsvExportJobService _orderCsvExportJobService = null!;
     private OrderController _sut = null!;
 
@@ -28,11 +29,10 @@ public class OrderControllerTests
     {
         _orderService = Substitute.For<IOrderService>();
         _logger = Substitute.For<ILogger<OrderController>>();
-        _productService = Substitute.For<IProductService>();
-        _applicationUserService = Substitute.For<IApplicationUserService>();
+        _sender = Substitute.For<ISender>();
         _orderCsvExportJobService = Substitute.For<IOrderCsvExportJobService>();
 
-        _sut = new OrderController(_orderService, _logger, _productService, _applicationUserService, _orderCsvExportJobService);
+        _sut = new OrderController(_orderService, _logger, _sender, _orderCsvExportJobService);
     }
 
     [TestMethod]
@@ -238,8 +238,8 @@ public class OrderControllerTests
     [TestMethod]
     public async Task GetOrderInitialize_ReturnsOk()
     {
-        _productService.GetAllAvailable().Returns(new List<Product> { new Product { Id = Guid.NewGuid(), Name = "P1" } });
-        _applicationUserService.GetAllUsers().Returns(new List<ApplicationUser> { new ApplicationUser { Id = "u1", UserName = "un1" } });
+        var dto = new OrderInitializeDto { Products = [new OrderInitializeProductDto { Id = Guid.NewGuid(), Name = "P1" }] };
+        _sender.Send(Arg.Any<GetOrderInitializeQuery>(), Arg.Any<CancellationToken>()).Returns(dto);
 
         var result = await _sut.GetOrderInitialize();
 

@@ -1,4 +1,5 @@
 using FluentAssertions;
+using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using NSubstitute;
@@ -7,6 +8,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using SSSKL.Application.Features.Products.Queries.GetAvailableProducts;
+using SSSKL.Contracts.Dto.Api.v1;
 using SSSKL.Contracts.Services;
 using SSSKL.Domain.Entities;
 using SSSKL.Web.Controllers.v1;
@@ -17,15 +20,15 @@ namespace SSSKL.Web.Test.Controllers;
 public class RssControllerTests
 {
     private RssController _sut = null!;
-    private IProductService _mockProductService = null!;
+    private ISender _sender = null!;
     private IAnnouncementService _mockAnnouncementService = null!;
 
     [TestInitialize]
     public void TestInitialize()
     {
-        _mockProductService = Substitute.For<IProductService>();
+        _sender = Substitute.For<ISender>();
         _mockAnnouncementService = Substitute.For<IAnnouncementService>();
-        _sut = new RssController(_mockProductService, _mockAnnouncementService);
+        _sut = new RssController(_sender, _mockAnnouncementService);
         
         // Mock HttpContext for Request.Scheme, Request.Host, etc.
         var httpContext = new DefaultHttpContext();
@@ -43,12 +46,12 @@ public class RssControllerTests
     public async Task GetProductsFeed_ReturnsRssFile()
     {
         // Arrange
-        var products = new List<Product>
-        {
-            new Product { Name = "P1", Price = 1.5m, Stock = 10 },
-            new Product { Name = "P2", Price = 2.0m, Stock = 5 }
-        };
-        _mockProductService.GetAllAvailable().Returns(products);
+        IReadOnlyList<ProductDto> products =
+        [
+            new ProductDto { Name = "P1", Price = 1.5m, Stock = 10 },
+            new ProductDto { Name = "P2", Price = 2.0m, Stock = 5 }
+        ];
+        _sender.Send(Arg.Any<GetAvailableProductsQuery>(), Arg.Any<CancellationToken>()).Returns(products);
 
         // Act
         var result = await _sut.GetProductsFeed();
@@ -59,7 +62,7 @@ public class RssControllerTests
         fileResult.ContentType.Should().Be("application/rss+xml; charset=utf-8");
         fileResult.FileContents.Should().NotBeEmpty();
         
-        await _mockProductService.Received(1).GetAllAvailable();
+        await _sender.Received(1).Send(Arg.Any<GetAvailableProductsQuery>(), Arg.Any<CancellationToken>());
     }
 
     [TestMethod]

@@ -1,9 +1,9 @@
 using FluentAssertions;
-using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using SSSKL.Application.Handlers;
+using SSSKL.Application.Shared;
 using SSSKL.Contracts.Repositories;
-using SSSKL.Contracts.Services;
 using SSSKL.Domain.Entities;
 using SSSKL.Domain.Events;
 
@@ -16,7 +16,7 @@ public class AchievementEventHandlerTests
     private IUserStatRepository _userStats = null!;
     private IProductUserStatRepository _productStats = null!;
     private IOrderRepository _orders = null!;
-    private IAchievementService _achievementService = null!;
+    private IAchievementAwarder _achievementAwarder = null!;
     private AchievementEventHandler _sut = null!;
 
     [TestInitialize]
@@ -26,7 +26,7 @@ public class AchievementEventHandlerTests
         _userStats = Substitute.For<IUserStatRepository>();
         _productStats = Substitute.For<IProductUserStatRepository>();
         _orders = Substitute.For<IOrderRepository>();
-        _achievementService = Substitute.For<IAchievementService>();
+        _achievementAwarder = Substitute.For<IAchievementAwarder>();
         _achievements.GetUncompletedAchievementsForUser(Arg.Any<string>())
             .Returns(new List<Achievement>());
         _sut = new AchievementEventHandler(
@@ -34,8 +34,8 @@ public class AchievementEventHandlerTests
             _userStats,
             _productStats,
             _orders,
-            _achievementService,
-            Substitute.For<ILogger<AchievementEventHandler>>());
+            _achievementAwarder,
+            NullLogger<AchievementEventHandler>.Instance);
     }
 
     [TestMethod]
@@ -69,7 +69,7 @@ public class AchievementEventHandlerTests
         productStats.TotalAmount.Should().Be(2);
         productStats.TotalSpent.Should().Be(15);
         await _productStats.Received(1).Update(productStats);
-        await _achievementService.Received(1).AwardAchievementToUser(user.Id, achievement.Id);
+        await _achievementAwarder.Received(1).AwardToUser(user.Id, achievement.Id);
     }
 
     [TestMethod]

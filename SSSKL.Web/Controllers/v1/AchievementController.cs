@@ -1,78 +1,37 @@
-using Microsoft.AspNetCore.Mvc;
 using System.Net.Mime;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using SSSKL.Application.Features.Achievements.Commands.AwardAchievement;
+using SSSKL.Application.Features.Achievements.Commands.CreateAchievement;
+using SSSKL.Application.Features.Achievements.Commands.DeleteAchievement;
+using SSSKL.Application.Features.Achievements.Commands.DeleteAchievementEntries;
+using SSSKL.Application.Features.Achievements.Commands.MarkUnseenEntriesSeen;
+using SSSKL.Application.Features.Achievements.Commands.UpdateAchievement;
+using SSSKL.Application.Features.Achievements.Queries.GetAchievementById;
+using SSSKL.Application.Features.Achievements.Queries.GetAchievementEarners;
+using SSSKL.Application.Features.Achievements.Queries.GetAchievementEntries;
+using SSSKL.Application.Features.Achievements.Queries.GetAchievementListing;
+using SSSKL.Application.Features.Achievements.Queries.GetAchievements;
 using SSSKL.Application.Util;
 using SSSKL.Contracts.Dto;
 using SSSKL.Contracts.Dto.Api.v1;
-using SSSKL.Contracts.Services;
-using SSSKL.Domain.Constants;
-using SSSKL.Domain.Entities;
-using SSSKL.Domain.Exceptions;
 
 namespace SSSKL.Web.Controllers.v1;
 
 [Authorize]
 [Route("v1/achievement")]
 [ApiController]
-public class AchievementController : ControllerBase
+public class AchievementController(ISender sender) : ControllerBase
 {
-    private readonly IAchievementService _achievementService;
-
-    public AchievementController(IAchievementService achievementService)
-    {
-        _achievementService = achievementService;
-    }
-
-    private static AchievementResponseDto MapToDto(Achievement a) => new AchievementResponseDto
-    {
-        Id = a.Id,
-        Name = a.Name ?? string.Empty,
-        Description = a.Description ?? string.Empty,
-        AutoAchieve = a.AutoAchieve,
-        Action = a.Action,
-        ComparisonOperator = a.ComparisonOperator,
-        ComparisonValue = a.ComparisonValue,
-        Tier = a.Tier.ToString(),
-        ParentAchievementId = a.ParentAchievementId,
-        Image = a.Image == null ? null : new AchievementImageDto
-        {
-            Id = a.Image.Id,
-            FileName = a.Image.FileName,
-            Uri = $"/api/v1/blob/achievement/image/{a.Image.Id}",
-            ContentType = a.Image.ContentType
-        }
-    };
-
-    private static AchievementEntryDto MapEntryToDto(AchievementEntry e) => new AchievementEntryDto
-    {
-        Id = e.Id,
-        AchievementId = e.Achievement?.Id ?? Guid.Empty,
-        AchievementName = e.Achievement?.Name ?? string.Empty,
-        AchievementDescription = e.Achievement?.Description ?? string.Empty,
-        DateAdded = e.CreatedOn,
-        ImageUrl = e.Achievement?.Image != null ? $"/api/v1/blob/achievement/image/{e.Achievement.Image.Id}" : null,
-        HasSeen = e.HasSeen,
-        Tier = e.Tier.ToString(),
-        ParentAchievementId = e.Achievement?.ParentAchievementId,
-        ParentAchievementName = e.Achievement?.ParentAchievement?.Name,
-        UserId = e.User?.Id,
-        UserName = e.User?.UserName,
-        UserFullName = e.User?.FullName,
-        UserProfilePictureUrl = e.User?.ProfileImageId != null ? $"/api/v1/blob/profilepicture/image/{e.User.ProfileImageId}" : null
-    };
+    private const string UnsupportedImageMessage = "Unsupported image content type. Only JPEG, PNG, WebP, HEIC, and HEIF are allowed.";
 
     // GET v1/achievement
     [Authorize(Roles = "Admin")]
     [HttpGet]
     public async Task<IActionResult> GetAll([FromQuery] int skip = 0, [FromQuery] int take = 15)
     {
-        var list = await _achievementService.GetAchievements(skip, take);
-        var totalCount = await _achievementService.GetCount();
-        return Ok(new PaginationObject<AchievementResponseDto>()
-        {
-            Items = list.Select(MapToDto),
-            TotalCount = totalCount
-        });
+        return Ok(await sender.Send(new GetAchievementsQuery(skip, take)));
     }
 
     // GET v1/achievement/{id}
@@ -80,15 +39,7 @@ public class AchievementController : ControllerBase
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetById(Guid id)
     {
-        try
-        {
-            var achievement = await _achievementService.GetAchievementById(id);
-            return Ok(MapToDto(achievement));
-        }
-        catch (NotFoundException)
-        {
-            return NotFound();
-        }
+        return Ok(await sender.Send(new GetAchievementByIdQuery(id)));
     }
 
     // POST v1/achievement
@@ -108,7 +59,7 @@ public class AchievementController : ControllerBase
         var contentType = ContentTypeToExtensionMapper.NormalizeContentType(dto.Image.ContentType, dto.Image.FileName);
         if (contentType == null)
         {
-            return BadRequest("Unsupported image content type. Only JPEG, PNG, WebP, HEIC, and HEIF are allowed.");
+            return BadRequest(UnsupportedImageMessage);
         }
 
         using var stream = new MemoryStream(bytes);
@@ -124,7 +75,7 @@ public class AchievementController : ControllerBase
             ImageContentType = new ContentType(contentType)
         };
 
-        await _achievementService.AddAchievement(achievementDto);
+        await sender.Send(new CreateAchievementCommand(achievementDto));
         return StatusCode(StatusCodes.Status201Created);
     }
 
@@ -137,60 +88,24 @@ public class AchievementController : ControllerBase
     {
         try
         {
-            var achievement = new Achievement
-            {
-                Id = dto.Id,
-                Name = dto.Name,
-                Description = dto.Description,
-                AutoAchieve = dto.AutoAchieve,
-                Action = dto.Action,
-                ComparisonOperator = dto.ComparisonOperator,
-                ComparisonValue = dto.ComparisonValue,
-                Tier = Enum.Parse<Achievement.AchievementTier>(dto.Tier ?? "Bronze"),
-                ParentAchievementId = dto.ParentAchievementId
-            };
-
             if (dto.NewImage != null)
             {
                 if (!Base64FileDecoder.TryDecode(dto.NewImage.Base64Content, out var bytes))
                 {
-                    return BadRequest("Unsupported image content type. Only JPEG, PNG, WebP, HEIC, and HEIF are allowed.");
+                    return BadRequest(UnsupportedImageMessage);
                 }
 
                 using var stream = new MemoryStream(bytes);
-                await _achievementService.UpdateAchievement(achievement, stream, dto.NewImage.ContentType);
+                await sender.Send(new UpdateAchievementCommand(dto, stream, dto.NewImage.ContentType));
                 return NoContent();
             }
 
-            if (dto.Image != null)
-            {
-                achievement.Image = new AchievementImage
-                {
-                    Id = dto.Image.Id,
-                    FileName = dto.Image.FileName,
-                    Uri = dto.Image.Uri,
-                    ContentType = dto.Image.ContentType,
-                    CreatedOn = DateTime.Now
-                };
-            }
-            else
-            {
-                // The edit form never round-trips the current image, so without this the
-                // repository would treat a missing image field as "remove the image".
-                var existing = await _achievementService.GetAchievementById(dto.Id);
-                achievement.Image = existing.Image;
-            }
-
-            await _achievementService.UpdateAchievement(achievement);
+            await sender.Send(new UpdateAchievementCommand(dto));
             return NoContent();
-        }
-        catch (NotFoundException)
-        {
-            return NotFound();
         }
         catch (ArgumentException)
         {
-            return BadRequest("Unsupported image content type. Only JPEG, PNG, WebP, HEIC, and HEIF are allowed.");
+            return BadRequest(UnsupportedImageMessage);
         }
     }
 
@@ -199,7 +114,7 @@ public class AchievementController : ControllerBase
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id)
     {
-        await _achievementService.DeleteAchievement(id);
+        await sender.Send(new DeleteAchievementCommand(id));
         return NoContent();
     }
 
@@ -214,24 +129,21 @@ public class AchievementController : ControllerBase
             return Unauthorized();
         }
 
-        var list = await _achievementService.GetPersonalAchievementsByUsername(username);
-        return Ok(list);
+        return Ok(await sender.Send(new GetAchievementListingQuery(Username: username)));
     }
 
     // GET v1/achievement/entries/{userId}
     [HttpGet("entries/{userId}")]
     public async Task<IActionResult> GetPersonalEntries(string userId)
     {
-        var list = await _achievementService.GetPersonalAchievementEntries(userId);
-        return Ok(list.Select(MapEntryToDto));
+        return Ok(await sender.Send(new GetAchievementEntriesQuery(UserId: userId)));
     }
 
     // GET v1/achievement/all-for-user/{userId}
     [HttpGet("all-for-user/{userId}")]
     public async Task<IActionResult> GetAllForUser(string userId)
     {
-        var list = await _achievementService.GetPersonalAchievements(userId);
-        return Ok(list);
+        return Ok(await sender.Send(new GetAchievementListingQuery(UserId: userId)));
     }
 
     // GET v1/achievement/entries/personal
@@ -245,8 +157,7 @@ public class AchievementController : ControllerBase
             return Unauthorized();
         }
 
-        var list = await _achievementService.GetPersonalAchievementEntriesByUsername(username);
-        return Ok(list.Select(MapEntryToDto));
+        return Ok(await sender.Send(new GetAchievementEntriesQuery(Username: username)));
     }
 
     // GET v1/achievement/entries/unseen
@@ -260,8 +171,7 @@ public class AchievementController : ControllerBase
             return Unauthorized();
         }
 
-        var list = await _achievementService.GetPersonalUnseenAchievementEntries(username);
-        return Ok(list.Select(MapEntryToDto));
+        return Ok(await sender.Send(new MarkUnseenEntriesSeenCommand(username)));
     }
 
     // POST v1/achievement/entries/delete
@@ -270,10 +180,9 @@ public class AchievementController : ControllerBase
     public async Task<IActionResult> DeleteEntries([FromBody] IEnumerable<Guid>? entryIds)
     {
         var ids = entryIds?.ToList();
-        if (ids == null || !ids.Any()) return BadRequest();
+        if (ids == null || ids.Count == 0) return BadRequest();
 
-        var entries = ids.Select(id => new AchievementEntry { Id = id });
-        await _achievementService.DeleteAchievementEntryRange(entries);
+        await sender.Send(new DeleteAchievementEntriesCommand(ids));
         return NoContent();
     }
 
@@ -281,8 +190,7 @@ public class AchievementController : ControllerBase
     [HttpGet("{id:guid}/earners")]
     public async Task<IActionResult> GetEarners(Guid id)
     {
-        var entries = await _achievementService.GetEntriesForAchievement(id);
-        return Ok(entries.Select(MapEntryToDto));
+        return Ok(await sender.Send(new GetAchievementEarnersQuery(id)));
     }
 
     // POST v1/achievement/award/{userId}/{achievementId}
@@ -290,7 +198,7 @@ public class AchievementController : ControllerBase
     [HttpPost("award/{userId}/{achievementId:guid}")]
     public async Task<IActionResult> AwardToUser(string userId, Guid achievementId)
     {
-        var ok = await _achievementService.AwardAchievementToUser(userId, achievementId);
+        var ok = await sender.Send(new AwardAchievementToUserCommand(userId, achievementId));
         if (!ok) return Conflict();
         return Ok(true);
     }
@@ -300,15 +208,14 @@ public class AchievementController : ControllerBase
     [HttpPost("award/all/{achievementId:guid}")]
     public async Task<IActionResult> AwardToAll(Guid achievementId)
     {
-        var count = await _achievementService.AwardAchievementToAllUsers(achievementId);
-        return Ok(count);
+        return Ok(await sender.Send(new AwardAchievementToAllUsersCommand(achievementId)));
     }
 
     // GET v1/achievement/rarity/{id}
     [HttpGet("rarity/{id:guid}")]
     public async Task<IActionResult> GetRarity(Guid id)
     {
-        var entries = await _achievementService.GetEntriesForAchievement(id);
+        var entries = await sender.Send(new GetAchievementEarnersQuery(id));
         return Ok(new { Count = entries.Count });
     }
 }

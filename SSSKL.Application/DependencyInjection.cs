@@ -23,7 +23,6 @@ public static class ApplicationServiceCollectionExtensions
 
         return services
             .AddTransient<IApplicationUserService, ApplicationUserService>()
-            .AddTransient<IAchievementService, AchievementService>()
             .AddTransient<IEventService, EventService>()
             .AddTransient<IQuoteService, QuoteService>()
             .AddTransient<IReactionService, ReactionService>()
@@ -31,6 +30,7 @@ public static class ApplicationServiceCollectionExtensions
             .AddSingleton<IStatsRecalculationJobService, StatsRecalculationJobService>()
             .AddSingleton<OrderCsvExportJob>()
             .AddTransient<IUserNotifier, UserNotifier>()
+            .AddTransient<IAchievementAwarder, AchievementAwarder>()
             .AddScoped<IDomainEventDispatcher, DomainEventDispatcher>();
     }
 }

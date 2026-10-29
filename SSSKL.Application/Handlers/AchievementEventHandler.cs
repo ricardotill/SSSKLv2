@@ -1,7 +1,7 @@
 using MediatR;
+using SSSKL.Application.Shared;
 using SSSKL.Application.Util;
 using SSSKL.Contracts.Repositories;
-using SSSKL.Contracts.Services;
 using SSSKL.Domain.Entities;
 using SSSKL.Domain.Events;
 
@@ -13,7 +13,7 @@ public class AchievementEventHandler(
     IUserStatRepository userStatRepository,
     IProductUserStatRepository productUserStatRepository,
     IOrderRepository orderRepository,
-    IAchievementService achievementService,
+    IAchievementAwarder achievementAwarder,
     ILogger<AchievementEventHandler> logger) : 
     INotificationHandler<OrderPlacedEvent>,
     INotificationHandler<TopUpEvent>,
@@ -176,7 +176,7 @@ public class AchievementEventHandler(
             if (shouldAward)
             {
                 logger.LogInformation("Awarding achievement {AchievementName} to user {UserId}", achievement.Name, userId);
-                await achievementService.AwardAchievementToUser(userId, achievement.Id);
+                await achievementAwarder.AwardToUser(userId, achievement.Id);
             }
         }
     }

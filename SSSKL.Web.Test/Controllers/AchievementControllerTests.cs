@@ -1,142 +1,181 @@
+using System.Security.Claims;
 using FluentAssertions;
+using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using NSubstitute;
-using System.Security.Claims;
+using NSubstitute.ExceptionExtensions;
+using SSSKL.Application.Features.Achievements.Commands.AwardAchievement;
+using SSSKL.Application.Features.Achievements.Commands.CreateAchievement;
+using SSSKL.Application.Features.Achievements.Commands.DeleteAchievement;
+using SSSKL.Application.Features.Achievements.Commands.DeleteAchievementEntries;
+using SSSKL.Application.Features.Achievements.Commands.MarkUnseenEntriesSeen;
+using SSSKL.Application.Features.Achievements.Commands.UpdateAchievement;
+using SSSKL.Application.Features.Achievements.Queries.GetAchievementById;
+using SSSKL.Application.Features.Achievements.Queries.GetAchievementEarners;
+using SSSKL.Application.Features.Achievements.Queries.GetAchievementEntries;
+using SSSKL.Application.Features.Achievements.Queries.GetAchievementListing;
+using SSSKL.Application.Features.Achievements.Queries.GetAchievements;
 using SSSKL.Contracts.Dto;
 using SSSKL.Contracts.Dto.Api.v1;
-using SSSKL.Contracts.Services;
-using SSSKL.Domain.Entities;
 using SSSKL.Domain.Exceptions;
 using SSSKL.Web.Controllers.v1;
 
 namespace SSSKL.Web.Test.Controllers;
 
 [TestClass]
-[DoNotParallelize]
 public class AchievementControllerTests
 {
-    private IAchievementService _mockService = null!;
+    private ISender _sender = null!;
     private AchievementController _sut = null!;
 
     [TestInitialize]
     public void Init()
     {
-        _mockService = Substitute.For<IAchievementService>();
-        _sut = new AchievementController(_mockService);
+        _sender = Substitute.For<ISender>();
+        _sut = new AchievementController(_sender);
+    }
+
+    private void SetUser(string username)
+    {
+        _sut.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext
+            {
+                User = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.Name, username)], "TestAuth"))
+            }
+        };
     }
 
     [TestMethod]
     public async Task GetAll_ReturnsOkWithItems()
     {
-        var items = new List<Achievement>
-        {
-            new Achievement { Id = Guid.NewGuid(), Name = "A1" },
-            new Achievement { Id = Guid.NewGuid(), Name = "A2" }
-        };
-        // Controller calls GetAchievements(skip, take) and GetCount()
-        _mockService.GetAchievements(Arg.Any<int>(), Arg.Any<int>()).Returns(Task.FromResult((IList<Achievement>)items));
-        _mockService.GetCount().Returns(items.Count);
+        var page = new PaginationObject<AchievementResponseDto> { Items = [new AchievementResponseDto { Id = Guid.NewGuid(), Name = "A1" }], TotalCount = 1 };
+        _sender.Send(new GetAchievementsQuery(0, 15), Arg.Any<CancellationToken>()).Returns(page);
 
         var result = await _sut.GetAll();
 
-        var expected = items.Select(a => new AchievementResponseDto { Id = a.Id, Name = a.Name, Description = a.Description ?? string.Empty, AutoAchieve = a.AutoAchieve, Action = a.Action, ComparisonOperator = a.ComparisonOperator, ComparisonValue = a.ComparisonValue, Image = null, Tier = "Bronze", ParentAchievementId = null }).ToList();
-
-        // Expect a pagination object with items and total count
-        result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeEquivalentTo(new PaginationObject<AchievementResponseDto> { Items = expected, TotalCount = items.Count });
+        result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeSameAs(page);
     }
 
     [TestMethod]
     public async Task GetById_WhenFound_ReturnsOk()
     {
         var id = Guid.NewGuid();
-        var achievement = new Achievement { Id = id, Name = "Found" };
-        _mockService.GetAchievementById(id).Returns(Task.FromResult(achievement));
+        var dto = new AchievementResponseDto { Id = id, Name = "Found" };
+        _sender.Send(new GetAchievementByIdQuery(id), Arg.Any<CancellationToken>()).Returns(dto);
 
         var result = await _sut.GetById(id);
 
-        var expected = new AchievementResponseDto { Id = achievement.Id, Name = achievement.Name, Description = achievement.Description ?? string.Empty, AutoAchieve = achievement.AutoAchieve, Action = achievement.Action, ComparisonOperator = achievement.ComparisonOperator, ComparisonValue = achievement.ComparisonValue, Image = null, Tier = "Bronze", ParentAchievementId = null };
-        result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeEquivalentTo(expected);
+        result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeSameAs(dto);
     }
 
     [TestMethod]
-    public async Task GetById_WhenNotFound_ReturnsNotFound()
+    public async Task GetById_WhenNotFound_PropagatesNotFoundException()
     {
         var id = Guid.NewGuid();
-        _mockService.GetAchievementById(id).Returns(Task.FromException<Achievement>(new NotFoundException("Achievement not found")));
+        _sender.Send(new GetAchievementByIdQuery(id), Arg.Any<CancellationToken>()).Throws(new NotFoundException("Achievement not found"));
 
-        var result = await _sut.GetById(id);
+        var act = () => _sut.GetById(id);
 
-        result.Should().BeOfType<NotFoundResult>();
+        await act.Should().ThrowAsync<NotFoundException>();
     }
 
     [TestMethod]
-    public async Task Update_WithValidDto_CallsUpdateAndReturnsNoContent()
+    public async Task Update_WithoutNewImage_SendsCommandAndReturnsNoContent()
     {
-        var id = Guid.NewGuid();
-        var existing = new Achievement { Id = id, Name = "Old" };
-        _mockService.GetAchievementById(id).Returns(Task.FromResult(existing));
+        var dto = new AchievementUpdateDto { Id = Guid.NewGuid(), Name = "New" };
 
+        var result = await _sut.Update(dto);
+
+        result.Should().BeOfType<NoContentResult>();
+        await _sender.Received(1).Send(Arg.Is<UpdateAchievementCommand>(c => c.Achievement == dto && c.NewImage == null), Arg.Any<CancellationToken>());
+    }
+
+    [TestMethod]
+    public async Task Update_WithNewImage_SendsDecodedStream()
+    {
         var dto = new AchievementUpdateDto
         {
-            Id = id,
+            Id = Guid.NewGuid(),
             Name = "New",
-            Description = "d",
-            AutoAchieve = false,
-            Action = Achievement.ActionOption.None,
-            ComparisonOperator = Achievement.ComparisonOperatorOption.None,
-            ComparisonValue = 0
+            NewImage = new Base64FileUploadDto
+            {
+                FileName = "photo.png",
+                ContentType = "image/png",
+                Base64Content = Convert.ToBase64String(new byte[] { 1, 2, 3, 4 })
+            }
         };
 
         var result = await _sut.Update(dto);
 
         result.Should().BeOfType<NoContentResult>();
-        await _mockService.Received(1).UpdateAchievement(Arg.Any<Achievement>());
+        await _sender.Received(1).Send(Arg.Is<UpdateAchievementCommand>(c =>
+            c.Achievement == dto && c.NewImage != null && c.NewImageContentType == "image/png"), Arg.Any<CancellationToken>());
     }
 
     [TestMethod]
-    public async Task Delete_CallsDeleteAndReturnsNoContent()
+    public async Task Update_WithUndecodableNewImage_ReturnsBadRequest()
+    {
+        var dto = new AchievementUpdateDto
+        {
+            Id = Guid.NewGuid(),
+            NewImage = new Base64FileUploadDto { FileName = "x.png", ContentType = "image/png", Base64Content = "%%%" }
+        };
+
+        var result = await _sut.Update(dto);
+
+        result.Should().BeOfType<BadRequestObjectResult>();
+        await _sender.DidNotReceive().Send(Arg.Any<UpdateAchievementCommand>(), Arg.Any<CancellationToken>());
+    }
+
+    [TestMethod]
+    public async Task Update_WhenHandlerRejectsImageType_ReturnsBadRequest()
+    {
+        _sender.Send(Arg.Any<UpdateAchievementCommand>(), Arg.Any<CancellationToken>()).Throws(new ArgumentException("Unsupported"));
+
+        var result = await _sut.Update(new AchievementUpdateDto { Id = Guid.NewGuid() });
+
+        result.Should().BeOfType<BadRequestObjectResult>();
+    }
+
+    [TestMethod]
+    public async Task Update_WhenNotFound_PropagatesNotFoundException()
+    {
+        _sender.Send(Arg.Any<UpdateAchievementCommand>(), Arg.Any<CancellationToken>()).Throws(new NotFoundException("Achievement not found"));
+
+        var act = () => _sut.Update(new AchievementUpdateDto { Id = Guid.NewGuid() });
+
+        await act.Should().ThrowAsync<NotFoundException>();
+    }
+
+    [TestMethod]
+    public async Task Delete_SendsCommandAndReturnsNoContent()
     {
         var id = Guid.NewGuid();
 
         var result = await _sut.Delete(id);
 
         result.Should().BeOfType<NoContentResult>();
-        await _mockService.Received(1).DeleteAchievement(id);
+        await _sender.Received(1).Send(new DeleteAchievementCommand(id), Arg.Any<CancellationToken>());
     }
 
     [TestMethod]
-    public async Task GetPersonal_ReturnsOk()
+    public async Task GetPersonal_ReturnsListingForCurrentUser()
     {
-        var username = "user1";
-        var list = new List<AchievementListingDto> { new AchievementListingDto(Guid.NewGuid(), "n", "d", null, null, false, "Bronze", null, null) };
-        _mockService.GetPersonalAchievementsByUsername(username).Returns(list);
-
-        // Set authenticated user on controller
-        _sut.ControllerContext = new ControllerContext
-        {
-            HttpContext = new DefaultHttpContext
-            {
-                User = new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim(ClaimTypes.Name, username) }, "TestAuth"))
-            }
-        };
+        SetUser("testuser");
+        IList<AchievementListingDto> list = [new AchievementListingDto(Guid.NewGuid(), "A1", "D", null, null, false, "Bronze", null, null)];
+        _sender.Send(new GetAchievementListingQuery(Username: "testuser"), Arg.Any<CancellationToken>()).Returns(list);
 
         var result = await _sut.GetPersonal();
 
-        result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeEquivalentTo(list);
+        result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeSameAs(list);
     }
 
     [TestMethod]
-    public async Task GetPersonal_WhenUsernameIsNull_ReturnsUnauthorized()
+    public async Task GetPersonal_WhenNotAuthenticated_ReturnsUnauthorized()
     {
-        // Set authenticated user without name
-        _sut.ControllerContext = new ControllerContext
-        {
-            HttpContext = new DefaultHttpContext
-            {
-                User = new ClaimsPrincipal(new ClaimsIdentity())
-            }
-        };
+        _sut.ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() };
 
         var result = await _sut.GetPersonal();
 
@@ -144,57 +183,112 @@ public class AchievementControllerTests
     }
 
     [TestMethod]
-    public async Task GetPersonalEntries_ReturnsOk()
+    public async Task GetAllForUser_ReturnsListingForUserId()
     {
-        var userId = "user1";
-        var entries = new List<AchievementEntry> { new AchievementEntry { Id = Guid.NewGuid(), Achievement = new Achievement { Id = Guid.NewGuid(), Name = "ach1" } } };
-        _mockService.GetPersonalAchievementEntries(userId).Returns(entries);
+        IList<AchievementListingDto> list = [];
+        _sender.Send(new GetAchievementListingQuery(UserId: "u1"), Arg.Any<CancellationToken>()).Returns(list);
 
-        var result = await _sut.GetPersonalEntries(userId);
+        var result = await _sut.GetAllForUser("u1");
 
-        var expected = entries.Select(e => new AchievementEntryDto { Id = e.Id, AchievementId = e.Achievement.Id, AchievementName = e.Achievement.Name, AchievementDescription = e.Achievement.Description ?? string.Empty, DateAdded = e.CreatedOn, ImageUrl = e.Achievement?.Image?.Uri, HasSeen = e.HasSeen, UserId = e.User?.Id, Tier = "Bronze" });
-        result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeEquivalentTo(expected);
+        result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeSameAs(list);
     }
 
     [TestMethod]
-    public async Task GetPersonalEntries_ByUsername_ReturnsOk()
+    public async Task GetPersonalEntries_ForUserId_ReturnsOk()
     {
-        var username = "user1";
-        var entries = new List<AchievementEntry> { new AchievementEntry { Id = Guid.NewGuid(), HasSeen = false, Achievement = new Achievement { Id = Guid.NewGuid(), Name = "ach1" } } };
-        _mockService.GetPersonalAchievementEntries(username).Returns(entries);
+        IReadOnlyList<AchievementEntryDto> entries = [new AchievementEntryDto { Id = Guid.NewGuid() }];
+        _sender.Send(new GetAchievementEntriesQuery(UserId: "u1"), Arg.Any<CancellationToken>()).Returns(entries);
 
-        var result = await _sut.GetPersonalEntries(username);
+        var result = await _sut.GetPersonalEntries("u1");
 
-        var expected = entries.Select(e => new AchievementEntryDto { Id = e.Id, AchievementId = e.Achievement.Id, AchievementName = e.Achievement.Name, AchievementDescription = e.Achievement.Description ?? string.Empty, DateAdded = e.CreatedOn, ImageUrl = e.Achievement?.Image?.Uri, HasSeen = e.HasSeen, UserId = e.User?.Id, Tier = "Bronze" });
-        result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeEquivalentTo(expected);
+        result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeSameAs(entries);
+    }
+
+    [TestMethod]
+    public async Task GetPersonalEntries_ForCurrentUser_ReturnsOk()
+    {
+        SetUser("testuser");
+        IReadOnlyList<AchievementEntryDto> entries = [new AchievementEntryDto { Id = Guid.NewGuid() }];
+        _sender.Send(new GetAchievementEntriesQuery(Username: "testuser"), Arg.Any<CancellationToken>()).Returns(entries);
+
+        var result = await _sut.GetPersonalEntries();
+
+        result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeSameAs(entries);
+    }
+
+    [TestMethod]
+    public async Task GetPersonalUnseenEntriesForCurrentUser_ReturnsMarkedEntries()
+    {
+        SetUser("testuser");
+        IReadOnlyList<AchievementEntryDto> entries = [new AchievementEntryDto { Id = Guid.NewGuid(), HasSeen = true }];
+        _sender.Send(new MarkUnseenEntriesSeenCommand("testuser"), Arg.Any<CancellationToken>()).Returns(entries);
+
+        var result = await _sut.GetPersonalUnseenEntriesForCurrentUser();
+
+        result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeSameAs(entries);
+    }
+
+    [TestMethod]
+    public async Task GetPersonalUnseenEntriesForCurrentUser_WhenUnauthorized_ReturnsUnauthorized()
+    {
+        _sut.ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() };
+
+        var result = await _sut.GetPersonalUnseenEntriesForCurrentUser();
+
+        result.Should().BeOfType<UnauthorizedResult>();
+        await _sender.DidNotReceive().Send(Arg.Any<MarkUnseenEntriesSeenCommand>(), Arg.Any<CancellationToken>());
     }
 
     [TestMethod]
     public async Task DeleteEntries_WithEmpty_ReturnsBadRequest()
     {
         var result = await _sut.DeleteEntries(new List<Guid>());
+
         result.Should().BeOfType<BadRequestResult>();
     }
 
     [TestMethod]
-    public async Task DeleteEntries_WithIds_CallsDeleteRange_ReturnsNoContent()
+    public async Task DeleteEntries_WithIds_SendsCommand_ReturnsNoContent()
     {
-        var ids = new List<Guid> { Guid.NewGuid(), Guid.NewGuid() };
+        var ids = new List<Guid> { Guid.NewGuid() };
 
         var result = await _sut.DeleteEntries(ids);
 
         result.Should().BeOfType<NoContentResult>();
-        await _mockService.Received(1).DeleteAchievementEntryRange(Arg.Any<IEnumerable<AchievementEntry>>());
+        await _sender.Received(1).Send(Arg.Is<DeleteAchievementEntriesCommand>(c => c.EntryIds.SequenceEqual(ids)), Arg.Any<CancellationToken>());
+    }
+
+    [TestMethod]
+    public async Task GetEarners_ReturnsOk()
+    {
+        var id = Guid.NewGuid();
+        IReadOnlyList<AchievementEntryDto> entries = [new AchievementEntryDto { Id = Guid.NewGuid() }];
+        _sender.Send(new GetAchievementEarnersQuery(id), Arg.Any<CancellationToken>()).Returns(entries);
+
+        var result = await _sut.GetEarners(id);
+
+        result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeSameAs(entries);
+    }
+
+    [TestMethod]
+    public async Task GetRarity_ReturnsEarnerCount()
+    {
+        var id = Guid.NewGuid();
+        IReadOnlyList<AchievementEntryDto> entries = [new AchievementEntryDto(), new AchievementEntryDto()];
+        _sender.Send(new GetAchievementEarnersQuery(id), Arg.Any<CancellationToken>()).Returns(entries);
+
+        var result = await _sut.GetRarity(id);
+
+        result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeEquivalentTo(new { Count = 2 });
     }
 
     [TestMethod]
     public async Task AwardToUser_WhenAlreadyAwarded_ReturnsConflict()
     {
-        var userId = "u1";
-        var achievementId = Guid.NewGuid();
-        _mockService.AwardAchievementToUser(userId, achievementId).Returns(false);
+        var id = Guid.NewGuid();
+        _sender.Send(new AwardAchievementToUserCommand("u1", id), Arg.Any<CancellationToken>()).Returns(false);
 
-        var result = await _sut.AwardToUser(userId, achievementId);
+        var result = await _sut.AwardToUser("u1", id);
 
         result.Should().BeOfType<ConflictResult>();
     }
@@ -202,11 +296,10 @@ public class AchievementControllerTests
     [TestMethod]
     public async Task AwardToUser_WhenSucceeds_ReturnsOkTrue()
     {
-        var userId = "u1";
-        var achievementId = Guid.NewGuid();
-        _mockService.AwardAchievementToUser(userId, achievementId).Returns(true);
+        var id = Guid.NewGuid();
+        _sender.Send(new AwardAchievementToUserCommand("u1", id), Arg.Any<CancellationToken>()).Returns(true);
 
-        var result = await _sut.AwardToUser(userId, achievementId);
+        var result = await _sut.AwardToUser("u1", id);
 
         result.Should().BeOfType<OkObjectResult>().Which.Value.Should().Be(true);
     }
@@ -214,125 +307,17 @@ public class AchievementControllerTests
     [TestMethod]
     public async Task AwardToAll_ReturnsCount()
     {
-        var achievementId = Guid.NewGuid();
-        _mockService.AwardAchievementToAllUsers(achievementId).Returns(5);
+        var id = Guid.NewGuid();
+        _sender.Send(new AwardAchievementToAllUsersCommand(id), Arg.Any<CancellationToken>()).Returns(3);
 
-        var result = await _sut.AwardToAll(achievementId);
+        var result = await _sut.AwardToAll(id);
 
-        result.Should().BeOfType<OkObjectResult>().Which.Value.Should().Be(5);
+        result.Should().BeOfType<OkObjectResult>().Which.Value.Should().Be(3);
     }
 
     [TestMethod]
-    public async Task GetPersonalEntries_Personal_ReturnsOk()
+    public async Task Create_WithValidImage_SendsCommandAndReturnsCreated()
     {
-        var username = "user1";
-        var entries = new List<AchievementEntry> { new AchievementEntry { Id = Guid.NewGuid(), Achievement = new Achievement { Id = Guid.NewGuid(), Name = "ach1" } } };
-        _mockService.GetPersonalAchievementEntriesByUsername(username).Returns(entries);
-
-        // Set authenticated user on controller
-        _sut.ControllerContext = new ControllerContext
-        {
-            HttpContext = new DefaultHttpContext
-            {
-                User = new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim(ClaimTypes.Name, username) }, "TestAuth"))
-            }
-        };
-
-        var result = await _sut.GetPersonalEntries();
-
-        var expected = entries.Select(e => new AchievementEntryDto { Id = e.Id, AchievementId = e.Achievement.Id, AchievementName = e.Achievement.Name, AchievementDescription = e.Achievement.Description ?? string.Empty, DateAdded = e.CreatedOn, ImageUrl = e.Achievement?.Image?.Uri, HasSeen = e.HasSeen, UserId = e.User?.Id, Tier = "Bronze" });
-        result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeEquivalentTo(expected);
-    }
-
-    [TestMethod]
-    public async Task GetPersonalUnseenEntriesForCurrentUser_ReturnsOkWithMappedDtos()
-    {
-        var username = "user1";
-        var entries = new List<AchievementEntry> 
-        { 
-            new AchievementEntry { Id = Guid.NewGuid(), Achievement = new Achievement { Id = Guid.NewGuid(), Name = "ach1" }, HasSeen = true } 
-        };
-        _mockService.GetPersonalUnseenAchievementEntries(username).Returns(entries);
-
-        // Set authenticated user on controller
-        _sut.ControllerContext = new ControllerContext
-        {
-            HttpContext = new DefaultHttpContext
-            {
-                User = new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim(ClaimTypes.Name, username) }, "TestAuth"))
-            }
-        };
-
-        var result = await _sut.GetPersonalUnseenEntriesForCurrentUser();
-
-        var expected = entries.Select(e => new AchievementEntryDto { Id = e.Id, AchievementId = e.Achievement.Id, AchievementName = e.Achievement.Name, AchievementDescription = e.Achievement.Description ?? string.Empty, DateAdded = e.CreatedOn, ImageUrl = e.Achievement?.Image?.Uri, HasSeen = true, UserId = e.User?.Id, Tier = "Bronze" });
-        result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeEquivalentTo(expected);
-    }
-
-    [TestMethod]
-    public async Task GetPersonalUnseenEntriesForCurrentUser_WhenUnauthorized_ReturnsUnauthorized()
-    {
-        _sut.ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() };
-        var result = await _sut.GetPersonalUnseenEntriesForCurrentUser();
-        result.Should().BeOfType<UnauthorizedResult>();
-    }
-
-    [TestMethod]
-    public async Task Update_WhenNotFoundException_ReturnsNotFound()
-    {
-        var dto = new AchievementUpdateDto { Id = Guid.NewGuid(), Name = "New" };
-        _mockService.GetAchievementById(dto.Id).Returns(Task.FromException<Achievement>(new NotFoundException("test")));
-        _mockService.UpdateAchievement(Arg.Any<Achievement>()).Returns(Task.FromException(new NotFoundException("test")));
-
-        var result = await _sut.Update(dto);
-
-        result.Should().BeOfType<NotFoundResult>();
-    }
-
-    [TestMethod]
-    public async Task GetEarners_ReturnsOkWithMappedDtos()
-    {
-        var achievementId = Guid.NewGuid();
-        var entries = new List<AchievementEntry> 
-        { 
-            new AchievementEntry 
-            { 
-                Id = Guid.NewGuid(), 
-                Achievement = new Achievement { Id = achievementId, Name = "ach1" },
-                User = new ApplicationUser { Id = "u1", UserName = "un1", Name = "fn1", Surname = "" }
-            } 
-        };
-        _mockService.GetEntriesForAchievement(achievementId).Returns(entries);
-
-        var result = await _sut.GetEarners(achievementId);
-
-        var expected = entries.Select(e => new AchievementEntryDto { Id = e.Id, AchievementId = achievementId, AchievementName = "ach1", AchievementDescription = string.Empty, DateAdded = e.CreatedOn, HasSeen = false, UserId = "u1", UserName = "un1", UserFullName = "fn1", Tier = "Bronze" });
-        result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeEquivalentTo(expected);
-    }
-    [TestMethod]
-    public async Task GetAllForUser_ReturnsOk()
-    {
-        var userId = "u1";
-        var list = new List<AchievementListingDto> { new AchievementListingDto(Guid.NewGuid(), "n", "d", null, null, false, "Bronze", null, null) };
-        _mockService.GetPersonalAchievements(userId).Returns(list);
-
-        var result = await _sut.GetAllForUser(userId);
-
-        result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeEquivalentTo(list);
-    }
-
-    [TestMethod]
-    public async Task GetPersonal_WhenNotAuthenticated_ReturnsUnauthorized()
-    {
-        _sut.ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() };
-        var result = await _sut.GetPersonal();
-        result.Should().BeOfType<UnauthorizedResult>();
-    }
-
-    [TestMethod]
-    public async Task Create_WithValidForm_ReturnsCreated()
-    {
-        // Arrange
         var dto = new AchievementCreateDto
         {
             Name = "New",
@@ -345,64 +330,19 @@ public class AchievementControllerTests
             }
         };
 
-        // Act
         var result = await _sut.Create(dto);
 
-        // Assert
         result.Should().BeOfType<StatusCodeResult>().Which.StatusCode.Should().Be(StatusCodes.Status201Created);
-        await _mockService.Received(1).AddAchievement(Arg.Is<AchievementDto>(d => d.Name == "New" && d.ImageContentType != null));
+        await _sender.Received(1).Send(Arg.Is<CreateAchievementCommand>(c =>
+            c.Achievement.Name == "New" && c.Achievement.ImageContentType != null), Arg.Any<CancellationToken>());
     }
 
     [TestMethod]
     public async Task Create_WithoutImage_ReturnsBadRequest()
     {
-        var dto = new AchievementCreateDto { Name = "New", Description = "Desc" };
-        var result = await _sut.Create(dto);
+        var result = await _sut.Create(new AchievementCreateDto { Name = "New", Description = "Desc" });
+
         result.Should().BeOfType<BadRequestObjectResult>();
-    }
-
-    [TestMethod]
-    public async Task Update_WithImage_CallsUpdateWithImage()
-    {
-        // Arrange
-        var id = Guid.NewGuid();
-        var dto = new AchievementUpdateDto
-        {
-            Id = id,
-            Name = "New",
-            Image = new AchievementImageDto { Id = Guid.NewGuid(), FileName = "test.png", ContentType = "image/png", Uri = "uri" }
-        };
-
-        // Act
-        var result = await _sut.Update(dto);
-
-        // Assert
-        result.Should().BeOfType<NoContentResult>();
-        await _mockService.Received(1).UpdateAchievement(Arg.Is<Achievement>(a => a.Image != null && a.Image.FileName == "test.png"));
-    }
-
-    [TestMethod]
-    public async Task Update_WithNewImage_CallsUpdateAchievementWithStream()
-    {
-        // Arrange
-        var id = Guid.NewGuid();
-        var dto = new AchievementUpdateDto
-        {
-            Id = id,
-            Name = "New",
-            NewImage = new Base64FileUploadDto
-            {
-                FileName = "photo.png",
-                ContentType = "image/png",
-                Base64Content = Convert.ToBase64String(new byte[] { 1, 2, 3, 4 })
-            }
-        };
-
-        // Act
-        var result = await _sut.Update(dto);
-
-        // Assert
-        result.Should().BeOfType<NoContentResult>();
-        await _mockService.Received(1).UpdateAchievement(Arg.Is<Achievement>(a => a.Id == id), Arg.Any<Stream>(), "image/png");
+        await _sender.DidNotReceive().Send(Arg.Any<CreateAchievementCommand>(), Arg.Any<CancellationToken>());
     }
 }

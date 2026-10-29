@@ -114,7 +114,7 @@ internal sealed class ToggleReactionHandler(
         if (targetType != ReactionTargetType.Event) return;
 
         var evt = await eventRepository.GetById(targetId) ?? throw new ArgumentException("Event not found");
-        if (!evt.RequiredRoles.Any()) return;
+        if (evt.RequiredRoles.Count == 0) return;
 
         var userRoles = await roleProvider.GetRoles(userId);
         if (!userRoles.Contains(Roles.Admin) && !evt.RequiredRoles.Any(r => userRoles.Contains(r.Name!)))

@@ -24,8 +24,7 @@ public class ReactionRepository(ApplicationDbContext dbContext) : IReactionRepos
     {
         var ids = targetIds.ToList();
         return await dbContext.Reaction
-            .Include(r => r.User)
-            .ThenInclude(u => u.ProfileImage)
+            .Include(r => r.User.ProfileImage)
             .Where(r => r.TargetType == targetType && ids.Contains(r.TargetId))
             .OrderBy(r => r.CreatedOn)
             .ToListAsync();
@@ -34,8 +33,7 @@ public class ReactionRepository(ApplicationDbContext dbContext) : IReactionRepos
     public async Task<IList<Reaction>> GetTimeline(int skip, int take)
     {
         return await dbContext.Reaction
-            .Include(r => r.User)
-            .ThenInclude(u => u.ProfileImage)
+            .Include(r => r.User.ProfileImage)
             .OrderByDescending(r => r.CreatedOn)
             .Skip(skip)
             .Take(take)

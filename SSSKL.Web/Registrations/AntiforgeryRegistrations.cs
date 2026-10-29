@@ -47,9 +47,10 @@ public static class AntiforgeryRegistrations
                 context.Response.Cookies.Append(
                     "XSRF-TOKEN",
                     tokens.RequestToken,
-                    new CookieOptions
+                    // Double-submit token: Angular must read it from JS, so it can't be HttpOnly
+                    new CookieOptions // NOSONAR (S3330)
                     {
-                        HttpOnly = false, // Angular needs to read this cookie
+                        HttpOnly = false,
                         Secure = secureCookie,
                         SameSite = SameSiteMode.Lax
                     });

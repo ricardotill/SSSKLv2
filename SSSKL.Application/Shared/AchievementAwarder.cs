@@ -94,7 +94,7 @@ internal sealed class AchievementAwarder(
                 });
             }
         }
-        if (newEntries.Any())
+        if (newEntries.Count > 0)
             await achievementRepository.CreateEntryRange(newEntries);
         await Announce(newEntries);
         return newEntries.Count;

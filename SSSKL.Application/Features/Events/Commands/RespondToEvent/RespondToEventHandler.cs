@@ -13,7 +13,7 @@ internal sealed class RespondToEventHandler(IEventRepository eventRepository, IU
     {
         var e = await eventRepository.GetExisting(request.Id);
 
-        if (e.RequiredRoles.Any())
+        if (e.RequiredRoles.Count > 0)
         {
             var userRoles = await roleProvider.GetRoles(request.UserId);
             if (!userRoles.Contains(Roles.Admin) && !e.RequiredRoles.Any(r => userRoles.Contains(r.Name!)))

@@ -59,13 +59,11 @@ public static class AuthenticationRegistrations
             options.Cookie.SameSite = SameSiteMode.Lax;
         });
 
-        services.AddAuthorization(options =>
-        {
-            options.AddPolicy(Roles.Admin, policy => policy.RequireRole(Roles.Admin));
-            options.AddPolicy(Roles.Kiosk, policy => policy.RequireRole(Roles.Kiosk));
-            options.AddPolicy(Roles.User, policy => policy.RequireRole(Roles.User));
-            options.AddPolicy(Roles.Guest, policy => policy.RequireRole(Roles.Guest));
-        });
+        services.AddAuthorizationBuilder()
+            .AddPolicy(Roles.Admin, policy => policy.RequireRole(Roles.Admin))
+            .AddPolicy(Roles.Kiosk, policy => policy.RequireRole(Roles.Kiosk))
+            .AddPolicy(Roles.User, policy => policy.RequireRole(Roles.User))
+            .AddPolicy(Roles.Guest, policy => policy.RequireRole(Roles.Guest));
 
         services.AddIdentityCore<ApplicationUser>(options =>
             {

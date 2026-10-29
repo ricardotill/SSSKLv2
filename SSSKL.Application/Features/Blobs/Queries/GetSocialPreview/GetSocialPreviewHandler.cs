@@ -21,7 +21,7 @@ internal sealed class GetSocialPreviewHandler(IBlobStorageItemRepository blobSto
                     ?? throw new NotFoundException("Image not found");
 
         using var stream = await blobAgent.OpenDownloadStreamAsync(image.FileName);
-        using var sourceImage = await SafeImageLoader.LoadAsync(stream);
+        using var sourceImage = await SafeImageLoader.LoadAsync(stream, cancellationToken);
 
         var currentRatio = (double)sourceImage.Width / sourceImage.Height;
         if (Math.Abs(currentRatio - TargetRatio) > 0.05)

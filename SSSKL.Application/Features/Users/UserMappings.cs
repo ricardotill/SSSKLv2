@@ -16,25 +16,6 @@ public static class UserMappings
         Description = u.Description
     };
 
-    /// <summary>The detailed view for admins and the user themselves. Never includes the password.</summary>
-    public static ApplicationUserDetailedDto ToDetailedDto(this ApplicationUser u, IList<string> roles) => new()
-    {
-        Id = u.Id,
-        UserName = u.UserName ?? string.Empty,
-        Email = u.Email,
-        EmailConfirmed = u.EmailConfirmed,
-        PhoneNumber = u.PhoneNumber,
-        PhoneNumberConfirmed = u.PhoneNumberConfirmed,
-        Name = u.Name,
-        Surname = u.Surname,
-        FullName = u.FullName,
-        Saldo = u.Saldo,
-        LastOrdered = u.LastOrdered,
-        ProfilePictureUrl = u.ProfileImageId != null ? $"/api/v1/blob/profilepicture/image/{u.ProfileImageId}" : null,
-        Description = u.Description,
-        Roles = roles
-    };
-
     public static UserStatDto ToDto(this UserStat stats) => new()
     {
         Id = stats.Id,
@@ -57,5 +38,24 @@ public static class UserMappings
         LastOrderDate = stats.LastOrderDate,
         LastTopUpDate = stats.LastTopUpDate,
         LastStatsRecalculatedAt = stats.LastStatsRecalculatedAt
+    };
+
+    /// <summary>The detailed view for admins and the user themselves. Never includes the password.</summary>
+    public static ApplicationUserDetailedDto ToDetailedDto(this ApplicationUser u, IList<string> roles) => new()
+    {
+        Id = u.Id,
+        UserName = u.UserName ?? string.Empty,
+        Email = u.Email,
+        EmailConfirmed = u.EmailConfirmed,
+        PhoneNumber = u.PhoneNumber,
+        PhoneNumberConfirmed = u.PhoneNumberConfirmed,
+        Name = u.Name,
+        Surname = u.Surname,
+        FullName = u.FullName,
+        Saldo = u.Saldo,
+        LastOrdered = u.LastOrdered,
+        ProfilePictureUrl = u.ProfileImageId != null ? $"/api/v1/blob/profilepicture/image/{u.ProfileImageId}" : null,
+        Description = u.Description,
+        Roles = roles
     };
 }

@@ -60,7 +60,7 @@ public class AchievementEventHandlerTests
         _orders.GetPersonal(user.UserName).Returns(new List<Order> { order });
         _achievements.GetUncompletedAchievementsForUser(user.Id).Returns(new List<Achievement> { achievement });
 
-        await _sut.HandleAsync(new OrderPlacedEvent(order));
+        await _sut.Handle(new OrderPlacedEvent(order), CancellationToken.None);
 
         stats.TotalSpent.Should().Be(15);
         stats.TotalOrders.Should().Be(1);
@@ -80,7 +80,7 @@ public class AchievementEventHandlerTests
         var topUp = new TopUp { User = user, Saldo = 25 };
         _userStats.GetOrCreateByUserId(user.Id).Returns(stats);
 
-        await _sut.HandleAsync(new TopUpEvent(topUp));
+        await _sut.Handle(new TopUpEvent(topUp), CancellationToken.None);
 
         stats.TotalTopUp.Should().Be(25);
         stats.MaxSingleTopUp.Should().Be(25);
@@ -97,8 +97,8 @@ public class AchievementEventHandlerTests
         _userStats.GetOrCreateByUserId("quote-user").Returns(quoteStats);
         _userStats.GetOrCreateByUserId("reaction-user").Returns(reactionStats);
 
-        await _sut.HandleAsync(new QuoteCreatedEvent(new Quote { CreatedById = "quote-user" }));
-        await _sut.HandleAsync(new ReactionAddedEvent(new Reaction { UserId = "reaction-user", Content = "like" }));
+        await _sut.Handle(new QuoteCreatedEvent(new Quote { CreatedById = "quote-user" }), CancellationToken.None);
+        await _sut.Handle(new ReactionAddedEvent(new Reaction { UserId = "reaction-user", Content = "like" }), CancellationToken.None);
 
         quoteStats.QuoteCount.Should().Be(1);
         reactionStats.ReactionCount.Should().Be(1);
@@ -122,7 +122,7 @@ public class AchievementEventHandlerTests
             }
         };
 
-        await _sut.HandleAsync(new QuoteVotedEvent(vote));
+        await _sut.Handle(new QuoteVotedEvent(vote), CancellationToken.None);
 
         voterStats.QuoteVotesGiven.Should().Be(1);
         authorStats.QuoteVotesReceived.Should().Be(1);

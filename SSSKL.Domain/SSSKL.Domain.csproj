@@ -9,6 +9,8 @@
   <ItemGroup>
     <!-- IdentityUser/IdentityRole only; no ASP.NET Core or EF Core dependency -->
     <PackageReference Include="Microsoft.Extensions.Identity.Stores" />
+    <!-- INotification only, so domain events can be published through MediatR -->
+    <PackageReference Include="MediatR.Contracts" />
   </ItemGroup>
 
 </Project>

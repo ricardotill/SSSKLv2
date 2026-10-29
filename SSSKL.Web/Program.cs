@@ -61,7 +61,7 @@ builder.Services.AddCorsRegistrations(websiteDomain);
 builder.AddInfrastructure();
 
 builder.Services.AddMemoryCache();
-builder.Services.AddApplication();
+builder.Services.AddApplication(builder.Configuration);
 
 if (builder.Environment.IsProduction())
 {

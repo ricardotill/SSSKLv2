@@ -1,5 +1,5 @@
+using MediatR;
 using SSSKL.Application.Util;
-using SSSKL.Contracts.Events;
 using SSSKL.Contracts.Repositories;
 using SSSKL.Contracts.Services;
 using SSSKL.Domain.Entities;
@@ -15,13 +15,13 @@ public class AchievementEventHandler(
     IOrderRepository orderRepository,
     IAchievementService achievementService,
     ILogger<AchievementEventHandler> logger) : 
-    IDomainEventHandler<OrderPlacedEvent>,
-    IDomainEventHandler<TopUpEvent>,
-    IDomainEventHandler<QuoteCreatedEvent>,
-    IDomainEventHandler<QuoteVotedEvent>,
-    IDomainEventHandler<ReactionAddedEvent>
+    INotificationHandler<OrderPlacedEvent>,
+    INotificationHandler<TopUpEvent>,
+    INotificationHandler<QuoteCreatedEvent>,
+    INotificationHandler<QuoteVotedEvent>,
+    INotificationHandler<ReactionAddedEvent>
 {
-    public async Task HandleAsync(OrderPlacedEvent domainEvent)
+    public async Task Handle(OrderPlacedEvent domainEvent, CancellationToken cancellationToken)
     {
         var order = domainEvent.Order;
         var stats = await userStatRepository.GetOrCreateByUserId(order.User.Id);
@@ -63,7 +63,7 @@ public class AchievementEventHandler(
         await CheckAndAwardAchievements(order.User.Id, stats);
     }
 
-    public async Task HandleAsync(TopUpEvent domainEvent)
+    public async Task Handle(TopUpEvent domainEvent, CancellationToken cancellationToken)
     {
         var topUp = domainEvent.TopUp;
         var stats = await userStatRepository.GetOrCreateByUserId(topUp.User.Id);
@@ -86,7 +86,7 @@ public class AchievementEventHandler(
         await CheckAndAwardAchievements(topUp.User.Id, stats);
     }
 
-    public async Task HandleAsync(QuoteCreatedEvent domainEvent)
+    public async Task Handle(QuoteCreatedEvent domainEvent, CancellationToken cancellationToken)
     {
         var quote = domainEvent.Quote;
         var stats = await userStatRepository.GetOrCreateByUserId(quote.CreatedById);
@@ -98,7 +98,7 @@ public class AchievementEventHandler(
         await CheckAndAwardAchievements(quote.CreatedById, stats);
     }
 
-    public async Task HandleAsync(QuoteVotedEvent domainEvent)
+    public async Task Handle(QuoteVotedEvent domainEvent, CancellationToken cancellationToken)
     {
         var vote = domainEvent.Vote;
         var stats = await userStatRepository.GetOrCreateByUserId(vote.UserId);
@@ -125,7 +125,7 @@ public class AchievementEventHandler(
         await CheckAndAwardAchievements(vote.UserId, stats);
     }
 
-    public async Task HandleAsync(ReactionAddedEvent domainEvent)
+    public async Task Handle(ReactionAddedEvent domainEvent, CancellationToken cancellationToken)
     {
         var reaction = domainEvent.Reaction;
         var stats = await userStatRepository.GetOrCreateByUserId(reaction.UserId);

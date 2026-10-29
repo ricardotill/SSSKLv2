@@ -1,9 +1,7 @@
 using FluentAssertions;
-using Microsoft.Extensions.Logging.Abstractions;
+using MediatR;
 using Microsoft.Extensions.DependencyInjection;
-using NSubstitute;
 using SSSKL.Application.Events;
-using SSSKL.Contracts.Events;
 using SSSKL.Domain.Entities;
 using SSSKL.Domain.Events;
 
@@ -12,40 +10,78 @@ namespace SSSKL.Application.Test.Events;
 [TestClass]
 public class DomainEventDispatcherTests
 {
+    // MediatR collapses handlers that share an implementation type, so each fake needs its own class.
+    private sealed class FirstHandler : INotificationHandler<OrderPlacedEvent>
+    {
+        public List<OrderPlacedEvent> Received { get; } = [];
+
+        public Task Handle(OrderPlacedEvent notification, CancellationToken cancellationToken)
+        {
+            Received.Add(notification);
+            return Task.CompletedTask;
+        }
+    }
+
+    private sealed class SecondHandler : INotificationHandler<OrderPlacedEvent>
+    {
+        public List<OrderPlacedEvent> Received { get; } = [];
+
+        public Task Handle(OrderPlacedEvent notification, CancellationToken cancellationToken)
+        {
+            Received.Add(notification);
+            return Task.CompletedTask;
+        }
+    }
+
+    private sealed class ThrowingHandler : INotificationHandler<OrderPlacedEvent>
+    {
+        public Task Handle(OrderPlacedEvent notification, CancellationToken cancellationToken) =>
+            throw new InvalidOperationException("boom");
+    }
+
+    private static ServiceProvider BuildProvider(params INotificationHandler<OrderPlacedEvent>[] handlers)
+    {
+        var services = new ServiceCollection().AddLogging();
+        services.AddMediatR(cfg =>
+        {
+            // Scan an assembly without handlers; the fakes below are registered as instances.
+            cfg.RegisterServicesFromAssemblyContaining<IMediator>();
+            cfg.NotificationPublisherType = typeof(ResilientNotificationPublisher);
+        });
+        foreach (var handler in handlers)
+            services.AddSingleton(handler);
+        return services.BuildServiceProvider();
+    }
+
+    private static OrderPlacedEvent CreateEvent() =>
+        new(new Order { User = new ApplicationUser { Id = "user" } });
+
     [TestMethod]
     public async Task DispatchAsync_InvokesEveryRegisteredHandler()
     {
-        var first = Substitute.For<IDomainEventHandler<OrderPlacedEvent>>();
-        var second = Substitute.For<IDomainEventHandler<OrderPlacedEvent>>();
-        var services = new ServiceCollection()
-            .AddSingleton(first)
-            .AddSingleton(second)
-            .BuildServiceProvider();
-        var sut = new DomainEventDispatcher(services, NullLogger<DomainEventDispatcher>.Instance);
-        var domainEvent = new OrderPlacedEvent(new Order { User = new ApplicationUser { Id = "user" } });
+        var first = new FirstHandler();
+        var second = new SecondHandler();
+        await using var provider = BuildProvider(first, second);
+        var sut = new DomainEventDispatcher(provider.GetRequiredService<IServiceScopeFactory>());
+        var domainEvent = CreateEvent();
 
         await sut.DispatchAsync(domainEvent);
 
-        await first.Received(1).HandleAsync(domainEvent);
-        await second.Received(1).HandleAsync(domainEvent);
+        first.Received.Should().ContainSingle().Which.Should().BeSameAs(domainEvent);
+        second.Received.Should().ContainSingle().Which.Should().BeSameAs(domainEvent);
     }
 
     [TestMethod]
     public async Task DispatchAsync_WhenHandlerThrows_StillInvokesOtherHandlersAndDoesNotThrow()
     {
-        var failing = Substitute.For<IDomainEventHandler<OrderPlacedEvent>>();
-        failing.HandleAsync(Arg.Any<OrderPlacedEvent>()).Returns(Task.FromException(new InvalidOperationException("boom")));
-        var second = Substitute.For<IDomainEventHandler<OrderPlacedEvent>>();
-        var services = new ServiceCollection()
-            .AddSingleton(failing)
-            .AddSingleton(second)
-            .BuildServiceProvider();
-        var sut = new DomainEventDispatcher(services, NullLogger<DomainEventDispatcher>.Instance);
-        var domainEvent = new OrderPlacedEvent(new Order { User = new ApplicationUser { Id = "user" } });
+        var second = new SecondHandler();
+        await using var provider = BuildProvider(new ThrowingHandler(), second);
+        var sut = new DomainEventDispatcher(provider.GetRequiredService<IServiceScopeFactory>());
+        var domainEvent = CreateEvent();
 
         var act = () => sut.DispatchAsync(domainEvent);
 
         await act.Should().NotThrowAsync();
-        await second.Received(1).HandleAsync(domainEvent);
+        second.Received.Should().ContainSingle().Which.Should().BeSameAs(domainEvent);
     }
 }

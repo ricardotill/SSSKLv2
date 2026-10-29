@@ -1,16 +1,24 @@
+using Microsoft.Extensions.Configuration;
+using SSSKL.Application.Behaviors;
 using SSSKL.Application.Events;
-using SSSKL.Application.Handlers;
 using SSSKL.Application.Services;
 using SSSKL.Contracts.Events;
 using SSSKL.Contracts.Services;
-using SSSKL.Domain.Events;
 
 namespace SSSKL.Application;
 
 public static class ApplicationServiceCollectionExtensions
 {
-    public static IServiceCollection AddApplication(this IServiceCollection services)
+    public static IServiceCollection AddApplication(this IServiceCollection services, IConfiguration configuration)
     {
+        services.AddMediatR(cfg =>
+        {
+            cfg.LicenseKey = configuration["MediatR:LicenseKey"];
+            cfg.RegisterServicesFromAssembly(typeof(ApplicationServiceCollectionExtensions).Assembly);
+            cfg.AddOpenBehavior(typeof(LoggingBehavior<,>));
+            cfg.NotificationPublisherType = typeof(ResilientNotificationPublisher);
+        });
+
         return services
             .AddTransient<IApplicationUserService, ApplicationUserService>()
             .AddTransient<IOldUserMigrationService, OldUserMigrationService>()
@@ -25,11 +33,6 @@ public static class ApplicationServiceCollectionExtensions
             .AddTransient<INotificationService, NotificationService>()
             .AddSingleton<IStatsRecalculationJobService, StatsRecalculationJobService>()
             .AddSingleton<IOrderCsvExportJobService, OrderCsvExportJobService>()
-            .AddScoped<IDomainEventDispatcher, DomainEventDispatcher>()
-            .AddScoped<IDomainEventHandler<OrderPlacedEvent>, AchievementEventHandler>()
-            .AddScoped<IDomainEventHandler<TopUpEvent>, AchievementEventHandler>()
-            .AddScoped<IDomainEventHandler<QuoteCreatedEvent>, AchievementEventHandler>()
-            .AddScoped<IDomainEventHandler<QuoteVotedEvent>, AchievementEventHandler>()
-            .AddScoped<IDomainEventHandler<ReactionAddedEvent>, AchievementEventHandler>();
+            .AddScoped<IDomainEventDispatcher, DomainEventDispatcher>();
     }
 }

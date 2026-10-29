@@ -1,52 +1,29 @@
+using System.Security.Claims;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
+using SSSKL.Application.Features.Orders.Commands.CreateOrder;
+using SSSKL.Application.Features.Orders.Commands.DeleteOrder;
+using SSSKL.Application.Features.Orders.Export;
+using SSSKL.Application.Features.Orders.Queries.GetLatestOrders;
+using SSSKL.Application.Features.Orders.Queries.GetOrderById;
 using SSSKL.Application.Features.Orders.Queries.GetOrderInitialize;
+using SSSKL.Application.Features.Orders.Queries.GetOrders;
+using SSSKL.Application.Features.Orders.Queries.GetPersonalOrders;
 using SSSKL.Contracts.Dto.Api.v1;
-using SSSKL.Contracts.Services;
-using SSSKL.Domain.Constants;
-using SSSKL.Domain.Entities;
-using SSSKL.Domain.Exceptions;
 
 namespace SSSKL.Web.Controllers.v1;
 
 [Route("v1/[controller]")]
 [ApiController]
-public class OrderController : ControllerBase
+public class OrderController(ISender sender) : ControllerBase
 {
-    private readonly IOrderService _orderService;
-    private readonly ILogger<OrderController> _logger;
-    private readonly ISender _sender;
-    private readonly IOrderCsvExportJobService _orderCsvExportJobService;
-
-    public OrderController(IOrderService orderService,
-        ILogger<OrderController> logger,
-        ISender sender,
-        IOrderCsvExportJobService orderCsvExportJobService)
-    {
-        _orderService = orderService;
-        _logger = logger;
-        _sender = sender;
-        _orderCsvExportJobService = orderCsvExportJobService;
-    }
-
     // GET v1/order
     [Authorize(Roles = "Admin")]
     [HttpGet]
     public async Task<IActionResult> GetAll([FromQuery] int skip = 0, [FromQuery] int take = 15)
     {
-        _logger.LogInformation("{Controller}: Get all orders (paged) skip={Skip} take={Take}", nameof(OrderController), skip, take);
-        var list = await _orderService.GetAll(skip, take);
-        var totalCount = await _orderService.GetCount();
-
-        var dtoList = list.Select(MapToDto).ToList();
-
-        return Ok(new PaginationObject<OrderDto>()
-        {
-            Items = dtoList,
-            TotalCount = totalCount
-        });
+        return Ok(await sender.Send(new GetOrdersQuery(skip, take)));
     }
 
     // GET v1/order/personal
@@ -57,52 +34,29 @@ public class OrderController : ControllerBase
         var username = User.Identity!.Name; // non-nullable per auth
         if (string.IsNullOrWhiteSpace(username)) return Unauthorized();
 
-        _logger.LogInformation("{Controller}: Get personal orders for {Username} (paged) skip={Skip} take={Take}", nameof(OrderController), username, skip, take);
-        var list = await _orderService.GetPersonal(username, skip, take);
-        var totalCount = await _orderService.GetPersonalCount(username);
-
-        var dtoList = list.Select(MapToDto).ToList();
-
-        return Ok(new PaginationObject<OrderDto>()
-        {
-            Items = dtoList,
-            TotalCount = totalCount
-        });
+        return Ok(await sender.Send(new GetPersonalOrdersQuery(username, skip, take)));
     }
 
     // GET v1/order/{id}
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetById(Guid id)
     {
-        _logger.LogInformation("{Controller}: Get order by id {Id}", nameof(OrderController), id);
-        try
-        {
-            var order = await _orderService.GetOrderById(id);
-            return Ok(MapToDto(order));
-        }
-        catch (NotFoundException)
-        {
-            return NotFound();
-        }
+        return Ok(await sender.Send(new GetOrderByIdQuery(id)));
     }
 
     // GET v1/order/latest
     [HttpGet("latest")]
     public async Task<IActionResult> GetLatest([FromQuery] int take = 6)
     {
-        _logger.LogInformation("{Controller}: Get latest {Take} orders", nameof(OrderController), take);
-        var list = await _orderService.GetLatestOrders(take);
-        var dtoList = list.Select(MapToDto);
-        return Ok(dtoList);
+        return Ok(await sender.Send(new GetLatestOrdersQuery(take)));
     }
-    
+
     // GET v1/order/initialize
     [Authorize]
     [HttpGet("initialize")]
     public async Task<IActionResult> GetOrderInitialize()
     {
-        _logger.LogInformation("{Controller}: Initialize order data", nameof(OrderController));
-        return Ok(await _sender.Send(new GetOrderInitializeQuery()));
+        return Ok(await sender.Send(new GetOrderInitializeQuery()));
     }
 
     // POST v1/order
@@ -112,33 +66,16 @@ public class OrderController : ControllerBase
     {
         if (bestelling == null) return BadRequest();
 
-        _logger.LogInformation("{Controller}: Create order - products: {ProductsCount}, users: {UsersCount}", nameof(OrderController), bestelling.Products.Count, bestelling.Users.Count);
-
-        try
-        {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)
-                         ?? User.FindFirstValue("sub");
-
-            // Use new service overload that accepts the API DTO directly along with the acting user's ID
-            await _orderService.CreateOrder(bestelling, userId);
-            return Ok();
-        }
-        catch (NotFoundException)
-        {
-            return NotFound();
-        }
+        await sender.Send(new CreateOrderCommand(bestelling, GetUserId()));
+        return Ok();
     }
 
     // POST v1/order/export/csv - starts a background job that exports all orders to CSV
     [Authorize(Roles = "Admin")]
     [HttpPost("export/csv")]
-    public IActionResult StartCsvExport()
+    public async Task<IActionResult> StartCsvExport()
     {
-        _logger.LogInformation("{Controller}: Start orders CSV export", nameof(OrderController));
-        var requesterId = User.FindFirstValue(ClaimTypes.NameIdentifier)
-                          ?? User.FindFirstValue("sub")
-                          ?? string.Empty;
-        var (job, started) = _orderCsvExportJobService.StartExport(requesterId);
+        var (job, started) = await sender.Send(new StartOrderCsvExportCommand(GetUserId() ?? string.Empty));
         if (!started)
         {
             return StatusCode(StatusCodes.Status409Conflict, job);
@@ -150,9 +87,9 @@ public class OrderController : ControllerBase
     // GET v1/order/export/csv/{jobId} - status of a specific CSV export job
     [Authorize(Roles = "Admin")]
     [HttpGet("export/csv/{jobId:guid}")]
-    public IActionResult GetCsvExportStatus(Guid jobId)
+    public async Task<IActionResult> GetCsvExportStatus(Guid jobId)
     {
-        var job = _orderCsvExportJobService.GetStatus(jobId);
+        var job = await sender.Send(new GetOrderCsvExportStatusQuery(jobId));
         if (job == null) return NotFound();
         return Ok(job);
     }
@@ -160,12 +97,12 @@ public class OrderController : ControllerBase
     // GET v1/order/export/csv/{jobId}/download - download the generated CSV
     [Authorize(Roles = "Admin")]
     [HttpGet("export/csv/{jobId:guid}/download")]
-    public IActionResult DownloadCsvExport(Guid jobId)
+    public async Task<IActionResult> DownloadCsvExport(Guid jobId)
     {
-        var csv = _orderCsvExportJobService.GetCsv(jobId);
+        var csv = await sender.Send(new GetOrderCsvExportFileQuery(jobId));
         if (csv == null) return NotFound();
 
-        return File(csv.Value.Bytes, "text/csv", csv.Value.FileName);
+        return File(csv.Bytes, "text/csv", csv.FileName);
     }
 
     // DELETE v1/order/{id}
@@ -174,56 +111,15 @@ public class OrderController : ControllerBase
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)
-            ?? User.FindFirstValue("sub");
+        var userId = GetUserId();
         var isAdmin = User.IsInRole("Admin");
 
-        _logger.LogInformation("{Controller}: Delete order {Id} requested by userId {UserId} (admin={IsAdmin})", nameof(OrderController), id, userId, isAdmin);
+        if (!isAdmin && string.IsNullOrWhiteSpace(userId)) return Unauthorized();
 
-        if (!isAdmin)
-        {
-            if (string.IsNullOrWhiteSpace(userId)) return Unauthorized();
-
-            try
-            {
-                var order = await _orderService.GetOrderById(id);
-                if (!string.Equals(order.User?.Id, userId, StringComparison.OrdinalIgnoreCase))
-                {
-                    return Forbid();
-                }
-            }
-            catch (NotFoundException)
-            {
-                return NotFound();
-            }
-        }
-
-        try
-        {
-            await _orderService.DeleteOrder(id);
-            return NoContent();
-        }
-        catch (NotFoundException)
-        {
-            return NotFound();
-        }
+        await sender.Send(new DeleteOrderCommand(id, userId, isAdmin));
+        return NoContent();
     }
 
-    private static OrderDto MapToDto(Order order)
-    {
-        if (order == null) return new OrderDto();
-
-        return new OrderDto
-        {
-            Id = order.Id,
-            CreatedOn = order.CreatedOn,
-            ProductId = order.Product?.Id,
-            ProductName = order.ProductNaam ?? string.Empty,
-            UserId = order.User?.Id != null ? Guid.TryParse(order.User.Id, out var uid) ? uid : (Guid?)null : null,
-            UserFullName = order.User?.FullName ?? string.Empty,
-            Amount = order.Amount,
-            Paid = order.Paid,
-            ProfilePictureUrl = order.User?.ProfileImageId != null ? $"/api/v1/blob/profilepicture/image/{order.User.ProfileImageId}" : null
-        };
-    }
+    private string? GetUserId() =>
+        User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
 }

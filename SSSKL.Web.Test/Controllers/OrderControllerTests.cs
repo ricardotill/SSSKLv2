@@ -3,13 +3,17 @@ using FluentAssertions;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
+using SSSKL.Application.Features.Orders.Commands.CreateOrder;
+using SSSKL.Application.Features.Orders.Commands.DeleteOrder;
+using SSSKL.Application.Features.Orders.Export;
+using SSSKL.Application.Features.Orders.Queries.GetLatestOrders;
+using SSSKL.Application.Features.Orders.Queries.GetOrderById;
 using SSSKL.Application.Features.Orders.Queries.GetOrderInitialize;
+using SSSKL.Application.Features.Orders.Queries.GetOrders;
+using SSSKL.Application.Features.Orders.Queries.GetPersonalOrders;
 using SSSKL.Contracts.Dto.Api.v1;
-using SSSKL.Contracts.Services;
-using SSSKL.Domain.Entities;
 using SSSKL.Domain.Exceptions;
 using SSSKL.Web.Controllers.v1;
 
@@ -18,120 +22,14 @@ namespace SSSKL.Web.Test.Controllers;
 [TestClass]
 public class OrderControllerTests
 {
-    private IOrderService _orderService = null!;
-    private ILogger<OrderController> _logger = null!;
     private ISender _sender = null!;
-    private IOrderCsvExportJobService _orderCsvExportJobService = null!;
     private OrderController _sut = null!;
 
     [TestInitialize]
     public void Init()
     {
-        _orderService = Substitute.For<IOrderService>();
-        _logger = Substitute.For<ILogger<OrderController>>();
         _sender = Substitute.For<ISender>();
-        _orderCsvExportJobService = Substitute.For<IOrderCsvExportJobService>();
-
-        _sut = new OrderController(_orderService, _logger, _sender, _orderCsvExportJobService);
-    }
-
-    [TestMethod]
-    public async Task Delete_AdminUser_DeletesAnyOrder()
-    {
-        // Arrange
-        var id = Guid.NewGuid();
-        SetUserContext(Guid.NewGuid().ToString(), "admin", isAdmin: true);
-
-        // Act
-        var result = await _sut.Delete(id);
-
-        // Assert
-        result.Should().BeOfType<NoContentResult>();
-        await _orderService.Received(1).DeleteOrder(id);
-        await _orderService.DidNotReceive().GetOrderById(Arg.Any<Guid>());
-    }
-
-    [TestMethod]
-    public async Task Delete_NonAdminOwner_DeletesOwnOrder()
-    {
-        // Arrange
-        var id = Guid.NewGuid();
-        var userId = Guid.NewGuid().ToString();
-        var username = "user1";
-        SetUserContext(userId, username, isAdmin: false);
-        _orderService.GetOrderById(id).Returns(Task.FromResult(new Order
-        {
-            Id = id,
-            User = new ApplicationUser { Id = userId, UserName = username },
-            ProductNaam = "Test",
-            Amount = 1,
-            Paid = 1m
-        }));
-
-        // Act
-        var result = await _sut.Delete(id);
-
-        // Assert
-        result.Should().BeOfType<NoContentResult>();
-        await _orderService.Received(1).GetOrderById(id);
-        await _orderService.Received(1).DeleteOrder(id);
-    }
-
-    [TestMethod]
-    public async Task Delete_NonAdminNonOwner_ReturnsForbid()
-    {
-        // Arrange
-        var id = Guid.NewGuid();
-        SetUserContext(Guid.NewGuid().ToString(), "user1", isAdmin: false);
-        _orderService.GetOrderById(id).Returns(Task.FromResult(new Order
-        {
-            Id = id,
-            User = new ApplicationUser { Id = Guid.NewGuid().ToString(), UserName = "user2" },
-            ProductNaam = "Test",
-            Amount = 1,
-            Paid = 1m
-        }));
-
-        // Act
-        var result = await _sut.Delete(id);
-
-        // Assert
-        result.Should().BeOfType<ForbidResult>();
-        await _orderService.Received(1).GetOrderById(id);
-        await _orderService.DidNotReceive().DeleteOrder(Arg.Any<Guid>());
-    }
-
-    [TestMethod]
-    public async Task Delete_NonAdminWithoutUserId_ReturnsUnauthorized()
-    {
-        // Arrange
-        var id = Guid.NewGuid();
-        SetUserContext(null, "user1", isAdmin: false);
-
-        // Act
-        var result = await _sut.Delete(id);
-
-        // Assert
-        result.Should().BeOfType<UnauthorizedResult>();
-        await _orderService.DidNotReceive().GetOrderById(Arg.Any<Guid>());
-        await _orderService.DidNotReceive().DeleteOrder(Arg.Any<Guid>());
-    }
-
-    [TestMethod]
-    public async Task Delete_NonAdminOrderNotFound_ReturnsNotFound()
-    {
-        // Arrange
-        var id = Guid.NewGuid();
-        SetUserContext(Guid.NewGuid().ToString(), "user1", isAdmin: false);
-        _orderService.GetOrderById(id).Returns(Task.FromException<Order>(new NotFoundException("Order not found")));
-
-        // Act
-        var result = await _sut.Delete(id);
-
-        // Assert
-        result.Should().BeOfType<NotFoundResult>();
-        await _orderService.Received(1).GetOrderById(id);
-        await _orderService.DidNotReceive().DeleteOrder(Arg.Any<Guid>());
+        _sut = new OrderController(_sender);
     }
 
     private void SetUserContext(string? userId, string? username, bool isAdmin)
@@ -161,29 +59,100 @@ public class OrderControllerTests
     }
 
     [TestMethod]
+    public async Task Delete_AdminUser_SendsAdminDeleteCommand()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        var adminId = Guid.NewGuid().ToString();
+        SetUserContext(adminId, "admin", isAdmin: true);
+
+        // Act
+        var result = await _sut.Delete(id);
+
+        // Assert
+        result.Should().BeOfType<NoContentResult>();
+        await _sender.Received(1).Send(new DeleteOrderCommand(id, adminId, true), Arg.Any<CancellationToken>());
+    }
+
+    [TestMethod]
+    public async Task Delete_NonAdmin_SendsOwnerDeleteCommand()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        var userId = Guid.NewGuid().ToString();
+        SetUserContext(userId, "user1", isAdmin: false);
+
+        // Act
+        var result = await _sut.Delete(id);
+
+        // Assert
+        result.Should().BeOfType<NoContentResult>();
+        await _sender.Received(1).Send(new DeleteOrderCommand(id, userId, false), Arg.Any<CancellationToken>());
+    }
+
+    [TestMethod]
+    public async Task Delete_NonAdminNonOwner_PropagatesUnauthorizedAccess()
+    {
+        // Arrange
+        SetUserContext(Guid.NewGuid().ToString(), "user1", isAdmin: false);
+        _sender.Send(Arg.Any<DeleteOrderCommand>(), Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
+
+        // Act
+        var act = () => _sut.Delete(Guid.NewGuid());
+
+        // Assert
+        await act.Should().ThrowAsync<UnauthorizedAccessException>();
+    }
+
+    [TestMethod]
+    public async Task Delete_NonAdminWithoutUserId_ReturnsUnauthorized()
+    {
+        // Arrange
+        SetUserContext(null, "user1", isAdmin: false);
+
+        // Act
+        var result = await _sut.Delete(Guid.NewGuid());
+
+        // Assert
+        result.Should().BeOfType<UnauthorizedResult>();
+        await _sender.DidNotReceive().Send(Arg.Any<DeleteOrderCommand>(), Arg.Any<CancellationToken>());
+    }
+
+    [TestMethod]
+    public async Task Delete_OrderNotFound_PropagatesNotFoundException()
+    {
+        // Arrange
+        SetUserContext("adminId", "admin", true);
+        _sender.Send(Arg.Any<DeleteOrderCommand>(), Arg.Any<CancellationToken>()).Throws(new NotFoundException("Order not found"));
+
+        // Act
+        var act = () => _sut.Delete(Guid.NewGuid());
+
+        // Assert
+        await act.Should().ThrowAsync<NotFoundException>();
+    }
+
+    [TestMethod]
     public async Task GetAll_ReturnsOkWithItems()
     {
-        var list = new List<Order> { new Order { Id = Guid.NewGuid(), ProductNaam = "P1" } };
-        _orderService.GetAll(0, 15).Returns(list);
-        _orderService.GetCount().Returns(1);
+        var page = new PaginationObject<OrderDto> { Items = [new OrderDto { Id = Guid.NewGuid() }], TotalCount = 1 };
+        _sender.Send(new GetOrdersQuery(0, 15), Arg.Any<CancellationToken>()).Returns(page);
 
         var result = await _sut.GetAll(0, 15);
 
-        result.Should().BeOfType<OkObjectResult>().Which.Value.As<PaginationObject<OrderDto>>().TotalCount.Should().Be(1);
+        result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeSameAs(page);
     }
 
     [TestMethod]
     public async Task GetPersonal_ReturnsOkWithItems()
     {
-        var username = "user1";
-        SetUserContext("u1", username, false);
-        var list = new List<Order> { new Order { Id = Guid.NewGuid(), ProductNaam = "P1" } };
-        _orderService.GetPersonal(username, 0, 15).Returns(list);
-        _orderService.GetPersonalCount(username).Returns(1);
+        SetUserContext("u1", "user1", false);
+        var page = new PaginationObject<OrderDto> { Items = [new OrderDto { Id = Guid.NewGuid() }], TotalCount = 1 };
+        _sender.Send(new GetPersonalOrdersQuery("user1", 0, 15), Arg.Any<CancellationToken>()).Returns(page);
 
         var result = await _sut.GetPersonal(0, 15);
 
-        result.Should().BeOfType<OkObjectResult>().Which.Value.As<PaginationObject<OrderDto>>().TotalCount.Should().Be(1);
+        result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeSameAs(page);
     }
 
     [TestMethod]
@@ -203,7 +172,7 @@ public class OrderControllerTests
     public async Task GetById_WhenFound_ReturnsOk()
     {
         var id = Guid.NewGuid();
-        _orderService.GetOrderById(id).Returns(new Order { Id = id, ProductNaam = "P1" });
+        _sender.Send(new GetOrderByIdQuery(id), Arg.Any<CancellationToken>()).Returns(new OrderDto { Id = id });
 
         var result = await _sut.GetById(id);
 
@@ -211,24 +180,21 @@ public class OrderControllerTests
     }
 
     [TestMethod]
-    public async Task GetById_WhenNotFound_ReturnsNotFound()
+    public async Task GetById_WhenNotFound_PropagatesNotFoundException()
     {
-        // Arrange
         var id = Guid.NewGuid();
-        _orderService.GetOrderById(id).Throws(new NotFoundException(""));
+        _sender.Send(new GetOrderByIdQuery(id), Arg.Any<CancellationToken>()).Throws(new NotFoundException(""));
 
-        // Act
-        var result = await _sut.GetById(id);
+        var act = () => _sut.GetById(id);
 
-        // Assert
-        result.Should().BeOfType<NotFoundResult>();
+        await act.Should().ThrowAsync<NotFoundException>();
     }
 
     [TestMethod]
     public async Task GetLatest_ReturnsOk()
     {
-        var list = new List<Order> { new Order { Id = Guid.NewGuid() } };
-        _orderService.GetLatestOrders(5).Returns(list);
+        IReadOnlyList<OrderDto> list = [new OrderDto { Id = Guid.NewGuid() }];
+        _sender.Send(new GetLatestOrdersQuery(5), Arg.Any<CancellationToken>()).Returns(list);
 
         var result = await _sut.GetLatest(5);
 
@@ -252,15 +218,15 @@ public class OrderControllerTests
         var dto = new OrderSubmitDto { Products = new List<Guid>(), Users = new List<Guid>() };
         var userId = Guid.NewGuid().ToString();
         SetUserContext(userId, "user1", false);
-        
+
         var result = await _sut.Create(dto);
 
         result.Should().BeOfType<OkResult>();
-        await _orderService.Received(1).CreateOrder(dto, userId);
+        await _sender.Received(1).Send(new CreateOrderCommand(dto, userId), Arg.Any<CancellationToken>());
     }
 
     [TestMethod]
-    public void StartCsvExport_WhenNoJobRunning_ReturnsAcceptedJob()
+    public async Task StartCsvExport_WhenNoJobRunning_ReturnsAcceptedJob()
     {
         var userId = Guid.NewGuid().ToString();
         SetUserContext(userId, "admin", isAdmin: true);
@@ -271,18 +237,17 @@ public class OrderControllerTests
             StartedByUserId = userId,
             FileName = "Orders_Export.csv"
         };
-        _orderCsvExportJobService.StartExport(userId).Returns((job, true));
+        _sender.Send(new StartOrderCsvExportCommand(userId), Arg.Any<CancellationToken>()).Returns(new StartOrderCsvExportResult(job, true));
 
-        var result = _sut.StartCsvExport();
+        var result = await _sut.StartCsvExport();
 
         var accepted = result.Should().BeOfType<AcceptedAtActionResult>().Subject;
         accepted.ActionName.Should().Be(nameof(OrderController.GetCsvExportStatus));
         accepted.Value.Should().Be(job);
-        _orderCsvExportJobService.Received(1).StartExport(userId);
     }
 
     [TestMethod]
-    public void StartCsvExport_WhenJobAlreadyRunning_ReturnsConflictJob()
+    public async Task StartCsvExport_WhenJobAlreadyRunning_ReturnsConflictJob()
     {
         SetUserContext("admin-id", "admin", isAdmin: true);
         var job = new CsvExportJobDto
@@ -292,9 +257,9 @@ public class OrderControllerTests
             StartedByUserId = "other-admin",
             FileName = "Orders_Export.csv"
         };
-        _orderCsvExportJobService.StartExport("admin-id").Returns((job, false));
+        _sender.Send(new StartOrderCsvExportCommand("admin-id"), Arg.Any<CancellationToken>()).Returns(new StartOrderCsvExportResult(job, false));
 
-        var result = _sut.StartCsvExport();
+        var result = await _sut.StartCsvExport();
 
         var conflict = result.Should().BeOfType<ObjectResult>().Subject;
         conflict.StatusCode.Should().Be(StatusCodes.Status409Conflict);
@@ -302,25 +267,36 @@ public class OrderControllerTests
     }
 
     [TestMethod]
-    public void GetCsvExportStatus_WhenFound_ReturnsOk()
+    public async Task GetCsvExportStatus_WhenFound_ReturnsOk()
     {
         var jobId = Guid.NewGuid();
         var job = new CsvExportJobDto { Id = jobId, Status = CsvExportJobStatus.Completed };
-        _orderCsvExportJobService.GetStatus(jobId).Returns(job);
+        _sender.Send(new GetOrderCsvExportStatusQuery(jobId), Arg.Any<CancellationToken>()).Returns(job);
 
-        var result = _sut.GetCsvExportStatus(jobId);
+        var result = await _sut.GetCsvExportStatus(jobId);
 
         result.Should().BeOfType<OkObjectResult>().Which.Value.Should().Be(job);
     }
 
     [TestMethod]
-    public void DownloadCsvExport_WhenCompleted_ReturnsCsvFile()
+    public async Task GetCsvExportStatus_WhenMissing_ReturnsNotFound()
+    {
+        var jobId = Guid.NewGuid();
+        _sender.Send(new GetOrderCsvExportStatusQuery(jobId), Arg.Any<CancellationToken>()).Returns((CsvExportJobDto?)null);
+
+        var result = await _sut.GetCsvExportStatus(jobId);
+
+        result.Should().BeOfType<NotFoundResult>();
+    }
+
+    [TestMethod]
+    public async Task DownloadCsvExport_WhenCompleted_ReturnsCsvFile()
     {
         var jobId = Guid.NewGuid();
         var bytes = "OrderId"u8.ToArray();
-        _orderCsvExportJobService.GetCsv(jobId).Returns((bytes, "Orders_Export.csv"));
+        _sender.Send(new GetOrderCsvExportFileQuery(jobId), Arg.Any<CancellationToken>()).Returns(new CsvExportFile(bytes, "Orders_Export.csv"));
 
-        var result = _sut.DownloadCsvExport(jobId);
+        var result = await _sut.DownloadCsvExport(jobId);
 
         var file = result.Should().BeOfType<FileContentResult>().Subject;
         file.FileContents.Should().BeEquivalentTo(bytes);
@@ -329,12 +305,12 @@ public class OrderControllerTests
     }
 
     [TestMethod]
-    public void DownloadCsvExport_WhenNotReadyOrMissing_ReturnsNotFound()
+    public async Task DownloadCsvExport_WhenNotReadyOrMissing_ReturnsNotFound()
     {
         var jobId = Guid.NewGuid();
-        _orderCsvExportJobService.GetCsv(jobId).Returns(((byte[] Bytes, string FileName)?)null);
+        _sender.Send(new GetOrderCsvExportFileQuery(jobId), Arg.Any<CancellationToken>()).Returns((CsvExportFile?)null);
 
-        var result = _sut.DownloadCsvExport(jobId);
+        var result = await _sut.DownloadCsvExport(jobId);
 
         result.Should().BeOfType<NotFoundResult>();
     }
@@ -342,54 +318,30 @@ public class OrderControllerTests
     [TestMethod]
     public async Task Create_WhenNullDto_ReturnsBadRequest()
     {
-        // Act
         var result = await _sut.Create(null);
 
-        // Assert
         result.Should().BeOfType<BadRequestResult>();
     }
 
     [TestMethod]
-    public async Task Create_WhenServiceThrowsNotFound_ReturnsNotFound()
+    public async Task Create_WhenHandlerThrowsNotFound_PropagatesNotFoundException()
     {
-        // Arrange
-        var dto = new OrderSubmitDto();
-        var userId = Guid.NewGuid().ToString();
-        SetUserContext(userId, "user1", false);
-        _orderService.CreateOrder(dto, userId).Throws(new NotFoundException(""));
+        SetUserContext(Guid.NewGuid().ToString(), "user1", false);
+        _sender.Send(Arg.Any<CreateOrderCommand>(), Arg.Any<CancellationToken>()).Throws(new NotFoundException(""));
 
-        // Act
-        var result = await _sut.Create(dto);
+        var act = () => _sut.Create(new OrderSubmitDto());
 
-        // Assert
-        result.Should().BeOfType<NotFoundResult>();
+        await act.Should().ThrowAsync<NotFoundException>();
     }
 
     [TestMethod]
-    public async Task Create_WhenServiceThrowsGenericException_PropagatesToGlobalHandler()
+    public async Task Create_WhenHandlerThrowsGenericException_PropagatesToGlobalHandler()
     {
-        // Arrange
-        var dto = new OrderSubmitDto();
-        var userId = Guid.NewGuid().ToString();
-        SetUserContext(userId, "user1", false);
-        _orderService.CreateOrder(dto, userId).Throws(new Exception("Fail"));
+        SetUserContext(Guid.NewGuid().ToString(), "user1", false);
+        _sender.Send(Arg.Any<CreateOrderCommand>(), Arg.Any<CancellationToken>()).Throws(new Exception("Fail"));
 
-        // Act
-        var act = () => _sut.Create(dto);
+        var act = () => _sut.Create(new OrderSubmitDto());
 
-        // Assert
         await act.Should().ThrowAsync<Exception>().WithMessage("Fail");
-    }
-
-    [TestMethod]
-    public async Task Delete_AdminOrderNotFound_ReturnsNotFound()
-    {
-        var id = Guid.NewGuid();
-        SetUserContext("adminId", "admin", true);
-        _orderService.DeleteOrder(id).Returns(Task.FromException(new NotFoundException("")));
-
-        var result = await _sut.Delete(id);
-
-        result.Should().BeOfType<NotFoundResult>();
     }
 }

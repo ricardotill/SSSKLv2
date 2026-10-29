@@ -2,18 +2,18 @@ using System.Diagnostics;
 using System.Collections.Concurrent;
 using System.Text;
 using SSSKL.Contracts.Dto.Api.v1;
-using SSSKL.Contracts.Services;
+using SSSKL.Contracts.Repositories;
 using SSSKL.Contracts.Telemetry;
 
-namespace SSSKL.Application.Services;
+namespace SSSKL.Application.Features.Orders.Export;
 
 /// <summary>
 /// Tracks admin order CSV export jobs in memory and generates exports in the background.
-/// Only one export may be active at a time.
+/// Only one export may be active at a time. Registered as a singleton.
 /// </summary>
-public class OrderCsvExportJobService(
+public sealed class OrderCsvExportJob(
     IServiceScopeFactory scopeFactory,
-    ILogger<OrderCsvExportJobService> logger) : IOrderCsvExportJobService
+    ILogger<OrderCsvExportJob> logger)
 {
     private readonly ConcurrentDictionary<Guid, JobState> _jobs = new();
     private readonly Lock _startLock = new();
@@ -51,7 +51,7 @@ public class OrderCsvExportJobService(
     public CsvExportJobDto? GetStatus(Guid jobId)
         => _jobs.TryGetValue(jobId, out var job) ? job.ToDto() : null;
 
-    public (byte[] Bytes, string FileName)? GetCsv(Guid jobId)
+    public CsvExportFile? GetCsv(Guid jobId)
     {
         if (!_jobs.TryGetValue(jobId, out var job) ||
             job.Status != CsvExportJobStatus.Completed ||
@@ -60,7 +60,7 @@ public class OrderCsvExportJobService(
             return null;
         }
 
-        return (job.CsvBytes, job.FileName);
+        return new CsvExportFile(job.CsvBytes, job.FileName);
     }
 
     private async Task RunJobAsync(JobState job)
@@ -73,8 +73,9 @@ public class OrderCsvExportJobService(
         try
         {
             using var scope = scopeFactory.CreateScope();
-            var orderService = scope.ServiceProvider.GetRequiredService<IOrderService>();
-            var csv = await orderService.ExportAllOrdersToCsvAsync();
+            var orderRepository = scope.ServiceProvider.GetRequiredService<IOrderRepository>();
+            var orders = await orderRepository.GetAllAsync();
+            var csv = OrderCsvWriter.Write(orders);
 
             job.CsvBytes = Encoding.UTF8.GetBytes(csv);
             // Stamp CompletedAt before publishing the terminal status: pollers read both without a lock
@@ -122,3 +123,5 @@ public class OrderCsvExportJobService(
         };
     }
 }
+
+public sealed record CsvExportFile(byte[] Bytes, string FileName);

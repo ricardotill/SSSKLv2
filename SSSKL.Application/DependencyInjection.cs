@@ -1,7 +1,9 @@
 using Microsoft.Extensions.Configuration;
 using SSSKL.Application.Behaviors;
 using SSSKL.Application.Events;
+using SSSKL.Application.Features.Orders.Export;
 using SSSKL.Application.Services;
+using SSSKL.Application.Shared;
 using SSSKL.Contracts.Events;
 using SSSKL.Contracts.Services;
 
@@ -21,14 +23,14 @@ public static class ApplicationServiceCollectionExtensions
 
         return services
             .AddTransient<IApplicationUserService, ApplicationUserService>()
-            .AddTransient<IOrderService, OrderService>()
             .AddTransient<IAchievementService, AchievementService>()
             .AddTransient<IEventService, EventService>()
             .AddTransient<IQuoteService, QuoteService>()
             .AddTransient<IReactionService, ReactionService>()
             .AddTransient<INotificationService, NotificationService>()
             .AddSingleton<IStatsRecalculationJobService, StatsRecalculationJobService>()
-            .AddSingleton<IOrderCsvExportJobService, OrderCsvExportJobService>()
+            .AddSingleton<OrderCsvExportJob>()
+            .AddTransient<IUserNotifier, UserNotifier>()
             .AddScoped<IDomainEventDispatcher, DomainEventDispatcher>();
     }
 }

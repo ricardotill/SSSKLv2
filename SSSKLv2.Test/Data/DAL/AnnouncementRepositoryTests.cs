@@ -59,19 +59,6 @@ public class AnnouncementRepositoryTests : RepositoryTest
     }
 
     [TestMethod]
-    public void GetAllQueryable_ReturnsQueryable()
-    {
-        // Arrange
-        using var context = new ApplicationDbContext(GetOptions());
-
-        // Act
-        var result = _sut.GetAllQueryable(context);
-
-        // Assert
-        result.Should().NotBeNull();
-    }
-
-    [TestMethod]
     public async Task GetAll_WhenAnnouncementsInDb_ReturnAll()
     {
         // Arrange

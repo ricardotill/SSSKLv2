@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using SSSKLv2.Data.DAL.Interfaces;
 using SSSKLv2.Data;
 using SSSKLv2.Data.Constants;
 using SSSKLv2.Dto.Api.v1;
@@ -14,11 +14,11 @@ namespace SSSKLv2.Controllers.v1;
 [ApiController]
 public class GlobalSettingsController : ControllerBase
 {
-    private readonly ApplicationDbContext _context;
+    private readonly IGlobalSettingRepository _globalSettingRepository;
 
-    public GlobalSettingsController(ApplicationDbContext context)
+    public GlobalSettingsController(IGlobalSettingRepository globalSettingRepository)
     {
-        _context = context;
+        _globalSettingRepository = globalSettingRepository;
     }
 
     // GET v1/globalsettings/public/turnstile - what the login and sign-up pages need to render Turnstile
@@ -48,8 +48,7 @@ public class GlobalSettingsController : ControllerBase
             }
         }
 
-        var setting = await _context.GlobalSetting
-            .FirstOrDefaultAsync(s => s.Key == key);
+        var setting = await _globalSettingRepository.GetByKey(key);
 
         if (setting == null)
         {
@@ -77,27 +76,7 @@ public class GlobalSettingsController : ControllerBase
             sanitizedValue = sanitizer.Sanitize(dto.Value);
         }
 
-        var setting = await _context.GlobalSetting
-            .FirstOrDefaultAsync(s => s.Key == key);
-
-        if (setting == null)
-        {
-            // Create new if it doesn't exist
-            setting = new GlobalSetting
-            {
-                Key = key,
-                Value = sanitizedValue,
-                UpdatedOn = DateTime.UtcNow
-            };
-            _context.GlobalSetting.Add(setting);
-        }
-        else
-        {
-            setting.Value = sanitizedValue;
-            setting.UpdatedOn = DateTime.UtcNow;
-        }
-
-        await _context.SaveChangesAsync();
+        await _globalSettingRepository.Upsert(key, sanitizedValue);
 
         return NoContent();
     }

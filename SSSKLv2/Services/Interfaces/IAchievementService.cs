@@ -20,8 +20,6 @@ public interface IAchievementService
     Task UpdateAchievement(Achievement achievement, Stream newImageContent, string newImageContentType);
     Task DeleteAchievement(Guid id);
     Task DeleteAchievementEntryRange(IEnumerable<AchievementEntry> entries);
-    IQueryable<Achievement> GetAchievementsQueryable(ApplicationDbContext context);
-    IQueryable<AchievementEntry> GetAchievementEntriesQueryable(ApplicationDbContext context);
     Task CheckOrdersForAchievements(IEnumerable<Order> orders);
     Task CheckTopUpForAchievements(TopUp topUp);
     Task CheckUserForAchievements(string username);

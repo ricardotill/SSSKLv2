@@ -1,6 +1,5 @@
-using Microsoft.EntityFrameworkCore;
 using SSSKLv2.Data;
-
+using SSSKLv2.Data.DAL.Interfaces;
 using SSSKLv2.Dto;
 using SSSKLv2.Services.Interfaces;
 
@@ -8,29 +7,28 @@ namespace SSSKLv2.Services;
 
 public class NotificationService : INotificationService
 {
-    private readonly ApplicationDbContext _context;
+    private readonly INotificationRepository _notificationRepository;
+    private readonly IPushSubscriptionRepository _pushSubscriptionRepository;
+    private readonly IApplicationUserRepository _applicationUserRepository;
     private readonly IWebPushService _webPushService;
 
-    public NotificationService(ApplicationDbContext context, IWebPushService webPushService)
+    public NotificationService(
+        INotificationRepository notificationRepository,
+        IPushSubscriptionRepository pushSubscriptionRepository,
+        IApplicationUserRepository applicationUserRepository,
+        IWebPushService webPushService)
     {
-        _context = context;
+        _notificationRepository = notificationRepository;
+        _pushSubscriptionRepository = pushSubscriptionRepository;
+        _applicationUserRepository = applicationUserRepository;
         _webPushService = webPushService;
     }
 
     public async Task<IEnumerable<NotificationDto>> GetNotificationsAsync(string userId, bool unreadOnly, int skip, int take)
     {
-        var query = _context.Notification
-            .Where(n => n.UserId == userId);
+        var notifications = await _notificationRepository.GetForUser(userId, unreadOnly, skip, take);
 
-        if (unreadOnly)
-        {
-            query = query.Where(n => !n.IsRead);
-        }
-
-        var notifications = await query
-            .OrderByDescending(n => n.CreatedOn)
-            .Skip(skip)
-            .Take(take)
+        return notifications
             .Select(n => new NotificationDto
             {
                 Id = n.Id,
@@ -41,35 +39,22 @@ public class NotificationService : INotificationService
                 LinkUri = n.LinkUri,
                 CreatedOn = n.CreatedOn
             })
-            .ToListAsync();
-
-        return notifications;
+            .ToList();
     }
 
     public async Task<int> GetUnreadCountAsync(string userId)
     {
-        return await _context.Notification
-            .Where(n => n.UserId == userId && !n.IsRead)
-            .CountAsync();
+        return await _notificationRepository.GetUnreadCount(userId);
     }
 
     public async Task MarkAsReadAsync(Guid id, string userId)
     {
-        var notification = await _context.Notification
-            .FirstOrDefaultAsync(n => n.Id == id && n.UserId == userId);
-
-        if (notification != null && !notification.IsRead)
-        {
-            notification.IsRead = true;
-            await _context.SaveChangesAsync();
-        }
+        await _notificationRepository.MarkAsRead(id, userId);
     }
 
     public async Task MarkAllAsReadAsync(string userId)
     {
-        await _context.Notification
-            .Where(n => n.UserId == userId && !n.IsRead)
-            .ExecuteUpdateAsync(s => s.SetProperty(n => n.IsRead, true));
+        await _notificationRepository.MarkAllAsRead(userId);
     }
 
     public async Task CreateNotificationAsync(string userId, string title, string message, string? linkUri = null, bool sendPush = false)
@@ -84,8 +69,7 @@ public class NotificationService : INotificationService
             CreatedOn = DateTime.UtcNow
         };
 
-        _context.Notification.Add(notification);
-        await _context.SaveChangesAsync();
+        await _notificationRepository.AddRange([notification]);
 
         if (sendPush)
         {
@@ -99,7 +83,7 @@ public class NotificationService : INotificationService
 
         if (dto.FanOut)
         {
-            targetUserIds = await _context.Users.Select(u => u.Id).ToListAsync();
+            targetUserIds = await _applicationUserRepository.GetAllIds();
         }
         else
         {
@@ -116,8 +100,7 @@ public class NotificationService : INotificationService
             CreatedOn = DateTime.UtcNow
         }).ToList();
 
-        _context.Notification.AddRange(notifications);
-        await _context.SaveChangesAsync();
+        await _notificationRepository.AddRange(notifications);
 
         if (dto.SendPush)
         {
@@ -130,39 +113,18 @@ public class NotificationService : INotificationService
 
     public async Task SubscribeAsync(string userId, PushSubscriptionDto dto)
     {
-        var existing = await _context.PushSubscription
-            .FirstOrDefaultAsync(s => s.UserId == userId && s.Endpoint == dto.Endpoint);
-
-        if (existing == null)
+        await _pushSubscriptionRepository.Upsert(new PushSubscription
         {
-            var subscription = new PushSubscription
-            {
-                UserId = userId,
-                Endpoint = dto.Endpoint,
-                P256dh = dto.P256dh,
-                Auth = dto.Auth,
-                CreatedOn = DateTime.UtcNow
-            };
-            _context.PushSubscription.Add(subscription);
-        }
-        else
-        {
-            existing.P256dh = dto.P256dh;
-            existing.Auth = dto.Auth;
-        }
-
-        await _context.SaveChangesAsync();
+            UserId = userId,
+            Endpoint = dto.Endpoint,
+            P256dh = dto.P256dh,
+            Auth = dto.Auth,
+            CreatedOn = DateTime.UtcNow
+        });
     }
 
     public async Task UnsubscribeAsync(string userId, string endpoint)
     {
-        var subscription = await _context.PushSubscription
-            .FirstOrDefaultAsync(s => s.UserId == userId && s.Endpoint == endpoint);
-
-        if (subscription != null)
-        {
-            _context.PushSubscription.Remove(subscription);
-            await _context.SaveChangesAsync();
-        }
+        await _pushSubscriptionRepository.Delete(userId, endpoint);
     }
 }

@@ -70,4 +70,46 @@ public class QuoteRepository(ApplicationDbContext dbContext) : IQuoteRepository
             await dbContext.SaveChangesAsync();
         }
     }
+
+    public async Task<IDictionary<Guid, QuoteVoteSummary>> GetVoteSummaries(IEnumerable<Guid> quoteIds, string? userId)
+    {
+        var ids = quoteIds.ToList();
+        return await dbContext.QuoteVote
+            .Where(v => ids.Contains(v.QuoteId))
+            .GroupBy(v => v.QuoteId)
+            .Select(g => new
+            {
+                QuoteId = g.Key,
+                Count = g.Count(),
+                HasVoted = userId != null && g.Any(v => v.UserId == userId)
+            })
+            .ToDictionaryAsync(x => x.QuoteId, x => new QuoteVoteSummary(x.Count, x.HasVoted));
+    }
+
+    public async Task<QuoteVote?> GetVote(Guid quoteId, string userId)
+    {
+        return await dbContext.QuoteVote
+            .FirstOrDefaultAsync(v => v.QuoteId == quoteId && v.UserId == userId);
+    }
+
+    public async Task AddVote(QuoteVote vote)
+    {
+        dbContext.QuoteVote.Add(vote);
+        await dbContext.SaveChangesAsync();
+    }
+
+    public async Task DeleteVote(QuoteVote vote)
+    {
+        dbContext.QuoteVote.Remove(vote);
+        await dbContext.SaveChangesAsync();
+    }
+
+    public async Task<IList<string>> GetAuthorUserIds(Guid quoteId)
+    {
+        return await dbContext.QuoteAuthor
+            .Where(author => author.QuoteId == quoteId && author.ApplicationUserId != null)
+            .Select(author => author.ApplicationUserId!)
+            .Distinct()
+            .ToListAsync();
+    }
 }

@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using SSSKLv2.Agents;
 using SSSKLv2.Data;
 using SSSKLv2.Util;
-using Microsoft.EntityFrameworkCore;
+using SSSKLv2.Data.DAL.Interfaces;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Processing;
 using SixLabors.ImageSharp.Formats.Jpeg;
@@ -15,12 +15,12 @@ namespace SSSKLv2.Controllers.v1;
 public class BlobsController : ControllerBase
 {
     private readonly IBlobStorageAgent _blobAgent;
-    private readonly ApplicationDbContext _context;
+    private readonly IBlobStorageItemRepository _blobStorageItemRepository;
 
-    public BlobsController(IBlobStorageAgent blobAgent, ApplicationDbContext context)
+    public BlobsController(IBlobStorageAgent blobAgent, IBlobStorageItemRepository blobStorageItemRepository)
     {
         _blobAgent = blobAgent;
-        _context = context;
+        _blobStorageItemRepository = blobStorageItemRepository;
     }
 
     [HttpGet("event/image/{id}")]
@@ -28,7 +28,7 @@ public class BlobsController : ControllerBase
     [ResponseCache(Duration = 2592000, Location = ResponseCacheLocation.Any)]
     public async Task<IActionResult> GetEventImage(Guid id)
     {
-        var image = await _context.BlobStorageItem.FirstOrDefaultAsync(x => x.Id == id);
+        var image = await _blobStorageItemRepository.GetById(id);
         if (image == null) return NotFound();
 
         var contentType = ContentTypeToExtensionMapper.NormalizeContentType(image.ContentType);
@@ -44,7 +44,7 @@ public class BlobsController : ControllerBase
     [ResponseCache(Duration = 2592000, Location = ResponseCacheLocation.Any)]
     public async Task<IActionResult> GetAchievementImage(Guid id)
     {
-        var image = await _context.BlobStorageItem.FirstOrDefaultAsync(x => x.Id == id);
+        var image = await _blobStorageItemRepository.GetById(id);
         if (image == null) return NotFound();
 
         var contentType = ContentTypeToExtensionMapper.NormalizeContentType(image.ContentType);
@@ -60,7 +60,7 @@ public class BlobsController : ControllerBase
     [ResponseCache(Duration = 2592000, Location = ResponseCacheLocation.Any)]
     public async Task<IActionResult> GetProfilePicture(Guid id)
     {
-        var image = await _context.BlobStorageItem.FirstOrDefaultAsync(x => x.Id == id);
+        var image = await _blobStorageItemRepository.GetById(id);
         if (image == null) return NotFound();
 
         var contentType = ContentTypeToExtensionMapper.NormalizeContentType(image.ContentType);
@@ -76,7 +76,7 @@ public class BlobsController : ControllerBase
     [ResponseCache(Duration = 2592000, Location = ResponseCacheLocation.Any)]
     public async Task<IActionResult> GetSocialPreview(Guid id)
     {
-        var image = await _context.BlobStorageItem.FirstOrDefaultAsync(x => x.Id == id);
+        var image = await _blobStorageItemRepository.GetById(id);
         if (image == null) return NotFound();
 
         // Add binary headers to assist social crawler caching and verification

@@ -3,6 +3,7 @@ using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using NSubstitute;
 using SSSKLv2.Data;
+using SSSKLv2.Data.DAL;
 using SSSKLv2.Dto;
 using SSSKLv2.Services;
 using SSSKLv2.Services.Interfaces;
@@ -23,7 +24,11 @@ public class NotificationServiceTests : RepositoryTest
         InitializeDatabase();
         _dbContext = new ApplicationDbContext(GetOptions());
         _webPushService = Substitute.For<IWebPushService>();
-        _sut = new NotificationService(_dbContext, _webPushService);
+        _sut = new NotificationService(
+            new NotificationRepository(_dbContext),
+            new PushSubscriptionRepository(_dbContext),
+            new ApplicationUserRepository(new MockDbContextFactory(GetOptions())),
+            _webPushService);
     }
 
     [TestCleanup]

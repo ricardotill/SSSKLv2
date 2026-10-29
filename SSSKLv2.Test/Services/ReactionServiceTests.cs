@@ -10,6 +10,7 @@ using SSSKLv2.Test.Util;
 using NSubstitute;
 using SSSKLv2.Events;
 using SSSKLv2.Data.Constants;
+using SSSKLv2.Data.DAL;
 using SSSKLv2.Data.DAL.Interfaces;
 
 namespace SSSKLv2.Test.Services;
@@ -34,7 +35,8 @@ public class ReactionServiceTests : RepositoryTest
         _mockEventDispatcher = Substitute.For<IDomainEventDispatcher>();
         _mockUserStatRepository = Substitute.For<IUserStatRepository>();
         _mockUserStatRepository.RecalculateByUserId(Arg.Any<string>()).Returns(call => new UserStat { UserId = call.Arg<string>() });
-        _sut = new ReactionService(_dbContext, _userService, _notificationService, _mockEventDispatcher, _mockUserStatRepository);
+        var factory = new MockDbContextFactory(GetOptions());
+        _sut = new ReactionService(new ReactionRepository(_dbContext), new EventRepository(factory), new ApplicationUserRepository(factory), _userService, _notificationService, _mockEventDispatcher, _mockUserStatRepository);
     }
 
     [TestCleanup]

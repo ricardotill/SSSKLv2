@@ -20,13 +20,6 @@ public class AnnouncementRepository(IDbContextFactory<ApplicationDbContext> dbCo
             .ThenBy(x => x.CreatedOn)
             .ToListAsync();
     }
-    
-    public IQueryable<Announcement> GetAllQueryable(ApplicationDbContext context)
-    {
-        return context.Announcement
-            .OrderBy(x => x.Order)
-            .ThenBy(x => x.CreatedOn);
-    }
 
     public async Task<Announcement?> GetById(Guid id)
     {

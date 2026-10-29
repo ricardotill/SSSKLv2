@@ -1,4 +1,3 @@
-using Microsoft.EntityFrameworkCore;
 using SSSKLv2.Data;
 using SSSKLv2.Data.DAL.Interfaces;
 using SSSKLv2.Events;
@@ -10,15 +9,19 @@ namespace SSSKLv2.Services;
 
 public class ReactionService : IReactionService
 {
-    private readonly ApplicationDbContext _context;
+    private readonly IReactionRepository _reactionRepository;
+    private readonly IEventRepository _eventRepository;
+    private readonly IApplicationUserRepository _applicationUserRepository;
     private readonly IApplicationUserService _userService;
     private readonly INotificationService _notificationService;
     private readonly IDomainEventDispatcher _eventDispatcher;
     private readonly IUserStatRepository _userStatRepository;
 
-    public ReactionService(ApplicationDbContext context, IApplicationUserService userService, INotificationService notificationService, IDomainEventDispatcher eventDispatcher, IUserStatRepository userStatRepository)
+    public ReactionService(IReactionRepository reactionRepository, IEventRepository eventRepository, IApplicationUserRepository applicationUserRepository, IApplicationUserService userService, INotificationService notificationService, IDomainEventDispatcher eventDispatcher, IUserStatRepository userStatRepository)
     {
-        _context = context;
+        _reactionRepository = reactionRepository;
+        _eventRepository = eventRepository;
+        _applicationUserRepository = applicationUserRepository;
         _userService = userService;
         _notificationService = notificationService;
         _eventDispatcher = eventDispatcher;
@@ -34,16 +37,11 @@ public class ReactionService : IReactionService
 
         await EnsureUserHasAccess(targetId, targetType, userId);
 
-        var existing = await _context.Reaction
-            .FirstOrDefaultAsync(r => r.TargetId == targetId && 
-                                     r.TargetType == targetType && 
-                                     r.UserId == userId && 
-                                     r.Content == content);
+        var existing = await _reactionRepository.Find(targetId, targetType, userId, content);
 
         if (existing != null)
         {
-            _context.Reaction.Remove(existing);
-            await _context.SaveChangesAsync();
+            await _reactionRepository.Delete(existing);
             await _userStatRepository.RecalculateByUserId(existing.UserId);
         }
         else
@@ -56,14 +54,14 @@ public class ReactionService : IReactionService
                 Content = content,
                 CreatedOn = DateTime.UtcNow
             };
-            _context.Reaction.Add(reaction);
-            
-            var actor = await _context.Users.FindAsync(userId);
+            await _reactionRepository.Add(reaction);
+
+            var actor = await _applicationUserRepository.FindById(userId);
             var actorName = actor?.Name ?? actor?.UserName ?? "Someone";
 
             if (targetType == ReactionTargetType.Event)
             {
-                var evt = await _context.Event.FirstOrDefaultAsync(e => e.Id == targetId);
+                var evt = await _eventRepository.GetById(targetId);
                 if (evt != null && evt.CreatorId != userId)
                 {
                     await _notificationService.CreateNotificationAsync(
@@ -77,14 +75,14 @@ public class ReactionService : IReactionService
             }
             else if (targetType == ReactionTargetType.Reaction)
             {
-                var parentReaction = await _context.Reaction.FirstOrDefaultAsync(r => r.Id == targetId);
+                var parentReaction = await _reactionRepository.GetById(targetId);
                 if (parentReaction != null && parentReaction.UserId != userId)
                 {
                     var rootId = targetId;
                     var rootType = targetType;
                     while (rootType == ReactionTargetType.Reaction)
                     {
-                        var parent = await _context.Reaction.FirstOrDefaultAsync(r => r.Id == rootId);
+                        var parent = await _reactionRepository.GetById(rootId);
                         if (parent == null) break;
                         rootId = parent.TargetId;
                         rootType = parent.TargetType;
@@ -102,7 +100,6 @@ public class ReactionService : IReactionService
             }
             
             await _eventDispatcher.DispatchAsync(new ReactionAddedEvent(reaction));
-            await _context.SaveChangesAsync();
         }
     }
 
@@ -113,12 +110,7 @@ public class ReactionService : IReactionService
             throw new ArgumentException("Invalid target type");
         }
 
-        var topLevelReactions = await _context.Reaction
-            .Include(r => r.User)
-            .ThenInclude(u => u.ProfileImage)
-            .Where(r => r.TargetId == targetId && r.TargetType == targetType)
-            .OrderBy(r => r.CreatedOn)
-            .ToListAsync();
+        var topLevelReactions = await _reactionRepository.GetByTargets(targetType, [targetId]);
 
         var topLevelDtos = topLevelReactions.Select(MapToDto).ToList();
 
@@ -127,12 +119,7 @@ public class ReactionService : IReactionService
             var topLevelIds = topLevelDtos.Select(r => r.Id).ToList();
             
             // Level 2: Replies targeting Level 1
-            var level2Reactions = await _context.Reaction
-                .Include(r => r.User)
-                .ThenInclude(u => u.ProfileImage)
-                .Where(r => r.TargetType == ReactionTargetType.Reaction && topLevelIds.Contains(r.TargetId))
-                .OrderBy(r => r.CreatedOn)
-                .ToListAsync();
+            var level2Reactions = await _reactionRepository.GetByTargets(ReactionTargetType.Reaction, topLevelIds);
 
             var level2Dtos = level2Reactions.Select(r => {
                 var dto = MapToDto(r);
@@ -146,12 +133,7 @@ public class ReactionService : IReactionService
                 var level2Ids = level2Dtos.Select(r => r.Id).ToList();
                 
                 // Level 3: Replies targeting Level 2
-                var level3Reactions = await _context.Reaction
-                    .Include(r => r.User)
-                    .ThenInclude(u => u.ProfileImage)
-                    .Where(r => r.TargetType == ReactionTargetType.Reaction && level2Ids.Contains(r.TargetId))
-                    .OrderBy(r => r.CreatedOn)
-                    .ToListAsync();
+                var level3Reactions = await _reactionRepository.GetByTargets(ReactionTargetType.Reaction, level2Ids);
 
                 var level3Dtos = level3Reactions.Select(r => {
                     var dto = MapToDto(r);
@@ -177,13 +159,7 @@ public class ReactionService : IReactionService
 
     public async Task<IEnumerable<ReactionDto>> GetTimeline(int skip, int take)
     {
-        var reactions = await _context.Reaction
-            .Include(r => r.User)
-            .ThenInclude(u => u.ProfileImage)
-            .OrderByDescending(r => r.CreatedOn)
-            .Skip(skip)
-            .Take(take)
-            .ToListAsync();
+        var reactions = await _reactionRepository.GetTimeline(skip, take);
 
         var dtos = reactions.Select(MapToDto).ToList();
 
@@ -196,7 +172,7 @@ public class ReactionService : IReactionService
 
     public async Task DeleteReaction(Guid id, string userId, bool isAdmin)
     {
-        var reaction = await _context.Reaction.FirstOrDefaultAsync(r => r.Id == id);
+        var reaction = await _reactionRepository.GetById(id);
         if (reaction == null) return;
 
         // Admins can delete anything, users only their own
@@ -205,33 +181,10 @@ public class ReactionService : IReactionService
             throw new UnauthorizedAccessException("You are not authorized to delete this reaction.");
         }
 
-        var affectedUserIds = new HashSet<string>();
-        await DeleteReactionAndChildrenInternal(id, affectedUserIds);
-        await _context.SaveChangesAsync();
+        var affectedUserIds = await _reactionRepository.DeleteWithReplies(id);
         foreach (var affectedUserId in affectedUserIds)
         {
             await _userStatRepository.RecalculateByUserId(affectedUserId);
-        }
-    }
-
-    private async Task DeleteReactionAndChildrenInternal(Guid id, ISet<string> affectedUserIds)
-    {
-        // Recursive deletion of all nested reactions
-        var children = await _context.Reaction
-            .Where(r => r.TargetId == id && r.TargetType == ReactionTargetType.Reaction)
-            .Select(r => r.Id)
-            .ToListAsync();
-
-        foreach (var childId in children)
-        {
-            await DeleteReactionAndChildrenInternal(childId, affectedUserIds);
-        }
-
-        var reaction = await _context.Reaction.FirstOrDefaultAsync(r => r.Id == id);
-        if (reaction != null)
-        {
-            affectedUserIds.Add(reaction.UserId);
-            _context.Reaction.Remove(reaction);
         }
     }
 
@@ -252,7 +205,7 @@ public class ReactionService : IReactionService
         // Trace back to root target if this is a reply to another reaction
         while (targetType == ReactionTargetType.Reaction)
         {
-            var parent = await _context.Reaction.FirstOrDefaultAsync(r => r.Id == targetId);
+            var parent = await _reactionRepository.GetById(targetId);
             if (parent == null) throw new ArgumentException("Parent reaction not found");
             targetId = parent.TargetId;
             targetType = parent.TargetType;
@@ -260,9 +213,7 @@ public class ReactionService : IReactionService
 
         if (targetType == ReactionTargetType.Event)
         {
-            var evt = await _context.Event
-                .Include(e => e.RequiredRoles)
-                .FirstOrDefaultAsync(e => e.Id == targetId);
+            var evt = await _eventRepository.GetById(targetId);
 
             if (evt == null) throw new ArgumentException("Event not found");
 

@@ -92,22 +92,6 @@ public class AchievementRepositoryTests : RepositoryTest
 
     #endregion
 
-    #region GetAllQueryable Tests
-
-    [TestMethod]
-    public void GetAllQueryable_ReturnsQueryable()
-    {
-        // Arrange
-        using var context = new ApplicationDbContext(GetOptions());
-
-        // Act
-        var query = _sut.GetAllQueryable(context);
-
-        // Assert
-        query.Should().NotBeNull();
-    }
-
-    #endregion
 
     #region GetAllEntries Tests
 
@@ -179,22 +163,6 @@ public class AchievementRepositoryTests : RepositoryTest
 
     #endregion
 
-    #region GetAllEntriesQueryable Tests
-
-    [TestMethod]
-    public void GetAllEntriesQueryable_ReturnsQueryable()
-    {
-        // Arrange
-        using var context = new ApplicationDbContext(GetOptions());
-
-        // Act
-        var query = _sut.GetAllEntriesQueryable(context);
-
-        // Assert
-        query.Should().NotBeNull();
-    }
-
-    #endregion
 
     #region GetAllEntriesOfUser Tests
 

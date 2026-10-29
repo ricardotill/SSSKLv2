@@ -17,11 +17,6 @@ public class AnnouncementService(IAnnouncementRepository announcementRepository)
         return await announcementRepository.GetAllPaged(skip, take);
     }
 
-    public IQueryable<Announcement> GetAllAnnouncementsQueryable(ApplicationDbContext context)
-    {
-        return announcementRepository.GetAllQueryable(context);
-    }
-
     public Task<Announcement?> GetAnnouncementById(Guid id)
     {
         return announcementRepository.GetById(id);

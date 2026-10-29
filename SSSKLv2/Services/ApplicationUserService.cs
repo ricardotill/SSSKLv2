@@ -1,6 +1,5 @@
 using SSSKLv2.Util;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using SSSKLv2.Data;
 using SSSKLv2.Data.DAL;
@@ -20,7 +19,7 @@ public class ApplicationUserService(
     IOrderRepository orderRepository,
     UserManager<ApplicationUser> userManager,
     IBlobStorageAgent blobAgent,
-    ApplicationDbContext context,
+    IUserImageRepository userImageRepository,
     IMemoryCache cache,
     ILogger<ApplicationUserService> logger) : IApplicationUserService
 {
@@ -336,25 +335,23 @@ public class ApplicationUserService(
         var userImage = UserImage.ToUserImage(blobItem);
         userImage.User = user;
         
-        context.UserImage.Add(userImage);
         user.ProfileImageId = userImage.Id;
-        
-        await context.SaveChangesAsync();
+
+        await userImageRepository.Add(userImage);
         await userManager.UpdateAsync(user);
     }
 
     public async Task DeleteProfilePictureAsync(string userId)
     {
-        var user = await context.Users
-            .Include(u => u.ProfileImage)
-            .FirstOrDefaultAsync(u => u.Id == userId);
-            
-        if (user?.ProfileImage != null)
+        var user = await userManager.FindByIdAsync(userId);
+        if (user?.ProfileImageId == null) return;
+
+        var profileImage = await userImageRepository.GetById(user.ProfileImageId.Value);
+        if (profileImage != null)
         {
-            await blobAgent.DeleteFileToBlobAsync(user.ProfileImage.FileName);
-            context.UserImage.Remove(user.ProfileImage);
+            await blobAgent.DeleteFileToBlobAsync(profileImage.FileName);
             user.ProfileImageId = null;
-            await context.SaveChangesAsync();
+            await userImageRepository.Delete(profileImage);
             await userManager.UpdateAsync(user);
         }
     }

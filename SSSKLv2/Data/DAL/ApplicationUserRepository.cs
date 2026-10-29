@@ -20,6 +20,18 @@ public class ApplicationUserRepository(
         return await context.Users.CountAsync();
     }
 
+    public async Task<ApplicationUser?> FindById(string id)
+    {
+        await using var context = await dbContextFactory.CreateDbContextAsync();
+        return await context.Users.FindAsync(id);
+    }
+
+    public async Task<IList<string>> GetAllIds()
+    {
+        await using var context = await dbContextFactory.CreateDbContextAsync();
+        return await context.Users.Select(u => u.Id).ToListAsync();
+    }
+
     public async Task<ApplicationUser> GetById(string id)
     {
         await using var context = await dbContextFactory.CreateDbContextAsync();

@@ -40,13 +40,6 @@ public class TopUpRepository(
             .Take(take)
             .ToListAsync();
     }
-
-    public IQueryable<TopUp> GetAllQueryable(ApplicationDbContext context)
-    {
-        return context.TopUp
-                .Include(x => x.User)
-                .OrderByDescending(x => x.CreatedOn);
-    }
     
     public async Task<IList<TopUp>> GetPersonal(string username)
     {
@@ -68,14 +61,6 @@ public class TopUpRepository(
             .Skip(skip)
             .Take(take)
             .ToListAsync();
-    }
-    
-    public IQueryable<TopUp> GetPersonalQueryable(string username, ApplicationDbContext context)
-    {
-        return context.TopUp
-            .Where(x => x.User.UserName == username)
-            .Include(x => x.User)
-            .OrderByDescending(x => x.CreatedOn);
     }
     
     public async Task<TopUp> GetById(Guid id)

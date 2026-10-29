@@ -1,3 +1,4 @@
+using SSSKLv2.Data.DAL;
 using FluentAssertions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -27,7 +28,7 @@ public class BlobsControllerTests
         _context = new ApplicationDbContext(dbContextOptions);
         _mockBlobAgent = Substitute.For<IBlobStorageAgent>();
         
-        _sut = new BlobsController(_mockBlobAgent, _context);
+        _sut = new BlobsController(_mockBlobAgent, new BlobStorageItemRepository(_context));
     }
 
     [TestMethod]

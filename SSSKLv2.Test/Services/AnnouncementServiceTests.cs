@@ -77,59 +77,6 @@ public class AnnouncementServiceTests
 
     #endregion
 
-    #region GetAllAnnouncementsQueryable Tests
-
-    [TestMethod]
-    public void GetAllAnnouncementsQueryable_ShouldReturnQueryableFromRepository()
-    {
-        // Arrange
-        var announcements = new List<Announcement>
-        {
-            CreateAnnouncement("Test Announcement 1"),
-            CreateAnnouncement("Test Announcement 2")
-        }.AsQueryable();
-
-        _mockRepository.GetAllQueryable(Arg.Any<ApplicationDbContext>()).Returns(announcements);
-
-        // Act
-        var result = _sut.GetAllAnnouncementsQueryable(default!);
-
-        // Assert
-        result.Should().BeEquivalentTo(announcements);
-        _mockRepository.Received(1).GetAllQueryable(default!);
-    }
-
-    [TestMethod]
-    public void GetAllAnnouncementsQueryable_WhenRepositoryReturnsEmptyQueryable_ShouldReturnEmptyQueryable()
-    {
-        // Arrange
-        var emptyQueryable = new List<Announcement>().AsQueryable();
-        _mockRepository.GetAllQueryable(Arg.Any<ApplicationDbContext>()).Returns(emptyQueryable);
-
-        // Act
-        var result = _sut.GetAllAnnouncementsQueryable(default!);
-
-        // Assert
-        result.Should().BeEmpty();
-        _mockRepository.Received(1).GetAllQueryable(default!);
-    }
-
-    [TestMethod]
-    public void GetAllAnnouncementsQueryable_WhenRepositoryThrowsException_ShouldPropagateException()
-    {
-        // Arrange
-        var expectedException = new InvalidOperationException("Test exception");
-        _mockRepository.GetAllQueryable(Arg.Any<ApplicationDbContext>()).Returns(_ => { throw expectedException; });
-
-        // Act
-        Action action = () => _sut.GetAllAnnouncementsQueryable(default!);
-
-        // Assert
-        action.Should().Throw<InvalidOperationException>().WithMessage("Test exception");
-        _mockRepository.Received(1).GetAllQueryable(default!);
-    }
-
-    #endregion
 
     #region GetAnnouncementById Tests
 

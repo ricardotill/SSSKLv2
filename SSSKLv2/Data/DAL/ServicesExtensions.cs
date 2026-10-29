@@ -18,6 +18,13 @@ public static class ServicesExtensions
             .AddTransient<IEventRepository, EventRepository>()
             .AddTransient<IQuoteRepository, QuoteRepository>()
             .AddTransient<IUserStatRepository, UserStatRepository>()
-            .AddTransient<IProductUserStatRepository, ProductUserStatRepository>();
+            .AddTransient<IProductUserStatRepository, ProductUserStatRepository>()
+            .AddTransient<IGlobalSettingRepository, GlobalSettingRepository>()
+            .AddTransient<IRoleRepository, RoleRepository>()
+            .AddTransient<IBlobStorageItemRepository, BlobStorageItemRepository>()
+            .AddTransient<IUserImageRepository, UserImageRepository>()
+            .AddTransient<INotificationRepository, NotificationRepository>()
+            .AddTransient<IPushSubscriptionRepository, PushSubscriptionRepository>()
+            .AddTransient<IReactionRepository, ReactionRepository>();
     }
 }

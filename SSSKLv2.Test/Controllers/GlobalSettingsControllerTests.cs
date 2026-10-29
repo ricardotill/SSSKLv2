@@ -1,3 +1,4 @@
+using SSSKLv2.Data.DAL;
 using FluentAssertions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -19,7 +20,7 @@ public class GlobalSettingsControllerTests : RepositoryTest
     {
         InitializeDatabase();
         _context = new ApplicationDbContext(GetOptions());
-        _sut = new GlobalSettingsController(_context);
+        _sut = new GlobalSettingsController(new GlobalSettingRepository(_context));
     }
 
     [TestCleanup]

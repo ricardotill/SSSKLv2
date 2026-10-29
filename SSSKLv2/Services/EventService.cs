@@ -1,4 +1,3 @@
-using Microsoft.EntityFrameworkCore;
 using SSSKLv2.Agents;
 using SSSKLv2.Data;
 using SSSKLv2.Data.DAL.Interfaces;
@@ -10,7 +9,7 @@ using Ganss.Xss;
 
 namespace SSSKLv2.Services;
 
-public class EventService(IEventRepository eventRepository, IBlobStorageAgent blobStorageAgent, IApplicationUserService applicationUserService, IDbContextFactory<ApplicationDbContext> dbContextFactory, IEventNotifier eventNotifier) : IEventService
+public class EventService(IEventRepository eventRepository, IBlobStorageAgent blobStorageAgent, IApplicationUserService applicationUserService, IRoleRepository roleRepository, IEventNotifier eventNotifier) : IEventService
 {
     private const string EventNotFoundMessage = "Event not found";
 
@@ -181,9 +180,8 @@ public class EventService(IEventRepository eventRepository, IBlobStorageAgent bl
         if (requiredRoles == null || !requiredRoles.Any())
             return;
 
-        await using var context = await dbContextFactory.CreateDbContextAsync();
         var rolesToFetch = requiredRoles.Except(Roles.AllProtected, StringComparer.OrdinalIgnoreCase);
-        var newRoles = await context.Roles.Where(r => rolesToFetch.Contains(r.Name)).ToListAsync();
+        var newRoles = await roleRepository.GetByNames(rolesToFetch);
         foreach (var role in newRoles)
         {
             e.RequiredRoles.Add(role);

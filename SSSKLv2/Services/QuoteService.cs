@@ -1,6 +1,4 @@
-using Microsoft.EntityFrameworkCore;
 using SSSKLv2.Data;
-using SSSKLv2.Data.DAL;
 using SSSKLv2.Data.Constants;
 using SSSKLv2.Data.DAL.Interfaces;
 using SSSKLv2.Dto;
@@ -13,7 +11,9 @@ namespace SSSKLv2.Services;
 public class QuoteService(
     IQuoteRepository quoteRepository,
     IApplicationUserService applicationUserService,
-    ApplicationDbContext dbContext,
+    IReactionRepository reactionRepository,
+    IRoleRepository roleRepository,
+    IGlobalSettingRepository globalSettingRepository,
     INotificationService notificationService,
     IDomainEventDispatcher eventDispatcher,
     IUserStatRepository userStatRepository) : IQuoteService
@@ -38,27 +38,10 @@ public class QuoteService(
         var quoteIds = quoteDtos.Select(q => q.Id).ToList();
         
         // Fetch Vote counts and user's voted state
-        var voteInfo = await dbContext.QuoteVote
-            .Where(v => quoteIds.Contains(v.QuoteId))
-            .GroupBy(v => v.QuoteId)
-            .Select(g => new
-            {
-                QuoteId = g.Key,
-                Count = g.Count(),
-                HasVoted = userId != null && g.Any(v => v.UserId == userId)
-            })
-            .ToDictionaryAsync(x => x.QuoteId, x => x);
+        var voteInfo = await quoteRepository.GetVoteSummaries(quoteIds, userId);
 
-        // Fetch Comment counts (from Reaction table)
-        var commentCounts = await dbContext.Reaction
-            .Where(r => r.TargetType == ReactionTargetType.Quote && quoteIds.Contains(r.TargetId))
-            .GroupBy(r => r.TargetId)
-            .Select(g => new
-            {
-                TargetId = g.Key,
-                Count = g.Count() // In this new system, all reactions on quotes are considered comments
-            })
-            .ToDictionaryAsync(x => x.TargetId, x => x.Count);
+        // Fetch Comment counts (from Reaction table); all reactions on quotes are considered comments
+        var commentCounts = await reactionRepository.CountByTargets(ReactionTargetType.Quote, quoteIds);
 
         foreach (var dto in quoteDtos)
         {
@@ -101,9 +84,13 @@ public class QuoteService(
 
         var dto = MapToDto(quote);
         
-        dto.VoteCount = await dbContext.QuoteVote.CountAsync(v => v.QuoteId == id);
-        dto.HasVoted = userId != null && await dbContext.QuoteVote.AnyAsync(v => v.QuoteId == id && v.UserId == userId);
-        dto.CommentsCount = await dbContext.Reaction.CountAsync(r => r.TargetType == ReactionTargetType.Quote && r.TargetId == id);
+        var voteInfo = await quoteRepository.GetVoteSummaries([id], userId);
+        if (voteInfo.TryGetValue(id, out var vInfo))
+        {
+            dto.VoteCount = vInfo.Count;
+            dto.HasVoted = vInfo.HasVoted;
+        }
+        dto.CommentsCount = await reactionRepository.CountByTarget(ReactionTargetType.Quote, id);
 
         return dto;
     }
@@ -111,19 +98,13 @@ public class QuoteService(
     public async Task<bool> ToggleVoteAsync(Guid quoteId, string userId)
     {
         await EnsureUserHasAccess(userId);
-        var existingVote = await dbContext.QuoteVote
-            .FirstOrDefaultAsync(v => v.QuoteId == quoteId && v.UserId == userId);
+        var existingVote = await quoteRepository.GetVote(quoteId, userId);
 
         if (existingVote != null)
         {
-            dbContext.QuoteVote.Remove(existingVote);
-            await dbContext.SaveChangesAsync();
+            await quoteRepository.DeleteVote(existingVote);
 
-            var affectedUserIds = await dbContext.QuoteAuthor
-                .Where(author => author.QuoteId == quoteId && author.ApplicationUserId != null)
-                .Select(author => author.ApplicationUserId!)
-                .Distinct()
-                .ToListAsync();
+            var affectedUserIds = await quoteRepository.GetAuthorUserIds(quoteId);
             if (!affectedUserIds.Contains(userId))
             {
                 affectedUserIds.Add(userId);
@@ -142,8 +123,7 @@ public class QuoteService(
             UserId = userId
         };
 
-        dbContext.QuoteVote.Add(newVote);
-        await dbContext.SaveChangesAsync();
+        await quoteRepository.AddVote(newVote);
         await eventDispatcher.DispatchAsync(new QuoteVotedEvent(newVote));
         return true;
     }
@@ -162,9 +142,7 @@ public class QuoteService(
 
         if (dto.VisibleToRoles != null && dto.VisibleToRoles.Any())
         {
-            quote.VisibleToRoles = await dbContext.Roles
-                .Where(r => dto.VisibleToRoles.Contains(r.Name!))
-                .ToListAsync();
+            quote.VisibleToRoles = await roleRepository.GetByNames(dto.VisibleToRoles);
         }
 
         if (dto.Authors != null)
@@ -207,12 +185,7 @@ public class QuoteService(
         if (visibleToRoles != null && visibleToRoles.Any())
         {
             // Get users who have at least one of these roles
-            targetUserIds = await dbContext.UserRoles
-                .Join(dbContext.Roles, ur => ur.RoleId, r => r.Id, (ur, r) => new { ur.UserId, r.Name })
-                .Where(x => visibleToRoles.Contains(x.Name!))
-                .Select(x => x.UserId)
-                .Distinct()
-                .ToListAsync();
+            targetUserIds = (await roleRepository.GetUserIdsInRoles(visibleToRoles)).ToList();
         }
 
         await notificationService.CreateCustomNotificationAsync(new CreateCustomNotificationDto
@@ -242,9 +215,7 @@ public class QuoteService(
         quote.VisibleToRoles.Clear();
         if (dto.VisibleToRoles != null && dto.VisibleToRoles.Any())
         {
-            var newRoles = await dbContext.Roles
-                .Where(r => dto.VisibleToRoles.Contains(r.Name!))
-                .ToListAsync();
+            var newRoles = await roleRepository.GetByNames(dto.VisibleToRoles);
             foreach (var r in newRoles) quote.VisibleToRoles.Add(r);
         }
 
@@ -275,11 +246,7 @@ public class QuoteService(
 
         await EnsureUserCanModify(quote, userId);
 
-        var affectedUserIds = await dbContext.QuoteAuthor
-            .Where(author => author.QuoteId == id && author.ApplicationUserId != null)
-            .Select(author => author.ApplicationUserId!)
-            .Distinct()
-            .ToListAsync();
+        var affectedUserIds = await quoteRepository.GetAuthorUserIds(id);
         if (!affectedUserIds.Contains(quote.CreatedById))
         {
             affectedUserIds.Add(quote.CreatedById);
@@ -295,7 +262,7 @@ public class QuoteService(
 
     private async Task EnsureUserHasAccess(string? userId)
     {
-        var setting = await dbContext.GlobalSetting.FirstOrDefaultAsync(s => s.Key == GlobalSettingKey);
+        var setting = await globalSettingRepository.GetByKey(GlobalSettingKey);
         if (setting == null || string.IsNullOrWhiteSpace(setting.Value))
         {
             // If no setting is configured, we assume it's open for everyone or maybe just authenticated?

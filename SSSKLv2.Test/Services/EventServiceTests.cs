@@ -19,36 +19,26 @@ using System.Net.Mime;
 namespace SSSKLv2.Test.Services;
 
 [TestClass]
-public class EventServiceTests : RepositoryTest
+public class EventServiceTests
 {
     private EventService _sut = null!;
     private IEventRepository _eventRepository = null!;
     private IBlobStorageAgent _blobStorageAgent = null!;
     private IApplicationUserService _applicationUserService = null!;
     private IEventNotifier _eventNotifier = null!;
-    private IDbContextFactory<ApplicationDbContext> _dbContextFactory = null!;
-    private ApplicationDbContext _dbContext = null!;
+    private IRoleRepository _roleRepository = null!;
 
     [TestInitialize]
     public void TestInitialize()
     {
-        InitializeDatabase();
-        var options = GetOptions();
-        _dbContext = new ApplicationDbContext(options);
-        _dbContextFactory = new MockDbContextFactory(options);
-        
+        _roleRepository = Substitute.For<IRoleRepository>();
+
         _eventRepository = Substitute.For<IEventRepository>();
         _blobStorageAgent = Substitute.For<IBlobStorageAgent>();
         _applicationUserService = Substitute.For<IApplicationUserService>();
         _eventNotifier = Substitute.For<IEventNotifier>();
 
-        _sut = new EventService(_eventRepository, _blobStorageAgent, _applicationUserService, _dbContextFactory, _eventNotifier);
-    }
-
-    [TestCleanup]
-    public void TestCleanup()
-    {
-        CleanupDatabase();
+        _sut = new EventService(_eventRepository, _blobStorageAgent, _applicationUserService, _roleRepository, _eventNotifier);
     }
 
     [TestMethod]
@@ -161,8 +151,8 @@ public class EventServiceTests : RepositoryTest
     {
         // Arrange
         var roleName = "Participant";
-        _dbContext.Roles.Add(new Microsoft.AspNetCore.Identity.IdentityRole(roleName));
-        await _dbContext.SaveChangesAsync();
+        _roleRepository.GetByNames(Arg.Any<IEnumerable<string>>())
+            .Returns(new List<Microsoft.AspNetCore.Identity.IdentityRole> { new(roleName) });
 
         var dto = new EventCreateDto 
         { 

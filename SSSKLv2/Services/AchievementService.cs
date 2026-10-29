@@ -161,16 +161,6 @@ public class AchievementService(
         await achievementRepository.DeleteAchievementEntryRange(entries);
     }
 
-    public IQueryable<Achievement> GetAchievementsQueryable(ApplicationDbContext context)
-    {
-        return achievementRepository.GetAllQueryable(context);
-    }
-
-    public IQueryable<AchievementEntry> GetAchievementEntriesQueryable(ApplicationDbContext context)
-    {
-        return achievementRepository.GetAllEntriesQueryable(context);
-    }
-
     // Obsolete: Handled by AchievementEventHandler
     public Task CheckOrdersForAchievements(IEnumerable<Order> orders) => Task.CompletedTask;
     public Task CheckTopUpForAchievements(TopUp topUp) => Task.CompletedTask;

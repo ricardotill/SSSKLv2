@@ -46,14 +46,7 @@ public class OrderRepository(IDbContextFactory<ApplicationDbContext> dbContextFa
             .ToListAsync();
     }
     
-    public IQueryable<Order> GetAllQueryable(ApplicationDbContext context)
-    {
-        return context.Order
-            .Include(x => x.User)
-            .OrderByDescending(x => x.CreatedOn);
-    }
-    
-    public IQueryable<Order> GetPersonalQueryable(string username, ApplicationDbContext context)
+    private static IQueryable<Order> GetPersonalQueryable(string username, ApplicationDbContext context)
     {
         return context.Order
             .Include(x => x.User)

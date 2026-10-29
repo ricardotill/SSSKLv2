@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SSSKLv2.Data;
 using SSSKLv2.Data.DAL;
+using SSSKLv2.Data.DAL.Interfaces;
 using SSSKLv2.Test.Util;
 
 namespace SSSKLv2.Test.Data.DAL;
@@ -127,5 +128,38 @@ public class QuoteRepositoryTests : RepositoryTest
         await _repository.Delete(Guid.NewGuid());
         await _repository.Delete(quote.Id);
         (await _context.Quote.CountAsync(TestContext.CancellationToken)).Should().Be(0);
+    }
+
+    [TestMethod]
+    public async Task VoteMethods_AddGetSummarizeAndDelete()
+    {
+        var quote = NewQuote("Votes", DateTime.UtcNow);
+        await _repository.Add(quote);
+
+        await _repository.AddVote(new QuoteVote { QuoteId = quote.Id, UserId = TestUser.Id });
+
+        var vote = await _repository.GetVote(quote.Id, TestUser.Id);
+        vote.Should().NotBeNull();
+
+        var summaries = await _repository.GetVoteSummaries([quote.Id], TestUser.Id);
+        summaries[quote.Id].Should().Be(new QuoteVoteSummary(1, true));
+
+        var otherUserSummaries = await _repository.GetVoteSummaries([quote.Id], "someone-else");
+        otherUserSummaries[quote.Id].Should().Be(new QuoteVoteSummary(1, false));
+
+        await _repository.DeleteVote(vote!);
+        (await _repository.GetVote(quote.Id, TestUser.Id)).Should().BeNull();
+        (await _repository.GetVoteSummaries([quote.Id], TestUser.Id)).Should().BeEmpty();
+    }
+
+    [TestMethod]
+    public async Task GetAuthorUserIds_ReturnsDistinctLinkedAuthorsOnly()
+    {
+        var quote = NewQuote("Authors", DateTime.UtcNow, authorId: TestUser.Id);
+        await _repository.Add(quote);
+
+        var ids = await _repository.GetAuthorUserIds(quote.Id);
+
+        ids.Should().BeEquivalentTo(new[] { TestUser.Id });
     }
 }

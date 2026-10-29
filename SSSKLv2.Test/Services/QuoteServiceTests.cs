@@ -1,12 +1,8 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using FluentAssertions;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Identity;
 using SSSKLv2.Data;
-using SSSKLv2.Dto.Api.v1;
 using SSSKLv2.Services;
 using SSSKLv2.Services.Interfaces;
-using SSSKLv2.Test.Util;
 using NSubstitute;
 using SSSKLv2.Events;
 using SSSKLv2.Data.Constants;
@@ -15,12 +11,16 @@ using SSSKLv2.Data.DAL.Interfaces;
 namespace SSSKLv2.Test.Services;
 
 [TestClass]
-public class QuoteServiceTests : RepositoryTest
+public class QuoteServiceTests
 {
+    private const string UserId = "user-1";
+
     private QuoteService _sut = null!;
-    private ApplicationDbContext _dbContext = null!;
     private IQuoteRepository _quoteRepository = null!;
     private IApplicationUserService _userService = null!;
+    private IReactionRepository _reactionRepository = null!;
+    private IRoleRepository _roleRepository = null!;
+    private IGlobalSettingRepository _globalSettingRepository = null!;
     private INotificationService _notificationService = null!;
     private IDomainEventDispatcher _mockEventDispatcher = null!;
     private IUserStatRepository _mockUserStatRepository = null!;
@@ -28,57 +28,35 @@ public class QuoteServiceTests : RepositoryTest
     [TestInitialize]
     public void TestInitialize()
     {
-        InitializeDatabase();
-        _dbContext = new ApplicationDbContext(GetOptions());
         _quoteRepository = Substitute.For<IQuoteRepository>();
         _userService = Substitute.For<IApplicationUserService>();
+        _reactionRepository = Substitute.For<IReactionRepository>();
+        _roleRepository = Substitute.For<IRoleRepository>();
+        _globalSettingRepository = Substitute.For<IGlobalSettingRepository>();
         _notificationService = Substitute.For<INotificationService>();
         _mockEventDispatcher = Substitute.For<IDomainEventDispatcher>();
         _mockUserStatRepository = Substitute.For<IUserStatRepository>();
         _mockUserStatRepository.RecalculateByUserId(Arg.Any<string>()).Returns(call => new UserStat { UserId = call.Arg<string>() });
-        _sut = new QuoteService(_quoteRepository, _userService, _dbContext, _notificationService, _mockEventDispatcher, _mockUserStatRepository);
-    }
-
-    [TestCleanup]
-    public void TestCleanup()
-    {
-        CleanupDatabase();
-        _dbContext.Dispose();
+        _sut = new QuoteService(_quoteRepository, _userService, _reactionRepository, _roleRepository, _globalSettingRepository, _notificationService, _mockEventDispatcher, _mockUserStatRepository);
     }
 
     [TestMethod]
     public async Task GetQuotesAsync_ShouldReturnQuotesWithCorrectCounts()
     {
         // Arrange
-        var userId = TestUser.Id;
         var quoteId = Guid.NewGuid();
-        var quote = new Quote { Id = quoteId, Text = "Test Quote", CreatedById = userId };
-        
-        // Add quote to db to satisfy FKs
-        _dbContext.Quote.Add(quote);
-        await _dbContext.SaveChangesAsync();
+        var quote = new Quote { Id = quoteId, Text = "Test Quote", CreatedById = UserId };
 
-        _userService.GetUserRoles(userId).Returns(new List<string> { Roles.User });
-
+        _userService.GetUserRoles(UserId).Returns(new List<string> { Roles.User });
         _quoteRepository.GetAll(Arg.Any<int>(), Arg.Any<int>(), Arg.Any<IList<string>>(), Arg.Any<bool>())
             .Returns((new List<Quote> { quote }, 1));
-
-        // Add a vote
-        _dbContext.QuoteVote.Add(new QuoteVote { QuoteId = quoteId, UserId = userId });
-        
-        // Add a comment (reaction)
-        _dbContext.Reaction.Add(new Reaction 
-        { 
-            TargetId = quoteId, 
-            TargetType = ReactionTargetType.Quote, 
-            UserId = userId, 
-            Content = "Nice comment" 
-        });
-        
-        await _dbContext.SaveChangesAsync();
+        _quoteRepository.GetVoteSummaries(Arg.Any<IEnumerable<Guid>>(), UserId)
+            .Returns(new Dictionary<Guid, QuoteVoteSummary> { [quoteId] = new(1, true) });
+        _reactionRepository.CountByTargets(ReactionTargetType.Quote, Arg.Any<IEnumerable<Guid>>())
+            .Returns(new Dictionary<Guid, int> { [quoteId] = 1 });
 
         // Act
-        var result = await _sut.GetQuotesAsync(0, 10, userId);
+        var result = await _sut.GetQuotesAsync(0, 10, UserId);
 
         // Assert
         var dto = result.Items.First();
@@ -92,40 +70,34 @@ public class QuoteServiceTests : RepositoryTest
     {
         // Arrange
         var quoteId = Guid.NewGuid();
-        var userId = TestUser.Id;
-        var quote = new Quote { Id = quoteId, Text = "Vote Quote", CreatedById = userId };
-        _dbContext.Quote.Add(quote);
-        await _dbContext.SaveChangesAsync();
+        _quoteRepository.GetVote(quoteId, UserId).Returns((QuoteVote?)null);
 
         // Act
-        var hasVoted = await _sut.ToggleVoteAsync(quoteId, userId);
+        var hasVoted = await _sut.ToggleVoteAsync(quoteId, UserId);
 
         // Assert
         hasVoted.Should().BeTrue();
-        var vote = await _dbContext.QuoteVote.FirstOrDefaultAsync(v => v.QuoteId == quoteId && v.UserId == userId);
-        vote.Should().NotBeNull();
+        await _quoteRepository.Received(1).AddVote(Arg.Is<QuoteVote>(v => v.QuoteId == quoteId && v.UserId == UserId));
+        await _mockEventDispatcher.Received(1).DispatchAsync(Arg.Any<QuoteVotedEvent>());
     }
 
     [TestMethod]
-    public async Task ToggleVoteAsync_ExistingVote_ShouldRemoveVote()
+    public async Task ToggleVoteAsync_ExistingVote_ShouldRemoveVoteAndRecalculateStats()
     {
         // Arrange
         var quoteId = Guid.NewGuid();
-        var userId = TestUser.Id;
-        var quote = new Quote { Id = quoteId, Text = "Unvote Quote", CreatedById = userId };
-        _dbContext.Quote.Add(quote);
-        await _dbContext.SaveChangesAsync();
-
-        _dbContext.QuoteVote.Add(new QuoteVote { QuoteId = quoteId, UserId = userId });
-        await _dbContext.SaveChangesAsync();
+        var vote = new QuoteVote { QuoteId = quoteId, UserId = UserId };
+        _quoteRepository.GetVote(quoteId, UserId).Returns(vote);
+        _quoteRepository.GetAuthorUserIds(quoteId).Returns(new List<string> { "author-1" });
 
         // Act
-        var hasVoted = await _sut.ToggleVoteAsync(quoteId, userId);
+        var hasVoted = await _sut.ToggleVoteAsync(quoteId, UserId);
 
         // Assert
         hasVoted.Should().BeFalse();
-        var vote = await _dbContext.QuoteVote.FirstOrDefaultAsync(v => v.QuoteId == quoteId && v.UserId == userId);
-        vote.Should().BeNull();
+        await _quoteRepository.Received(1).DeleteVote(vote);
+        await _mockUserStatRepository.Received(1).RecalculateByUserId("author-1");
+        await _mockUserStatRepository.Received(1).RecalculateByUserId(UserId);
     }
 
     [TestMethod]
@@ -133,22 +105,35 @@ public class QuoteServiceTests : RepositoryTest
     {
         // Arrange
         var quoteId = Guid.NewGuid();
-        var quote = new Quote { Id = quoteId, Text = "Single Quote", CreatedById = TestUser.Id };
-        
-        _dbContext.Quote.Add(quote);
-        await _dbContext.SaveChangesAsync();
+        var quote = new Quote { Id = quoteId, Text = "Single Quote", CreatedById = UserId };
 
         _quoteRepository.GetById(quoteId).Returns(quote);
-
-        _dbContext.QuoteVote.Add(new QuoteVote { QuoteId = quoteId, UserId = TestUser.Id });
-        await _dbContext.SaveChangesAsync();
+        _quoteRepository.GetVoteSummaries(Arg.Any<IEnumerable<Guid>>(), UserId)
+            .Returns(new Dictionary<Guid, QuoteVoteSummary> { [quoteId] = new(1, true) });
+        _reactionRepository.CountByTarget(ReactionTargetType.Quote, quoteId).Returns(2);
 
         // Act
-        var result = await _sut.GetQuoteByIdAsync(quoteId, TestUser.Id);
+        var result = await _sut.GetQuoteByIdAsync(quoteId, UserId);
 
         // Assert
         result.Should().NotBeNull();
         result!.VoteCount.Should().Be(1);
         result.HasVoted.Should().BeTrue();
+        result.CommentsCount.Should().Be(2);
+    }
+
+    [TestMethod]
+    public async Task GetQuotesAsync_WhenFeatureRestrictedAndUserLacksRole_ShouldThrow()
+    {
+        // Arrange
+        _globalSettingRepository.GetByKey("QuotesFeatureAllowedRoles")
+            .Returns(new GlobalSetting { Key = "QuotesFeatureAllowedRoles", Value = "Leiding" });
+        _userService.GetUserRoles(UserId).Returns(new List<string> { Roles.User });
+
+        // Act
+        var act = () => _sut.GetQuotesAsync(0, 10, UserId);
+
+        // Assert
+        await act.Should().ThrowAsync<UnauthorizedAccessException>();
     }
 }

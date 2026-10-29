@@ -13,6 +13,8 @@ public interface IApplicationUserRepository
     // Ids of the most recently active consumer users, ordered by LastOrdered desc
     public Task<IList<string>> GetTopActiveUserIds(int take);
     public Task<ApplicationUser> GetById(string id);
+    public Task<ApplicationUser?> FindById(string id);
+    public Task<IList<string>> GetAllIds();
     public Task<ApplicationUser> GetByUsername(string username);
     public Task<IList<ApplicationUser>> GetAllForAdmin();
 }

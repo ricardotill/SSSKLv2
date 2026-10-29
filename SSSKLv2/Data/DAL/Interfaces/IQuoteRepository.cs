@@ -1,5 +1,3 @@
-using SSSKLv2.Dto.Api.v1;
-
 namespace SSSKLv2.Data.DAL.Interfaces;
 
 public interface IQuoteRepository
@@ -9,4 +7,11 @@ public interface IQuoteRepository
     Task Add(Quote quote);
     Task Update(Quote quote);
     Task Delete(Guid id);
+    Task<IDictionary<Guid, QuoteVoteSummary>> GetVoteSummaries(IEnumerable<Guid> quoteIds, string? userId);
+    Task<QuoteVote?> GetVote(Guid quoteId, string userId);
+    Task AddVote(QuoteVote vote);
+    Task DeleteVote(QuoteVote vote);
+    Task<IList<string>> GetAuthorUserIds(Guid quoteId);
 }
+
+public record QuoteVoteSummary(int Count, bool HasVoted);

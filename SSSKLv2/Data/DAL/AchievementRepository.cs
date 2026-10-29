@@ -37,12 +37,6 @@ public class AchievementRepository(IDbContextFactory<ApplicationDbContext> dbCon
             .CountAsync();
     }
 
-    public IQueryable<Achievement> GetAllQueryable(ApplicationDbContext context)
-    {
-        return context.Achievement
-            .OrderBy(x => x.CreatedOn);
-    }
-
     public async Task<IEnumerable<AchievementEntry>> GetAllEntries(Guid achievementId)
     {
         await using var context = await dbContextFactory.CreateDbContextAsync();
@@ -53,12 +47,6 @@ public class AchievementRepository(IDbContextFactory<ApplicationDbContext> dbCon
             .Where(x => x.Achievement.Id == achievementId)
             .OrderBy(x => x.CreatedOn)
             .ToListAsync();
-    }
-
-    public IQueryable<AchievementEntry> GetAllEntriesQueryable(ApplicationDbContext context)
-    {
-        return context.AchievementEntry
-            .OrderBy(x => x.CreatedOn);
     }
 
     public async Task<IList<AchievementEntry>> GetAllEntriesOfUser(string userId)

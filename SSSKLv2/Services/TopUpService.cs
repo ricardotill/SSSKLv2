@@ -28,12 +28,6 @@ public class TopUpService(
         return await topUpRepository.GetAll(take, skip);
     }
     
-    public IQueryable<TopUp> GetAllQueryable(ApplicationDbContext dbContext)
-    {
-        logger.LogInformation($"{GetType()}: Get All TopUps as Queryable");
-        return topUpRepository.GetAllQueryable(dbContext);
-    }
-    
     public async Task<IEnumerable<TopUp>> GetAllPersonal(string username)
     {
         logger.LogInformation($"{GetType()}: Get All Personal TopUps");
@@ -44,12 +38,6 @@ public class TopUpService(
     {
         logger.LogInformation($"{GetType()}: Get All Personal TopUps with skip {skip} and take {take}");
         return await topUpRepository.GetPersonal(username, take, skip);
-    }
-    
-    public IQueryable<TopUp> GetPersonalQueryable(string username, ApplicationDbContext dbContext)
-    {
-        logger.LogInformation($"{GetType()}: Get Personal TopUps as Queryable for user with username {username}");
-        return topUpRepository.GetPersonalQueryable(username, dbContext);
     }
     
     public async Task<TopUp> GetById(string id)

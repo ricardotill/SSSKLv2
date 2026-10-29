@@ -1,3 +1,4 @@
+using SSSKLv2.Data.DAL;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Microsoft.EntityFrameworkCore;
 using SSSKLv2.Controllers.v1;
@@ -22,7 +23,7 @@ public class GlobalSettingsControllerTests
             .Options;
         
         _context = new ApplicationDbContext(options);
-        _sut = new GlobalSettingsController(_context);
+        _sut = new GlobalSettingsController(new GlobalSettingRepository(_context));
     }
 
     [TestCleanup]

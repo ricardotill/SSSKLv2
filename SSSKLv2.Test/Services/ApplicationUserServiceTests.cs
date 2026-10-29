@@ -11,7 +11,6 @@ using SSSKLv2.Data.DAL.Interfaces;
 using SSSKLv2.Services;
 using SSSKLv2.Dto;
 using SSSKLv2.Dto.Api.v1;
-using Microsoft.EntityFrameworkCore;
 using SSSKLv2.Agents;
 
 namespace SSSKLv2.Test.Services;
@@ -28,7 +27,7 @@ public class ApplicationUserServiceTests
     private ApplicationUserService _sut = null!;
     private UserManager<ApplicationUser> _fakeUserManager = null!;
     private IBlobStorageAgent _mockBlobAgent = null!;
-    private ApplicationDbContext _mockContext = null!;
+    private IUserImageRepository _mockUserImageRepository = null!;
 
     [TestInitialize]
     public void TestInitialize()
@@ -54,12 +53,9 @@ public class ApplicationUserServiceTests
         _fakeUserManager = new FakeUserManager(store, options, pwdHasher, userValidators, pwdValidators, lookupNormalizer, describer, services, umLogger);
         _mockBlobAgent = Substitute.For<IBlobStorageAgent>();
         
-        var dbContextOptions = new DbContextOptionsBuilder<ApplicationDbContext>()
-            .UseInMemoryDatabase(Guid.NewGuid().ToString())
-            .Options;
-        _mockContext = new ApplicationDbContext(dbContextOptions);
+        _mockUserImageRepository = Substitute.For<IUserImageRepository>();
 
-        _sut = new ApplicationUserService(_mockUserRepository, _mockProductRepository, _mockProductUserStatRepository, _mockOrderRepository, _fakeUserManager, _mockBlobAgent, _mockContext, _cache, _mockLogger);
+        _sut = new ApplicationUserService(_mockUserRepository, _mockProductRepository, _mockProductUserStatRepository, _mockOrderRepository, _fakeUserManager, _mockBlobAgent, _mockUserImageRepository, _cache, _mockLogger);
     }
 
     #region GetUserById Tests
@@ -889,8 +885,6 @@ public class ApplicationUserServiceTests
         // Arrange
         var userId = "user1";
         var user = CreateApplicationUser(userId);
-        _mockContext.Users.Add(user);
-        await _mockContext.SaveChangesAsync();
 
         ((FakeUserManager)_fakeUserManager).FindByIdFunc = _ => Task.FromResult<ApplicationUser?>(user);
         
@@ -911,10 +905,8 @@ public class ApplicationUserServiceTests
         await _sut.UpdateProfilePictureAsync(userId, stream, "image/png");
 
         // Assert
-        user.ProfileImageId.Should().NotBeNull();
-        var storedImage = await _mockContext.UserImage.FirstOrDefaultAsync(i => i.Id == user.ProfileImageId);
-        storedImage.Should().NotBeNull();
-        storedImage!.FileName.Should().Be("test.png");
+        user.ProfileImageId.Should().Be(blobItem.Id);
+        await _mockUserImageRepository.Received(1).Add(Arg.Is<UserImage>(i => i.Id == blobItem.Id && i.FileName == "test.png"));
         await _mockBlobAgent.Received(1).UploadFileToBlobAsync(Arg.Any<string>(), "image/png", Arg.Any<Stream>());
     }
 
@@ -928,17 +920,15 @@ public class ApplicationUserServiceTests
         user.ProfileImage = image;
         user.ProfileImageId = image.Id;
         
-        _mockContext.Users.Add(user);
-        _mockContext.UserImage.Add(image);
-        await _mockContext.SaveChangesAsync();
+        ((FakeUserManager)_fakeUserManager).FindByIdFunc = _ => Task.FromResult<ApplicationUser?>(user);
+        _mockUserImageRepository.GetById(image.Id).Returns(image);
 
         // Act
         await _sut.DeleteProfilePictureAsync(userId);
 
         // Assert
         user.ProfileImageId.Should().BeNull();
-        var dbImage = await _mockContext.UserImage.FirstOrDefaultAsync(i => i.Id == image.Id);
-        dbImage.Should().BeNull();
+        await _mockUserImageRepository.Received(1).Delete(image);
         await _mockBlobAgent.Received(1).DeleteFileToBlobAsync("old.png");
     }
 

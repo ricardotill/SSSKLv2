@@ -3,16 +3,15 @@ using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
-using SSSKL.Application.Services;
+using SSSKL.Application.Features.Users.Stats;
 using SSSKL.Contracts.Dto.Api.v1;
 using SSSKL.Contracts.Repositories;
-using SSSKL.Contracts.Services;
 using SSSKL.Domain.Entities;
 
-namespace SSSKL.Application.Test.Services;
+namespace SSSKL.Application.Test.Features.Users;
 
 [TestClass]
-public class StatsRecalculationJobServiceTests
+public class StatsRecalculationJobTests
 {
     [TestMethod]
     public async Task StartRecalculateAll_OnlyStartsOneActiveJobAndCompletesSuccessfully()
@@ -86,8 +85,8 @@ public class StatsRecalculationJobServiceTests
         await notifications.Received(1).NotifyAsync("admin", Arg.Any<string>(), Arg.Is<string>(message => message.Contains("database down")), sendPush: true);
     }
 
-    private static StatsRecalculationJobService CreateSut(IServiceScopeFactory scopeFactory)
-        => new(scopeFactory, Substitute.For<ILogger<StatsRecalculationJobService>>());
+    private static StatsRecalculationJob CreateSut(IServiceScopeFactory scopeFactory)
+        => new(scopeFactory, Substitute.For<ILogger<StatsRecalculationJob>>());
 
     private static IServiceScopeFactory CreateScopeFactory(
         IApplicationUserRepository userRepository,
@@ -105,7 +104,7 @@ public class StatsRecalculationJobServiceTests
         return factory;
     }
 
-    private static async Task<RecalculationJobDto?> WaitForTerminalState(StatsRecalculationJobService sut, Guid jobId)
+    private static async Task<RecalculationJobDto?> WaitForTerminalState(StatsRecalculationJob sut, Guid jobId)
     {
         for (var attempt = 0; attempt < 100; attempt++)
         {

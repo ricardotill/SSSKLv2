@@ -4,7 +4,16 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NSubstitute;
-using SSSKL.Application.Services;
+using SSSKL.Application.Features.Leaderboards.Queries.GetLeaderboard;
+using SSSKL.Application.Features.Users;
+using SSSKL.Application.Features.Users.Commands.DeleteProfilePicture;
+using SSSKL.Application.Features.Users.Commands.DeleteUser;
+using SSSKL.Application.Features.Users.Commands.UpdateProfilePicture;
+using SSSKL.Application.Features.Users.Commands.UpdateUser;
+using SSSKL.Application.Features.Users.Queries.GetUserDetails;
+using SSSKL.Application.Features.Users.Queries.GetUserProfile;
+using SSSKL.Application.Features.Users.Queries.GetUsers;
+using SSSKL.Application.Shared;
 using SSSKL.Contracts.Agents;
 using SSSKL.Contracts.Dto;
 using SSSKL.Contracts.Dto.Api.v1;
@@ -13,18 +22,16 @@ using SSSKL.Domain.Constants;
 using SSSKL.Domain.Entities;
 using SSSKL.Domain.Exceptions;
 
-namespace SSSKL.Application.Test.Services;
+namespace SSSKL.Application.Test.Features.Users;
 
 [TestClass]
-public class ApplicationUserServiceTests
+public class UserHandlerTests
 {
     private IApplicationUserRepository _mockUserRepository = null!;
     private IProductRepository _mockProductRepository = null!;
     private IProductUserStatRepository _mockProductUserStatRepository = null!;
     private IOrderRepository _mockOrderRepository = null!;
     private IMemoryCache _cache = null!;
-    private ILogger<ApplicationUserService> _mockLogger = null!;
-    private ApplicationUserService _sut = null!;
     private UserManager<ApplicationUser> _fakeUserManager = null!;
     private IBlobStorageAgent _mockBlobAgent = null!;
     private IUserImageRepository _mockUserImageRepository = null!;
@@ -37,7 +44,6 @@ public class ApplicationUserServiceTests
         _mockProductUserStatRepository = Substitute.For<IProductUserStatRepository>();
         _mockOrderRepository = Substitute.For<IOrderRepository>();
         _cache = new MemoryCache(new MemoryCacheOptions());
-        _mockLogger = Substitute.For<ILogger<ApplicationUserService>>();
 
         // Create a very lightweight fake UserManager by providing a fake store and dependencies
         var store = Substitute.For<IUserStore<ApplicationUser>>();
@@ -55,117 +61,146 @@ public class ApplicationUserServiceTests
         
         _mockUserImageRepository = Substitute.For<IUserImageRepository>();
 
-        _sut = new ApplicationUserService(_mockUserRepository, _mockProductRepository, _mockProductUserStatRepository, _mockOrderRepository, _fakeUserManager, _mockBlobAgent, _mockUserImageRepository, _cache, _mockLogger);
+
+        // Like the real repository, look users up in the same store as the UserManager and throw when missing
+        _mockUserRepository.GetById(Arg.Any<string>()).Returns(ci =>
+            ((FakeUserManager)_fakeUserManager).FindByIdFunc(ci.Arg<string>()).Result is { } user
+                ? Task.FromResult(user)
+                : Task.FromException<ApplicationUser>(new NotFoundException("ApplicationUser not found")));
     }
 
-    #region GetUserById Tests
+    // The tests below were written against ApplicationUserService; these helpers send the same calls to the handlers.
+
+    private Task<IReadOnlyList<LeaderboardEntryDto>> Leaderboard(Guid productId, LeaderboardPeriod period) =>
+        new GetLeaderboardHandler(_mockProductRepository, _mockProductUserStatRepository, _mockOrderRepository, _mockUserRepository, _cache)
+            .Handle(new GetLeaderboardQuery(productId, period), CancellationToken.None);
+
+    private Task<IReadOnlyList<LeaderboardEntryDto>> GetAllLeaderboard(Guid productId) => Leaderboard(productId, LeaderboardPeriod.All);
+    private Task<IReadOnlyList<LeaderboardEntryDto>> GetMonthlyLeaderboard(Guid productId) => Leaderboard(productId, LeaderboardPeriod.Monthly);
+    private Task<IReadOnlyList<LeaderboardEntryDto>> Get12HourlyLeaderboard(Guid productId) => Leaderboard(productId, LeaderboardPeriod.TwelveHours);
+    private Task<IReadOnlyList<LeaderboardEntryDto>> Get12HourlyLiveLeaderboard(Guid productId) => Leaderboard(productId, LeaderboardPeriod.TwelveHoursLive);
+
+    private Task<ApplicationUserDetailedDto> UpdateUser(string id, ApplicationUserUpdateDto dto) =>
+        new UpdateUserHandler(_mockUserRepository, _fakeUserManager)
+            .Handle(new UpdateUserCommand(UserReference.ById(id), dto, null, IsAdmin: true), CancellationToken.None);
+
+    private Task DeleteUser(string id) =>
+        new DeleteUserHandler(_mockUserRepository, _fakeUserManager).Handle(new DeleteUserCommand(UserReference.ById(id)), CancellationToken.None);
+
+    private Task<IList<string>> GetUserRoles(string id) => new UserRoleProvider(_fakeUserManager).GetRoles(id);
+
+    private Task<PaginationObject<ApplicationUserDto>> GetUsers(int skip, int take, bool forAdmin = false) =>
+        new GetUsersHandler(_mockUserRepository).Handle(new GetUsersQuery(skip, take, forAdmin), CancellationToken.None);
+
+    private Task UpdateProfilePictureAsync(string userId, Stream stream) =>
+        new UpdateProfilePictureHandler(_mockUserRepository, _fakeUserManager, _mockUserImageRepository, _mockBlobAgent)
+            .Handle(new UpdateProfilePictureCommand(UserReference.ById(userId), stream), CancellationToken.None);
+
+    private Task DeleteProfilePictureAsync(string userId) =>
+        new DeleteProfilePictureHandler(_mockUserRepository, _fakeUserManager, _mockUserImageRepository, _mockBlobAgent)
+            .Handle(new DeleteProfilePictureCommand(UserReference.ById(userId)), CancellationToken.None);
+
+    #region User lookup Tests
 
     [TestMethod]
-    public async Task GetUserById_WithValidId_ReturnsUser()
+    public async Task GetUserProfile_WithValidId_ReturnsProfile()
     {
         // Arrange
         var userId = "user-123";
         var expectedUser = CreateApplicationUser(userId);
-        _mockUserRepository.GetById(userId).Returns(expectedUser!);
+        _mockUserRepository.GetById(userId).Returns(expectedUser);
+        var sut = new GetUserProfileHandler(_mockUserRepository);
 
         // Act
-        var result = await _sut.GetUserById(userId);
+        var result = await sut.Handle(new GetUserProfileQuery(userId), CancellationToken.None);
 
         // Assert
-        result.Should().BeEquivalentTo(expectedUser);
+        result.Should().BeEquivalentTo(expectedUser.ToDto());
         await _mockUserRepository.Received(1).GetById(userId);
     }
 
     [TestMethod]
-    public async Task GetUserById_WithInvalidId_PropagatesNotFoundException()
+    public async Task GetUserProfile_WithInvalidId_PropagatesNotFoundException()
     {
         // Arrange
         var userId = "non-existent-id";
         _mockUserRepository.GetById(userId).Returns(Task.FromException<ApplicationUser>(new NotFoundException("User not found")));
+        var sut = new GetUserProfileHandler(_mockUserRepository);
 
         // Act
-        Func<Task> action = async () => await _sut.GetUserById(userId);
+        Func<Task> action = () => sut.Handle(new GetUserProfileQuery(userId), CancellationToken.None);
 
         // Assert
         await action.Should().ThrowAsync<NotFoundException>().WithMessage("User not found");
-        await _mockUserRepository.Received(1).GetById(userId);
     }
 
-    #endregion
-
-    #region GetUserByUsername Tests
-
     [TestMethod]
-    public async Task GetUserByUsername_WithValidUsername_ReturnsUser()
+    public async Task GetUserDetails_ByUsername_ReturnsUserWithRoles()
     {
         // Arrange
         var username = "testuser";
         var expectedUser = CreateApplicationUser("user-123", username);
-        _mockUserRepository.GetByUsername(username).Returns(expectedUser!);
+        _mockUserRepository.GetByUsername(username).Returns(expectedUser);
+        var roleProvider = Substitute.For<IUserRoleProvider>();
+        roleProvider.GetRoles("user-123").Returns(new List<string> { Roles.User });
+        var sut = new GetUserDetailsHandler(_mockUserRepository, roleProvider);
 
         // Act
-        var result = await _sut.GetUserByUsername(username);
+        var result = await sut.Handle(new GetUserDetailsQuery(UserReference.ByUsername(username)), CancellationToken.None);
 
         // Assert
-        result.Should().BeEquivalentTo(expectedUser);
-        await _mockUserRepository.Received(1).GetByUsername(username);
+        result.Id.Should().Be("user-123");
+        result.UserName.Should().Be(username);
+        result.Email.Should().Be(expectedUser.Email);
+        result.Roles.Should().Equal(Roles.User);
     }
 
     [TestMethod]
-    public async Task GetUserByUsername_WithInvalidUsername_PropagatesNotFoundException()
+    public async Task GetUserDetails_WithInvalidUsername_PropagatesNotFoundException()
     {
         // Arrange
         var username = "non-existent-user";
         _mockUserRepository.GetByUsername(username).Returns(Task.FromException<ApplicationUser>(new NotFoundException("User not found")));
+        var sut = new GetUserDetailsHandler(_mockUserRepository, Substitute.For<IUserRoleProvider>());
 
         // Act
-        Func<Task> action = async () => await _sut.GetUserByUsername(username);
+        Func<Task> action = () => sut.Handle(new GetUserDetailsQuery(UserReference.ByUsername(username)), CancellationToken.None);
 
         // Assert
         await action.Should().ThrowAsync<NotFoundException>().WithMessage("User not found");
-        await _mockUserRepository.Received(1).GetByUsername(username);
-    }
-
-    #endregion
-
-    #region GetAllUsers Tests
-
-    [TestMethod]
-    public async Task GetAllUsers_ReturnsAllUsersFromRepository()
-    {
-        // Arrange
-        var users = new List<ApplicationUser>
-        {
-            CreateApplicationUser("user-1", "user1"),
-            CreateApplicationUser("user-2", "user2")
-        };
-        _mockUserRepository.GetAll().Returns(users!);
-
-        // Act
-        var result = await _sut.GetAllUsers();
-
-        // Assert
-        result.Should().BeEquivalentTo(users);
-        await _mockUserRepository.Received(1).GetAll();
     }
 
     [TestMethod]
-    public async Task GetAllUsers_WhenRepositoryReturnsEmptyList_ReturnsEmptyList()
+    public async Task UpdateUser_AsNonOwnerNonAdmin_ThrowsUnauthorized()
     {
         // Arrange
-        var emptyList = new List<ApplicationUser>();
-        _mockUserRepository.GetAll().Returns(emptyList);
+        var existing = CreateApplicationUser("user1", "owner");
+        ((FakeUserManager)_fakeUserManager).FindByIdFunc = _ => Task.FromResult<ApplicationUser?>(existing);
+        var sut = new UpdateUserHandler(_mockUserRepository, _fakeUserManager);
 
         // Act
-        var result = await _sut.GetAllUsers();
+        Func<Task> act = () => sut.Handle(new UpdateUserCommand(UserReference.ById("user1"), new ApplicationUserUpdateDto { Name = "x" }, "someone-else", IsAdmin: false), CancellationToken.None);
 
         // Assert
-        result.Should().BeEmpty();
-        await _mockUserRepository.Received(1).GetAll();
+        await act.Should().ThrowAsync<UnauthorizedAccessException>();
+    }
+
+    [TestMethod]
+    public async Task UpdateUser_AsOwner_UpdatesProfile()
+    {
+        // Arrange
+        var existing = CreateApplicationUser("user1", "owner");
+        ((FakeUserManager)_fakeUserManager).FindByIdFunc = _ => Task.FromResult<ApplicationUser?>(existing);
+        var sut = new UpdateUserHandler(_mockUserRepository, _fakeUserManager);
+
+        // Act
+        var result = await sut.Handle(new UpdateUserCommand(UserReference.ById("user1"), new ApplicationUserUpdateDto { Name = "Nieuw" }, "OWNER", IsAdmin: false), CancellationToken.None);
+
+        // Assert
+        result.Name.Should().Be("Nieuw");
     }
 
     #endregion
-
 
     #region GetAllLeaderboard Tests
 
@@ -181,7 +216,7 @@ public class ApplicationUserServiceTests
         _mockProductUserStatRepository.GetAllForProduct(productId).Returns(stats);
 
         // Act
-        var result = await _sut.GetAllLeaderboard(productId);
+        var result = await GetAllLeaderboard(productId);
         var resultList = result.ToList();
 
         // Assert
@@ -219,7 +254,7 @@ public class ApplicationUserServiceTests
         _mockProductUserStatRepository.GetAllForProduct(productId).Returns(new List<ProductUserStat> { stat });
 
         // Act
-        var result = await _sut.GetAllLeaderboard(productId);
+        var result = await GetAllLeaderboard(productId);
         var resultList = result.ToList();
 
         // Assert
@@ -242,7 +277,7 @@ public class ApplicationUserServiceTests
         _mockProductUserStatRepository.GetAllForProduct(productId).Returns(new List<ProductUserStat>());
 
         // Act
-        var result = await _sut.GetAllLeaderboard(productId);
+        var result = await GetAllLeaderboard(productId);
 
         // Assert
         result.Should().BeEmpty();
@@ -275,7 +310,7 @@ public class ApplicationUserServiceTests
         _mockUserRepository.GetByIds(Arg.Any<IEnumerable<string>>()).Returns(new List<ApplicationUser> { user1, user2 });
 
         // Act
-        var result = await _sut.GetMonthlyLeaderboard(productId);
+        var result = await GetMonthlyLeaderboard(productId);
         var resultList = result.ToList();
 
         // Assert
@@ -304,7 +339,7 @@ public class ApplicationUserServiceTests
         _mockUserRepository.GetByIds(Arg.Any<IEnumerable<string>>()).Returns(new List<ApplicationUser> { user });
 
         // Act
-        var result = await _sut.GetMonthlyLeaderboard(productId);
+        var result = await GetMonthlyLeaderboard(productId);
         var resultList = result.ToList();
 
         // Assert
@@ -324,7 +359,7 @@ public class ApplicationUserServiceTests
         _mockOrderRepository.GetAmountAggregates(productId, Arg.Any<DateTime>(), Arg.Any<DateTime?>(), null).Returns(new List<OrderAggregate>());
 
         // Act
-        var result = await _sut.GetMonthlyLeaderboard(productId);
+        var result = await GetMonthlyLeaderboard(productId);
 
         // Assert
         result.Should().BeEmpty();
@@ -356,7 +391,7 @@ public class ApplicationUserServiceTests
         _mockUserRepository.GetByIds(Arg.Any<IEnumerable<string>>()).Returns(new List<ApplicationUser> { user1, user2 });
 
         // Act
-        var result = await _sut.Get12HourlyLeaderboard(productId);
+        var result = await Get12HourlyLeaderboard(productId);
         var resultList = result.ToList();
 
         // Assert
@@ -384,7 +419,7 @@ public class ApplicationUserServiceTests
         _mockUserRepository.GetByIds(Arg.Any<IEnumerable<string>>()).Returns(new List<ApplicationUser> { user });
 
         // Act
-        var result = await _sut.Get12HourlyLeaderboard(productId);
+        var result = await Get12HourlyLeaderboard(productId);
         var resultList = result.ToList();
 
         // Assert
@@ -404,7 +439,7 @@ public class ApplicationUserServiceTests
         _mockOrderRepository.GetAmountAggregates(productId, Arg.Any<DateTime>(), null, null).Returns(new List<OrderAggregate>());
 
         // Act
-        var result = await _sut.Get12HourlyLeaderboard(productId);
+        var result = await Get12HourlyLeaderboard(productId);
 
         // Assert
         result.Should().BeEmpty();
@@ -437,7 +472,7 @@ public class ApplicationUserServiceTests
         _mockUserRepository.GetByIds(Arg.Any<IEnumerable<string>>()).Returns(new List<ApplicationUser> { user1, user2 });
 
         // Act
-        var result = await _sut.Get12HourlyLiveLeaderboard(productId);
+        var result = await Get12HourlyLiveLeaderboard(productId);
         var resultList = result.ToList();
 
         // Assert
@@ -467,7 +502,7 @@ public class ApplicationUserServiceTests
         _mockUserRepository.GetByIds(Arg.Any<IEnumerable<string>>()).Returns(new List<ApplicationUser> { user });
 
         // Act
-        var result = await _sut.Get12HourlyLiveLeaderboard(productId);
+        var result = await Get12HourlyLiveLeaderboard(productId);
         var resultList = result.ToList();
 
         // Assert
@@ -487,7 +522,7 @@ public class ApplicationUserServiceTests
         _mockUserRepository.GetTopActiveUserIds(10).Returns(new List<string>());
 
         // Act
-        var result = await _sut.Get12HourlyLiveLeaderboard(productId);
+        var result = await Get12HourlyLiveLeaderboard(productId);
 
         // Assert
         result.Should().BeEmpty();
@@ -642,7 +677,7 @@ public class ApplicationUserServiceTests
     // Helper method to invoke private DeterminePositions method using reflection
     private IEnumerable<LeaderboardEntryDto> InvokeDeterminePositions(IEnumerable<LeaderboardEntryDto> entries)
     {
-        var methodInfo = typeof(ApplicationUserService).GetMethod(
+        var methodInfo = typeof(GetLeaderboardHandler).GetMethod(
             "DeterminePositions", 
             System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
         
@@ -660,7 +695,7 @@ public class ApplicationUserServiceTests
 
         var dto = new ApplicationUserUpdateDto { UserName = "x" };
 
-        Func<Task> act = async () => await _sut.UpdateUser(id, dto);
+        Func<Task> act = async () => await UpdateUser(id, dto);
 
         await act.Should().ThrowAsync<NotFoundException>();
     }
@@ -675,7 +710,7 @@ public class ApplicationUserServiceTests
 
         var dto = new ApplicationUserUpdateDto { UserName = "new" };
 
-        Func<Task> act = async () => await _sut.UpdateUser(id, dto);
+        Func<Task> act = async () => await UpdateUser(id, dto);
 
         await act.Should().ThrowAsync<InvalidOperationException>();
     }
@@ -696,7 +731,7 @@ public class ApplicationUserServiceTests
 
         var dto = new ApplicationUserUpdateDto { UserName = "newname", Email = "new@example.com", PhoneNumber = "123", Name = "New", Surname = "Name", Password = "newpass" };
 
-        var result = await _sut.UpdateUser(id, dto);
+        var result = await UpdateUser(id, dto);
 
         result.Should().NotBeNull();
         result.UserName.Should().Be("newname");
@@ -717,7 +752,7 @@ public class ApplicationUserServiceTests
 
         var dto = new ApplicationUserUpdateDto { Description = "New Description" };
 
-        var result = await _sut.UpdateUser(id, dto);
+        var result = await UpdateUser(id, dto);
 
         result.Should().NotBeNull();
         result.Description.Should().Be("New Description");
@@ -729,7 +764,7 @@ public class ApplicationUserServiceTests
         var id = "missing";
         ((FakeUserManager)_fakeUserManager).FindByIdFunc = _ => Task.FromResult<ApplicationUser?>(null);
 
-        Func<Task> act = async () => await _sut.DeleteUser(id);
+        Func<Task> act = async () => await DeleteUser(id);
 
         await act.Should().ThrowAsync<NotFoundException>();
     }
@@ -742,7 +777,7 @@ public class ApplicationUserServiceTests
         ((FakeUserManager)_fakeUserManager).FindByIdFunc = _ => Task.FromResult<ApplicationUser?>(user);
         ((FakeUserManager)_fakeUserManager).DeleteFunc = _ => Task.FromResult(IdentityResult.Failed(new IdentityError { Description = "Cannot delete" }));
 
-        Func<Task> act = async () => await _sut.DeleteUser(id);
+        Func<Task> act = async () => await DeleteUser(id);
 
         await act.Should().ThrowAsync<InvalidOperationException>();
     }
@@ -760,7 +795,7 @@ public class ApplicationUserServiceTests
             return Task.FromResult(IdentityResult.Success);
         };
 
-        await _sut.DeleteUser(id);
+        await DeleteUser(id);
 
         deleteInvoked.Should().BeTrue();
     }
@@ -782,7 +817,7 @@ public class ApplicationUserServiceTests
 
         var dto = new ApplicationUserUpdateDto { Roles = newRoles };
 
-        var result = await _sut.UpdateUser(id, dto);
+        var result = await UpdateUser(id, dto);
 
         result.Should().NotBeNull();
     }
@@ -801,7 +836,7 @@ public class ApplicationUserServiceTests
 
         var dto = new ApplicationUserUpdateDto { Roles = newRoles };
 
-        Func<Task> act = async () => await _sut.UpdateUser(id, dto);
+        Func<Task> act = async () => await UpdateUser(id, dto);
 
         await act.Should().ThrowAsync<InvalidOperationException>();
     }
@@ -821,7 +856,7 @@ public class ApplicationUserServiceTests
 
         var dto = new ApplicationUserUpdateDto { Roles = newRoles };
 
-        Func<Task> act = async () => await _sut.UpdateUser(id, dto);
+        Func<Task> act = async () => await UpdateUser(id, dto);
 
         await act.Should().ThrowAsync<InvalidOperationException>();
     }
@@ -829,37 +864,30 @@ public class ApplicationUserServiceTests
     #region Paged and Count Tests
 
     [TestMethod]
-    public async Task GetCount_ShouldReturnCountFromRepository()
-    {
-        _mockUserRepository.GetCount().Returns(42);
-        var result = await _sut.GetCount();
-        result.Should().Be(42);
-    }
-
-    [TestMethod]
-    public async Task GetCountAdmin_ShouldReturnCountFromRepository()
-    {
-        _mockUserRepository.GetCountAll().Returns(100);
-        var result = await _sut.GetCountAdmin();
-        result.Should().Be(100);
-    }
-
-    [TestMethod]
-    public async Task GetAllUsers_Paged_ShouldReturnUsersFromRepository()
+    public async Task GetUsers_Paged_ShouldReturnUsersAndCountFromRepository()
     {
         var users = new List<ApplicationUser> { CreateApplicationUser("u1") };
         _mockUserRepository.GetAllPaged(10, 5).Returns(users);
-        var result = await _sut.GetAllUsers(10, 5);
-        result.Should().BeEquivalentTo(users);
+        _mockUserRepository.GetCount().Returns(42);
+
+        var result = await GetUsers(10, 5);
+
+        result.Items.Should().ContainSingle().Which.Id.Should().Be("u1");
+        result.TotalCount.Should().Be(42);
     }
 
     [TestMethod]
-    public async Task GetAllUsersAdmin_Paged_ShouldReturnUsersFromRepository()
+    public async Task GetUsers_ForAdmin_ShouldReturnAllUsersAndAdminCount()
     {
         var users = new List<ApplicationUser> { CreateApplicationUser("u1") };
         _mockUserRepository.GetAllForAdminPaged(10, 5).Returns(users);
-        var result = await _sut.GetAllUsersAdmin(10, 5);
-        result.Should().BeEquivalentTo(users);
+        _mockUserRepository.GetCountAll().Returns(100);
+
+        var result = await GetUsers(10, 5, forAdmin: true);
+
+        result.Items.Should().ContainSingle().Which.Id.Should().Be("u1");
+        result.TotalCount.Should().Be(100);
+        await _mockUserRepository.DidNotReceive().GetAllPaged(Arg.Any<int>(), Arg.Any<int>());
     }
 
     [TestMethod]
@@ -871,8 +899,15 @@ public class ApplicationUserServiceTests
         ((FakeUserManager)_fakeUserManager).FindByIdFunc = _ => Task.FromResult<ApplicationUser?>(user);
         ((FakeUserManager)_fakeUserManager).GetRolesFunc = _ => Task.FromResult<IList<string>>(roles);
 
-        var result = await _sut.GetUserRoles(id);
+        var result = await GetUserRoles(id);
         result.Should().BeEquivalentTo(roles);
+    }
+
+    [TestMethod]
+    public async Task GetUserRoles_WhenUserMissing_ThrowsNotFound()
+    {
+        var act = () => GetUserRoles("missing");
+        await act.Should().ThrowAsync<NotFoundException>();
     }
 
     #endregion
@@ -902,7 +937,7 @@ public class ApplicationUserServiceTests
         _mockBlobAgent.UploadFileToBlobAsync(Arg.Any<string>(), "image/png", Arg.Any<Stream>()).Returns(blobItem);
 
         // Act
-        await _sut.UpdateProfilePictureAsync(userId, stream, "image/png");
+        await UpdateProfilePictureAsync(userId, stream);
 
         // Assert
         user.ProfileImageId.Should().Be(blobItem.Id);
@@ -924,7 +959,7 @@ public class ApplicationUserServiceTests
         _mockUserImageRepository.GetById(image.Id).Returns(image);
 
         // Act
-        await _sut.DeleteProfilePictureAsync(userId);
+        await DeleteProfilePictureAsync(userId);
 
         // Assert
         user.ProfileImageId.Should().BeNull();

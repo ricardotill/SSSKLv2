@@ -3,18 +3,17 @@ using System.Diagnostics;
 using System.Collections.Concurrent;
 using SSSKL.Contracts.Dto.Api.v1;
 using SSSKL.Contracts.Repositories;
-using SSSKL.Contracts.Services;
 using SSSKL.Contracts.Telemetry;
 
-namespace SSSKL.Application.Services;
+namespace SSSKL.Application.Features.Users.Stats;
 
 /// <summary>
 /// Tracks bulk user-stats recalculation jobs in memory and runs them on a background thread.
-/// Only one job may be active at a time.
+/// Only one job may be active at a time. Registered as a singleton.
 /// </summary>
-public class StatsRecalculationJobService(
+public sealed class StatsRecalculationJob(
     IServiceScopeFactory scopeFactory,
-    ILogger<StatsRecalculationJobService> logger) : IStatsRecalculationJobService
+    ILogger<StatsRecalculationJob> logger)
 {
     private readonly ConcurrentDictionary<Guid, JobState> _jobs = new();
     private readonly Lock _startLock = new();
@@ -64,7 +63,7 @@ public class StatsRecalculationJobService(
             using var scope = scopeFactory.CreateScope();
             var userRepository = scope.ServiceProvider.GetRequiredService<IApplicationUserRepository>();
             var userStatRepository = scope.ServiceProvider.GetRequiredService<IUserStatRepository>();
-            var notificationService = scope.ServiceProvider.GetRequiredService<IUserNotifier>();
+            var userNotifier = scope.ServiceProvider.GetRequiredService<IUserNotifier>();
 
             var users = await userRepository.GetAll();
             var userIds = users.Select(user => user.Id).ToList();
@@ -95,7 +94,7 @@ public class StatsRecalculationJobService(
             activity?.SetTag("job.users.total", job.TotalUsers);
             activity?.SetTag("job.users.failed", job.FailedUsers);
 
-            await notificationService.NotifyAsync(
+            await userNotifier.NotifyAsync(
                 job.StartedByUserId,
                 "Herberekening voltooid",
                 $"De herberekening van alle gebruikersstatistieken is voltooid ({job.ProcessedUsers - job.FailedUsers} van {job.TotalUsers} geslaagd, {job.FailedUsers} mislukt).",
@@ -110,8 +109,8 @@ public class StatsRecalculationJobService(
             logger.LogError(ex, "Bulk stats recalculation job {JobId} failed", job.Id);
 
             using var scope = scopeFactory.CreateScope();
-            var notificationService = scope.ServiceProvider.GetRequiredService<IUserNotifier>();
-            await notificationService.NotifyAsync(
+            var userNotifier = scope.ServiceProvider.GetRequiredService<IUserNotifier>();
+            await userNotifier.NotifyAsync(
                 job.StartedByUserId,
                 "Herberekening mislukt",
                 $"De herberekening van alle gebruikersstatistieken is mislukt: {ex.Message}",

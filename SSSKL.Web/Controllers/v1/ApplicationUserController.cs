@@ -1,223 +1,82 @@
-using SixLabors.ImageSharp;
+using System.Security.Claims;
+using System.Text.Json;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Identity;
-using System.Text.Json;
+using SixLabors.ImageSharp;
+using SSSKL.Application.Features.Users;
+using SSSKL.Application.Features.Users.Commands.DeleteProfilePicture;
+using SSSKL.Application.Features.Users.Commands.DeleteUser;
+using SSSKL.Application.Features.Users.Commands.UpdateProfilePicture;
+using SSSKL.Application.Features.Users.Commands.UpdateUser;
+using SSSKL.Application.Features.Users.Queries.GetPersonalData;
+using SSSKL.Application.Features.Users.Queries.GetUserDetails;
+using SSSKL.Application.Features.Users.Queries.GetUserProfile;
+using SSSKL.Application.Features.Users.Queries.GetUsers;
+using SSSKL.Application.Features.Users.Stats;
 using SSSKL.Application.Util;
 using SSSKL.Contracts.Dto.Api.v1;
-using SSSKL.Contracts.Repositories;
-using SSSKL.Contracts.Services;
-using SSSKL.Domain.Constants;
-using SSSKL.Domain.Entities;
-using SSSKL.Domain.Exceptions;
 
 namespace SSSKL.Web.Controllers.v1;
 
 [Authorize]
 [Route("v1/[controller]")]
 [ApiController]
-public class ApplicationUserController : ControllerBase
+public class ApplicationUserController(ISender sender, ILogger<ApplicationUserController> logger) : ControllerBase
 {
-    private readonly IApplicationUserService _applicationUserService;
-    private readonly ILogger<ApplicationUserController> _logger;
-    private readonly UserManager<ApplicationUser> _userManager;
-    private readonly IUserStatRepository _userStatRepository;
-    private readonly IStatsRecalculationJobService _statsRecalculationJobService;
-
-    public ApplicationUserController(IApplicationUserService applicationUserService, ILogger<ApplicationUserController> logger, UserManager<ApplicationUser> userManager, IUserStatRepository userStatRepository, IStatsRecalculationJobService statsRecalculationJobService)
-    {
-        _applicationUserService = applicationUserService;
-        _logger = logger;
-        _userManager = userManager;
-        _userStatRepository = userStatRepository;
-        _statsRecalculationJobService = statsRecalculationJobService;
-    }
-
-    private static ApplicationUserDto MapToDto(ApplicationUser u) => new ApplicationUserDto
-    {
-        Id = u.Id,
-        UserName = u.UserName ?? string.Empty,
-        FullName = u.FullName,
-        Saldo = u.Saldo,
-        LastOrdered = u.LastOrdered,
-        ProfilePictureUrl = u.ProfileImageId != null ? $"/api/v1/blob/profilepicture/image/{u.ProfileImageId}" : null,
-        Description = u.Description
-    };
-
-    private static UserStatDto MapToDto(UserStat stats) => new UserStatDto
-    {
-        Id = stats.Id,
-        UserId = stats.UserId,
-        TotalSpent = stats.TotalSpent,
-        TotalOrders = stats.TotalOrders,
-        TotalItemsBought = stats.TotalItemsBought,
-        TotalTopUp = stats.TotalTopUp,
-        QuoteCount = stats.QuoteCount,
-        QuoteVotesGiven = stats.QuoteVotesGiven,
-        ReactionCount = stats.ReactionCount,
-        LastActivityDate = stats.LastActivityDate,
-        CurrentStreak = stats.CurrentStreak,
-        MembershipStartDate = stats.MembershipStartDate,
-        MaxOrdersPerHour = stats.MaxOrdersPerHour,
-        MinMinutesBetweenOrders = stats.MinMinutesBetweenOrders,
-        MinMinutesBetweenTopUp = stats.MinMinutesBetweenTopUp,
-        MaxSingleTopUp = stats.MaxSingleTopUp,
-        QuoteVotesReceived = stats.QuoteVotesReceived,
-        LastOrderDate = stats.LastOrderDate,
-        LastTopUpDate = stats.LastTopUpDate,
-        LastStatsRecalculatedAt = stats.LastStatsRecalculatedAt
-    };
-
-    // New: map to the more detailed DTO (does NOT include password)
-    private static ApplicationUserDetailedDto MapToDetailedDto(ApplicationUser u, IList<string> roles) => new ApplicationUserDetailedDto
-    {
-        Id = u.Id,
-        UserName = u.UserName ?? string.Empty,
-        Email = u.Email,
-        EmailConfirmed = u.EmailConfirmed,
-        PhoneNumber = u.PhoneNumber,
-        PhoneNumberConfirmed = u.PhoneNumberConfirmed,
-        Name = u.Name,
-        Surname = u.Surname,
-        FullName = u.FullName,
-        Saldo = u.Saldo,
-        LastOrdered = u.LastOrdered,
-        ProfilePictureUrl = u.ProfileImageId != null ? $"/api/v1/blob/profilepicture/image/{u.ProfileImageId}" : null,
-        Description = u.Description,
-        Roles = roles
-    };
-
     [Authorize]
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<ApplicationUserDto>>> GetAll([FromQuery] int skip = 0, [FromQuery] int take = 15)
+    public async Task<ActionResult<PaginationObject<ApplicationUserDto>>> GetAll([FromQuery] int skip = 0, [FromQuery] int take = 15)
     {
-        _logger.LogInformation("{Controller}: Get all users", nameof(ApplicationUserController));
-        
-        var list = await _applicationUserService.GetAllUsers(skip, take);
-        var totalCount = await _applicationUserService.GetCount();
-        var dtoItems = list.Select(MapToDto).ToList();
-        
-        return Ok(new PaginationObject<ApplicationUserDto>()
-        {
-            Items = dtoItems,
-            TotalCount = totalCount
-        });
+        return Ok(await sender.Send(new GetUsersQuery(skip, take)));
     }
 
     [Authorize(Roles = "Admin")]
     [HttpGet("admin")]
-    public async Task<ActionResult<IEnumerable<ApplicationUserDto>>> GetAllAdmin([FromQuery] int skip = 0, [FromQuery] int take = 15)
+    public async Task<ActionResult<PaginationObject<ApplicationUserDto>>> GetAllAdmin([FromQuery] int skip = 0, [FromQuery] int take = 15)
     {
-        _logger.LogInformation("{Controller}: Get all users for admin", nameof(ApplicationUserController));
-        
-        var list = await _applicationUserService.GetAllUsersAdmin(skip, take);
-        var totalCount = await _applicationUserService.GetCountAdmin();
-        var dtoItems = list.Select(MapToDto).ToList();
-        
-        return Ok(new PaginationObject<ApplicationUserDto>()
-        {
-            Items = dtoItems,
-            TotalCount = totalCount
-        });
+        return Ok(await sender.Send(new GetUsersQuery(skip, take, ForAdmin: true)));
     }
 
     [Authorize(Roles = "Admin")]
     [HttpGet("{id}")]
     public async Task<ActionResult<ApplicationUserDetailedDto>> GetById(string id)
     {
-        _logger.LogInformation("{Controller}: Get user by id {Id}", nameof(ApplicationUserController), id);
-        try
-        {
-            var user = await _applicationUserService.GetUserById(id);
-            var roles = await _applicationUserService.GetUserRoles(user.Id);
-            return Ok(MapToDetailedDto(user, roles));
-        }
-        catch (NotFoundException)
-        {
-            return NotFound();
-        }
+        return Ok(await sender.Send(new GetUserDetailsQuery(UserReference.ById(id))));
     }
 
     [Authorize]
     [HttpGet("{id}/profile")]
     public async Task<ActionResult<ApplicationUserDto>> GetProfileById(string id)
     {
-        _logger.LogInformation("{Controller}: Get user profile by id {Id}", nameof(ApplicationUserController), id);
-        try
-        {
-            var user = await _applicationUserService.GetUserById(id);
-            return Ok(MapToDto(user));
-        }
-        catch (NotFoundException)
-        {
-            return NotFound();
-        }
+        return Ok(await sender.Send(new GetUserProfileQuery(id)));
     }
 
     [Authorize(Roles = "Admin")]
     [HttpGet("by-username/{username}")]
     public async Task<ActionResult<ApplicationUserDetailedDto>> GetByUsername(string username)
     {
-        _logger.LogInformation("{Controller}: Get user by username {Username}", nameof(ApplicationUserController), username);
-        try
-        {
-            var user = await _applicationUserService.GetUserByUsername(username);
-            var roles = await _applicationUserService.GetUserRoles(user.Id);
-            return Ok(MapToDetailedDto(user, roles));
-        }
-        catch (NotFoundException)
-        {
-            return NotFound();
-        }
+        return Ok(await sender.Send(new GetUserDetailsQuery(UserReference.ByUsername(username))));
     }
-
-
 
     // GET v1/applicationuser/me
     [HttpGet("me")]
     public async Task<ActionResult<ApplicationUserDetailedDto>> GetCurrent()
     {
         var username = User.Identity?.Name;
-        if (string.IsNullOrWhiteSpace(username))
-        {
-            return Unauthorized();
-        }
+        if (string.IsNullOrWhiteSpace(username)) return Unauthorized();
 
-        try
-        {
-            var user = await _applicationUserService.GetUserByUsername(username);
-            var roles = await _applicationUserService.GetUserRoles(user.Id);
-            return Ok(MapToDetailedDto(user, roles));
-        }
-        catch (NotFoundException)
-        {
-            return NotFound();
-        }
+        return Ok(await sender.Send(new GetUserDetailsQuery(UserReference.ByUsername(username))));
     }
 
-    // GET v1/applicationuser/me/personaldata - download personal data annotated with [PersonalData]
+    // POST v1/applicationuser/me/personaldata - download personal data annotated with [PersonalData]
     [HttpPost("me/personaldata")]
     public async Task<IActionResult> DownloadPersonalData()
     {
-        var user = await _userManager.GetUserAsync(User);
-        if (user is null)
-        {
-            return NotFound($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
-        }
+        var userId = GetUserId();
+        if (string.IsNullOrWhiteSpace(userId)) return NotFound();
 
-        var userId = await _userManager.GetUserIdAsync(user);
-        _logger.LogInformation("User with ID '{UserId}' requested personal data.", userId);
-
-        var personalData = new Dictionary<string, string>();
-        var personalDataProps = typeof(ApplicationUser).GetProperties().Where(
-            prop => Attribute.IsDefined(prop, typeof(PersonalDataAttribute)));
-
-        foreach (var p in personalDataProps)
-        {
-            personalData.Add(p.Name, p.GetValue(user)?.ToString() ?? "null");
-        }
-
-
+        var personalData = await sender.Send(new GetPersonalDataQuery(userId));
         var fileBytes = JsonSerializer.SerializeToUtf8Bytes(personalData);
 
         Response.Headers.TryAdd("Content-Disposition", "attachment; filename=PersonalData.json");
@@ -234,32 +93,7 @@ public class ApplicationUserController : ControllerBase
         // Username cannot be changed
         dto.UserName = null;
 
-        try
-        {
-            // Fetch existing first so NotFound from the service is returned when appropriate
-            var existing = await _applicationUserService.GetUserById(id);
-
-            // Keep explicit owner/admin guard so direct action calls (unit tests) enforce authorization consistently.
-            var currentUsername = User.Identity?.Name;
-            var isAdmin = User.IsInRole("Admin");
-            var isOwner = !string.IsNullOrWhiteSpace(currentUsername) &&
-                          string.Equals(currentUsername, existing.UserName, StringComparison.OrdinalIgnoreCase);
-            if (!isAdmin && !isOwner) return Forbid();
-
-            var updated = await _applicationUserService.UpdateUser(id, dto);
-            var roles = await _applicationUserService.GetUserRoles(updated.Id);
-            return Ok(MapToDetailedDto(updated, roles));
-        }
-        catch (NotFoundException)
-        {
-            return NotFound();
-        }
-        catch (InvalidOperationException ex)
-        {
-            // user manager errors surfaced as InvalidOperationException in service
-            _logger.LogWarning(ex, "Failed to update user {Id}", id);
-            return BadRequest(new { error = ex.Message });
-        }
+        return await UpdateUser(new UpdateUserCommand(UserReference.ById(id), dto, User.Identity?.Name, User.IsInRole("Admin")));
     }
 
     // PUT v1/applicationuser/me - update current user (only phone, name, surname)
@@ -271,32 +105,28 @@ public class ApplicationUserController : ControllerBase
         var username = User.Identity?.Name;
         if (string.IsNullOrWhiteSpace(username)) return Unauthorized();
 
+        // Only the profile fields a user may change about themselves
+        var changes = new ApplicationUserUpdateDto
+        {
+            PhoneNumber = dto.PhoneNumber,
+            Name = dto.Name,
+            Surname = dto.Surname,
+            Description = dto.Description
+        };
+
+        return await UpdateUser(new UpdateUserCommand(UserReference.ByUsername(username), changes, username, IsAdmin: false));
+    }
+
+    private async Task<IActionResult> UpdateUser(UpdateUserCommand command)
+    {
         try
         {
-            // Resolve current user
-            var existing = await _applicationUserService.GetUserByUsername(username);
-
-            // Map allowed fields to the existing update DTO and call the same service method
-            var updateDto = new ApplicationUserUpdateDto
-            {
-                Id = existing.Id,
-                PhoneNumber = dto.PhoneNumber,
-                Name = dto.Name,
-                Surname = dto.Surname,
-                Description = dto.Description
-            };
-
-            var updated = await _applicationUserService.UpdateUser(existing.Id, updateDto);
-            var roles = await _applicationUserService.GetUserRoles(updated.Id);
-            return Ok(MapToDetailedDto(updated, roles));
-        }
-        catch (NotFoundException)
-        {
-            return NotFound();
+            return Ok(await sender.Send(command));
         }
         catch (InvalidOperationException ex)
         {
-            _logger.LogWarning(ex, "Failed to update current user {Username}", username);
+            // Identity errors, e.g. a duplicate email or a weak password
+            logger.LogWarning(ex, "Failed to update user {User}", command.User);
             return BadRequest(new { error = ex.Message });
         }
     }
@@ -304,23 +134,7 @@ public class ApplicationUserController : ControllerBase
     // DELETE v1/applicationuser/{id} - delete user (Admin only)
     [Authorize(Roles = "Admin")]
     [HttpDelete("{id}")]
-    public async Task<IActionResult> Delete(string id)
-    {
-        try
-        {
-            await _applicationUserService.DeleteUser(id);
-            return NoContent();
-        }
-        catch (NotFoundException)
-        {
-            return NotFound();
-        }
-        catch (InvalidOperationException ex)
-        {
-            _logger.LogWarning(ex, "Failed to delete user {Id}", id);
-            return BadRequest(new { error = ex.Message });
-        }
-    }
+    public Task<IActionResult> Delete(string id) => DeleteUser(UserReference.ById(id));
 
     // DELETE v1/applicationuser/me - delete currently logged in user
     [HttpDelete("me")]
@@ -329,19 +143,19 @@ public class ApplicationUserController : ControllerBase
         var username = User.Identity?.Name;
         if (string.IsNullOrWhiteSpace(username)) return Unauthorized();
 
+        return await DeleteUser(UserReference.ByUsername(username));
+    }
+
+    private async Task<IActionResult> DeleteUser(UserReference user)
+    {
         try
         {
-            var existing = await _applicationUserService.GetUserByUsername(username);
-            await _applicationUserService.DeleteUser(existing.Id);
+            await sender.Send(new DeleteUserCommand(user));
             return NoContent();
-        }
-        catch (NotFoundException)
-        {
-            return NotFound();
         }
         catch (InvalidOperationException ex)
         {
-            _logger.LogWarning(ex, "Failed to delete current user {Username}", username);
+            logger.LogWarning(ex, "Failed to delete user {User}", user);
             return BadRequest(new { error = ex.Message });
         }
     }
@@ -362,19 +176,14 @@ public class ApplicationUserController : ControllerBase
 
         try
         {
-            var user = await _applicationUserService.GetUserByUsername(username);
             using var stream = new MemoryStream(bytes);
-            await _applicationUserService.UpdateProfilePictureAsync(user.Id, stream, file.ContentType);
+            await sender.Send(new UpdateProfilePictureCommand(UserReference.ByUsername(username), stream));
             return Ok();
-        }
-        catch (NotFoundException)
-        {
-            return NotFound();
         }
         catch (ImageFormatException ex)
         {
             // Unknown or corrupt image data is a client error; anything else surfaces as a 500
-            _logger.LogWarning(ex, "Rejected invalid profile picture for user {Username}", username);
+            logger.LogWarning(ex, "Rejected invalid profile picture for user {Username}", username);
             return BadRequest(new { error = "Failed to upload profile picture" });
         }
     }
@@ -386,16 +195,8 @@ public class ApplicationUserController : ControllerBase
         var username = User.Identity?.Name;
         if (string.IsNullOrWhiteSpace(username)) return Unauthorized();
 
-        try
-        {
-            var user = await _applicationUserService.GetUserByUsername(username);
-            await _applicationUserService.DeleteProfilePictureAsync(user.Id);
-            return NoContent();
-        }
-        catch (NotFoundException)
-        {
-            return NotFound();
-        }
+        await sender.Send(new DeleteProfilePictureCommand(UserReference.ByUsername(username)));
+        return NoContent();
     }
 
     // DELETE v1/applicationuser/{id}/profile-picture - delete profile picture (Admin only)
@@ -403,38 +204,22 @@ public class ApplicationUserController : ControllerBase
     [HttpDelete("{id}/profile-picture")]
     public async Task<IActionResult> DeleteUserProfilePicture(string id)
     {
-        try
-        {
-            await _applicationUserService.DeleteProfilePictureAsync(id);
-            return NoContent();
-        }
-        catch (NotFoundException)
-        {
-            return NotFound();
-        }
+        await sender.Send(new DeleteProfilePictureCommand(UserReference.ById(id)));
+        return NoContent();
     }
 
     [HttpGet("{id}/stats")]
     public async Task<IActionResult> GetStats(string id)
     {
-        var user = await _userManager.FindByIdAsync(id);
-        if (user == null) return NotFound();
-
-        var requesterId = _userManager.GetUserId(User);
-        var isAdmin = User.IsInRole("Admin");
-        if (!isAdmin && requesterId != id) return Forbid();
-
-        var stats = await _userStatRepository.GetOrCreateByUserId(id);
-        return Ok(MapToDto(stats));
+        return Ok(await sender.Send(new GetUserStatsQuery(id, GetUserId(), User.IsInRole("Admin"))));
     }
 
     // POST v1/applicationuser/stats/recalculate-all - starts a background job that recalculates stats for every user (Admin only)
     [Authorize(Roles = "Admin")]
     [HttpPost("stats/recalculate-all")]
-    public IActionResult RecalculateAllStats()
+    public async Task<IActionResult> RecalculateAllStats()
     {
-        var requesterId = _userManager.GetUserId(User) ?? string.Empty;
-        var (job, started) = _statsRecalculationJobService.StartRecalculateAll(requesterId);
+        var (job, started) = await sender.Send(new StartStatsRecalculationCommand(GetUserId() ?? string.Empty));
         if (!started)
         {
             return StatusCode(StatusCodes.Status409Conflict, job);
@@ -446,9 +231,9 @@ public class ApplicationUserController : ControllerBase
     // GET v1/applicationuser/stats/recalculate-all/latest - status of the most recently started bulk recalculation job (Admin only)
     [Authorize(Roles = "Admin")]
     [HttpGet("stats/recalculate-all/latest")]
-    public IActionResult GetLatestRecalculateAllStatsStatus()
+    public async Task<IActionResult> GetLatestRecalculateAllStatsStatus()
     {
-        var job = _statsRecalculationJobService.GetLatest();
+        var job = await sender.Send(new GetStatsRecalculationStatusQuery());
         if (job == null) return NotFound();
         return Ok(job);
     }
@@ -456,9 +241,9 @@ public class ApplicationUserController : ControllerBase
     // GET v1/applicationuser/stats/recalculate-all/{jobId} - status of a specific bulk recalculation job (Admin only)
     [Authorize(Roles = "Admin")]
     [HttpGet("stats/recalculate-all/{jobId:guid}")]
-    public IActionResult GetRecalculateAllStatsStatus(Guid jobId)
+    public async Task<IActionResult> GetRecalculateAllStatsStatus(Guid jobId)
     {
-        var job = _statsRecalculationJobService.GetStatus(jobId);
+        var job = await sender.Send(new GetStatsRecalculationStatusQuery(jobId));
         if (job == null) return NotFound();
         return Ok(job);
     }
@@ -467,30 +252,18 @@ public class ApplicationUserController : ControllerBase
     [HttpPost("{id}/stats/recalculate")]
     public async Task<IActionResult> RecalculateStats(string id)
     {
-        var user = await _userManager.FindByIdAsync(id);
-        if (user == null) return NotFound();
-
-        var requesterId = _userManager.GetUserId(User);
-        var isAdmin = User.IsInRole("Admin");
-        if (!isAdmin && requesterId != id) return Forbid();
-
-        var now = DateTime.UtcNow;
-        if (!isAdmin)
+        var result = await sender.Send(new RecalculateUserStatsCommand(id, GetUserId(), User.IsInRole("Admin")));
+        if (result.Stats == null)
         {
-            var claimed = await _userStatRepository.TryMarkRecalculatedAtIfEligible(id, now, TimeSpan.FromDays(7));
-            if (!claimed)
+            return StatusCode(StatusCodes.Status429TooManyRequests, new
             {
-                var existingStats = await _userStatRepository.GetOrCreateByUserId(id);
-                var nextAllowedAt = existingStats.LastStatsRecalculatedAt?.AddDays(7);
-                return StatusCode(StatusCodes.Status429TooManyRequests, new
-                {
-                    message = "Statistics can only be recalculated once every seven days.",
-                    nextAllowedAt
-                });
-            }
+                message = "Statistics can only be recalculated once every seven days.",
+                nextAllowedAt = result.NextAllowedAt
+            });
         }
 
-        var stats = await _userStatRepository.RecalculateByUserId(id);
-        return Ok(MapToDto(stats));
+        return Ok(result.Stats);
     }
+
+    private string? GetUserId() => User.FindFirstValue(ClaimTypes.NameIdentifier);
 }

@@ -1,10 +1,10 @@
 using FluentAssertions;
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NSubstitute;
-using Microsoft.Extensions.Logging;
+using NSubstitute.ExceptionExtensions;
+using SSSKL.Application.Features.Leaderboards.Queries.GetLeaderboard;
 using SSSKL.Contracts.Dto;
-using SSSKL.Contracts.Services;
 using SSSKL.Domain.Exceptions;
 using SSSKL.Web.Controllers.v1;
 
@@ -13,85 +13,75 @@ namespace SSSKL.Web.Test.Controllers;
 [TestClass]
 public class LeaderboardControllerTests
 {
-    private IApplicationUserService _mockService = null!;
+    private ISender _sender = null!;
     private LeaderboardController _sut = null!;
 
     [TestInitialize]
     public void Init()
     {
-        _mockService = Substitute.For<IApplicationUserService>();
-        var logger = Substitute.For<ILogger<LeaderboardController>>();
-        _sut = new LeaderboardController(_mockService, logger);
+        _sender = Substitute.For<ISender>();
+        _sut = new LeaderboardController(_sender);
+    }
+
+    private IReadOnlyList<LeaderboardEntryDto> Expect(Guid productId, LeaderboardPeriod period)
+    {
+        IReadOnlyList<LeaderboardEntryDto> items = [new LeaderboardEntryDto { FullName = "A B", ProductName = "Cola", Amount = 3, Position = 1 }];
+        _sender.Send(new GetLeaderboardQuery(productId, period), Arg.Any<CancellationToken>()).Returns(items);
+        return items;
     }
 
     [TestMethod]
-    public async Task GetLeaderboard_ReturnsOkWithItems()
+    public async Task GetLeaderboard_ReturnsAllTimeLeaderboard()
     {
         var productId = Guid.NewGuid();
-        var entries = new List<LeaderboardEntryDto>
-        {
-            new LeaderboardEntryDto { Amount = 5, FullName = "User1", ProductName = "Product" }
-        };
-        _mockService.GetAllLeaderboard(productId).Returns(Task.FromResult((IEnumerable<LeaderboardEntryDto>)entries));
+        var items = Expect(productId, LeaderboardPeriod.All);
 
         var result = await _sut.GetLeaderboard(productId);
 
-        result.Result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeEquivalentTo(entries);
+        result.Result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeSameAs(items);
     }
 
     [TestMethod]
-    public async Task GetLeaderboard_WhenProductNotFound_ReturnsNotFound()
+    public async Task GetLeaderboard_WhenProductNotFound_PropagatesNotFoundException()
     {
         var productId = Guid.NewGuid();
-        _mockService.GetAllLeaderboard(productId).Returns(Task.FromException<IEnumerable<LeaderboardEntryDto>>(new NotFoundException("Product not found")));
+        _sender.Send(Arg.Any<GetLeaderboardQuery>(), Arg.Any<CancellationToken>()).Throws(new NotFoundException("Product not found"));
 
-        var result = await _sut.GetLeaderboard(productId);
+        var act = () => _sut.GetLeaderboard(productId);
 
-        result.Result.Should().BeOfType<NotFoundResult>();
+        await act.Should().ThrowAsync<NotFoundException>();
     }
 
     [TestMethod]
-    public async Task GetMonthlyLeaderboard_ReturnsOkWithItems()
+    public async Task GetMonthlyLeaderboard_ReturnsMonthlyLeaderboard()
     {
         var productId = Guid.NewGuid();
-        var entries = new List<LeaderboardEntryDto>
-        {
-            new LeaderboardEntryDto { Amount = 10, FullName = "MonthlyUser", ProductName = "Product" }
-        };
-        _mockService.GetMonthlyLeaderboard(productId).Returns(Task.FromResult((IEnumerable<LeaderboardEntryDto>)entries));
+        var items = Expect(productId, LeaderboardPeriod.Monthly);
 
         var result = await _sut.GetMonthlyLeaderboard(productId);
 
-        result.Result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeEquivalentTo(entries);
+        result.Result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeSameAs(items);
     }
 
     [TestMethod]
-    public async Task Get12HourlyLeaderboard_ReturnsOkWithItems()
+    public async Task Get12HourlyLeaderboard_ReturnsTwelveHourLeaderboard()
     {
         var productId = Guid.NewGuid();
-        var entries = new List<LeaderboardEntryDto>
-        {
-            new LeaderboardEntryDto { Amount = 3, FullName = "HourlyUser", ProductName = "Product" }
-        };
-        _mockService.Get12HourlyLeaderboard(productId).Returns(Task.FromResult((IEnumerable<LeaderboardEntryDto>)entries));
+        var items = Expect(productId, LeaderboardPeriod.TwelveHours);
 
         var result = await _sut.Get12HourlyLeaderboard(productId);
 
-        result.Result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeEquivalentTo(entries);
+        result.Result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeSameAs(items);
     }
 
     [TestMethod]
-    public async Task Get12HourlyLiveLeaderboard_ReturnsOkWithItems()
+    public async Task Get12HourlyLiveLeaderboard_ReturnsLiveLeaderboard()
     {
         var productId = Guid.NewGuid();
-        var entries = new List<LeaderboardEntryDto>
-        {
-            new LeaderboardEntryDto { Amount = 1, FullName = "LiveUser", ProductName = "Product" }
-        };
-        _mockService.Get12HourlyLiveLeaderboard(productId).Returns(Task.FromResult((IEnumerable<LeaderboardEntryDto>)entries));
+        var items = Expect(productId, LeaderboardPeriod.TwelveHoursLive);
 
         var result = await _sut.Get12HourlyLiveLeaderboard(productId);
 
-        result.Result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeEquivalentTo(entries);
+        result.Result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeSameAs(items);
     }
 }

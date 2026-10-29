@@ -1,972 +1,456 @@
-using FluentAssertions;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using NSubstitute;
-using System.Text.Json;
-using Microsoft.Extensions.Logging;
 using System.Security.Claims;
+using System.Text.Json;
+using FluentAssertions;
+using MediatR;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
+using NSubstitute;
+using NSubstitute.ExceptionExtensions;
+using SixLabors.ImageSharp;
+using SSSKL.Application.Features.Users;
+using SSSKL.Application.Features.Users.Commands.DeleteProfilePicture;
+using SSSKL.Application.Features.Users.Commands.DeleteUser;
+using SSSKL.Application.Features.Users.Commands.UpdateProfilePicture;
+using SSSKL.Application.Features.Users.Commands.UpdateUser;
+using SSSKL.Application.Features.Users.Queries.GetPersonalData;
+using SSSKL.Application.Features.Users.Queries.GetUserDetails;
+using SSSKL.Application.Features.Users.Queries.GetUserProfile;
+using SSSKL.Application.Features.Users.Queries.GetUsers;
+using SSSKL.Application.Features.Users.Stats;
 using SSSKL.Contracts.Dto.Api.v1;
-using SSSKL.Contracts.Repositories;
-using SSSKL.Contracts.Services;
-using SSSKL.Domain.Constants;
-using SSSKL.Domain.Entities;
 using SSSKL.Domain.Exceptions;
 using SSSKL.Web.Controllers.v1;
 
 namespace SSSKL.Web.Test.Controllers;
 
 [TestClass]
-[DoNotParallelize]
 public class ApplicationUserControllerTests
 {
-    private IApplicationUserService _mockService = null!;
-    private UserManager<ApplicationUser> _userManager = null!;
-    private IUserStatRepository _mockUserStatRepository = null!;
-    private IStatsRecalculationJobService _mockStatsRecalculationJobService = null!;
+    private ISender _sender = null!;
     private ApplicationUserController _sut = null!;
 
     [TestInitialize]
     public void Init()
     {
-        _mockService = Substitute.For<IApplicationUserService>();
-        var logger = Substitute.For<ILogger<ApplicationUserController>>();
-
-        var userStore = Substitute.For<IUserStore<ApplicationUser>>();
-        _userManager = new UserManager<ApplicationUser>(
-            userStore,
-            Substitute.For<Microsoft.Extensions.Options.IOptions<IdentityOptions>>(),
-            new PasswordHasher<ApplicationUser>(),
-            Array.Empty<IUserValidator<ApplicationUser>>(),
-            Array.Empty<IPasswordValidator<ApplicationUser>>(),
-            new UpperInvariantLookupNormalizer(),
-            new IdentityErrorDescriber(),
-            Substitute.For<IServiceProvider>(),
-            Substitute.For<ILogger<UserManager<ApplicationUser>>>());
-
-        _mockUserStatRepository = Substitute.For<IUserStatRepository>();
-        _mockStatsRecalculationJobService = Substitute.For<IStatsRecalculationJobService>();
-
-        _sut = new ApplicationUserController(_mockService, logger, _userManager, _mockUserStatRepository, _mockStatsRecalculationJobService)
+        _sender = Substitute.For<ISender>();
+        _sut = new ApplicationUserController(_sender, Substitute.For<ILogger<ApplicationUserController>>())
         {
-            ControllerContext = new ControllerContext
-            {
-                HttpContext = new DefaultHttpContext()
-            }
+            ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() }
         };
+    }
+
+    private void SetUser(string? id = null, string? username = null, bool isAdmin = false)
+    {
+        var claims = new List<Claim>();
+        if (id != null) claims.Add(new Claim(ClaimTypes.NameIdentifier, id));
+        if (username != null) claims.Add(new Claim(ClaimTypes.Name, username));
+        if (isAdmin) claims.Add(new Claim(ClaimTypes.Role, "Admin"));
+        _sut.ControllerContext.HttpContext.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "TestAuth"));
+    }
+
+    private static ApplicationUserDetailedDto Detailed(string id, string username) => new() { Id = id, UserName = username };
+
+    #region Queries
+
+    [TestMethod]
+    public async Task GetAll_ReturnsOkWithItems()
+    {
+        var page = new PaginationObject<ApplicationUserDto> { Items = [new ApplicationUserDto { Id = "u1" }], TotalCount = 1 };
+        _sender.Send(new GetUsersQuery(0, 15), Arg.Any<CancellationToken>()).Returns(page);
+
+        var result = await _sut.GetAll();
+
+        result.Result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeSameAs(page);
+    }
+
+    [TestMethod]
+    public async Task GetAllAdmin_ReturnsOkWithItems()
+    {
+        var page = new PaginationObject<ApplicationUserDto> { Items = [new ApplicationUserDto { Id = "u1" }], TotalCount = 1 };
+        _sender.Send(new GetUsersQuery(0, 15, ForAdmin: true), Arg.Any<CancellationToken>()).Returns(page);
+
+        var result = await _sut.GetAllAdmin();
+
+        result.Result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeSameAs(page);
     }
 
     [TestMethod]
     public async Task GetById_WhenFound_ReturnsOk()
     {
-        var id = "user1";
-        var user = new ApplicationUser { Id = id, UserName = "u1" };
-        _mockService.GetUserById(id).Returns(Task.FromResult(user));
+        var dto = Detailed("user1", "u1");
+        _sender.Send(new GetUserDetailsQuery(UserReference.ById("user1")), Arg.Any<CancellationToken>()).Returns(dto);
 
-        var result = await _sut.GetById(id);
+        var result = await _sut.GetById("user1");
 
-        // ActionResult<T>.Result is the IActionResult (OkObjectResult/NotFoundResult)
-        var expected = new ApplicationUserDetailedDto
-        {
-            Id = user.Id,
-            UserName = user.UserName ?? string.Empty,
-            Email = user.Email,
-            EmailConfirmed = user.EmailConfirmed,
-            PhoneNumber = user.PhoneNumber,
-            PhoneNumberConfirmed = user.PhoneNumberConfirmed,
-            Name = user.Name,
-            Surname = user.Surname,
-            FullName = user.FullName,
-            Saldo = user.Saldo,
-            LastOrdered = user.LastOrdered,
-            ProfilePictureUrl = null
-        };
-        result.Result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeEquivalentTo(expected);
+        result.Result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeSameAs(dto);
     }
 
     [TestMethod]
-    public async Task GetById_WhenNotFound_ReturnsNotFound()
+    public async Task GetById_WhenNotFound_PropagatesNotFoundException()
     {
-        var id = "missing";
-        _mockService.GetUserById(id).Returns(Task.FromException<ApplicationUser>(new NotFoundException("ApplicationUser not found")));
+        _sender.Send(Arg.Any<GetUserDetailsQuery>(), Arg.Any<CancellationToken>()).Throws(new NotFoundException("ApplicationUser not found"));
 
-        var result = await _sut.GetById(id);
+        var act = () => _sut.GetById("missing");
 
-        result.Result.Should().BeOfType<NotFoundResult>();
+        await act.Should().ThrowAsync<NotFoundException>();
     }
 
     [TestMethod]
     public async Task GetByUsername_WhenFound_ReturnsOk()
     {
-        var username = "john";
-        var user = new ApplicationUser { Id = "u2", UserName = username };
-        _mockService.GetUserByUsername(username).Returns(Task.FromResult(user));
+        var dto = Detailed("u2", "john");
+        _sender.Send(new GetUserDetailsQuery(UserReference.ByUsername("john")), Arg.Any<CancellationToken>()).Returns(dto);
 
-        var result = await _sut.GetByUsername(username);
+        var result = await _sut.GetByUsername("john");
 
-        var expected = new ApplicationUserDetailedDto
-        {
-            Id = user.Id,
-            UserName = user.UserName ?? string.Empty,
-            Email = user.Email,
-            EmailConfirmed = user.EmailConfirmed,
-            PhoneNumber = user.PhoneNumber,
-            PhoneNumberConfirmed = user.PhoneNumberConfirmed,
-            Name = user.Name,
-            Surname = user.Surname,
-            FullName = user.FullName,
-            Saldo = user.Saldo,
-            LastOrdered = user.LastOrdered,
-            ProfilePictureUrl = null
-        };
-        result.Result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeEquivalentTo(expected);
-    }
-
-    [TestMethod]
-    public async Task GetByUsername_WhenNotFound_ReturnsNotFound()
-    {
-        var username = "missinguser";
-        _mockService.GetUserByUsername(username).Returns(Task.FromException<ApplicationUser>(new NotFoundException("ApplicationUser not found")));
-
-        var result = await _sut.GetByUsername(username);
-
-        result.Result.Should().BeOfType<NotFoundResult>();
+        result.Result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeSameAs(dto);
     }
 
     [TestMethod]
     public async Task GetProfileById_WhenFound_ReturnsOk()
     {
-        var id = "user-profile-1";
-        var user = new ApplicationUser { Id = id, UserName = "profileuser", Description = "Test Description" };
-        _mockService.GetUserById(id).Returns(Task.FromResult(user));
+        var dto = new ApplicationUserDto { Id = "user-profile-1" };
+        _sender.Send(new GetUserProfileQuery("user-profile-1"), Arg.Any<CancellationToken>()).Returns(dto);
 
-        var result = await _sut.GetProfileById(id);
+        var result = await _sut.GetProfileById("user-profile-1");
 
-        var expected = new ApplicationUserDto
-        {
-            Id = user.Id,
-            UserName = user.UserName ?? string.Empty,
-            FullName = user.FullName ?? string.Empty,
-            Saldo = user.Saldo,
-            LastOrdered = user.LastOrdered,
-            ProfilePictureUrl = null,
-            Description = user.Description
-        };
-        result.Result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeEquivalentTo(expected);
+        result.Result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeSameAs(dto);
     }
-
-    [TestMethod]
-    public async Task GetProfileById_WhenNotFound_ReturnsNotFound()
-    {
-        var id = "missing-profile";
-        _mockService.GetUserById(id).Returns(Task.FromException<ApplicationUser>(new NotFoundException("User not found")));
-
-        var result = await _sut.GetProfileById(id);
-
-        result.Result.Should().BeOfType<NotFoundResult>();
-    }
-
-    [TestMethod]
-    public async Task GetAll_ReturnsOkWithItems()
-    {
-        var list = new List<ApplicationUser>
-        {
-            new ApplicationUser { Id = "a", UserName = "a" },
-            new ApplicationUser { Id = "b", UserName = "b" }
-        };
-        // Controller calls GetAllUsers(skip,take) and GetCount()
-        _mockService.GetAllUsers(Arg.Any<int>(), Arg.Any<int>()).Returns(Task.FromResult((IList<ApplicationUser>)list));
-        _mockService.GetCount().Returns(list.Count);
-
-        var result = await _sut.GetAll();
-
-        var expectedList = list.Select(u => new ApplicationUserDto
-            {
-                Id = u.Id,
-                UserName = u.UserName ?? string.Empty,
-                FullName = u.FullName ?? string.Empty,
-                Saldo = u.Saldo,
-                LastOrdered = u.LastOrdered
-            })
-            .ToList();
-        
-        var expected = new PaginationObject<ApplicationUserDto>
-        {
-            Items = expectedList,
-            TotalCount = list.Count
-        };
-        
-        result.Result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeEquivalentTo(expected);
-    }
-
-    [TestMethod]
-    public async Task GetCurrent_WhenUserNotFoundInService_ReturnsNotFound()
-    {
-        var username = "nonexistent";
-        _mockService.GetUserByUsername(username).Returns(Task.FromException<ApplicationUser>(new NotFoundException("User not found")));
-
-        _sut.ControllerContext = new ControllerContext
-        {
-            HttpContext = new DefaultHttpContext
-            {
-                User = new System.Security.Claims.ClaimsPrincipal(new System.Security.Claims.ClaimsIdentity(new[] { new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Name, username) }, "TestAuth"))
-            }
-        };
-
-        var result = await _sut.GetCurrent();
-
-        result.Result.Should().BeOfType<NotFoundResult>();
-    }
-
-
 
     [TestMethod]
     public async Task GetCurrent_WhenAuthenticated_ReturnsOkWithUser()
     {
-        // Arrange
-        var username = "currentuser";
-        var user = new ApplicationUser { Id = "u-current", UserName = username };
-        _mockService.GetUserByUsername(username).Returns(Task.FromResult(user));
+        SetUser(username: "me");
+        var dto = Detailed("me-id", "me");
+        _sender.Send(new GetUserDetailsQuery(UserReference.ByUsername("me")), Arg.Any<CancellationToken>()).Returns(dto);
 
-        _sut.ControllerContext = new ControllerContext
-        {
-            HttpContext = new DefaultHttpContext
-            {
-                User = new System.Security.Claims.ClaimsPrincipal(new System.Security.Claims.ClaimsIdentity(new[] { new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Name, username) }, "TestAuth"))
-            }
-        };
-
-        // Act
         var result = await _sut.GetCurrent();
 
-        // Assert
-        var expected = new ApplicationUserDetailedDto
-        {
-            Id = user.Id,
-            UserName = user.UserName ?? string.Empty,
-            Email = user.Email,
-            EmailConfirmed = user.EmailConfirmed,
-            PhoneNumber = user.PhoneNumber,
-            PhoneNumberConfirmed = user.PhoneNumberConfirmed,
-            Name = user.Name,
-            Surname = user.Surname,
-            FullName = user.FullName,
-            Saldo = user.Saldo,
-            LastOrdered = user.LastOrdered,
-            ProfilePictureUrl = null
-        };
-        result.Result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeEquivalentTo(expected);
+        result.Result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeSameAs(dto);
     }
 
     [TestMethod]
-    public async Task DownloadPersonalData_DoesNotIncludeAuthenticatorKey()
+    public async Task GetCurrent_WhenUnauthenticated_ReturnsUnauthorized()
     {
-        var user = new ApplicationUser
-        {
-            Id = "u-personal",
-            UserName = "personal.user",
-            Name = "Personal",
-            Surname = "User",
-            Saldo = 12.34m
-        };
+        var result = await _sut.GetCurrent();
 
-        var userStore = Substitute.For<IUserStore<ApplicationUser>>();
-        var userManager = Substitute.For<UserManager<ApplicationUser>>(
-            userStore,
-            null,
-            new PasswordHasher<ApplicationUser>(),
-            Array.Empty<IUserValidator<ApplicationUser>>(),
-            Array.Empty<IPasswordValidator<ApplicationUser>>(),
-            new UpperInvariantLookupNormalizer(),
-            new IdentityErrorDescriber(),
-            null,
-            Substitute.For<ILogger<UserManager<ApplicationUser>>>());
-
-        userManager.GetUserAsync(Arg.Any<System.Security.Claims.ClaimsPrincipal>()).Returns(user);
-        userManager.GetUserIdAsync(user).Returns(user.Id);
-        var controller = new ApplicationUserController(_mockService, Substitute.For<ILogger<ApplicationUserController>>(), userManager, _mockUserStatRepository, _mockStatsRecalculationJobService)
-        {
-            ControllerContext = new ControllerContext
-            {
-                HttpContext = new DefaultHttpContext
-                {
-                    User = new System.Security.Claims.ClaimsPrincipal(new System.Security.Claims.ClaimsIdentity(new[]
-                    {
-                        new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.NameIdentifier, user.Id)
-                    }, "TestAuth"))
-                }
-            }
-        };
-
-        var result = await controller.DownloadPersonalData();
-
-        var fileResult = result.Should().BeOfType<FileContentResult>().Subject;
-        fileResult.FileDownloadName.Should().Be("PersonalData.json");
-        fileResult.ContentType.Should().Be("application/json");
-
-        var personalData = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(fileResult.FileContents);
-        personalData.Should().NotBeNull();
-        personalData!.Should().ContainKey(nameof(ApplicationUser.Name));
-        personalData.Should().ContainKey(nameof(ApplicationUser.Surname));
-        personalData.Should().NotContainKey("Authenticator Key");
-
-        _ = userManager.DidNotReceive().GetAuthenticatorKeyAsync(Arg.Any<ApplicationUser>());
+        result.Result.Should().BeOfType<UnauthorizedResult>();
     }
 
     [TestMethod]
-    public async Task DownloadPersonalData_WhenUserNotFound_ReturnsNotFound()
+    public async Task DownloadPersonalData_WhenSuccess_ReturnsJsonFile()
     {
-        var userStore = Substitute.For<IUserStore<ApplicationUser>>();
-        var userManager = Substitute.For<UserManager<ApplicationUser>>(
-            userStore, null, new PasswordHasher<ApplicationUser>(),
-            Array.Empty<IUserValidator<ApplicationUser>>(), Array.Empty<IPasswordValidator<ApplicationUser>>(),
-            new UpperInvariantLookupNormalizer(), new IdentityErrorDescriber(), null,
-            Substitute.For<ILogger<UserManager<ApplicationUser>>>());
+        SetUser(id: "u-personal");
+        IReadOnlyDictionary<string, string> data = new Dictionary<string, string> { ["Name"] = "Personal" };
+        _sender.Send(new GetPersonalDataQuery("u-personal"), Arg.Any<CancellationToken>()).Returns(data);
 
-        userManager.GetUserAsync(Arg.Any<ClaimsPrincipal>()).Returns((ApplicationUser)null!);
+        var result = await _sut.DownloadPersonalData();
 
-        _sut.ControllerContext = new ControllerContext
-        {
-            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim(ClaimTypes.Name, "testuser") }, "TestAuth")) }
-        };
-        var sutWithNullUser = new ApplicationUserController(_mockService, Substitute.For<ILogger<ApplicationUserController>>(), userManager, _mockUserStatRepository, _mockStatsRecalculationJobService)
-        {
-            ControllerContext = _sut.ControllerContext
-        };
-
-        var result = await sutWithNullUser.DownloadPersonalData();
-
-        result.Should().BeOfType<NotFoundObjectResult>();
+        var file = result.Should().BeOfType<FileContentResult>().Subject;
+        file.FileDownloadName.Should().Be("PersonalData.json");
+        file.ContentType.Should().Be("application/json");
+        JsonSerializer.Deserialize<Dictionary<string, string>>(file.FileContents).Should().ContainKey("Name");
     }
 
     [TestMethod]
-    public async Task DownloadPersonalData_WhenSuccess_ReturnsFile()
+    public async Task DownloadPersonalData_WhenUserIdMissing_ReturnsNotFound()
     {
-        var userStore = Substitute.For<IUserStore<ApplicationUser>>();
-        var userManager = Substitute.For<UserManager<ApplicationUser>>(
-            userStore, null, new PasswordHasher<ApplicationUser>(),
-            Array.Empty<IUserValidator<ApplicationUser>>(), Array.Empty<IPasswordValidator<ApplicationUser>>(),
-            new UpperInvariantLookupNormalizer(), new IdentityErrorDescriber(), null,
-            Substitute.For<ILogger<UserManager<ApplicationUser>>>());
+        var result = await _sut.DownloadPersonalData();
 
-        var user = new ApplicationUser { Id = "test-id", UserName = "testuser", Email = "test@example.com" };
-        userManager.GetUserAsync(Arg.Any<ClaimsPrincipal>()).Returns(user);
-        userManager.GetUserIdAsync(user).Returns("test-id");
-
-        _sut.ControllerContext = new ControllerContext
-        {
-            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim(ClaimTypes.Name, "testuser") }, "TestAuth")) }
-        };
-        var sutWithUser = new ApplicationUserController(_mockService, Substitute.For<ILogger<ApplicationUserController>>(), userManager, _mockUserStatRepository, _mockStatsRecalculationJobService)
-        {
-            ControllerContext = _sut.ControllerContext
-        };
-
-        var result = await sutWithUser.DownloadPersonalData();
-
-        result.Should().BeOfType<FileContentResult>();
-        var fileResult = (FileContentResult)result;
-        fileResult.ContentType.Should().Be("application/json");
-        fileResult.FileDownloadName.Should().Be("PersonalData.json");
+        result.Should().BeOfType<NotFoundResult>();
     }
 
-    [TestMethod]
-    public async Task Update_AsAdmin_ReturnsOkWithUpdated()
-    {
-        var id = "user1";
-        var dto = new ApplicationUserUpdateDto { Id = id, UserName = "newname", Email = "new@example.com" };
-        var existing = new ApplicationUser { Id = id, UserName = "oldname" };
-        var updatedUser = new ApplicationUser { Id = id, UserName = dto.UserName, Email = dto.Email };
+    #endregion
 
-        _mockService.GetUserById(id).Returns(existing);
-        _mockService.UpdateUser(id, dto).Returns(Task.FromResult(updatedUser));
-
-        _sut.ControllerContext = new ControllerContext
-        {
-            HttpContext = new DefaultHttpContext
-            {
-                User = new System.Security.Claims.ClaimsPrincipal(new System.Security.Claims.ClaimsIdentity(new[] { new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Name, "admin"), new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Role, "Admin") }, "TestAuth"))
-            }
-        };
-
-        var result = await _sut.Update(id, dto);
-
-        result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeEquivalentTo(new ApplicationUserDetailedDto { Id = updatedUser.Id, UserName = updatedUser.UserName ?? string.Empty, Email = updatedUser.Email, FullName = updatedUser.FullName, Saldo = updatedUser.Saldo, LastOrdered = updatedUser.LastOrdered, ProfilePictureUrl = null, EmailConfirmed = updatedUser.EmailConfirmed, PhoneNumber = updatedUser.PhoneNumber, PhoneNumberConfirmed = updatedUser.PhoneNumberConfirmed, Name = updatedUser.Name, Surname = updatedUser.Surname });
-    }
+    #region Update
 
     [TestMethod]
-    public async Task Update_WhenUserNameProvided_UserNameIsIgnored()
+    public async Task Update_AsAdmin_SendsCommandWithoutUserName()
     {
-        var id = "user1";
-        var originalUserName = "oldname";
-        var attemptedUserName = "newname";
-        var dto = new ApplicationUserUpdateDto { Id = id, UserName = attemptedUserName, Email = "new@example.com" };
-        var existing = new ApplicationUser { Id = id, UserName = originalUserName };
-        var updatedUser = new ApplicationUser { Id = id, UserName = originalUserName, Email = dto.Email };
+        SetUser(username: "admin", isAdmin: true);
+        var dto = new ApplicationUserUpdateDto { Id = "user1", UserName = "renamed", Name = "New" };
+        var updated = Detailed("user1", "u1");
+        _sender.Send(Arg.Any<UpdateUserCommand>(), Arg.Any<CancellationToken>()).Returns(updated);
 
-        _mockService.GetUserById(id).Returns(existing);
-        _mockService.UpdateUser(id, Arg.Is<ApplicationUserUpdateDto>(d => d.UserName == null)).Returns(Task.FromResult(updatedUser));
+        var result = await _sut.Update("user1", dto);
 
-        _sut.ControllerContext = new ControllerContext
-        {
-            HttpContext = new DefaultHttpContext
-            {
-                User = new System.Security.Claims.ClaimsPrincipal(new System.Security.Claims.ClaimsIdentity(new[] { new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Name, "admin"), new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Role, "Admin") }, "TestAuth"))
-            }
-        };
-
-        var result = await _sut.Update(id, dto);
-
-        result.Should().BeOfType<OkObjectResult>();
-        // Verify service was called with null UserName (controller cleared it)
-        await _mockService.Received(1).UpdateUser(id, Arg.Is<ApplicationUserUpdateDto>(d => d.UserName == null));
-    }
-
-    [TestMethod]
-    public async Task Update_WhenRolesProvided_UpdatesUserRoles()
-    {
-        var id = "user1";
-        var newRoles = new List<string> { "Admin", "Moderator" };
-        var dto = new ApplicationUserUpdateDto { Id = id, Roles = newRoles };
-        var existing = new ApplicationUser { Id = id, UserName = "user1" };
-        var updatedUser = new ApplicationUser { Id = id, UserName = existing.UserName, Email = existing.Email };
-
-        _mockService.GetUserById(id).Returns(existing);
-        _mockService.UpdateUser(id, Arg.Is<ApplicationUserUpdateDto>(d => d.Roles == newRoles)).Returns(Task.FromResult(updatedUser));
-        _mockService.GetUserRoles(id).Returns(Task.FromResult<IList<string>>(newRoles));
-
-        _sut.ControllerContext = new ControllerContext
-        {
-            HttpContext = new DefaultHttpContext
-            {
-                User = new System.Security.Claims.ClaimsPrincipal(new System.Security.Claims.ClaimsIdentity(new[] { new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Name, "admin"), new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Role, "Admin") }, "TestAuth"))
-            }
-        };
-
-        var result = await _sut.Update(id, dto);
-
-        result.Should().BeOfType<OkObjectResult>();
-        await _mockService.Received(1).UpdateUser(id, Arg.Is<ApplicationUserUpdateDto>(d => d.Roles != null && d.Roles.Count == 2));
-    }
-
-    [TestMethod]
-    public async Task Update_AsOwner_ReturnsOkWithUpdated()
-    {
-        var id = "user1";
-        var username = "owneruser";
-        var dto = new ApplicationUserUpdateDto { Id = id, UserName = "owneruser" };
-        var existing = new ApplicationUser { Id = id, UserName = username };
-        var updatedUser = new ApplicationUser { Id = id, UserName = username };
-
-        _mockService.GetUserById(id).Returns(existing);
-        _mockService.UpdateUser(id, dto).Returns(Task.FromResult(updatedUser));
-
-        _sut.ControllerContext = new ControllerContext
-        {
-            HttpContext = new DefaultHttpContext
-            {
-                User = new System.Security.Claims.ClaimsPrincipal(new System.Security.Claims.ClaimsIdentity(new[] { new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Name, username) }, "TestAuth"))
-            }
-        };
-
-        var result = await _sut.Update(id, dto);
-
-        result.Should().BeOfType<OkObjectResult>();
-    }
-
-    [TestMethod]
-    public async Task Update_WhenNotOwnerAndNotAdmin_ReturnsForbid()
-    {
-        var id = "user1";
-        var dto = new ApplicationUserUpdateDto { Id = id, UserName = "someoneelse" };
-        var existing = new ApplicationUser { Id = id, UserName = "otheruser" };
-
-        _mockService.GetUserById(id).Returns(existing);
-
-        _sut.ControllerContext = new ControllerContext
-        {
-            HttpContext = new DefaultHttpContext
-            {
-                User = new System.Security.Claims.ClaimsPrincipal(new System.Security.Claims.ClaimsIdentity(new[] { new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Name, "notowner") }, "TestAuth"))
-            }
-        };
-
-        var result = await _sut.Update(id, dto);
-
-        result.Should().BeOfType<ForbidResult>();
+        result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeSameAs(updated);
+        await _sender.Received(1).Send(Arg.Is<UpdateUserCommand>(c =>
+            c.User == UserReference.ById("user1") && c.Changes.UserName == null && c.IsAdmin && c.RequesterUsername == "admin"),
+            Arg.Any<CancellationToken>());
     }
 
     [TestMethod]
     public async Task Update_WhenDtoNull_ReturnsBadRequest()
     {
-        var id = "user1";
-        var result = await _sut.Update(id, null);
+        var result = await _sut.Update("user1", null);
+
         result.Should().BeOfType<BadRequestResult>();
     }
 
     [TestMethod]
     public async Task Update_WhenIdMismatch_ReturnsBadRequest()
     {
-        var id = "user1";
-        var dto = new ApplicationUserUpdateDto { Id = "different" };
-        var result = await _sut.Update(id, dto);
-        result.Should().BeOfType<BadRequestObjectResult>();
-    }
-
-    [TestMethod]
-    public async Task Update_WhenUserNotFound_ReturnsNotFound()
-    {
-        var id = "missing";
-        var dto = new ApplicationUserUpdateDto { Id = id };
-        _mockService.GetUserById(id).Returns(Task.FromException<ApplicationUser>(new NotFoundException("User not found")));
-
-        var result = await _sut.Update(id, dto);
-
-        result.Should().BeOfType<NotFoundResult>();
-    }
-
-    [TestMethod]
-    public async Task Update_WhenServiceThrowsInvalidOperation_ReturnsBadRequestWithError()
-    {
-        var id = "user1";
-        var dto = new ApplicationUserUpdateDto { Id = id };
-        var existing = new ApplicationUser { Id = id, UserName = "user1" };
-        _mockService.GetUserById(id).Returns(existing);
-        _mockService.UpdateUser(id, dto).Returns(Task.FromException<ApplicationUser>(new InvalidOperationException("Bad update")));
-
-        _sut.ControllerContext = new ControllerContext
-        {
-            HttpContext = new DefaultHttpContext
-            {
-                User = new System.Security.Claims.ClaimsPrincipal(new System.Security.Claims.ClaimsIdentity(new[] { new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Name, existing.UserName) }, "TestAuth"))
-            }
-        };
-
-        var result = await _sut.Update(id, dto);
+        var result = await _sut.Update("user1", new ApplicationUserUpdateDto { Id = "other" });
 
         result.Should().BeOfType<BadRequestObjectResult>();
+        await _sender.DidNotReceive().Send(Arg.Any<UpdateUserCommand>(), Arg.Any<CancellationToken>());
     }
 
     [TestMethod]
-    public async Task GetStats_AsOwner_ReturnsOk()
+    public async Task Update_WhenHandlerThrowsInvalidOperation_ReturnsBadRequestWithError()
     {
-        var id = "user1";
-        var userStore = Substitute.For<IUserStore<ApplicationUser>>();
-        var userManager = Substitute.For<UserManager<ApplicationUser>>(
-            userStore,
-            null,
-            new PasswordHasher<ApplicationUser>(),
-            Array.Empty<IUserValidator<ApplicationUser>>(),
-            Array.Empty<IPasswordValidator<ApplicationUser>>(),
-            new UpperInvariantLookupNormalizer(),
-            new IdentityErrorDescriber(),
-            null,
-            Substitute.For<ILogger<UserManager<ApplicationUser>>>());
-        userManager.FindByIdAsync(id).Returns(new ApplicationUser { Id = id, UserName = "owneruser" });
-        userManager.GetUserId(Arg.Any<ClaimsPrincipal>()).Returns(id);
+        SetUser(username: "admin", isAdmin: true);
+        _sender.Send(Arg.Any<UpdateUserCommand>(), Arg.Any<CancellationToken>()).Throws(new InvalidOperationException("Email taken"));
 
-        var stats = new UserStat { Id = Guid.NewGuid(), UserId = id, TotalOrders = 2, TotalSpent = 3.5m };
-        _mockUserStatRepository.GetOrCreateByUserId(id).Returns(stats);
+        var result = await _sut.Update("user1", new ApplicationUserUpdateDto());
 
-        var controller = new ApplicationUserController(_mockService, Substitute.For<ILogger<ApplicationUserController>>(), userManager, _mockUserStatRepository, _mockStatsRecalculationJobService)
-        {
-            ControllerContext = new ControllerContext
-            {
-                HttpContext = new DefaultHttpContext
-                {
-                    User = new ClaimsPrincipal(new ClaimsIdentity(new[]
-                    {
-                        new Claim(ClaimTypes.NameIdentifier, id)
-                    }, "TestAuth"))
-                }
-            }
-        };
-
-        var result = await controller.GetStats(id);
-
-        result.Should().BeOfType<OkObjectResult>();
+        result.Should().BeOfType<BadRequestObjectResult>().Which.Value.Should().BeEquivalentTo(new { error = "Email taken" });
     }
 
     [TestMethod]
-    public async Task GetStats_WhenNotOwnerAndNotAdmin_ReturnsForbid()
+    public async Task Update_WhenNotOwnerAndNotAdmin_PropagatesUnauthorizedAccess()
     {
-        var id = "user1";
-        var userStore = Substitute.For<IUserStore<ApplicationUser>>();
-        var userManager = Substitute.For<UserManager<ApplicationUser>>(
-            userStore,
-            null,
-            new PasswordHasher<ApplicationUser>(),
-            Array.Empty<IUserValidator<ApplicationUser>>(),
-            Array.Empty<IPasswordValidator<ApplicationUser>>(),
-            new UpperInvariantLookupNormalizer(),
-            new IdentityErrorDescriber(),
-            null,
-            Substitute.For<ILogger<UserManager<ApplicationUser>>>());
-        userManager.FindByIdAsync(id).Returns(new ApplicationUser { Id = id, UserName = "owneruser" });
+        SetUser(username: "someone");
+        _sender.Send(Arg.Any<UpdateUserCommand>(), Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
 
-        var controller = new ApplicationUserController(_mockService, Substitute.For<ILogger<ApplicationUserController>>(), userManager, _mockUserStatRepository, _mockStatsRecalculationJobService)
-        {
-            ControllerContext = new ControllerContext
-            {
-                HttpContext = new DefaultHttpContext
-                {
-                    User = new ClaimsPrincipal(new ClaimsIdentity(new[]
-                    {
-                        new Claim(ClaimTypes.NameIdentifier, "other-user")
-                    }, "TestAuth"))
-                }
-            }
-        };
+        var act = () => _sut.Update("user1", new ApplicationUserUpdateDto());
 
-        var result = await controller.GetStats(id);
-
-        result.Should().BeOfType<ForbidResult>();
-        await _mockUserStatRepository.DidNotReceive().GetOrCreateByUserId(Arg.Any<string>());
+        await act.Should().ThrowAsync<UnauthorizedAccessException>();
     }
 
     [TestMethod]
-    public async Task RecalculateStats_WhenNotAdminAndTargetIsAnotherUser_ReturnsForbid()
+    public async Task UpdateMe_SendsOnlySelfEditableFields()
     {
-        var targetId = "target-user";
-        var userStore = Substitute.For<IUserStore<ApplicationUser>>();
-        var userManager = Substitute.For<UserManager<ApplicationUser>>(
-            userStore,
-            null,
-            new PasswordHasher<ApplicationUser>(),
-            Array.Empty<IUserValidator<ApplicationUser>>(),
-            Array.Empty<IPasswordValidator<ApplicationUser>>(),
-            new UpperInvariantLookupNormalizer(),
-            new IdentityErrorDescriber(),
-            null,
-            Substitute.For<ILogger<UserManager<ApplicationUser>>>());
-        userManager.FindByIdAsync(targetId).Returns(new ApplicationUser { Id = targetId });
-        userManager.GetUserId(Arg.Any<ClaimsPrincipal>()).Returns("normal-user");
+        SetUser(username: "me");
+        var updated = Detailed("me-id", "me");
+        _sender.Send(Arg.Any<UpdateUserCommand>(), Arg.Any<CancellationToken>()).Returns(updated);
 
-        var controller = new ApplicationUserController(
-            _mockService,
-            Substitute.For<ILogger<ApplicationUserController>>(),
-            userManager,
-            _mockUserStatRepository,
-            _mockStatsRecalculationJobService)
-        {
-            ControllerContext = new ControllerContext
-            {
-                HttpContext = new DefaultHttpContext
-                {
-                    User = new ClaimsPrincipal(new ClaimsIdentity(new[]
-                    {
-                        new Claim(ClaimTypes.NameIdentifier, "normal-user")
-                    }, "TestAuth"))
-                }
-            }
-        };
+        var result = await _sut.UpdateMe(new ApplicationUserSelfUpdateDto { Name = "N", Surname = "S", PhoneNumber = "1", Description = "D" });
 
-        var result = await controller.RecalculateStats(targetId);
-
-        result.Should().BeOfType<ForbidResult>();
-        await _mockUserStatRepository.DidNotReceive().RecalculateByUserId(Arg.Any<string>());
+        result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeSameAs(updated);
+        await _sender.Received(1).Send(Arg.Is<UpdateUserCommand>(c =>
+            c.User == UserReference.ByUsername("me") && c.RequesterUsername == "me" && !c.IsAdmin &&
+            c.Changes.Name == "N" && c.Changes.Surname == "S" && c.Changes.PhoneNumber == "1" && c.Changes.Description == "D" &&
+            c.Changes.Roles == null && c.Changes.Password == null && c.Changes.Email == null),
+            Arg.Any<CancellationToken>());
     }
 
     [TestMethod]
-    public async Task RecalculateStats_WhenAdminTargetsAnotherUser_RecalculatesAndReturnsOk()
+    public async Task UpdateMe_WhenUnauthenticated_ReturnsUnauthorized()
     {
-        var targetId = "target-user";
-        var userStore = Substitute.For<IUserStore<ApplicationUser>>();
-        var userManager = Substitute.For<UserManager<ApplicationUser>>(
-            userStore,
-            null,
-            new PasswordHasher<ApplicationUser>(),
-            Array.Empty<IUserValidator<ApplicationUser>>(),
-            Array.Empty<IPasswordValidator<ApplicationUser>>(),
-            new UpperInvariantLookupNormalizer(),
-            new IdentityErrorDescriber(),
-            null,
-            Substitute.For<ILogger<UserManager<ApplicationUser>>>());
-        userManager.FindByIdAsync(targetId).Returns(new ApplicationUser { Id = targetId });
-        userManager.GetUserId(Arg.Any<ClaimsPrincipal>()).Returns("admin-user");
-        userManager.IsInRoleAsync(Arg.Any<ApplicationUser>(), "Admin").Returns(true);
+        var result = await _sut.UpdateMe(new ApplicationUserSelfUpdateDto());
 
-        var existingStats = new UserStat { UserId = targetId, LastStatsRecalculatedAt = DateTime.UtcNow.AddDays(-1) };
-        var recalculatedStats = new UserStat { UserId = targetId, TotalOrders = 3 };
-        _mockUserStatRepository.GetOrCreateByUserId(targetId).Returns(existingStats);
-        _mockUserStatRepository.RecalculateByUserId(targetId).Returns(recalculatedStats);
-
-        var controller = new ApplicationUserController(
-            _mockService,
-            Substitute.For<ILogger<ApplicationUserController>>(),
-            userManager,
-            _mockUserStatRepository,
-            _mockStatsRecalculationJobService)
-        {
-            ControllerContext = new ControllerContext
-            {
-                HttpContext = new DefaultHttpContext
-                {
-                    User = new ClaimsPrincipal(new ClaimsIdentity(new[]
-                    {
-                        new Claim(ClaimTypes.NameIdentifier, "admin-user"),
-                        new Claim(ClaimTypes.Role, "Admin")
-                    }, "TestAuth"))
-                }
-            }
-        };
-
-        var result = await controller.RecalculateStats(targetId);
-
-        result.Should().BeOfType<OkObjectResult>();
-        recalculatedStats.LastStatsRecalculatedAt.Should().BeNull();
-        await _mockUserStatRepository.Received(1).RecalculateByUserId(targetId);
-        await _mockUserStatRepository.DidNotReceive().Update(Arg.Any<UserStat>());
+        result.Should().BeOfType<UnauthorizedResult>();
     }
+
+    #endregion
+
+    #region Delete
 
     [TestMethod]
     public async Task Delete_WhenSuccessful_ReturnsNoContent()
     {
-        var id = "user1";
-
-        var result = await _sut.Delete(id);
+        var result = await _sut.Delete("user1");
 
         result.Should().BeOfType<NoContentResult>();
-        await _mockService.Received(1).DeleteUser(id);
+        await _sender.Received(1).Send(new DeleteUserCommand(UserReference.ById("user1")), Arg.Any<CancellationToken>());
     }
 
     [TestMethod]
-    public async Task Delete_WhenUserNotFound_ReturnsNotFound()
+    public async Task Delete_WhenHandlerThrowsInvalidOperation_ReturnsBadRequestWithError()
     {
-        var id = "missing";
-        _mockService.DeleteUser(id).Returns(Task.FromException(new NotFoundException("User not found")));
+        _sender.Send(Arg.Any<DeleteUserCommand>(), Arg.Any<CancellationToken>()).Throws(new InvalidOperationException("Cannot delete"));
 
-        var result = await _sut.Delete(id);
+        var result = await _sut.Delete("user1");
 
-        result.Should().BeOfType<NotFoundResult>();
+        result.Should().BeOfType<BadRequestObjectResult>().Which.Value.Should().BeEquivalentTo(new { error = "Cannot delete" });
     }
 
     [TestMethod]
-    public async Task Delete_WhenServiceThrowsInvalidOperation_ReturnsBadRequestWithError()
+    public async Task Delete_WhenUserNotFound_PropagatesNotFoundException()
     {
-        var id = "user1";
-        _mockService.DeleteUser(id).Returns(Task.FromException(new InvalidOperationException("Delete failed")));
+        _sender.Send(Arg.Any<DeleteUserCommand>(), Arg.Any<CancellationToken>()).Throws(new NotFoundException("ApplicationUser not found"));
 
-        var result = await _sut.Delete(id);
+        var act = () => _sut.Delete("missing");
 
-        result.Should().BeOfType<BadRequestObjectResult>();
+        await act.Should().ThrowAsync<NotFoundException>();
     }
 
     [TestMethod]
     public async Task DeleteMe_WhenAuthenticated_ReturnsNoContent()
     {
-        var username = "currentuser";
-        var user = new ApplicationUser { Id = "u-current", UserName = username };
-        _mockService.GetUserByUsername(username).Returns(Task.FromResult(user));
-
-        _sut.ControllerContext = new ControllerContext
-        {
-            HttpContext = new DefaultHttpContext
-            {
-                User = new System.Security.Claims.ClaimsPrincipal(new System.Security.Claims.ClaimsIdentity(new[] { new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Name, username) }, "TestAuth"))
-            }
-        };
+        SetUser(username: "me");
 
         var result = await _sut.DeleteMe();
 
         result.Should().BeOfType<NoContentResult>();
-        await _mockService.Received(1).GetUserByUsername(username);
-        await _mockService.Received(1).DeleteUser(user.Id);
+        await _sender.Received(1).Send(new DeleteUserCommand(UserReference.ByUsername("me")), Arg.Any<CancellationToken>());
     }
 
     [TestMethod]
     public async Task DeleteMe_WhenUnauthenticated_ReturnsUnauthorized()
     {
-        _sut.ControllerContext = new ControllerContext
-        {
-            HttpContext = new DefaultHttpContext
-            {
-                User = new System.Security.Claims.ClaimsPrincipal(new System.Security.Claims.ClaimsIdentity())
-            }
-        };
-
         var result = await _sut.DeleteMe();
 
         result.Should().BeOfType<UnauthorizedResult>();
     }
 
-    [TestMethod]
-    public async Task DeleteMe_WhenCurrentUserNotFound_ReturnsNotFound()
-    {
-        var username = "missinguser";
-        _mockService.GetUserByUsername(username).Returns(Task.FromException<ApplicationUser>(new NotFoundException("ApplicationUser not found")));
+    #endregion
 
-        _sut.ControllerContext = new ControllerContext
-        {
-            HttpContext = new DefaultHttpContext
-            {
-                User = new System.Security.Claims.ClaimsPrincipal(new System.Security.Claims.ClaimsIdentity(new[] { new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Name, username) }, "TestAuth"))
-            }
-        };
-
-        var result = await _sut.DeleteMe();
-
-        result.Should().BeOfType<NotFoundResult>();
-    }
-
-    [TestMethod]
-    public async Task DeleteMe_WhenDeleteFails_ReturnsBadRequestWithError()
-    {
-        var username = "currentuser";
-        var user = new ApplicationUser { Id = "u-current", UserName = username };
-        _mockService.GetUserByUsername(username).Returns(Task.FromResult(user));
-        _mockService.DeleteUser(user.Id).Returns(Task.FromException(new InvalidOperationException("Delete failed")));
-
-        _sut.ControllerContext = new ControllerContext
-        {
-            HttpContext = new DefaultHttpContext
-            {
-                User = new System.Security.Claims.ClaimsPrincipal(new System.Security.Claims.ClaimsIdentity(new[] { new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Name, username) }, "TestAuth"))
-            }
-        };
-
-        var result = await _sut.DeleteMe();
-
-        result.Should().BeOfType<BadRequestObjectResult>();
-    }
-
-    [TestMethod]
-    public async Task GetAllAdmin_ReturnsOkWithItems()
-    {
-        var list = new List<ApplicationUser>
-        {
-            new ApplicationUser { Id = "admin1", UserName = "admin1" },
-            new ApplicationUser { Id = "admin2", UserName = "admin2" }
-        };
-        _mockService.GetAllUsersAdmin(Arg.Any<int>(), Arg.Any<int>()).Returns(Task.FromResult((IList<ApplicationUser>)list));
-        _mockService.GetCountAdmin().Returns(list.Count);
-
-        var result = await _sut.GetAllAdmin();
-
-        var expectedItems = list.Select(u => new ApplicationUserDto 
-        { 
-            Id = u.Id, 
-            UserName = u.UserName ?? string.Empty,
-            FullName = u.FullName,
-            LastOrdered = u.LastOrdered
-        }).ToList();
-        
-        var expectedContent = new PaginationObject<ApplicationUserDto>
-        {
-            Items = expectedItems,
-            TotalCount = list.Count
-        };
-        result.Result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeEquivalentTo(expectedContent);
-    }
-
-    [TestMethod]
-    public async Task GetCurrent_WhenUnauthenticated_ReturnsUnauthorized()
-    {
-        _sut.ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() };
-        var result = await _sut.GetCurrent();
-        result.Result.Should().BeOfType<UnauthorizedResult>();
-    }
-
-    [TestMethod]
-    public async Task UpdateMe_WhenAuthenticated_ReturnsOkWithUpdated()
-    {
-        var username = "currentuser";
-        var user = new ApplicationUser { Id = "u-current", UserName = username };
-        var dto = new ApplicationUserSelfUpdateDto { Name = "NewName", Surname = "NewSurname", PhoneNumber = "123" };
-        var updatedUser = new ApplicationUser { Id = user.Id, UserName = username, Name = dto.Name, Surname = dto.Surname, PhoneNumber = dto.PhoneNumber };
-
-        _mockService.GetUserByUsername(username).Returns(user);
-        _mockService.UpdateUser(user.Id, Arg.Is<ApplicationUserUpdateDto>(d => d.Name == dto.Name)).Returns(updatedUser);
-
-        _sut.ControllerContext = new ControllerContext
-        {
-            HttpContext = new DefaultHttpContext
-            {
-                User = new System.Security.Claims.ClaimsPrincipal(new System.Security.Claims.ClaimsIdentity(new[] { new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Name, username) }, "TestAuth"))
-            }
-        };
-
-        var result = await _sut.UpdateMe(dto);
-
-        result.Should().BeOfType<OkObjectResult>().Which.Value.As<ApplicationUserDetailedDto>().Name.Should().Be(dto.Name);
-    }
+    #region Profile picture
 
     [TestMethod]
     public async Task UploadProfilePicture_WithValidFile_ReturnsOk()
     {
-        var username = "currentuser";
-        var user = new ApplicationUser { Id = "u-current", UserName = username };
-        var file = new Base64FileUploadDto
-        {
-            FileName = "photo.png",
-            ContentType = "image/png",
-            Base64Content = Convert.ToBase64String(new byte[] { 1, 2, 3, 4 })
-        };
-
-        _mockService.GetUserByUsername(username).Returns(user);
-
-        _sut.ControllerContext = new ControllerContext
-        {
-            HttpContext = new DefaultHttpContext
-            {
-                User = new System.Security.Claims.ClaimsPrincipal(new System.Security.Claims.ClaimsIdentity(new[] { new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Name, username) }, "TestAuth"))
-            }
-        };
+        SetUser(username: "me");
+        var file = new Base64FileUploadDto { FileName = "p.png", ContentType = "image/png", Base64Content = Convert.ToBase64String(new byte[] { 1, 2, 3 }) };
 
         var result = await _sut.UploadProfilePicture(file);
 
         result.Should().BeOfType<OkResult>();
-        await _mockService.Received(1).UpdateProfilePictureAsync(user.Id, Arg.Any<Stream>(), "image/png");
+        await _sender.Received(1).Send(Arg.Is<UpdateProfilePictureCommand>(c => c.User == UserReference.ByUsername("me")), Arg.Any<CancellationToken>());
     }
 
     [TestMethod]
-    public async Task UploadProfilePicture_WhenFileMockIsNull_ReturnsBadRequest()
+    public async Task UploadProfilePicture_WhenFileMissing_ReturnsBadRequest()
     {
-        // Must be authorized to reach the file null check
-        _sut.ControllerContext.HttpContext.User = new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim(ClaimTypes.Name, "testuser") }, "TestAuth"));
-        
-        var result = await _sut.UploadProfilePicture(null!);
+        SetUser(username: "me");
+
+        var result = await _sut.UploadProfilePicture(null);
+
         result.Should().BeOfType<BadRequestObjectResult>();
     }
 
     [TestMethod]
-    public async Task UploadProfilePicture_WhenUnauthorized_ReturnsUnauthorized()
+    public async Task UploadProfilePicture_WhenImageInvalid_ReturnsBadRequest()
     {
-        // Default context from Init is unauthorized (no identity name)
+        SetUser(username: "me");
+        _sender.Send(Arg.Any<UpdateProfilePictureCommand>(), Arg.Any<CancellationToken>()).Throws(new UnknownImageFormatException("bad"));
+        var file = new Base64FileUploadDto { FileName = "p.png", ContentType = "image/png", Base64Content = Convert.ToBase64String(new byte[] { 1, 2, 3 }) };
+
+        var result = await _sut.UploadProfilePicture(file);
+
+        result.Should().BeOfType<BadRequestObjectResult>();
+    }
+
+    [TestMethod]
+    public async Task UploadProfilePicture_WhenUnauthenticated_ReturnsUnauthorized()
+    {
         var result = await _sut.UploadProfilePicture(new Base64FileUploadDto());
+
         result.Should().BeOfType<UnauthorizedResult>();
     }
 
     [TestMethod]
     public async Task DeleteProfilePicture_AsSelf_ReturnsNoContent()
     {
-        var username = "currentuser";
-        var user = new ApplicationUser { Id = "u-current", UserName = username };
-        _mockService.GetUserByUsername(username).Returns(user);
-
-        _sut.ControllerContext = new ControllerContext
-        {
-            HttpContext = new DefaultHttpContext
-            {
-                User = new System.Security.Claims.ClaimsPrincipal(new System.Security.Claims.ClaimsIdentity(new[] { new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Name, username) }, "TestAuth"))
-            }
-        };
+        SetUser(username: "me");
 
         var result = await _sut.DeleteProfilePicture();
 
         result.Should().BeOfType<NoContentResult>();
-        await _mockService.Received(1).DeleteProfilePictureAsync(user.Id);
+        await _sender.Received(1).Send(new DeleteProfilePictureCommand(UserReference.ByUsername("me")), Arg.Any<CancellationToken>());
     }
 
     [TestMethod]
     public async Task DeleteUserProfilePicture_AsAdmin_ReturnsNoContent()
     {
-        var id = "user-to-delete-pic";
-
-        var result = await _sut.DeleteUserProfilePicture(id);
+        var result = await _sut.DeleteUserProfilePicture("user1");
 
         result.Should().BeOfType<NoContentResult>();
-        await _mockService.Received(1).DeleteProfilePictureAsync(id);
+        await _sender.Received(1).Send(new DeleteProfilePictureCommand(UserReference.ById("user1")), Arg.Any<CancellationToken>());
     }
+
+    #endregion
+
+    #region Stats
+
+    [TestMethod]
+    public async Task GetStats_SendsQueryWithRequester()
+    {
+        SetUser(id: "user1");
+        var stats = new UserStatDto { UserId = "user1" };
+        _sender.Send(new GetUserStatsQuery("user1", "user1", false), Arg.Any<CancellationToken>()).Returns(stats);
+
+        var result = await _sut.GetStats("user1");
+
+        result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeSameAs(stats);
+    }
+
+    [TestMethod]
+    public async Task RecalculateStats_WhenAllowed_ReturnsOk()
+    {
+        SetUser(id: "admin", isAdmin: true);
+        var stats = new UserStatDto { UserId = "target" };
+        _sender.Send(new RecalculateUserStatsCommand("target", "admin", true), Arg.Any<CancellationToken>())
+            .Returns(new RecalculateUserStatsResult(stats, null));
+
+        var result = await _sut.RecalculateStats("target");
+
+        result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeSameAs(stats);
+    }
+
+    [TestMethod]
+    public async Task RecalculateStats_WhenRateLimited_Returns429()
+    {
+        SetUser(id: "user1");
+        var next = DateTime.UtcNow.AddDays(3);
+        _sender.Send(Arg.Any<RecalculateUserStatsCommand>(), Arg.Any<CancellationToken>())
+            .Returns(new RecalculateUserStatsResult(null, next));
+
+        var result = await _sut.RecalculateStats("user1");
+
+        var objectResult = result.Should().BeOfType<ObjectResult>().Subject;
+        objectResult.StatusCode.Should().Be(StatusCodes.Status429TooManyRequests);
+        objectResult.Value.Should().BeEquivalentTo(new { nextAllowedAt = next }, o => o.ExcludingMissingMembers());
+    }
+
+    [TestMethod]
+    public async Task RecalculateAllStats_WhenStarted_ReturnsAccepted()
+    {
+        SetUser(id: "admin", isAdmin: true);
+        var job = new RecalculationJobDto { Id = Guid.NewGuid() };
+        _sender.Send(new StartStatsRecalculationCommand("admin"), Arg.Any<CancellationToken>()).Returns(new StartStatsRecalculationResult(job, true));
+
+        var result = await _sut.RecalculateAllStats();
+
+        result.Should().BeOfType<AcceptedAtActionResult>().Which.Value.Should().BeSameAs(job);
+    }
+
+    [TestMethod]
+    public async Task RecalculateAllStats_WhenAlreadyRunning_ReturnsConflict()
+    {
+        SetUser(id: "admin", isAdmin: true);
+        var job = new RecalculationJobDto { Id = Guid.NewGuid() };
+        _sender.Send(Arg.Any<StartStatsRecalculationCommand>(), Arg.Any<CancellationToken>()).Returns(new StartStatsRecalculationResult(job, false));
+
+        var result = await _sut.RecalculateAllStats();
+
+        result.Should().BeOfType<ObjectResult>().Which.StatusCode.Should().Be(StatusCodes.Status409Conflict);
+    }
+
+    [TestMethod]
+    public async Task GetLatestRecalculateAllStatsStatus_WhenNone_ReturnsNotFound()
+    {
+        _sender.Send(new GetStatsRecalculationStatusQuery(), Arg.Any<CancellationToken>()).Returns((RecalculationJobDto?)null);
+
+        var result = await _sut.GetLatestRecalculateAllStatsStatus();
+
+        result.Should().BeOfType<NotFoundResult>();
+    }
+
+    [TestMethod]
+    public async Task GetRecalculateAllStatsStatus_WhenFound_ReturnsOk()
+    {
+        var job = new RecalculationJobDto { Id = Guid.NewGuid() };
+        _sender.Send(new GetStatsRecalculationStatusQuery(job.Id), Arg.Any<CancellationToken>()).Returns(job);
+
+        var result = await _sut.GetRecalculateAllStatsStatus(job.Id);
+
+        result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeSameAs(job);
+    }
+
+    #endregion
 }

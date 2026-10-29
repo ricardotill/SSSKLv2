@@ -3,10 +3,9 @@ using SSSKL.Application.Behaviors;
 using SSSKL.Application.Events;
 using SSSKL.Application.Features.Orders.Export;
 using SSSKL.Application.Features.Quotes;
-using SSSKL.Application.Services;
+using SSSKL.Application.Features.Users.Stats;
 using SSSKL.Application.Shared;
 using SSSKL.Contracts.Events;
-using SSSKL.Contracts.Services;
 
 namespace SSSKL.Application;
 
@@ -23,8 +22,7 @@ public static class ApplicationServiceCollectionExtensions
         });
 
         return services
-            .AddTransient<IApplicationUserService, ApplicationUserService>()
-            .AddSingleton<IStatsRecalculationJobService, StatsRecalculationJobService>()
+            .AddSingleton<StatsRecalculationJob>()
             .AddSingleton<OrderCsvExportJob>()
             .AddTransient<IUserNotifier, UserNotifier>()
             .AddTransient<IAchievementAwarder, AchievementAwarder>()

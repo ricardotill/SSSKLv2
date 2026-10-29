@@ -35,6 +35,7 @@ public class GlobalExceptionHandlerTests
 
     [TestMethod]
     [DataRow(typeof(NotFoundException), 404)]
+    [DataRow(typeof(ConflictException), 409)]
     [DataRow(typeof(UnauthorizedAccessException), 403)]
     [DataRow(typeof(ArgumentException), 400)]
     [DataRow(typeof(InvalidOperationException), 500)]

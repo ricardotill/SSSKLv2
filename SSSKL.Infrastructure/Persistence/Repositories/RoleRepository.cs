@@ -9,6 +9,11 @@ namespace SSSKL.Infrastructure.Persistence.Repositories;
 // entity they get attached to (e.g. quotes), instead of being inserted again.
 public class RoleRepository(ApplicationDbContext dbContext) : IRoleRepository
 {
+    public async Task<IList<IdentityRole>> GetAll()
+    {
+        return await dbContext.Roles.ToListAsync();
+    }
+
     public async Task<IList<IdentityRole>> GetByNames(IEnumerable<string> names)
     {
         return await dbContext.Roles

@@ -1,144 +1,51 @@
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Processing;
-using SixLabors.ImageSharp.Formats.Jpeg;
-using SSSKL.Application.Util;
-using SSSKL.Contracts.Agents;
-using SSSKL.Contracts.Repositories;
+using SSSKL.Application.Features.Blobs.Queries.GetBlobImage;
+using SSSKL.Application.Features.Blobs.Queries.GetSocialPreview;
 
 namespace SSSKL.Web.Controllers.v1;
 
 [Route("v1/blob")]
 [ApiController]
-public class BlobsController : ControllerBase
+public class BlobsController(ISender sender) : ControllerBase
 {
-    private readonly IBlobStorageAgent _blobAgent;
-    private readonly IBlobStorageItemRepository _blobStorageItemRepository;
-
-    public BlobsController(IBlobStorageAgent blobAgent, IBlobStorageItemRepository blobStorageItemRepository)
-    {
-        _blobAgent = blobAgent;
-        _blobStorageItemRepository = blobStorageItemRepository;
-    }
-
     [HttpGet("event/image/{id}")]
     [AllowAnonymous]
     [ResponseCache(Duration = 2592000, Location = ResponseCacheLocation.Any)]
-    public async Task<IActionResult> GetEventImage(Guid id)
-    {
-        var image = await _blobStorageItemRepository.GetById(id);
-        if (image == null) return NotFound();
-
-        var contentType = ContentTypeToExtensionMapper.NormalizeContentType(image.ContentType);
-        if (contentType == null)
-            return BadRequest("Unsupported image content type.");
-
-        var stream = await _blobAgent.OpenDownloadStreamAsync(image.FileName);
-        return File(stream, contentType);
-    }
+    public Task<IActionResult> GetEventImage(Guid id) => GetImage(id);
 
     [HttpGet("achievement/image/{id}")]
     [AllowAnonymous]
     [ResponseCache(Duration = 2592000, Location = ResponseCacheLocation.Any)]
-    public async Task<IActionResult> GetAchievementImage(Guid id)
-    {
-        var image = await _blobStorageItemRepository.GetById(id);
-        if (image == null) return NotFound();
-
-        var contentType = ContentTypeToExtensionMapper.NormalizeContentType(image.ContentType);
-        if (contentType == null)
-            return BadRequest("Unsupported image content type.");
-
-        var stream = await _blobAgent.OpenDownloadStreamAsync(image.FileName);
-        return File(stream, contentType);
-    }
+    public Task<IActionResult> GetAchievementImage(Guid id) => GetImage(id);
 
     [HttpGet("profilepicture/image/{id}")]
     [AllowAnonymous]
     [ResponseCache(Duration = 2592000, Location = ResponseCacheLocation.Any)]
-    public async Task<IActionResult> GetProfilePicture(Guid id)
-    {
-        var image = await _blobStorageItemRepository.GetById(id);
-        if (image == null) return NotFound();
-
-        var contentType = ContentTypeToExtensionMapper.NormalizeContentType(image.ContentType);
-        if (contentType == null)
-            return BadRequest("Unsupported image content type.");
-
-        var stream = await _blobAgent.OpenDownloadStreamAsync(image.FileName);
-        return File(stream, contentType);
-    }
+    public Task<IActionResult> GetProfilePicture(Guid id) => GetImage(id);
 
     [HttpGet("event/image/{id}/social-preview.jpg")]
     [AllowAnonymous]
     [ResponseCache(Duration = 2592000, Location = ResponseCacheLocation.Any)]
     public async Task<IActionResult> GetSocialPreview(Guid id)
     {
-        var image = await _blobStorageItemRepository.GetById(id);
-        if (image == null) return NotFound();
+        var preview = await sender.Send(new GetSocialPreviewQuery(id));
 
-        // Add binary headers to assist social crawler caching and verification
+        // Binary headers help social crawlers cache and verify the image
         if (Response != null)
         {
             Response.Headers.AcceptRanges = "bytes";
             Response.Headers.ETag = $"\"{id:N}\"";
-            Response.Headers.LastModified = image.CreatedOn.ToUniversalTime().ToString("R");
+            Response.Headers.LastModified = preview.CreatedOn.ToUniversalTime().ToString("R");
         }
 
-        using var stream = await _blobAgent.OpenDownloadStreamAsync(image.FileName);
-        using var sourceImage = await SafeImageLoader.LoadAsync(stream);
+        return File(preview.Content, "image/jpeg");
+    }
 
-        // Target aspect ratio 1.91:1 (Industry standard for Open Graph images)
-        const double targetRatio = 1.91;
-        double currentRatio = (double)sourceImage.Width / sourceImage.Height;
-
-        if (Math.Abs(currentRatio - targetRatio) > 0.05)
-        {
-            // Perform center crop to match target ratio
-            int newWidth = sourceImage.Width;
-            int newHeight = sourceImage.Height;
-
-            if (currentRatio > targetRatio)
-            {
-                newWidth = Math.Max(1, (int)(sourceImage.Height * targetRatio));
-            }
-            else
-            {
-                newHeight = Math.Max(1, (int)(sourceImage.Width / targetRatio));
-            }
-
-            sourceImage.Mutate(x => x.Crop(new Rectangle(
-                (sourceImage.Width - newWidth) / 2,
-                (sourceImage.Height - newHeight) / 2,
-                newWidth,
-                newHeight)));
-        }
-
-        // Standardize dimensions: Minimum 300px for WhatsApp, maximum 1200px for performance.
-        if (sourceImage.Width > 1200)
-        {
-            sourceImage.Mutate(x => x.Resize(new ResizeOptions
-            {
-                Size = new Size(1200, 0),
-                Mode = ResizeMode.Max
-            }));
-        }
-        else if (sourceImage.Width < 300)
-        {
-            sourceImage.Mutate(x => x.Resize(new ResizeOptions
-            {
-                Size = new Size(300, 0),
-                Mode = ResizeMode.BoxPad // Upscale safely
-            }));
-        }
-
-        var outputStream = new MemoryStream();
-        // WhatsApp is sensitive to file size (ideally < 300KB). 
-        // Quality 75 provides a great balance for social previews.
-        await sourceImage.SaveAsJpegAsync(outputStream, new JpegEncoder { Quality = 75 });
-        
-        outputStream.Position = 0;
-        return File(outputStream, "image/jpeg");
+    private async Task<IActionResult> GetImage(Guid id)
+    {
+        var image = await sender.Send(new GetBlobImageQuery(id));
+        return File(image.Content, image.ContentType);
     }
 }

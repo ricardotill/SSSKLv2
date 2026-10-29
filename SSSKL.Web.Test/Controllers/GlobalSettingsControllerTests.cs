@@ -1,101 +1,51 @@
+using System.Security.Claims;
 using FluentAssertions;
+using MediatR;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using NSubstitute;
+using SSSKL.Application.Features.Settings.Commands.UpdateGlobalSetting;
+using SSSKL.Application.Features.Settings.Queries.GetGlobalSetting;
 using SSSKL.Contracts.Dto.Api.v1;
-using SSSKL.Domain.Entities;
-using SSSKL.Infrastructure.Persistence;
-using SSSKL.Infrastructure.Persistence.Repositories;
+using SSSKL.Domain.Constants;
 using SSSKL.Web.Controllers.v1;
-using SSSKL.Web.Test.Controllers.v1;
 
 namespace SSSKL.Web.Test.Controllers;
 
 [TestClass]
 public class GlobalSettingsControllerTests
 {
+    private ISender _sender = null!;
     private GlobalSettingsController _sut = null!;
-    private ApplicationDbContext _context = null!;
 
     [TestInitialize]
-    public void TestInitialize()
+    public void Init()
     {
-        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
-            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
-            .Options;
-        _context = new ApplicationDbContext(options);
-        _sut = new GlobalSettingsController(new GlobalSettingRepository(_context));
-    }
-
-    [TestCleanup]
-    public void TestCleanup()
-    {
-        _context.Database.EnsureDeleted();
-        _context.Dispose();
+        _sender = Substitute.For<ISender>();
+        _sut = new GlobalSettingsController(_sender)
+        {
+            ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() }
+        };
     }
 
     [TestMethod]
-    public async Task GetSetting_WhenExists_ReturnsOk()
+    public async Task GetSetting_PassesAdminFlagAndReturnsOk()
     {
-        // Arrange
-        var setting = new GlobalSetting { Key = "test-key", Value = "test-value" };
-        _context.GlobalSetting.Add(setting);
-        await _context.SaveChangesAsync();
+        _sut.ControllerContext.HttpContext.User = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.Role, Roles.Admin)], "TestAuth"));
+        var dto = new GlobalSettingDto { Key = "k", Value = "v" };
+        _sender.Send(new GetGlobalSettingQuery("k", true), Arg.Any<CancellationToken>()).Returns(dto);
 
-        // Act
-        var result = await _sut.GetSetting("test-key");
+        var result = await _sut.GetSetting("k");
 
-        // Assert
-        result.Result.Should().BeOfType<OkObjectResult>();
-        var value = (result.Result as OkObjectResult)?.Value as GlobalSettingDto;
-        value.Should().NotBeNull();
-        value!.Key.Should().Be("test-key");
-        value.Value.Should().Be("test-value");
+        result.Result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeSameAs(dto);
     }
 
     [TestMethod]
-    public async Task GetSetting_WhenNotExists_ReturnsNotFound()
+    public async Task UpdateSetting_SendsCommandAndReturnsNoContent()
     {
-        // Act
-        var result = await _sut.GetSetting("non-existent");
+        var result = await _sut.UpdateSetting("k", new GlobalSettingUpdateDto { Value = "v" });
 
-        // Assert
-        result.Result.Should().BeOfType<NotFoundResult>();
-    }
-
-    [TestMethod]
-    public async Task UpdateSetting_WhenNotExists_CreatesNewSetting()
-    {
-        // Arrange
-        var dto = new GlobalSettingUpdateDto { Value = "new-value" };
-
-        // Act
-        var result = await _sut.UpdateSetting("new-key", dto);
-
-        // Assert
         result.Should().BeOfType<NoContentResult>();
-        var setting = await _context.GlobalSetting.FirstOrDefaultAsync(s => s.Key == "new-key");
-        setting.Should().NotBeNull();
-        setting!.Value.Should().Be("new-value");
-    }
-
-    [TestMethod]
-    public async Task UpdateSetting_WhenExists_UpdatesValue()
-    {
-        // Arrange
-        var setting = new GlobalSetting { Key = "existing-key", Value = "old-value" };
-        _context.GlobalSetting.Add(setting);
-        await _context.SaveChangesAsync();
-        
-        var dto = new GlobalSettingUpdateDto { Value = "updated-value" };
-
-        // Act
-        var result = await _sut.UpdateSetting("existing-key", dto);
-
-        // Assert
-        result.Should().BeOfType<NoContentResult>();
-        var updated = await _context.GlobalSetting.FirstOrDefaultAsync(s => s.Key == "existing-key");
-        updated.Should().NotBeNull();
-        updated!.Value.Should().Be("updated-value");
-        updated.UpdatedOn.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
+        await _sender.Received(1).Send(new UpdateGlobalSettingCommand("k", "v"), Arg.Any<CancellationToken>());
     }
 }

@@ -1,10 +1,11 @@
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using Ganss.Xss;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
+using SSSKL.Application.Features.Settings.Commands.UpdateGlobalSetting;
+using SSSKL.Application.Features.Settings.Queries.GetGlobalSetting;
+using SSSKL.Application.Features.Settings.Queries.GetTurnstileConfig;
 using SSSKL.Contracts.Dto.Api.v1;
-using SSSKL.Contracts.Repositories;
-using SSSKL.Contracts.Services;
 using SSSKL.Domain.Constants;
 using SSSKL.Domain.Entities;
 
@@ -12,75 +13,31 @@ namespace SSSKL.Web.Controllers.v1;
 
 [Route("v1/[controller]")]
 [ApiController]
-public class GlobalSettingsController : ControllerBase
+public class GlobalSettingsController(ISender sender) : ControllerBase
 {
-    private readonly IGlobalSettingRepository _globalSettingRepository;
-
-    public GlobalSettingsController(IGlobalSettingRepository globalSettingRepository)
-    {
-        _globalSettingRepository = globalSettingRepository;
-    }
-
     // GET v1/globalsettings/public/turnstile - what the login and sign-up pages need to render Turnstile
     [AllowAnonymous]
     [HttpGet("public/turnstile")]
-    public async Task<ActionResult<TurnstileConfigDto>> GetTurnstileConfig([FromServices] ITurnstileService turnstile)
+    public async Task<ActionResult<TurnstileConfigDto>> GetTurnstileConfig()
     {
-        var config = await turnstile.GetClientConfigAsync(HttpContext.RequestAborted);
-        return Ok(new TurnstileConfigDto { Enabled = config.Enabled, SiteKey = config.SiteKey });
+        return Ok(await sender.Send(new GetTurnstileConfigQuery(), HttpContext.RequestAborted));
     }
 
     [HttpGet("{key}")]
     public async Task<ActionResult<GlobalSettingDto>> GetSetting(string key)
     {
-        // Write-only keys can never be retrieved via the API — not even by admins
-        if (GlobalSettingsKeys.WriteOnlyKeys.Contains(key))
-        {
-            return Forbid();
-        }
-
-        // Check if the key is sensitive and requires admin role
-        if (GlobalSettingsKeys.SensitiveKeys.Contains(key))
-        {
-            if (!User.IsInRole(Roles.Admin))
-            {
-                return Forbid();
-            }
-        }
-
-        var setting = await _globalSettingRepository.GetByKey(key);
-
-        if (setting == null)
-        {
-            return NotFound();
-        }
-
-        return Ok(new GlobalSettingDto
-        {
-            Key = setting.Key,
-            Value = setting.Value,
-            UpdatedOn = setting.UpdatedOn
-        });
+        return Ok(await sender.Send(new GetGlobalSettingQuery(key, User.IsInRole(Roles.Admin))));
     }
 
     [Authorize(Roles = Roles.Admin)]
     [HttpPut("{key}")]
     public async Task<IActionResult> UpdateSetting(string key, [FromBody] GlobalSettingUpdateDto dto)
     {
-        var sanitizedValue = dto.Value;
-        
-        // Only sanitize if it's NOT a sensitive key (API keys, passwords, etc.)
-        if (!GlobalSettingsKeys.SensitiveKeys.Contains(key)) 
-        {
-            var sanitizer = new HtmlSanitizer();
-            sanitizedValue = sanitizer.Sanitize(dto.Value);
-        }
-
-        await _globalSettingRepository.Upsert(key, sanitizedValue);
-
+        await sender.Send(new UpdateGlobalSettingCommand(key, dto.Value));
         return NoContent();
     }
 
+    // Exercises the ASP.NET Core Identity email sender directly, so it stays out of the application layer.
     [Authorize(Roles = Roles.Admin)]
     [HttpPost("test-email")]
     public async Task<IActionResult> SendTestEmail([FromServices] IEmailSender<ApplicationUser> emailSender, [FromServices] UserManager<ApplicationUser> userManager, [FromServices] ILogger<GlobalSettingsController> logger)
@@ -93,7 +50,7 @@ public class GlobalSettingsController : ControllerBase
 
         try
         {
-            await emailSender.SendConfirmationLinkAsync(user, user.Email, "https://ssskl.scoutingwilo.nl"); 
+            await emailSender.SendConfirmationLinkAsync(user, user.Email, "https://ssskl.scoutingwilo.nl");
             return Ok(new { message = $"Test email succesvol verzonden naar {user.Email}" });
         }
         catch (Exception ex)

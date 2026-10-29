@@ -19,7 +19,7 @@ dotnet ef migrations add <Name> --project SSSKL.Infrastructure --startup-project
 ```
 - The build needs a SixLabors ImageSharp license at the **repo root** as `sixlabors.lic` (see `SIXLABORS_LICENSE_SETUP.md`).
 - Scalar API docs: `http://localhost:5251/scalar` (Development only).
-- MediatR (v13+) is commercially licensed; the Community license key is read from `MediatR:LicenseKey` (user-secrets locally, App Service / App Configuration in production). Without it MediatR only logs a warning, so tests and CI don't need it.
+- MediatR (v13+) is commercially licensed; the Community license key is read from `MediatR:LicenseKey` (user-secrets locally, App Service setting `MediatR__LicenseKey` in production; see `MEDIATR_LICENSE_SETUP.md`). Without it MediatR only logs a warning, so tests and CI don't need it.
 - Migrations are applied automatically on startup (`db.Database.MigrateAsync()` in `SSSKL.Web/Program.cs`) and live in `SSSKL.Infrastructure/Persistence/Migrations/`. The `dotnet-ef` tool is pinned in `.config/dotnet-tools.json` (`dotnet tool restore`).
 
 ### Frontend (run from `Frontend/`)
@@ -51,7 +51,7 @@ SSSKL.Domain ← SSSKL.Contracts ← SSSKL.Application ← SSSKL.Web
 - **Background jobs**: `Features/Users/Stats/StatsRecalculationJob` and `Features/Orders/Export/OrderCsvExportJob` are singletons that track jobs in memory and run work on background threads using `IServiceScopeFactory` (one active job at a time; frontend polls status). Controllers reach them through start/status commands and queries.
 - **Auth**: ASP.NET Core Identity with a `BearerOrCookie` policy scheme (Bearer header → bearer token, otherwise Identity cookie). Roles are seeded on startup. Antiforgery: a middleware issues a readable `XSRF-TOKEN` cookie; clients send `X-XSRF-TOKEN`.
 - **Environments**: `IntegrationTest` is treated like Development for cookie security and skips SQL Server registration/migrations (uses `EnsureCreated`). Blob storage is configured from Aspire's `blobs` connection string, `Storage:ConnectionString`, or `Storage:ServiceUri` (managed identity), in that order.
-- **Telemetry**: `SssklTelemetry.Name` (`"SSSKL"`) must match `BusinessTelemetryName` in `SSSKL.ServiceDefaults/Extensions.cs`, which subscribes to it.
+- **Telemetry**: `SssklTelemetry.Name` (`"SSSKL"`) must match `BusinessTelemetryName` in `SSSKL.ServiceDefaults/Extensions.cs`, which subscribes to it. KQL queries for Application Insights are in `APPLICATION_INSIGHTS_QUERIES.md`; update it when you add metrics or log messages.
 
 ## Backend tests
 

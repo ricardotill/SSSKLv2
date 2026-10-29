@@ -1,0 +1,356 @@
+using System.Collections.Concurrent;
+using System.Threading;
+using SSSKL.Application.Util;
+using SSSKL.Contracts.Agents;
+using SSSKL.Contracts.Dto;
+using SSSKL.Contracts.Repositories;
+using SSSKL.Contracts.Services;
+using SSSKL.Domain.Entities;
+
+
+namespace SSSKL.Application.Services;
+
+public class AchievementService(
+    IAchievementRepository achievementRepository,
+    IOrderRepository orderRepository,
+    ITopUpRepository topUpRepository,
+    IApplicationUserRepository applicationUserRepository,
+    IPurchaseNotifier purchaseNotifier,
+    IBlobStorageAgent blobStorageAgent,
+    INotificationService notificationService,
+    IUserStatRepository userStatRepository) : IAchievementService
+{
+    private static readonly ConcurrentDictionary<string, SemaphoreSlim> AwardLocks = new();
+
+    public Task<int> GetCount() => achievementRepository.GetCount();
+
+    public async Task<IList<AchievementListingDto>> GetPersonalAchievements(string userId)
+    {
+        var allAchievements = await achievementRepository.GetAll();
+        var achievementEntries = await achievementRepository.GetAllEntriesOfUser(userId);
+
+        return allAchievements.Select(a =>
+        {
+            var entry = achievementEntries.SingleOrDefault(e => e.Achievement.Id == a.Id);
+            var parent = a.ParentAchievementId.HasValue
+                ? allAchievements.FirstOrDefault(x => x.Id == a.ParentAchievementId.Value)
+                : null;
+            return new AchievementListingDto(
+                a.Id,
+                a.Name,
+                a.Description,
+                entry?.CreatedOn,
+                a.Image != null ? $"/api/v1/blob/achievement/image/{a.Image.Id}" : null,
+                entry != null,
+                a.Tier.ToString(),
+                parent?.Id,
+                parent?.Name
+            );
+        }
+
+        ).ToList();
+    }
+
+    // New overload: accept username, resolve to userId and reuse existing logic
+    public async Task<IList<AchievementListingDto>> GetPersonalAchievementsByUsername(string username)
+    {
+        if (string.IsNullOrWhiteSpace(username))
+            return new List<AchievementListingDto>();
+
+        var user = await applicationUserRepository.GetByUsername(username);
+        if (user == null)
+        {
+            // If user not found, return an empty list
+            return new List<AchievementListingDto>();
+        }
+
+        return await GetPersonalAchievements(user.Id);
+    }
+
+    // New overload: accept username, resolve to userId and reuse existing logic for entries
+    public async Task<IList<AchievementEntry>> GetPersonalAchievementEntriesByUsername(string username)
+    {
+        if (string.IsNullOrWhiteSpace(username))
+            return new List<AchievementEntry>();
+
+        var user = await applicationUserRepository.GetByUsername(username);
+        if (user == null)
+        {
+            return new List<AchievementEntry>();
+        }
+
+        return await GetPersonalAchievementEntries(user.Id);
+    }
+
+    public async Task<IList<AchievementEntry>> GetPersonalUnseenAchievementEntries(string username)
+    {
+        var list = (await achievementRepository.GetPersonalUnseenAchievementEntries(username))?.ToList() ?? new List<AchievementEntry>();
+
+        if (list.Any())
+        {
+            // Project into a new list where HasSeen is set to true
+            var updatedList = list.Select(e => { e.HasSeen = true; return e; }).ToList();
+
+            // Persist the updates
+            await achievementRepository.UpdateAchievementEntryRange(updatedList);
+
+            return updatedList;
+        }
+
+        return list;
+    }
+    public async Task<IList<AchievementEntry>> GetPersonalAchievementEntries(string userId)
+    {
+        return await achievementRepository.GetAllEntriesOfUser(userId);
+    }
+
+    public async Task<IList<AchievementEntry>> GetEntriesForAchievement(Guid achievementId)
+    {
+        var entries = await achievementRepository.GetAllEntries(achievementId);
+        return entries.ToList();
+    }
+
+    public async Task<IEnumerable<Achievement>> GetAchievements()
+    {
+        return await achievementRepository.GetAll();
+    }
+
+    public async Task<IList<Achievement>> GetAchievements(int skip, int take)
+    {
+        return await achievementRepository.GetAll(skip, take);
+    }
+
+    public async Task<Achievement> GetAchievementById(Guid id)
+    {
+        return await achievementRepository.GetById(id);
+    }
+
+    public async Task UpdateAchievement(Achievement achievement)
+    {
+        await achievementRepository.Update(achievement);
+    }
+
+    public async Task UpdateAchievement(Achievement achievement, Stream newImageContent, string newImageContentType)
+    {
+        var contentType = ContentTypeToExtensionMapper.NormalizeContentType(newImageContentType)
+            ?? throw new ArgumentException("Unsupported image content type. Only JPEG, PNG, WebP, HEIC, and HEIF are allowed.");
+
+        // Throws NotFoundException before uploading if the achievement no longer exists.
+        var existing = await achievementRepository.GetById(achievement.Id);
+
+        var extension = ContentTypeToExtensionMapper.GetExtension(contentType);
+        var name = $"{achievement.Name}-{Guid.NewGuid()}.{extension}";
+        var blobItem = await blobStorageAgent.UploadFileToBlobAsync(name, contentType, newImageContent);
+
+        achievement.Image = AchievementImage.ToAchievementImage(blobItem);
+        await achievementRepository.Update(achievement);
+
+        if (existing.Image != null)
+        {
+            await blobStorageAgent.DeleteFileToBlobAsync(existing.Image.FileName);
+        }
+    }
+
+    public async Task DeleteAchievement(Guid id)
+    {
+        await achievementRepository.Delete(id);
+    }
+
+    public async Task DeleteAchievementEntryRange(IEnumerable<AchievementEntry> entries)
+    {
+        await achievementRepository.DeleteAchievementEntryRange(entries);
+    }
+
+    // Obsolete: Handled by AchievementEventHandler
+    public Task CheckOrdersForAchievements(IEnumerable<Order> orders) => Task.CompletedTask;
+    public Task CheckTopUpForAchievements(TopUp topUp) => Task.CompletedTask;
+
+    public async Task CheckUserForAchievements(string username)
+    {
+        var uncompletedAchievements = await achievementRepository.GetUncompletedAchievementsForUser(username);
+        var user = await applicationUserRepository.GetByUsername(username);
+
+        var stats = await userStatRepository.GetOrCreateByUserId(user.Id);
+        var newAchievementEntries = new List<AchievementEntry>();
+
+        foreach (var achievement in uncompletedAchievements)
+        {
+            if (!achievement.AutoAchieve)
+                continue;
+
+            bool shouldAward = AchievementRulesUtil.CheckStatAchievement(achievement, stats);
+
+            if (shouldAward)
+            {
+                var achievementEntry = new AchievementEntry
+                {
+                    Id = Guid.NewGuid(),
+                    Achievement = achievement,
+                    User = user,
+                    HasSeen = false,
+                    CreatedOn = DateTime.Now
+                };
+
+                newAchievementEntries.Add(achievementEntry);
+            }
+        }
+
+        if (newAchievementEntries.Any())
+        {
+            await achievementRepository.CreateEntryRange(newAchievementEntries);
+            await NotifyAchievement(newAchievementEntries);
+        }
+    }
+
+    public async Task<bool> AwardAchievementToUser(string userId, Guid achievementId)
+        => await AwardAchievementToUserInternal(userId, achievementId, new HashSet<Guid>());
+
+    private async Task<bool> AwardAchievementToUserInternal(string userId, Guid achievementId, ISet<Guid> visitedAchievementIds)
+    {
+        if (!visitedAchievementIds.Add(achievementId))
+        {
+            return false;
+        }
+
+        var lockKey = $"{userId}:{achievementId}";
+        var awardLock = AwardLocks.GetOrAdd(lockKey, _ => new SemaphoreSlim(1, 1));
+        await awardLock.WaitAsync();
+        try
+        {
+            var entries = await achievementRepository.GetAllEntriesOfUser(userId);
+            var user = await applicationUserRepository.GetById(userId);
+            if (user == null)
+            {
+                user = new ApplicationUser { Id = userId, UserName = userId };
+            }
+
+            if (entries.Any(e => e.Achievement.Id == achievementId))
+                return false; // Already awarded
+
+            var achievement = (await achievementRepository.GetAll()).FirstOrDefault(a => a.Id == achievementId);
+            if (achievement == null)
+                return false;
+
+            // Tiered Sequence: If this has a parent, ensure parent is awarded
+            if (achievement.ParentAchievementId.HasValue && !entries.Any(e => e.Achievement.Id == achievement.ParentAchievementId.Value))
+            {
+                if (visitedAchievementIds.Contains(achievement.ParentAchievementId.Value))
+                {
+                    return false;
+                }
+
+                await AwardAchievementToUserInternal(userId, achievement.ParentAchievementId.Value, visitedAchievementIds);
+            }
+
+            var achievementEntry = new AchievementEntry
+            {
+                Id = Guid.NewGuid(),
+                Achievement = achievement,
+                User = user,
+                Tier = achievement.Tier,
+                HasSeen = false,
+                CreatedOn = DateTime.Now
+            };
+            await achievementRepository.CreateEntryRange(new List<AchievementEntry> { achievementEntry });
+            await NotifyAchievement(new List<AchievementEntry> { achievementEntry });
+            return true;
+        }
+        finally
+        {
+            awardLock.Release();
+            visitedAchievementIds.Remove(achievementId);
+        }
+    }
+
+    public async Task<int> AwardAchievementToAllUsers(Guid achievementId)
+    {
+        var users = await applicationUserRepository.GetAll();
+        var achievement = (await achievementRepository.GetAll()).FirstOrDefault(a => a.Id == achievementId);
+        if (achievement == null)
+            return 0;
+
+        var newEntries = new List<AchievementEntry>();
+        foreach (var user in users)
+        {
+            var entries = await achievementRepository.GetAllEntriesOfUser(user.Id);
+            if (entries.All(e => e.Achievement.Id != achievementId))
+            {
+                newEntries.Add(new AchievementEntry
+                {
+                    Id = Guid.NewGuid(),
+                    Achievement = achievement,
+                    User = user,
+                    HasSeen = false,
+                    CreatedOn = DateTime.Now
+                });
+            }
+        }
+        if (newEntries.Any())
+            await achievementRepository.CreateEntryRange(newEntries);
+        await NotifyAchievement(newEntries);
+        return newEntries.Count;
+    }
+
+    public async Task AddAchievement(AchievementDto dto)
+    {
+        if (dto.ImageContentType == null || dto.ImageContent == null)
+        {
+            throw new ArgumentException("Image content and type are required.");
+        }
+
+        var contentType = ContentTypeToExtensionMapper.NormalizeContentType(dto.ImageContentType.MediaType)
+            ?? throw new ArgumentException("Unsupported image content type. Only JPEG, PNG, WebP, HEIC, and HEIF are allowed.");
+
+        var extension = ContentTypeToExtensionMapper.GetExtension(contentType);
+        var name = $"{dto.Name}-{Guid.NewGuid()}.{extension}";
+
+        var blobItem = await blobStorageAgent.UploadFileToBlobAsync(name,
+            contentType,
+            dto.ImageContent);
+
+        var achievement = new Achievement
+        {
+            Id = Guid.NewGuid(),
+            Name = dto.Name,
+            Description = dto.Description,
+            Image = AchievementImage.ToAchievementImage(blobItem),
+            AutoAchieve = dto.AutoAchieve,
+            Action = dto.Action,
+            ComparisonOperator = dto.ComparisonOperator,
+            ComparisonValue = dto.ComparisonValue,
+            Tier = Enum.Parse<Achievement.AchievementTier>(dto.Tier ?? "Bronze"),
+            ParentAchievementId = dto.ParentAchievementId
+        };
+        await achievementRepository.Create(achievement);
+    }
+
+    private async Task NotifyAchievement(IEnumerable<AchievementEntry> achievements)
+    {
+        if (purchaseNotifier == null)
+        {
+            // Nothing to do if there's no notifier configured (tests may not always set it up)
+            return;
+        }
+
+        foreach (var achievement in achievements)
+        {
+            if (achievement == null || achievement.Achievement == null || achievement.User == null)
+                continue;
+
+            await purchaseNotifier.NotifyAchievementAsync(new AchievementEvent(
+                achievement.Achievement.Name,
+                achievement.User.FullName,
+                achievement.Achievement.Image != null ? $"/api/v1/blob/achievement/image/{achievement.Achievement.Image.Id}" : null
+            ));
+
+            await notificationService.CreateNotificationAsync(
+                achievement.User.Id,
+                "Nieuwe prestatie ontgrendeld!",
+                $"Gefeliciteerd! Je hebt de prestatie '{achievement.Achievement.Name}' ontgrendeld.",
+                "/achievements",
+                true
+            );
+        }
+    }
+
+}

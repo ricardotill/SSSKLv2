@@ -1,0 +1,13 @@
+namespace SSSKL.Contracts.Dto;
+
+public record AchievementListingDto(
+    Guid Id,
+    string Name,
+    string Description,
+    DateTime? DateAdded,
+    string? ImageUrl,
+    bool Completed,
+    string Tier,
+    Guid? ParentAchievementId,
+    string? ParentAchievementName
+);

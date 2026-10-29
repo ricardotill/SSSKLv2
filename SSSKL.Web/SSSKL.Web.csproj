@@ -1,0 +1,51 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <!-- Kept from the SSSKLv2 project so existing local user secrets keep working -->
+    <UserSecretsId>aspnet-SSSKLv2-3b416739-57c6-4151-a2e5-8cfca6f4185b</UserSecretsId>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Remove="compilerconfig.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="compilerconfig.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FluentValidation.AspNetCore" />
+    <PackageReference Include="HtmlSanitizer" />
+    <PackageReference Include="Microsoft.ApplicationInsights" />
+    <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" />
+    <PackageReference Include="Microsoft.ApplicationInsights.DependencyCollector" />
+    <PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" />
+    <PackageReference Include="Microsoft.Azure.AppConfiguration.AspNetCore" />
+    <PackageReference Include="Microsoft.Azure.SignalR" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.Logging.ApplicationInsights" />
+    <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" />
+    <PackageReference Include="QRCoder" />
+    <PackageReference Include="Scalar.AspNetCore" />
+    <PackageReference Include="Scalar.AspNetCore.Microsoft" />
+    <PackageReference Include="SendGrid" />
+    <PackageReference Include="SixLabors.ImageSharp" />
+    <PackageReference Include="System.ServiceModel.Syndication" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SSSKL.Application\SSSKL.Application.csproj" />
+    <ProjectReference Include="..\SSSKL.Infrastructure\SSSKL.Infrastructure.csproj" />
+    <ProjectReference Include="..\SSSKL.ServiceDefaults\SSSKL.ServiceDefaults.csproj" />
+  </ItemGroup>
+
+</Project>

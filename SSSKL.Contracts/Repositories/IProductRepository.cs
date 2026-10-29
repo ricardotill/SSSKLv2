@@ -1,0 +1,16 @@
+using SSSKL.Domain.Entities;
+
+namespace SSSKL.Contracts.Repositories;
+
+public interface IProductRepository
+{
+    Task<int> GetCount();
+    Task<IList<Product>> GetAll();
+    Task<IList<Product>> GetAll(int skip, int take);
+    Task<IList<Product>> GetAllAvailable();
+    Task<Product> GetById(Guid id);
+    Task<IList<Product>> GetByIds(IEnumerable<Guid> ids);
+    Task Create(Product obj);
+    Task Update(Product obj);
+    Task Delete(Guid id);
+}

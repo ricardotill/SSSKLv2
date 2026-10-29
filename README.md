@@ -55,11 +55,17 @@ SSSKLv2 is a modern, full-stack management and Point of Sale (POS) system design
 
 ## 🏗 Project Structure
 
-- `SSSKLv2/`: The main ASP.NET Core API and backend logic.
+The backend follows an onion architecture; dependencies only point inwards.
+
+- `SSSKL.Domain/`: Entities, domain events, constants and domain exceptions.
+- `SSSKL.Contracts/`: DTOs and the interfaces of repositories, services and agents.
+- `SSSKL.Application/`: Business logic (services, domain event handlers, validators).
+- `SSSKL.Infrastructure/`: EF Core persistence and migrations, repositories, Blob Storage, email, web push and Turnstile.
+- `SSSKL.Web/`: The ASP.NET Core API host (controllers, Identity endpoints, SignalR).
 - `Frontend/`: The Angular single-page application.
-- `SSSKLv2.AppHost/`: .NET Aspire orchestration project for local development.
-- `SSSKLv2.ServiceDefaults/`: Shared service configurations (resilience, service discovery).
-- `SSSKLv2.Test/`: Integrated and unit tests.
+- `SSSKL.AppHost/`: .NET Aspire orchestration project for local development.
+- `SSSKL.ServiceDefaults/`: Shared service configurations (resilience, service discovery).
+- `SSSKL.Application.Test/`, `SSSKL.Infrastructure.Test/`, `SSSKL.Web.Test/`: Unit and integration tests per layer.
 
 ---
 
@@ -75,12 +81,12 @@ The easiest way to run the entire stack is using .NET Aspire:
 
 1. Clone the repository.
 2. Open the solution in **Visual Studio 2022** or **JetBrains Rider**.
-3. Set `SSSKLv2.AppHost` as the startup project.
+3. Set `SSSKL.AppHost` as the startup project.
 4. Press `F5` to start. This will launch the Aspire Dashboard, SQL Server, Azurite, the API, and the Frontend.
 
 Alternatively, you can use the **CLI**:
 ```bash
-dotnet run --project SSSKLv2.AppHost
+dotnet run --project SSSKL.AppHost
 ```
 
 ### Manual Setup
@@ -92,7 +98,7 @@ If you prefer to run services manually:
    ```
 2. Run the Backend:
    ```bash
-   cd SSSKLv2
+   cd SSSKL.Web
    dotnet run
    ```
 3. Run the Frontend:

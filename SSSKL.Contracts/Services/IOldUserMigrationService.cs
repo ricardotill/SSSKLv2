@@ -1,0 +1,14 @@
+using SSSKL.Domain.Entities;
+
+
+namespace SSSKL.Contracts.Services;
+
+public interface IOldUserMigrationService
+{
+    Task<int> GetCount();
+    public Task<OldUserMigration> GetMigrationById(Guid id);
+    public Task<OldUserMigration> GetMigrationByUsername(string username);
+    public Task<IEnumerable<OldUserMigration>> GetAll();
+    public Task CreateMigration(OldUserMigration obj);
+    public Task DeleteMigration(Guid id);
+}

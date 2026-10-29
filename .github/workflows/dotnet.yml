@@ -93,12 +93,12 @@ jobs:
             /d:sonar.token="${{ secrets.SONAR_TOKEN }}" \
             /d:sonar.host.url="https://sonarcloud.io" \
             /d:sonar.cs.opencover.reportsPaths="**/*.opencover.xml" \
-            /d:sonar.exclusions="Frontend/**,**/Migrations/**,**/Components/**,**/Controllers/**,**/Pages/**,**/ServiceExtensions.cs,**/Program.cs" \
+            /d:sonar.exclusions="Frontend/**,**/Migrations/**,**/Components/**,**/Controllers/**,**/Pages/**,**/DependencyInjection.cs,**/Program.cs" \
             /d:sonar.scanner.skipJreProvisioning=true
           
-          dotnet build SSSKLv2.slnx
+          dotnet build SSSKL.slnx
           
-          dotnet test SSSKLv2.slnx --no-build --verbosity normal \
+          dotnet test SSSKL.slnx --no-build --verbosity normal \
             /p:CollectCoverage=true \
             /p:CoverletOutputFormat=opencover
           

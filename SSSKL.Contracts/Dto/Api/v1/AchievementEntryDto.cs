@@ -1,0 +1,22 @@
+using System;
+
+namespace SSSKL.Contracts.Dto.Api.v1;
+
+public class AchievementEntryDto
+{
+    public Guid Id { get; set; }
+    public Guid AchievementId { get; set; }
+    public string AchievementName { get; set; } = string.Empty;
+    public string AchievementDescription { get; set; } = string.Empty;
+    public DateTime DateAdded { get; set; }
+    public string? ImageUrl { get; set; }
+    public bool HasSeen { get; set; }
+    public string Tier { get; set; } = string.Empty;
+    public Guid? ParentAchievementId { get; set; }
+    public string? ParentAchievementName { get; set; }
+    public string? UserId { get; set; }
+    public string? UserName { get; set; }
+    public string? UserFullName { get; set; }
+    public string? UserProfilePictureUrl { get; set; }
+}
+

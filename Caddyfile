@@ -20,7 +20,7 @@ http://localhost:8080 {
   }
 
   handle {
-    root * ./Frontend/dist/SSSKLv2/browser
+    root * ./Frontend/dist/SSSKL/browser
     try_files {path} /index.html
     file_server
   }

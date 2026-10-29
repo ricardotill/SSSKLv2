@@ -24,6 +24,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="SSSKL.Application.Test" />
+    <InternalsVisibleTo Include="SSSKL.Infrastructure.Test" />
   </ItemGroup>
 
   <ItemGroup>

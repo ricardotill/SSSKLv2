@@ -5,7 +5,14 @@ using Microsoft.AspNetCore.Http;
 using System.Security.Claims;
 using System.IO;
 using System.Net.Mime;
-using SSSKL.Application.Services;
+using SSSKL.Application.Features.Events.Commands.CreateEvent;
+using SSSKL.Application.Features.Events.Commands.DeleteEvent;
+using SSSKL.Application.Features.Events.Commands.RespondToEvent;
+using SSSKL.Application.Features.Events.Commands.UpdateEvent;
+using SSSKL.Application.Features.Events.Commands.UpdateEventImage;
+using SSSKL.Application.Features.Events.Queries.GetEventById;
+using SSSKL.Application.Features.Events.Queries.GetEvents;
+using SSSKL.Application.Shared;
 using SSSKL.Contracts.Agents;
 using SSSKL.Contracts.Dto.Api;
 using SSSKL.Contracts.Repositories;
@@ -14,15 +21,14 @@ using SSSKL.Domain.Constants;
 using SSSKL.Domain.Entities;
 using SSSKL.Domain.Exceptions;
 
-namespace SSSKL.Application.Test.Services;
+namespace SSSKL.Application.Test.Features.Events;
 
 [TestClass]
-public class EventServiceTests
+public class EventHandlerTests
 {
-    private EventService _sut = null!;
     private IEventRepository _eventRepository = null!;
     private IBlobStorageAgent _blobStorageAgent = null!;
-    private IApplicationUserService _applicationUserService = null!;
+    private IUserRoleProvider _roleProvider = null!;
     private IEventNotifier _eventNotifier = null!;
     private IRoleRepository _roleRepository = null!;
 
@@ -33,23 +39,53 @@ public class EventServiceTests
 
         _eventRepository = Substitute.For<IEventRepository>();
         _blobStorageAgent = Substitute.For<IBlobStorageAgent>();
-        _applicationUserService = Substitute.For<IApplicationUserService>();
+        _roleProvider = Substitute.For<IUserRoleProvider>();
         _eventNotifier = Substitute.For<IEventNotifier>();
 
-        _sut = new EventService(_eventRepository, _blobStorageAgent, _applicationUserService, _roleRepository, _eventNotifier);
+
+        // CreateEvent reloads the event after adding it
+        Event? added = null;
+        _eventRepository.When(r => r.Add(Arg.Any<Event>())).Do(ci => added = ci.Arg<Event>());
+        _eventRepository.GetById(Arg.Any<Guid>()).Returns(ci => added?.Id == ci.Arg<Guid>() ? added : null);
     }
+
+    // The tests below were written against EventService; these helpers send the same calls to the handlers.
+
+    private async Task<IEnumerable<EventDto>> GetAllEvents(int skip, int take, bool futureOnly, string? userId) =>
+        (await new GetEventsHandler(_eventRepository, _roleProvider).Handle(new GetEventsQuery(skip, take, futureOnly, userId, null), CancellationToken.None)).Items;
+
+    private async Task<int> GetCount(bool futureOnly, string? userId) =>
+        (await new GetEventsHandler(_eventRepository, _roleProvider).Handle(new GetEventsQuery(0, 15, futureOnly, userId, null), CancellationToken.None)).TotalCount;
+
+    private Task<EventDto> GetEventById(Guid id) =>
+        new GetEventByIdHandler(_eventRepository).Handle(new GetEventByIdQuery(id, null), CancellationToken.None);
+
+    private async Task<Guid> CreateEvent(EventCreateDto dto, string creatorId) =>
+        (await new CreateEventHandler(_eventRepository, _roleRepository, _blobStorageAgent, _eventNotifier).Handle(new CreateEventCommand(dto, creatorId), CancellationToken.None)).Id;
+
+    private Task UpdateEvent(Guid id, EventCreateDto dto, string userId, bool isAdmin) =>
+        new UpdateEventHandler(_eventRepository, _roleRepository, _eventNotifier).Handle(new UpdateEventCommand(id, dto, userId, isAdmin), CancellationToken.None);
+
+    private Task UpdateEventImage(Guid id, string userId, bool isAdmin, Stream imageContent, string contentType) =>
+        new UpdateEventImageHandler(_eventRepository, _blobStorageAgent, _eventNotifier).Handle(new UpdateEventImageCommand(id, userId, isAdmin, imageContent, contentType), CancellationToken.None);
+
+    private Task DeleteEvent(Guid id, string userId, bool isAdmin) =>
+        new DeleteEventHandler(_eventRepository, _eventNotifier).Handle(new DeleteEventCommand(id, userId, isAdmin), CancellationToken.None);
+
+    private Task RespondToEvent(Guid id, string userId, EventResponseStatus status) =>
+        new RespondToEventHandler(_eventRepository, _roleProvider).Handle(new RespondToEventCommand(id, userId, status), CancellationToken.None);
 
     [TestMethod]
     public async Task GetAllEvents_AsAdmin_ShouldCallRepositoryWithIsAdminTrue()
     {
         // Arrange
         var userId = "admin-id";
-        _applicationUserService.GetUserRoles(userId).Returns(new List<string> { Roles.Admin });
+        _roleProvider.GetRoles(userId).Returns(new List<string> { Roles.Admin });
         _eventRepository.GetAll(0, 15, false, Arg.Any<IList<string>>(), true, null)
             .Returns(new List<Event>());
 
         // Act
-        var result = await _sut.GetAllEvents(0, 15, false, userId);
+        var result = await GetAllEvents(0, 15, false, userId);
 
         // Assert
         result.Should().NotBeNull();
@@ -62,11 +98,11 @@ public class EventServiceTests
         // Arrange
         var userId = "user-id";
         var roles = new List<string> { "UserRole" };
-        _applicationUserService.GetUserRoles(userId).Returns(roles);
+        _roleProvider.GetRoles(userId).Returns(roles);
         _eventRepository.GetCount(true, Arg.Any<IList<string>>(), false, null).Returns(5);
 
         // Act
-        var result = await _sut.GetCount(true, userId);
+        var result = await GetCount(true, userId);
 
         // Assert
         result.Should().Be(5);
@@ -82,7 +118,7 @@ public class EventServiceTests
         _eventRepository.GetById(id).Returns(e);
 
         // Act
-        var result = await _sut.GetEventById(id);
+        var result = await GetEventById(id);
 
         // Assert
         result.Should().NotBeNull();
@@ -97,7 +133,7 @@ public class EventServiceTests
         _eventRepository.GetById(id).Returns((Event)null!);
 
         // Act & Assert
-        await _sut.Invoking(s => s.GetEventById(id)).Should().ThrowAsync<NotFoundException>();
+        await this.Invoking(s => s.GetEventById(id)).Should().ThrowAsync<NotFoundException>();
     }
 
     [TestMethod]
@@ -111,7 +147,7 @@ public class EventServiceTests
         _eventRepository.Add(Arg.Do<Event>(e => e.Id = Guid.NewGuid())).Returns(Task.CompletedTask);
 
         // Act
-        var result = await _sut.CreateEvent(dto, creatorId);
+        var result = await CreateEvent(dto, creatorId);
 
         // Assert
         result.Should().NotBeEmpty();
@@ -135,7 +171,7 @@ public class EventServiceTests
         var creatorId = "creator-id";
 
         // Act
-        await _sut.CreateEvent(dto, creatorId);
+        await CreateEvent(dto, creatorId);
 
         // Assert
         await _eventRepository.Received(1).Add(Arg.Is<Event>(e => 
@@ -159,7 +195,7 @@ public class EventServiceTests
         };
 
         // Act
-        await _sut.CreateEvent(dto, "creator-id");
+        await CreateEvent(dto, "creator-id");
 
         // Assert
         await _eventRepository.Received(1).Add(Arg.Is<Event>(e => e.RequiredRoles.Any(r => r.Name == roleName)));
@@ -177,7 +213,7 @@ public class EventServiceTests
         var dto = new EventCreateDto { Title = "New Title" };
 
         // Act
-        await _sut.UpdateEvent(id, dto, creatorId, false);
+        await UpdateEvent(id, dto, creatorId, false);
 
         // Assert
         e.Title.Should().Be("New Title");
@@ -206,7 +242,7 @@ public class EventServiceTests
         using var stream = new MemoryStream(new byte[] { 1, 2, 3, 4 });
 
         // Act
-        await _sut.UpdateEventImage(id, creatorId, false, stream, "image/png");
+        await UpdateEventImage(id, creatorId, false, stream, "image/png");
 
         // Assert
         existing.Image.Should().NotBeNull();
@@ -234,7 +270,7 @@ public class EventServiceTests
         };
 
         // Act
-        await _sut.UpdateEvent(id, dto, creatorId, false);
+        await UpdateEvent(id, dto, creatorId, false);
 
         // Assert
         e.LocationName.Should().Be("New Location");
@@ -283,7 +319,7 @@ public class EventServiceTests
         using var stream = new MemoryStream(new byte[] { 1, 2, 3 });
 
         // Act
-        await _sut.UpdateEventImage(id, creatorId, false, stream, "image/png");
+        await UpdateEventImage(id, creatorId, false, stream, "image/png");
 
         // Assert
         e.Image.Should().NotBeNull();
@@ -310,7 +346,7 @@ public class EventServiceTests
         var dto = new EventCreateDto { Title = "Illegally Updated" };
 
         // Act & Assert
-        await _sut.Invoking(s => s.UpdateEvent(id, dto, "hacker-id", false)).Should().ThrowAsync<UnauthorizedAccessException>();
+        await this.Invoking(s => s.UpdateEvent(id, dto, "hacker-id", false)).Should().ThrowAsync<UnauthorizedAccessException>();
     }
 
     [TestMethod]
@@ -322,7 +358,7 @@ public class EventServiceTests
         _eventRepository.GetById(id).Returns(e);
 
         // Act
-        await _sut.DeleteEvent(id, "admin-id", true);
+        await DeleteEvent(id, "admin-id", true);
 
         // Assert
         await _eventRepository.Received(1).Delete(id);
@@ -340,7 +376,7 @@ public class EventServiceTests
         _eventRepository.GetResponse(id, userId).Returns((EventResponse)null!);
 
         // Act
-        await _sut.RespondToEvent(id, userId, EventResponseStatus.Accepted);
+        await RespondToEvent(id, userId, EventResponseStatus.Accepted);
 
         // Assert
         await _eventRepository.Received(1).AddResponse(Arg.Is<EventResponse>(r => r.EventId == id && r.UserId == userId && r.Status == EventResponseStatus.Accepted));
@@ -358,7 +394,7 @@ public class EventServiceTests
         _eventRepository.GetResponse(id, userId).Returns(existingResponse);
 
         // Act
-        await _sut.RespondToEvent(id, userId, EventResponseStatus.Accepted);
+        await RespondToEvent(id, userId, EventResponseStatus.Accepted);
 
         // Assert
         existingResponse.Status.Should().Be(EventResponseStatus.Accepted);
@@ -381,7 +417,7 @@ public class EventServiceTests
             .Returns(new BlobStorageItem { Id = Guid.NewGuid(), FileName = "test.png", Uri = "http://test.com/test.png", ContentType = "image/png" });
 
         // Act
-        await _sut.CreateEvent(dto, "creator-id");
+        await CreateEvent(dto, "creator-id");
 
         // Assert
         await _eventRepository.Received(1).Add(Arg.Is<Event>(e => e.Image != null));
@@ -404,7 +440,7 @@ public class EventServiceTests
             .Returns(new BlobStorageItem { Id = Guid.NewGuid(), FileName = "test.heic", Uri = "http://test.com/test.heic", ContentType = "image/heic" });
 
         // Act
-        await _sut.CreateEvent(dto, "creator-id");
+        await CreateEvent(dto, "creator-id");
 
         // Assert
         await _eventRepository.Received(1).Add(Arg.Is<Event>(e => e.Image != null && e.Image.ContentType == "image/heic"));
@@ -424,7 +460,7 @@ public class EventServiceTests
         };
 
         // Act
-        var act = () => _sut.CreateEvent(dto, "creator-id");
+        var act = () => CreateEvent(dto, "creator-id");
 
         // Assert
         await act.Should().ThrowAsync<ArgumentException>().WithMessage("*JPEG, PNG, WebP, HEIC, and HEIF*");
@@ -440,10 +476,10 @@ public class EventServiceTests
         var e = new Event { Id = id, RequiredRoles = new List<Microsoft.AspNetCore.Identity.IdentityRole> { role } };
         
         _eventRepository.GetById(id).Returns(e);
-        _applicationUserService.GetUserRoles(userId).Returns(new List<string> { "OtherRole" });
+        _roleProvider.GetRoles(userId).Returns(new List<string> { "OtherRole" });
 
         // Act & Assert
-        await _sut.Invoking(s => s.RespondToEvent(id, userId, EventResponseStatus.Accepted)).Should().ThrowAsync<UnauthorizedAccessException>();
+        await this.Invoking(s => s.RespondToEvent(id, userId, EventResponseStatus.Accepted)).Should().ThrowAsync<UnauthorizedAccessException>();
     }
 
     [TestMethod]
@@ -460,7 +496,7 @@ public class EventServiceTests
         var creatorId = "creator-id";
 
         // Act
-        await _sut.CreateEvent(dto, creatorId);
+        await CreateEvent(dto, creatorId);
 
         // Assert
         await _eventRepository.Received(1).Add(Arg.Is<Event>(e => e.Description == expected));

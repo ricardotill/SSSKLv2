@@ -1,64 +1,41 @@
+using System.Security.Claims;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
+using SSSKL.Application.Features.Reactions.Commands.DeleteReaction;
+using SSSKL.Application.Features.Reactions.Commands.ToggleReaction;
+using SSSKL.Application.Features.Reactions.Queries.GetReactions;
+using SSSKL.Application.Features.Reactions.Queries.GetReactionTimeline;
 using SSSKL.Contracts.Dto;
-using SSSKL.Contracts.Services;
 
 namespace SSSKL.Web.Controllers.v1;
 
 [Authorize]
 [Route("v1/[controller]")]
 [ApiController]
-public class ReactionsController : ControllerBase
+public class ReactionsController(ISender sender) : ControllerBase
 {
-    private readonly IReactionService _reactionService;
-
-    public ReactionsController(IReactionService reactionService)
-    {
-        _reactionService = reactionService;
-    }
-
     [HttpPost("toggle")]
     public async Task<IActionResult> Toggle([FromBody] ToggleReactionRequest request)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
-        try
-        {
-            await _reactionService.ToggleReaction(request.TargetId, request.TargetType, request.Content, userId);
-            return Ok();
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            return Forbid(ex.Message);
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(ex.Message);
-        }
+        await sender.Send(new ToggleReactionCommand(request.TargetId, request.TargetType, request.Content, userId));
+        return Ok();
     }
 
     [AllowAnonymous]
     [HttpGet("{targetId:guid}/{targetType}")]
     public async Task<ActionResult<IEnumerable<ReactionDto>>> Get(Guid targetId, string targetType)
     {
-        try
-        {
-            var reactions = await _reactionService.GetReactionsForTarget(targetId, targetType);
-            return Ok(reactions);
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(ex.Message);
-        }
+        return Ok(await sender.Send(new GetReactionsQuery(targetId, targetType)));
     }
 
     [HttpGet("timeline")]
     public async Task<ActionResult<IEnumerable<ReactionDto>>> GetTimeline([FromQuery] int skip = 0, [FromQuery] int take = 10)
     {
-        var reactions = await _reactionService.GetTimeline(skip, take);
-        return Ok(reactions);
+        return Ok(await sender.Send(new GetReactionTimelineQuery(skip, take)));
     }
 
     [HttpDelete("{id:guid}")]
@@ -67,16 +44,7 @@ public class ReactionsController : ControllerBase
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
-        var isAdmin = User.IsInRole("Admin");
-
-        try
-        {
-            await _reactionService.DeleteReaction(id, userId, isAdmin);
-            return NoContent();
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            return Forbid(ex.Message);
-        }
+        await sender.Send(new DeleteReactionCommand(id, userId, User.IsInRole("Admin")));
+        return NoContent();
     }
 }

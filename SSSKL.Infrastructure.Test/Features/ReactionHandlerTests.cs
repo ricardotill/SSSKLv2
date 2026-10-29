@@ -3,25 +3,31 @@ using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using NSubstitute;
-using SSSKL.Application.Services;
+using SSSKL.Application.Features.Reactions.Commands.DeleteReaction;
+using SSSKL.Application.Features.Reactions.Commands.ToggleReaction;
+using SSSKL.Application.Features.Reactions.Queries.GetReactions;
+using SSSKL.Application.Features.Reactions.Queries.GetReactionTimeline;
+using SSSKL.Application.Shared;
+using SSSKL.Contracts.Dto;
 using SSSKL.Contracts.Events;
 using SSSKL.Contracts.Repositories;
-using SSSKL.Contracts.Services;
 using SSSKL.Domain.Constants;
 using SSSKL.Domain.Entities;
 using SSSKL.Infrastructure.Persistence;
 using SSSKL.Infrastructure.Persistence.Repositories;
 using SSSKL.Infrastructure.Test.Util;
 
-namespace SSSKL.Infrastructure.Test.Services;
+namespace SSSKL.Infrastructure.Test.Features;
 
 [TestClass]
-public class ReactionServiceTests : RepositoryTest
+public class ReactionHandlerTests : RepositoryTest
 {
-    private ReactionService _sut = null!;
     private ApplicationDbContext _dbContext = null!;
-    private IApplicationUserService _userService = null!;
-    private INotificationService _notificationService = null!;
+    private ReactionRepository _reactionRepository = null!;
+    private EventRepository _eventRepository = null!;
+    private ApplicationUserRepository _applicationUserRepository = null!;
+    private IUserRoleProvider _roleProvider = null!;
+    private IUserNotifier _userNotifier = null!;
     private IDomainEventDispatcher _mockEventDispatcher = null!;
     private IUserStatRepository _mockUserStatRepository = null!;
 
@@ -30,14 +36,31 @@ public class ReactionServiceTests : RepositoryTest
     {
         InitializeDatabase();
         _dbContext = new ApplicationDbContext(GetOptions());
-        _userService = Substitute.For<IApplicationUserService>();
-        _notificationService = Substitute.For<INotificationService>();
+        _roleProvider = Substitute.For<IUserRoleProvider>();
+        _userNotifier = Substitute.For<IUserNotifier>();
         _mockEventDispatcher = Substitute.For<IDomainEventDispatcher>();
         _mockUserStatRepository = Substitute.For<IUserStatRepository>();
         _mockUserStatRepository.RecalculateByUserId(Arg.Any<string>()).Returns(call => new UserStat { UserId = call.Arg<string>() });
         var factory = new MockDbContextFactory(GetOptions());
-        _sut = new ReactionService(new ReactionRepository(_dbContext), new EventRepository(factory), new ApplicationUserRepository(factory), _userService, _notificationService, _mockEventDispatcher, _mockUserStatRepository);
+        _reactionRepository = new ReactionRepository(_dbContext);
+        _eventRepository = new EventRepository(factory);
+        _applicationUserRepository = new ApplicationUserRepository(factory);
     }
+
+    // The tests below were written against ReactionService; these helpers send the same calls to the handlers.
+
+    private Task ToggleReaction(Guid targetId, string targetType, string content, string userId) =>
+        new ToggleReactionHandler(_reactionRepository, _eventRepository, _applicationUserRepository, _roleProvider, _userNotifier, _mockEventDispatcher, _mockUserStatRepository)
+            .Handle(new ToggleReactionCommand(targetId, targetType, content, userId), CancellationToken.None);
+
+    private Task<IReadOnlyList<ReactionDto>> GetReactionsForTarget(Guid targetId, string targetType) =>
+        new GetReactionsHandler(_reactionRepository).Handle(new GetReactionsQuery(targetId, targetType), CancellationToken.None);
+
+    private Task<IReadOnlyList<ReactionDto>> GetTimeline(int skip, int take) =>
+        new GetReactionTimelineHandler(_reactionRepository).Handle(new GetReactionTimelineQuery(skip, take), CancellationToken.None);
+
+    private Task DeleteReaction(Guid id, string userId, bool isAdmin) =>
+        new DeleteReactionHandler(_reactionRepository, _mockUserStatRepository).Handle(new DeleteReactionCommand(id, userId, isAdmin), CancellationToken.None);
 
     [TestCleanup]
     public void TestCleanup()
@@ -57,7 +80,7 @@ public class ReactionServiceTests : RepositoryTest
         var userId = TestUser.Id;
 
         // Act
-        await _sut.ToggleReaction(targetId, targetType, content, userId);
+        await ToggleReaction(targetId, targetType, content, userId);
 
         // Assert
         var reaction = await _dbContext.Reaction.FirstOrDefaultAsync(r => r.TargetId == targetId && r.Content == content);
@@ -88,7 +111,7 @@ public class ReactionServiceTests : RepositoryTest
         await _dbContext.SaveChangesAsync();
 
         // Act
-        await _sut.ToggleReaction(targetId, targetType.ToString(), content, userId);
+        await ToggleReaction(targetId, targetType.ToString(), content, userId);
 
         // Assert
         var reaction = await _dbContext.Reaction.FirstOrDefaultAsync(r => r.TargetId == targetId && r.Content == content);
@@ -104,10 +127,10 @@ public class ReactionServiceTests : RepositoryTest
         var userId = TestUser.Id;
         
         // Add first reaction
-        await _sut.ToggleReaction(targetId, "Event", "👍", userId);
+        await ToggleReaction(targetId, "Event", "👍", userId);
 
         // Act - Toggle different content
-        await _sut.ToggleReaction(targetId, "Event", "❤️", userId);
+        await ToggleReaction(targetId, "Event", "❤️", userId);
 
         // Assert
         var reactions = await _dbContext.Reaction.Where(r => r.TargetId == targetId).ToListAsync();
@@ -121,7 +144,7 @@ public class ReactionServiceTests : RepositoryTest
         var targetId = Guid.NewGuid();
 
         // Act & Assert
-        await _sut.Invoking(s => s.ToggleReaction(targetId, "InvalidType", "👍", TestUser.Id))
+        await this.Invoking(s => s.ToggleReaction(targetId, "InvalidType", "👍", TestUser.Id))
             .Should().ThrowAsync<ArgumentException>();
     }
 
@@ -142,7 +165,7 @@ public class ReactionServiceTests : RepositoryTest
         await _dbContext.SaveChangesAsync();
 
         // Act
-        var result = await _sut.GetReactionsForTarget(targetId, "Event");
+        var result = await GetReactionsForTarget(targetId, "Event");
 
         // Assert
         result.Should().HaveCount(1);
@@ -162,7 +185,7 @@ public class ReactionServiceTests : RepositoryTest
         await _dbContext.SaveChangesAsync();
 
         // Act
-        var result = await _sut.GetTimeline(0, 10);
+        var result = await GetTimeline(0, 10);
 
         // Assert
         result.Should().HaveCount(2);
@@ -189,10 +212,10 @@ public class ReactionServiceTests : RepositoryTest
         await _dbContext.SaveChangesAsync();
 
         // Act
-        await _sut.ToggleReaction(evt.Id, "Event", "👍", TestUser.Id);
+        await ToggleReaction(evt.Id, "Event", "👍", TestUser.Id);
 
         // Assert
-        await _notificationService.Received(1).CreateNotificationAsync(
+        await _userNotifier.Received(1).NotifyAsync(
             creatorId,
             "Nieuwe reactie",
             Arg.Is<string>(s => s.Contains("Party")),
@@ -221,10 +244,10 @@ public class ReactionServiceTests : RepositoryTest
         await _dbContext.SaveChangesAsync();
 
         // Act
-        await _sut.ToggleReaction(rootReaction.Id, "Reaction", "Reply", TestUser.Id);
+        await ToggleReaction(rootReaction.Id, "Reaction", "Reply", TestUser.Id);
 
         // Assert
-        await _notificationService.Received(1).CreateNotificationAsync(
+        await _userNotifier.Received(1).NotifyAsync(
             authorId,
             "Nieuw antwoord",
             Arg.Any<string>(),
@@ -240,10 +263,10 @@ public class ReactionServiceTests : RepositoryTest
         var evt = await CreateTestEvent(); // Creator is TestUser.Id
 
         // Act
-        await _sut.ToggleReaction(evt.Id, "Event", "👍", TestUser.Id);
+        await ToggleReaction(evt.Id, "Event", "👍", TestUser.Id);
 
         // Assert
-        await _notificationService.DidNotReceive().CreateNotificationAsync(
+        await _userNotifier.DidNotReceive().NotifyAsync(
             Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<bool>());
     }
 
@@ -265,7 +288,7 @@ public class ReactionServiceTests : RepositoryTest
         _dbContext.Reaction.Add(reaction1);
         await _dbContext.SaveChangesAsync();
         // Act - React to the reaction
-        await _sut.ToggleReaction(reaction1.Id, "Reaction", "Reply", TestUser.Id);
+        await ToggleReaction(reaction1.Id, "Reaction", "Reply", TestUser.Id);
 
         // Assert
         var result = await _dbContext.Reaction.FirstOrDefaultAsync(r => r.TargetId == reaction1.Id && r.TargetType == ReactionTargetType.Reaction);
@@ -289,7 +312,7 @@ public class ReactionServiceTests : RepositoryTest
         await _dbContext.SaveChangesAsync();
 
         // Act
-        var result = await _sut.GetReactionsForTarget(eventId, "Event");
+        var result = await GetReactionsForTarget(eventId, "Event");
 
         // Assert
         var topLevel = result.ToList();
@@ -354,10 +377,10 @@ public class ReactionServiceTests : RepositoryTest
         _dbContext.Event.Add(evt);
         await _dbContext.SaveChangesAsync();
 
-        _userService.GetUserRoles(TestUser.Id).Returns(new List<string> { Roles.User });
+        _roleProvider.GetRoles(TestUser.Id).Returns(new List<string> { Roles.User });
 
         // Act & Assert
-        await _sut.Invoking(s => s.ToggleReaction(evt.Id, "Event", "👍", TestUser.Id))
+        await this.Invoking(s => s.ToggleReaction(evt.Id, "Event", "👍", TestUser.Id))
             .Should().ThrowAsync<UnauthorizedAccessException>();
     }
 
@@ -380,10 +403,10 @@ public class ReactionServiceTests : RepositoryTest
         _dbContext.Event.Add(evt);
         await _dbContext.SaveChangesAsync();
 
-        _userService.GetUserRoles(TestUser.Id).Returns(new List<string> { roleName });
+        _roleProvider.GetRoles(TestUser.Id).Returns(new List<string> { roleName });
 
         // Act
-        await _sut.ToggleReaction(evt.Id, "Event", "👍", TestUser.Id);
+        await ToggleReaction(evt.Id, "Event", "👍", TestUser.Id);
 
         // Assert
         var reaction = await _dbContext.Reaction.FirstOrDefaultAsync(r => r.TargetId == evt.Id);
@@ -408,10 +431,10 @@ public class ReactionServiceTests : RepositoryTest
         _dbContext.Event.Add(evt);
         await _dbContext.SaveChangesAsync();
 
-        _userService.GetUserRoles(TestUser.Id).Returns(new List<string> { Roles.Admin });
+        _roleProvider.GetRoles(TestUser.Id).Returns(new List<string> { Roles.Admin });
 
         // Act
-        await _sut.ToggleReaction(evt.Id, "Event", "👍", TestUser.Id);
+        await ToggleReaction(evt.Id, "Event", "👍", TestUser.Id);
 
         // Assert
         var reaction = await _dbContext.Reaction.FirstOrDefaultAsync(r => r.TargetId == evt.Id);
@@ -432,10 +455,10 @@ public class ReactionServiceTests : RepositoryTest
         _dbContext.Reaction.Add(rootReaction);
         await _dbContext.SaveChangesAsync();
 
-        _userService.GetUserRoles(TestUser.Id).Returns(new List<string> { Roles.User });
+        _roleProvider.GetRoles(TestUser.Id).Returns(new List<string> { Roles.User });
 
         // Act & Assert
-        await _sut.Invoking(s => s.ToggleReaction(rootReaction.Id, "Reaction", "Reply", TestUser.Id))
+        await this.Invoking(s => s.ToggleReaction(rootReaction.Id, "Reaction", "Reply", TestUser.Id))
             .Should().ThrowAsync<UnauthorizedAccessException>();
     }
 
@@ -449,7 +472,7 @@ public class ReactionServiceTests : RepositoryTest
         await _dbContext.SaveChangesAsync();
 
         // Act
-        await _sut.DeleteReaction(reaction.Id, TestUser.Id, false);
+        await DeleteReaction(reaction.Id, TestUser.Id, false);
 
         // Assert
         var result = await _dbContext.Reaction.FindAsync(reaction.Id);
@@ -468,7 +491,7 @@ public class ReactionServiceTests : RepositoryTest
         await _dbContext.SaveChangesAsync();
 
         // Act
-        await _sut.DeleteReaction(reaction.Id, "admin-id", true);
+        await DeleteReaction(reaction.Id, "admin-id", true);
 
         // Assert
         var result = await _dbContext.Reaction.FindAsync(reaction.Id);
@@ -487,7 +510,7 @@ public class ReactionServiceTests : RepositoryTest
         await _dbContext.SaveChangesAsync();
 
         // Act & Assert
-        await _sut.Invoking(s => s.DeleteReaction(reaction.Id, TestUser.Id, false))
+        await this.Invoking(s => s.DeleteReaction(reaction.Id, TestUser.Id, false))
             .Should().ThrowAsync<UnauthorizedAccessException>();
     }
 
@@ -504,7 +527,7 @@ public class ReactionServiceTests : RepositoryTest
         await _dbContext.SaveChangesAsync();
 
         // Act
-        await _sut.DeleteReaction(l1.Id, TestUser.Id, false);
+        await DeleteReaction(l1.Id, TestUser.Id, false);
 
         // Assert
         _dbContext.Reaction.Any(r => r.Id == l1.Id).Should().BeFalse();

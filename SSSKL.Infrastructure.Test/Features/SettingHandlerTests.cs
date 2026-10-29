@@ -7,7 +7,6 @@ using SSSKL.Application.Features.Settings.Queries.GetTurnstileConfig;
 using SSSKL.Contracts.Services;
 using SSSKL.Domain.Constants;
 using SSSKL.Domain.Entities;
-using SSSKL.Domain.Exceptions;
 using SSSKL.Infrastructure.Persistence;
 using SSSKL.Infrastructure.Persistence.Repositories;
 
@@ -42,7 +41,7 @@ public class SettingHandlerTests
         _context.Dispose();
     }
 
-    private Task<Contracts.Dto.Api.v1.GlobalSettingDto> Get(string key, bool isAdmin = false) =>
+    private Task<Contracts.Dto.Api.v1.GlobalSettingDto?> Get(string key, bool isAdmin = false) =>
         new GetGlobalSettingHandler(_repository).Handle(new GetGlobalSettingQuery(key, isAdmin), CancellationToken.None);
 
     private Task Update(string key, string value) =>
@@ -56,16 +55,16 @@ public class SettingHandlerTests
 
         var result = await Get("test-key");
 
-        result.Key.Should().Be("test-key");
+        result!.Key.Should().Be("test-key");
         result.Value.Should().Be("test-value");
     }
 
     [TestMethod]
-    public async Task GetSetting_WhenNotExists_ThrowsNotFound()
+    public async Task GetSetting_WhenNotExists_ReturnsNull()
     {
-        var act = () => Get("non-existent");
+        var result = await Get("non-existent");
 
-        await act.Should().ThrowAsync<NotFoundException>();
+        result.Should().BeNull();
     }
 
     [TestMethod]

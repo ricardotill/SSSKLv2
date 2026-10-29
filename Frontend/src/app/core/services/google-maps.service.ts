@@ -21,7 +21,7 @@ export class GoogleMapsService {
     }
 
     this.loadObservable$ = this.globalSettingsService.getSetting('GoogleMapsApiKey').pipe(
-      map(setting => setting.value),
+      map(setting => setting?.value),
       switchMap(apiKey => {
         if (!apiKey) {
           console.warn('GoogleMapsApiKey not found in GlobalSettings');
@@ -65,7 +65,7 @@ export class GoogleMapsService {
    */
   getMapId(): Observable<string | undefined> {
     return this.globalSettingsService.getSetting('GoogleMapsMapId').pipe(
-      map(setting => setting.value || undefined),
+      map(setting => setting?.value || undefined),
       catchError(() => of(undefined))
     );
   }
@@ -75,7 +75,7 @@ export class GoogleMapsService {
    */
   hasApiKey(): Observable<boolean> {
     return this.globalSettingsService.getSetting('GoogleMapsApiKey').pipe(
-      map(setting => !!setting.value),
+      map(setting => !!setting?.value),
       catchError(() => of(false))
     );
   }

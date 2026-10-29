@@ -33,11 +33,32 @@ describe('GlobalSettingsService', () => {
 
   it('should fetch setting', () => {
     service.getSetting('TestKey').subscribe((res) => {
-      expect(res.key).toBe('TestKey');
+      expect(res?.key).toBe('TestKey');
     });
     const req = httpMock.expectOne('/api/v1/GlobalSettings/TestKey');
     expect(req.request.method).toBe('GET');
     req.flush(mockSetting);
+  });
+
+  it('should emit null when the setting is not set', () => {
+    let result: GlobalSetting | null | undefined;
+    service.getSetting('TestKey').subscribe((res) => (result = res));
+    httpMock.expectOne('/api/v1/GlobalSettings/TestKey').flush(null, { status: 204, statusText: 'No Content' });
+    expect(result).toBeNull();
+  });
+
+  it('should report a setting that is not set as missing', () => {
+    let exists: boolean | undefined;
+    service.settingExists('TestKey').subscribe((res) => (exists = res));
+    httpMock.expectOne('/api/v1/GlobalSettings/TestKey').flush(null, { status: 204, statusText: 'No Content' });
+    expect(exists).toBe(false);
+  });
+
+  it('should report a write-only setting as existing', () => {
+    let exists: boolean | undefined;
+    service.settingExists('TestKey').subscribe((res) => (exists = res));
+    httpMock.expectOne('/api/v1/GlobalSettings/TestKey').flush(null, { status: 403, statusText: 'Forbidden' });
+    expect(exists).toBe(true);
   });
 
   it('should update setting', () => {

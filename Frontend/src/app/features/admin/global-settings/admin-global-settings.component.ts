@@ -14,7 +14,7 @@ import { MultiSelectModule } from 'primeng/multiselect';
 import { ToggleSwitchModule } from 'primeng/toggleswitch';
 import { RoleService } from '../../admin/services/role.service';
 import { Role } from '../../../core/models/role.model';
-import { finalize, forkJoin, of, catchError } from 'rxjs';
+import { finalize, forkJoin, of, catchError, map } from 'rxjs';
 
 @Component({
   selector: 'app-admin-global-settings',
@@ -292,7 +292,9 @@ export default class AdminGlobalSettingsComponent implements OnInit {
   }
 
   loadContent(): void {
-    const get = (key: string) => this.settingsService.getSetting(key).pipe(catchError(() => of({ value: '' })));
+    const get = (key: string) => this.settingsService.getSetting(key).pipe(
+      map(setting => setting ?? { value: '' }),
+      catchError(() => of({ value: '' })));
     forkJoin({
       whatsNew: get('WhatsNewContent'),
       mapsKey: get('GoogleMapsApiKey'),

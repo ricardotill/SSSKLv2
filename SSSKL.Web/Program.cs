@@ -89,13 +89,16 @@ app.MapDefaultEndpoints();
 app.UseForwardedHeaders();
 app.UsePathBase("/");
 
+// Registered in every environment: GlobalExceptionHandler maps domain exceptions (e.g. NotFoundException → 404),
+// which the developer exception page would otherwise turn into a 500.
+app.UseExceptionHandler();
+
 if (app.Environment.IsDevelopment())
 {
     app.UseMigrationsEndPoint();
 }
 else
 {
-    app.UseExceptionHandler();
     app.UseHsts();
 }
 

@@ -23,10 +23,12 @@ public class GlobalSettingsController(ISender sender) : ControllerBase
         return Ok(await sender.Send(new GetTurnstileConfigQuery(), HttpContext.RequestAborted));
     }
 
+    // GET v1/globalsettings/{key} - 204 when the setting hasn't been set
     [HttpGet("{key}")]
     public async Task<ActionResult<GlobalSettingDto>> GetSetting(string key)
     {
-        return Ok(await sender.Send(new GetGlobalSettingQuery(key, User.IsInRole(Roles.Admin))));
+        var setting = await sender.Send(new GetGlobalSettingQuery(key, User.IsInRole(Roles.Admin)));
+        return setting is null ? NoContent() : Ok(setting);
     }
 
     [Authorize(Roles = Roles.Admin)]

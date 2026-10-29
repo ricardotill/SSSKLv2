@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace SSSKLv2.Dto.Api.v1
 {
@@ -18,25 +19,27 @@ namespace SSSKLv2.Dto.Api.v1
         [Required]
         public required string Name { get; set; }
         public string? Description { get; set; }
-        [Required]
+        [Required, JsonRequired]
         public decimal Price { get; set; }
-        [Required]
+        [Required, JsonRequired]
         public int Stock { get; set; }
+        [JsonRequired]
         public bool EnableLeaderboard { get; set; }
 
     }
 
     public class ProductUpdateDto
     {
-        [Required]
+        [Required, JsonRequired]
         public Guid Id { get; set; }
         [Required]
         public required string Name { get; set; }
         public string? Description { get; set; }
-        [Required]
+        [Required, JsonRequired]
         public decimal Price { get; set; }
-        [Required]
+        [Required, JsonRequired]
         public int Stock { get; set; }
+        [JsonRequired]
         public bool EnableLeaderboard { get; set; }
 
     }

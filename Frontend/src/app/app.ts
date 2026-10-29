@@ -38,6 +38,7 @@ export class App {
   constructor() {
     this.themeService.init();
     this.configureDutchPrimeNG();
+    this.appUpdateService.start();
 
     // Check for unseen achievements whenever the current user changes (login, app init if authenticated)
     // Use an effect to reactively check when user session establishes

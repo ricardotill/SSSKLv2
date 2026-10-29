@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace SSSKLv2.Dto.Api.v1
 {
@@ -9,7 +10,7 @@ namespace SSSKLv2.Dto.Api.v1
         [Required]
         public string Text { get; set; } = string.Empty;
         
-        [Required]
+        [Required, JsonRequired]
         public DateTime DateSaid { get; set; }
         
         public IEnumerable<QuoteAuthorCreateDto> Authors { get; set; } = new List<QuoteAuthorCreateDto>();

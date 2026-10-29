@@ -234,7 +234,7 @@ export default class EventEditComponent implements OnInit {
     this.eventForm.get('startDateTime')?.valueChanges.subscribe((startDateVal) => {
       if (!startDateVal) return;
       const startDate = startDateVal instanceof Date ? startDateVal : new Date(startDateVal);
-      if (isNaN(startDate.getTime())) return;
+      if (Number.isNaN(startDate.getTime())) return;
 
       const endDateVal = this.eventForm.get('endDateTime')?.value;
       if (!endDateVal) {
@@ -244,7 +244,7 @@ export default class EventEditComponent implements OnInit {
       }
 
       const endDate = endDateVal instanceof Date ? endDateVal : new Date(endDateVal);
-      if (isNaN(endDate.getTime()) || endDate <= startDate) {
+      if (Number.isNaN(endDate.getTime()) || endDate <= startDate) {
         const newEndDate = new Date(startDate.getTime() + 60 * 60 * 1000);
         this.eventForm.patchValue({ endDateTime: newEndDate }, { emitEvent: false });
       }

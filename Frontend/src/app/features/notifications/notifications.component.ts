@@ -131,7 +131,7 @@ export class NotificationsComponent implements OnInit {
     }
 
     if (notification.linkUri) {
-      this.router.navigateByUrl(notification.linkUri);
+      void this.router.navigateByUrl(notification.linkUri);
     }
   }
 

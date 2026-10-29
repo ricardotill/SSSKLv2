@@ -9,6 +9,8 @@ import ForgotPasswordComponent from './forgot-password.component';
 import ResendConfirmationEmailComponent from './resend-confirmation-email.component';
 import RegisterComponent from './register.component';
 import LoginComponent from './login.component';
+import { WebAuthnService } from './services/webauthn.service';
+import { of, throwError } from 'rxjs';
 
 const turnstileRejection = { status: 403, statusText: 'Forbidden' };
 const turnstileBody = { code: 'turnstile_failed' };
@@ -140,6 +142,33 @@ describe('Turnstile on auth forms', () => {
       http.match(() => true).forEach(r => r.flush({}));
 
       expect(navigate).toHaveBeenCalledWith('/pos');
+    });
+
+    it('asks for a user name before a passkey login', () => {
+      component.loginForm.patchValue({ userName: '' });
+      component.onPasskeyLogin();
+      expect(component.errorMessage()).toBe(component.lang.t().enter_username_first);
+    });
+
+    it('navigates after a passkey login', () => {
+      const router = TestBed.inject(Router);
+      const navigate = vi.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
+      vi.spyOn(TestBed.inject(WebAuthnService), 'login').mockReturnValue(of({}));
+
+      component.onPasskeyLogin();
+
+      expect(component.isLoading()).toBe(false);
+      expect(navigate).toHaveBeenCalledWith('/pos');
+    });
+
+    it('shows passkey login errors', () => {
+      vi.spyOn(console, 'error').mockImplementation(() => undefined);
+      vi.spyOn(TestBed.inject(WebAuthnService), 'login').mockReturnValue(throwError(() => new Error('Geannuleerd')));
+
+      component.onPasskeyLogin();
+
+      expect(component.isLoading()).toBe(false);
+      expect(component.errorMessage()).toContain('Geannuleerd');
     });
 
     it('still asks for a 2FA code on the two-factor 403', () => {

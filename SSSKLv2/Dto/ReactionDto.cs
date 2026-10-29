@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace SSSKLv2.Dto;
 
@@ -18,6 +19,7 @@ public class ReactionDto
 
 public class ToggleReactionRequest
 {
+    [JsonRequired]
     public Guid TargetId { get; set; }
     public string TargetType { get; set; } = string.Empty;
     public string Content { get; set; } = string.Empty;

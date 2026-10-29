@@ -13,6 +13,7 @@ public class QuoteRepository(ApplicationDbContext dbContext) : IQuoteRepository
             .Include(q => q.Authors)
                 .ThenInclude(a => a.ApplicationUser)
             .Include(q => q.VisibleToRoles)
+            .AsSplitQuery()
             .AsQueryable();
 
         if (!isAdmin)
@@ -29,6 +30,7 @@ public class QuoteRepository(ApplicationDbContext dbContext) : IQuoteRepository
         var totalCount = await query.CountAsync();
         var items = await query
             .OrderByDescending(q => q.DateSaid)
+            .ThenBy(q => q.Id)
             .Skip(skip)
             .Take(take)
             .ToListAsync();
@@ -43,6 +45,7 @@ public class QuoteRepository(ApplicationDbContext dbContext) : IQuoteRepository
             .Include(q => q.Authors)
                 .ThenInclude(a => a.ApplicationUser)
             .Include(q => q.VisibleToRoles)
+            .AsSplitQuery()
             .FirstOrDefaultAsync(q => q.Id == id);
     }
 

@@ -39,7 +39,7 @@ export class BrandingComponent {
 
   onClick() {
     if (this.authService.isAuthenticated()) {
-      this.router.navigate(['/pos']);
+      void this.router.navigate(['/pos']);
     }
   }
 }

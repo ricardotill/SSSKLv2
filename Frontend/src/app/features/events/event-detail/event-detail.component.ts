@@ -616,7 +616,7 @@ export default class EventDetailComponent implements OnInit {
     });
   }
 
-  private async initDetailMap(lat: number, lng: number, name: string) {
+  private initDetailMap(lat: number, lng: number, name: string) {
     const container = this.detailMapContainer()?.nativeElement;
     if (!container) return;
 
@@ -631,7 +631,7 @@ export default class EventDetailComponent implements OnInit {
     this.googleMapsService
       .getMapId()
       .pipe(take(1))
-      .subscribe(async (mapId) => {
+      .subscribe((mapId) => {
         // Brief delay to ensure container is fully rendered
         setTimeout(async () => {
           const mapOptions: any = {
@@ -774,13 +774,16 @@ export default class EventDetailComponent implements OnInit {
         .catch((err) => console.error('Share failed', err));
     } else {
       // Fallback to clipboard
-      navigator.clipboard.writeText(window.location.href).then(() => {
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Gekopieerd',
-          detail: 'Link gekopieerd naar klembord',
-        });
-      });
+      navigator.clipboard
+        .writeText(window.location.href)
+        .then(() => {
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Gekopieerd',
+            detail: 'Link gekopieerd naar klembord',
+          });
+        })
+        .catch((err) => console.error('Copy to clipboard failed', err));
     }
   }
 
@@ -818,7 +821,7 @@ export default class EventDetailComponent implements OnInit {
     if (confirm(this.ls.t().confirm_delete_event)) {
       this.eventService.deleteEvent(currentEvent.id).subscribe({
         next: () => {
-          this.router.navigate(['/events']);
+          void this.router.navigate(['/events']);
         },
         error: () => {
           this.messageService.add({

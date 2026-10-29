@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using SSSKLv2.Data;
 
 namespace SSSKLv2.Dto.Api.v1;
@@ -9,9 +10,13 @@ public class AchievementCreateDto
 {
     public string Name { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
+    [JsonRequired]
     public bool AutoAchieve { get; set; }
+    [JsonRequired]
     public Achievement.ActionOption Action { get; set; }
+    [JsonRequired]
     public Achievement.ComparisonOperatorOption ComparisonOperator { get; set; }
+    [JsonRequired]
     public int ComparisonValue { get; set; }
     public Base64FileUploadDto? Image { get; set; }
 }

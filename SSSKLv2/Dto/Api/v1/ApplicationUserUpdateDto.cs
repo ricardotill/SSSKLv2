@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace SSSKLv2.Dto.Api.v1;
 
 public class ApplicationUserUpdateDto
@@ -6,9 +8,11 @@ public class ApplicationUserUpdateDto
     public string? UserName { get; set; }
     public string? Email { get; set; }
     
+    [JsonRequired]
     public bool EmailConfirmed { get; set; }
     public string? PhoneNumber { get; set; }
     
+    [JsonRequired]
     public bool PhoneNumberConfirmed { get; set; }
 
     // Personal name fields

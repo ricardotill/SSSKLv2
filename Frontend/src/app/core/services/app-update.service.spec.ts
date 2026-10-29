@@ -28,7 +28,7 @@ describe('AppUpdateService', () => {
       ]
     });
 
-    TestBed.inject(AppUpdateService);
+    TestBed.inject(AppUpdateService).start();
 
     expect(swUpdateMock.checkForUpdate).not.toHaveBeenCalled();
     expect(swUpdateMock.activateUpdate).not.toHaveBeenCalled();
@@ -54,7 +54,7 @@ describe('AppUpdateService', () => {
       ]
     });
 
-    TestBed.inject(AppUpdateService);
+    TestBed.inject(AppUpdateService).start();
     await vi.waitFor(() => expect(swUpdateMock.checkForUpdate).toHaveBeenCalled());
 
     versionUpdates.next({
@@ -90,7 +90,7 @@ describe('AppUpdateService', () => {
       ]
     });
 
-    TestBed.inject(AppUpdateService);
+    TestBed.inject(AppUpdateService).start();
 
     versionUpdates.next({
       type: 'VERSION_READY',
@@ -123,7 +123,7 @@ describe('AppUpdateService', () => {
       ]
     });
 
-    TestBed.inject(AppUpdateService);
+    TestBed.inject(AppUpdateService).start();
 
     await vi.waitFor(() => {
       expect(appVersionServiceMock.refresh).toHaveBeenCalled();

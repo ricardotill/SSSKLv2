@@ -196,7 +196,7 @@ export class LocationSelectorComponent implements AfterViewInit, OnDestroy {
       const name = this.initialName();
 
       if (this.map && lat && lng) {
-        this.updateMarker(lat, lng, name || '');
+        void this.updateMarker(lat, lng, name || '');
         this.map.setCenter({ lat, lng });
       }
     });
@@ -231,7 +231,7 @@ export class LocationSelectorComponent implements AfterViewInit, OnDestroy {
     }
   }
 
-  private async initMap() {
+  private initMap() {
     const container = this.mapContainer()?.nativeElement;
     if (!container) return;
 
@@ -274,7 +274,7 @@ export class LocationSelectorComponent implements AfterViewInit, OnDestroy {
           this.map = new google.maps.Map(container, mapOptions);
 
           if (this.initialLatitude() && this.initialLongitude()) {
-            this.updateMarker(lat, lng, this.initialName() || '');
+            void this.updateMarker(lat, lng, this.initialName() || '');
           }
 
           this.map.addListener('click', (e: google.maps.MapMouseEvent) => {
@@ -319,21 +319,23 @@ export class LocationSelectorComponent implements AfterViewInit, OnDestroy {
     }
   }
 
-  private async handleMapClick(lat: number, lng: number) {
+  private handleMapClick(lat: number, lng: number) {
     // Reverse geocode
     const geocoder = new google.maps.Geocoder();
-    geocoder.geocode({ location: { lat, lng } }, (results, status) => {
-      if (status === 'OK' && results?.[0]) {
-        const name = results[0].formatted_address;
-        this.updateSelection(lat, lng, name);
-      } else {
-        this.updateSelection(lat, lng, `${lat.toFixed(4)}, ${lng.toFixed(4)}`);
-      }
-    });
+    const fallbackName = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+    geocoder
+      .geocode({ location: { lat, lng } })
+      .then(({ results }) => {
+        this.updateSelection(lat, lng, results?.[0]?.formatted_address ?? fallbackName);
+      })
+      .catch(() => {
+        // The promise rejects for any non-OK status (e.g. ZERO_RESULTS).
+        this.updateSelection(lat, lng, fallbackName);
+      });
   }
 
   private updateSelection(lat: number, lng: number, name: string) {
-    this.updateMarker(lat, lng, name);
+    void this.updateMarker(lat, lng, name);
     this.selectedLocationName.set(name);
     this.locationChanged.emit({ name, lat, lng });
   }
@@ -386,7 +388,7 @@ export class LocationSelectorComponent implements AfterViewInit, OnDestroy {
   }
 
   private sanitizeCoordinate(coord: number | undefined): number | undefined {
-    if (coord === undefined || coord === null || isNaN(coord)) return undefined;
+    if (coord === undefined || coord === null || Number.isNaN(coord)) return undefined;
     if (coord === 0) return 0;
 
     // Standard coordinates are between -180 and 180

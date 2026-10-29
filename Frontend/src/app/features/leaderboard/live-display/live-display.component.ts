@@ -1103,7 +1103,7 @@ export class LiveDisplayComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     if (this.hubConnection) {
-      this.hubConnection.stop();
+      this.hubConnection.stop().catch((err) => console.error('SignalR stop failed', err));
     }
     if (this.progressInterval) {
       clearInterval(this.progressInterval);
@@ -1156,7 +1156,7 @@ export class LiveDisplayComponent implements OnInit, OnDestroy {
           this.publicEvents.set(data.events.items);
           this.domain.set(data.domain);
           if (data.domain) {
-            this.generateQRCode('https://' + data.domain);
+            void this.generateQRCode('https://' + data.domain);
           }
 
           const leaderboardRequests: Observable<Slide>[] = productList.map((p: any) =>
@@ -1275,14 +1275,14 @@ export class LiveDisplayComponent implements OnInit, OnDestroy {
     const end = Date.now() + duration;
 
     const frame = () => {
-      confetti({
+      void confetti({
         particleCount: 5,
         angle: 60,
         spread: 55,
         origin: { x: 0 },
         colors: ['#ffffff', '#ff0000', '#00ff00', '#0000ff'],
       });
-      confetti({
+      void confetti({
         particleCount: 5,
         angle: 120,
         spread: 55,

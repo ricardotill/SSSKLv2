@@ -1,8 +1,15 @@
+using System.Security.Claims;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
+using SSSKL.Application.Features.Notifications.Commands.MarkAllNotificationsRead;
+using SSSKL.Application.Features.Notifications.Commands.MarkNotificationRead;
+using SSSKL.Application.Features.Notifications.Commands.SendCustomNotification;
+using SSSKL.Application.Features.Notifications.Commands.SubscribePush;
+using SSSKL.Application.Features.Notifications.Commands.UnsubscribePush;
+using SSSKL.Application.Features.Notifications.Queries.GetNotifications;
+using SSSKL.Application.Features.Notifications.Queries.GetUnreadNotificationCount;
 using SSSKL.Contracts.Dto;
-using SSSKL.Contracts.Services;
 using SSSKL.Domain.Constants;
 
 namespace SSSKL.Web.Controllers.v1;
@@ -10,22 +17,13 @@ namespace SSSKL.Web.Controllers.v1;
 [ApiController]
 [Route("v1/[controller]")]
 [Authorize]
-public class NotificationsController : ControllerBase
+public class NotificationsController(ISender sender, IConfiguration configuration) : ControllerBase
 {
-    private readonly INotificationService _notificationService;
-    private readonly IConfiguration _configuration;
-
-    public NotificationsController(INotificationService notificationService, IConfiguration configuration)
-    {
-        _notificationService = notificationService;
-        _configuration = configuration;
-    }
-
     [HttpGet("vapid-public-key")]
     [AllowAnonymous]
     public ActionResult<string> GetVapidPublicKey()
     {
-        var publicKey = _configuration["VAPID_PUBLIC_KEY"] ?? _configuration["VapidDetails:PublicKey"];
+        var publicKey = configuration["VAPID_PUBLIC_KEY"] ?? configuration["VapidDetails:PublicKey"];
         if (string.IsNullOrEmpty(publicKey))
         {
             return StatusCode(StatusCodes.Status500InternalServerError, "VAPID Public Key is not configured on the server.");
@@ -39,8 +37,7 @@ public class NotificationsController : ControllerBase
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
-        var notifications = await _notificationService.GetNotificationsAsync(userId, unreadOnly, skip, take);
-        return Ok(notifications);
+        return Ok(await sender.Send(new GetNotificationsQuery(userId, unreadOnly, skip, take)));
     }
 
     [HttpGet("unread-count")]
@@ -49,8 +46,7 @@ public class NotificationsController : ControllerBase
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
-        var count = await _notificationService.GetUnreadCountAsync(userId);
-        return Ok(count);
+        return Ok(await sender.Send(new GetUnreadNotificationCountQuery(userId)));
     }
 
     [HttpPost("{id:guid}/read")]
@@ -59,7 +55,7 @@ public class NotificationsController : ControllerBase
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
-        await _notificationService.MarkAsReadAsync(id, userId);
+        await sender.Send(new MarkNotificationReadCommand(id, userId));
         return Ok();
     }
 
@@ -69,7 +65,7 @@ public class NotificationsController : ControllerBase
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
-        await _notificationService.MarkAllAsReadAsync(userId);
+        await sender.Send(new MarkAllNotificationsReadCommand(userId));
         return Ok();
     }
 
@@ -77,7 +73,7 @@ public class NotificationsController : ControllerBase
     [Authorize(Roles = Roles.Admin)]
     public async Task<IActionResult> SendCustomNotification(CreateCustomNotificationDto dto)
     {
-        await _notificationService.CreateCustomNotificationAsync(dto);
+        await sender.Send(new SendCustomNotificationCommand(dto));
         return Ok();
     }
 
@@ -87,7 +83,7 @@ public class NotificationsController : ControllerBase
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
-        await _notificationService.SubscribeAsync(userId, dto);
+        await sender.Send(new SubscribePushCommand(userId, dto));
         return Ok();
     }
 
@@ -97,7 +93,7 @@ public class NotificationsController : ControllerBase
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
-        await _notificationService.UnsubscribeAsync(userId, dto.Endpoint);
+        await sender.Send(new UnsubscribePushCommand(userId, dto.Endpoint));
         return Ok();
     }
 }

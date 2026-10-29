@@ -2,7 +2,14 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using NSubstitute;
-using SSSKL.Application.Services;
+using SSSKL.Application.Features.Notifications.Commands.MarkAllNotificationsRead;
+using SSSKL.Application.Features.Notifications.Commands.MarkNotificationRead;
+using SSSKL.Application.Features.Notifications.Commands.SendCustomNotification;
+using SSSKL.Application.Features.Notifications.Commands.SubscribePush;
+using SSSKL.Application.Features.Notifications.Commands.UnsubscribePush;
+using SSSKL.Application.Features.Notifications.Queries.GetNotifications;
+using SSSKL.Application.Features.Notifications.Queries.GetUnreadNotificationCount;
+using SSSKL.Application.Shared;
 using SSSKL.Contracts.Dto;
 using SSSKL.Contracts.Services;
 using SSSKL.Domain.Entities;
@@ -10,14 +17,16 @@ using SSSKL.Infrastructure.Persistence;
 using SSSKL.Infrastructure.Persistence.Repositories;
 using SSSKL.Infrastructure.Test.Util;
 
-namespace SSSKL.Infrastructure.Test.Services;
+namespace SSSKL.Infrastructure.Test.Features;
 
 [TestClass]
-public class NotificationServiceTests : RepositoryTest
+public class NotificationHandlerTests : RepositoryTest
 {
     private ApplicationDbContext _dbContext = null!;
     private IWebPushService _webPushService = null!;
-    private NotificationService _sut = null!;
+    private NotificationRepository _notificationRepository = null!;
+    private PushSubscriptionRepository _pushSubscriptionRepository = null!;
+    private UserNotifier _userNotifier = null!;
 
     [TestInitialize]
     public void TestInitialize()
@@ -25,12 +34,39 @@ public class NotificationServiceTests : RepositoryTest
         InitializeDatabase();
         _dbContext = new ApplicationDbContext(GetOptions());
         _webPushService = Substitute.For<IWebPushService>();
-        _sut = new NotificationService(
-            new NotificationRepository(_dbContext),
-            new PushSubscriptionRepository(_dbContext),
+        _notificationRepository = new NotificationRepository(_dbContext);
+        _pushSubscriptionRepository = new PushSubscriptionRepository(_dbContext);
+        _userNotifier = new UserNotifier(
+            _notificationRepository,
             new ApplicationUserRepository(new MockDbContextFactory(GetOptions())),
             _webPushService);
     }
+
+    // The tests below were written against NotificationService; these helpers send the same calls to the handlers.
+
+    private Task<IReadOnlyList<NotificationDto>> GetNotificationsAsync(string userId, bool unreadOnly, int skip, int take) =>
+        new GetNotificationsHandler(_notificationRepository).Handle(new GetNotificationsQuery(userId, unreadOnly, skip, take), CancellationToken.None);
+
+    private Task<int> GetUnreadCountAsync(string userId) =>
+        new GetUnreadNotificationCountHandler(_notificationRepository).Handle(new GetUnreadNotificationCountQuery(userId), CancellationToken.None);
+
+    private Task MarkAsReadAsync(Guid id, string userId) =>
+        new MarkNotificationReadHandler(_notificationRepository).Handle(new MarkNotificationReadCommand(id, userId), CancellationToken.None);
+
+    private Task MarkAllAsReadAsync(string userId) =>
+        new MarkAllNotificationsReadHandler(_notificationRepository).Handle(new MarkAllNotificationsReadCommand(userId), CancellationToken.None);
+
+    private Task SubscribeAsync(string userId, PushSubscriptionDto dto) =>
+        new SubscribePushHandler(_pushSubscriptionRepository).Handle(new SubscribePushCommand(userId, dto), CancellationToken.None);
+
+    private Task UnsubscribeAsync(string userId, string endpoint) =>
+        new UnsubscribePushHandler(_pushSubscriptionRepository).Handle(new UnsubscribePushCommand(userId, endpoint), CancellationToken.None);
+
+    private Task CreateNotificationAsync(string userId, string title, string message, string? linkUri = null, bool sendPush = false) =>
+        _userNotifier.NotifyAsync(userId, title, message, linkUri, sendPush);
+
+    private Task CreateCustomNotificationAsync(CreateCustomNotificationDto dto) =>
+        new SendCustomNotificationHandler(_userNotifier).Handle(new SendCustomNotificationCommand(dto), CancellationToken.None);
 
     [TestCleanup]
     public void TestCleanup()
@@ -55,7 +91,7 @@ public class NotificationServiceTests : RepositoryTest
         await _dbContext.SaveChangesAsync();
 
         // Act
-        var result = await _sut.GetNotificationsAsync(TestUser.Id, false, 0, 10);
+        var result = await GetNotificationsAsync(TestUser.Id, false, 0, 10);
 
         // Assert
         result.Should().HaveCount(1);
@@ -73,7 +109,7 @@ public class NotificationServiceTests : RepositoryTest
         await _dbContext.SaveChangesAsync();
 
         // Act
-        var result = await _sut.GetNotificationsAsync(TestUser.Id, true, 0, 10);
+        var result = await GetNotificationsAsync(TestUser.Id, true, 0, 10);
 
         // Assert
         result.Should().HaveCount(1);
@@ -94,7 +130,7 @@ public class NotificationServiceTests : RepositoryTest
         await _dbContext.SaveChangesAsync();
 
         // Act
-        var result = await _sut.GetNotificationsAsync(TestUser.Id, false, 1, 2);
+        var result = await GetNotificationsAsync(TestUser.Id, false, 1, 2);
 
         // Assert
         var list = result.ToList();
@@ -123,7 +159,7 @@ public class NotificationServiceTests : RepositoryTest
         await _dbContext.SaveChangesAsync();
 
         // Act
-        var count = await _sut.GetUnreadCountAsync(TestUser.Id);
+        var count = await GetUnreadCountAsync(TestUser.Id);
 
         // Assert
         count.Should().Be(2);
@@ -140,7 +176,7 @@ public class NotificationServiceTests : RepositoryTest
         await _dbContext.SaveChangesAsync();
 
         // Act
-        await _sut.MarkAsReadAsync(n.Id, TestUser.Id);
+        await MarkAsReadAsync(n.Id, TestUser.Id);
 
         // Assert
         var updated = await _dbContext.Notification.FindAsync(n.Id);
@@ -159,7 +195,7 @@ public class NotificationServiceTests : RepositoryTest
         await _dbContext.SaveChangesAsync();
 
         // Act
-        await _sut.MarkAsReadAsync(n.Id, TestUser.Id);
+        await MarkAsReadAsync(n.Id, TestUser.Id);
 
         // Assert
         var updated = await _dbContext.Notification.FindAsync(n.Id);
@@ -183,7 +219,7 @@ public class NotificationServiceTests : RepositoryTest
         await _dbContext.SaveChangesAsync();
 
         // Act
-        await _sut.MarkAllAsReadAsync(TestUser.Id);
+        await MarkAllAsReadAsync(TestUser.Id);
 
         // ExecuteUpdateAsync bypasses the change tracker, so drop stale tracked entities before re-querying
         _dbContext.ChangeTracker.Clear();
@@ -205,7 +241,7 @@ public class NotificationServiceTests : RepositoryTest
         var dto = new PushSubscriptionDto { Endpoint = "https://push.example.com/1", P256dh = "key1", Auth = "auth1" };
 
         // Act
-        await _sut.SubscribeAsync(TestUser.Id, dto);
+        await SubscribeAsync(TestUser.Id, dto);
 
         // Assert
         var sub = await _dbContext.PushSubscription
@@ -229,7 +265,7 @@ public class NotificationServiceTests : RepositoryTest
         var dto = new PushSubscriptionDto { Endpoint = "https://push.example.com/1", P256dh = "new-key", Auth = "new-auth" };
 
         // Act
-        await _sut.SubscribeAsync(TestUser.Id, dto);
+        await SubscribeAsync(TestUser.Id, dto);
 
         // Assert – still one record but with updated keys
         var subs = await _dbContext.PushSubscription
@@ -255,7 +291,7 @@ public class NotificationServiceTests : RepositoryTest
         await _dbContext.SaveChangesAsync();
 
         // Act
-        await _sut.UnsubscribeAsync(TestUser.Id, endpoint);
+        await UnsubscribeAsync(TestUser.Id, endpoint);
 
         // Assert
         var sub = await _dbContext.PushSubscription.FirstOrDefaultAsync(s => s.Endpoint == endpoint);
@@ -268,7 +304,7 @@ public class NotificationServiceTests : RepositoryTest
     public async Task CreateNotificationAsync_WithSendPush_ShouldCallWebPushService()
     {
         // Act
-        await _sut.CreateNotificationAsync(TestUser.Id, "Title", "Body", "/link", sendPush: true);
+        await CreateNotificationAsync(TestUser.Id, "Title", "Body", "/link", sendPush: true);
 
         // Assert
         await _webPushService.Received(1).SendNotificationAsync(TestUser.Id, "Title", "Body", "/link");
@@ -291,7 +327,7 @@ public class NotificationServiceTests : RepositoryTest
         };
 
         // Act
-        await _sut.CreateCustomNotificationAsync(dto);
+        await CreateCustomNotificationAsync(dto);
 
         // Assert – called once for each user in the database
         await _webPushService.Received(2).SendNotificationAsync(Arg.Any<string>(), "Broadcast", "Hello everyone!", Arg.Any<string>());
@@ -310,7 +346,7 @@ public class NotificationServiceTests : RepositoryTest
         };
 
         // Act & Assert
-        await _sut.Invoking(s => s.CreateCustomNotificationAsync(dto))
+        await this.Invoking(s => s.CreateCustomNotificationAsync(dto))
             .Should().NotThrowAsync();
     }
 }

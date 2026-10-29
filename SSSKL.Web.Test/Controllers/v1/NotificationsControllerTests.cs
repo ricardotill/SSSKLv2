@@ -6,7 +6,14 @@ using NSubstitute;
 using System.Security.Claims;
 using Microsoft.Extensions.Configuration;
 using SSSKL.Contracts.Dto;
-using SSSKL.Contracts.Services;
+using MediatR;
+using SSSKL.Application.Features.Notifications.Commands.MarkAllNotificationsRead;
+using SSSKL.Application.Features.Notifications.Commands.MarkNotificationRead;
+using SSSKL.Application.Features.Notifications.Commands.SendCustomNotification;
+using SSSKL.Application.Features.Notifications.Commands.SubscribePush;
+using SSSKL.Application.Features.Notifications.Commands.UnsubscribePush;
+using SSSKL.Application.Features.Notifications.Queries.GetNotifications;
+using SSSKL.Application.Features.Notifications.Queries.GetUnreadNotificationCount;
 using SSSKL.Web.Controllers.v1;
 
 namespace SSSKL.Web.Test.Controllers.v1;
@@ -14,7 +21,7 @@ namespace SSSKL.Web.Test.Controllers.v1;
 [TestClass]
 public class NotificationsControllerTests
 {
-    private INotificationService _notificationService = null!;
+    private ISender _sender = null!;
     private IConfiguration _configuration = null!;
     private NotificationsController _sut = null!;
 
@@ -24,7 +31,7 @@ public class NotificationsControllerTests
     [TestInitialize]
     public void TestInitialize()
     {
-        _notificationService = Substitute.For<INotificationService>();
+        _sender = Substitute.For<ISender>();
         _configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
@@ -32,7 +39,7 @@ public class NotificationsControllerTests
             })
             .Build();
 
-        _sut = new NotificationsController(_notificationService, _configuration);
+        _sut = new NotificationsController(_sender, _configuration);
 
         // Set up an authenticated user context
         var claims = new List<Claim> { new(ClaimTypes.NameIdentifier, TestUserId) };
@@ -68,14 +75,14 @@ public class NotificationsControllerTests
         var unreadOnly = true;
         var skip = 10;
         var take = 5;
-        _notificationService.GetNotificationsAsync(TestUserId, unreadOnly, skip, take).Returns(new List<NotificationDto>());
+        _sender.Send(new GetNotificationsQuery(TestUserId, unreadOnly, skip, take), Arg.Any<CancellationToken>()).Returns(new List<NotificationDto>());
 
         // Act
         var result = await _sut.GetNotifications(unreadOnly, skip, take);
 
         // Assert
         result.Result.Should().BeOfType<OkObjectResult>();
-        await _notificationService.Received(1).GetNotificationsAsync(TestUserId, unreadOnly, skip, take);
+        await _sender.Received(1).Send(new GetNotificationsQuery(TestUserId, unreadOnly, skip, take), Arg.Any<CancellationToken>());
     }
 
     // ── GetUnreadCount ─────────────────────────────────────────────────────────
@@ -84,7 +91,7 @@ public class NotificationsControllerTests
     public async Task GetUnreadCount_ShouldCallService()
     {
         // Arrange
-        _notificationService.GetUnreadCountAsync(TestUserId).Returns(42);
+        _sender.Send(new GetUnreadNotificationCountQuery(TestUserId), Arg.Any<CancellationToken>()).Returns(42);
 
         // Act
         var result = await _sut.GetUnreadCount();
@@ -92,7 +99,7 @@ public class NotificationsControllerTests
         // Assert
         var ok = result.Result.Should().BeOfType<OkObjectResult>().Subject;
         ok.Value.Should().Be(42);
-        await _notificationService.Received(1).GetUnreadCountAsync(TestUserId);
+        await _sender.Received(1).Send(new GetUnreadNotificationCountQuery(TestUserId), Arg.Any<CancellationToken>());
     }
 
     // ── MarkAsRead ─────────────────────────────────────────────────────────────
@@ -108,7 +115,7 @@ public class NotificationsControllerTests
 
         // Assert
         result.Should().BeOfType<OkResult>();
-        await _notificationService.Received(1).MarkAsReadAsync(id, TestUserId);
+        await _sender.Received(1).Send(new MarkNotificationReadCommand(id, TestUserId), Arg.Any<CancellationToken>());
     }
 
     // ── MarkAllAsRead ──────────────────────────────────────────────────────────
@@ -121,7 +128,7 @@ public class NotificationsControllerTests
 
         // Assert
         result.Should().BeOfType<OkResult>();
-        await _notificationService.Received(1).MarkAllAsReadAsync(TestUserId);
+        await _sender.Received(1).Send(new MarkAllNotificationsReadCommand(TestUserId), Arg.Any<CancellationToken>());
     }
 
     // ── SendCustomNotification ─────────────────────────────────────────────────
@@ -137,7 +144,7 @@ public class NotificationsControllerTests
 
         // Assert
         result.Should().BeOfType<OkResult>();
-        await _notificationService.Received(1).CreateCustomNotificationAsync(dto);
+        await _sender.Received(1).Send(new SendCustomNotificationCommand(dto), Arg.Any<CancellationToken>());
     }
 
     // ── Subscribe ──────────────────────────────────────────────────────────────
@@ -153,7 +160,7 @@ public class NotificationsControllerTests
 
         // Assert
         result.Should().BeOfType<OkResult>();
-        await _notificationService.Received(1).SubscribeAsync(TestUserId, dto);
+        await _sender.Received(1).Send(new SubscribePushCommand(TestUserId, dto), Arg.Any<CancellationToken>());
     }
 
     // ── Unsubscribe ────────────────────────────────────────────────────────────
@@ -170,6 +177,6 @@ public class NotificationsControllerTests
 
         // Assert
         result.Should().BeOfType<OkResult>();
-        await _notificationService.Received(1).UnsubscribeAsync(TestUserId, endpoint);
+        await _sender.Received(1).Send(new UnsubscribePushCommand(TestUserId, endpoint), Arg.Any<CancellationToken>());
     }
 }

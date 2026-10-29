@@ -24,7 +24,6 @@ public static class ApplicationServiceCollectionExtensions
 
         return services
             .AddTransient<IApplicationUserService, ApplicationUserService>()
-            .AddTransient<INotificationService, NotificationService>()
             .AddSingleton<IStatsRecalculationJobService, StatsRecalculationJobService>()
             .AddSingleton<OrderCsvExportJob>()
             .AddTransient<IUserNotifier, UserNotifier>()

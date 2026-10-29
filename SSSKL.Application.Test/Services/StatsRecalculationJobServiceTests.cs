@@ -1,3 +1,4 @@
+using SSSKL.Application.Shared;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -20,7 +21,7 @@ public class StatsRecalculationJobServiceTests
         var userRepository = Substitute.For<IApplicationUserRepository>();
         userRepository.GetAll().Returns(usersReady.Task);
         var stats = Substitute.For<IUserStatRepository>();
-        var notifications = Substitute.For<INotificationService>();
+        var notifications = Substitute.For<IUserNotifier>();
         var services = CreateScopeFactory(userRepository, stats, notifications);
         var sut = CreateSut(services);
 
@@ -42,7 +43,7 @@ public class StatsRecalculationJobServiceTests
         completed.TotalUsers.Should().Be(2);
         completed.ProcessedUsers.Should().Be(2);
         completed.FailedUsers.Should().Be(0);
-        await notifications.Received(1).CreateNotificationAsync("admin", Arg.Any<string>(), Arg.Any<string>(), sendPush: true);
+        await notifications.Received(1).NotifyAsync("admin", Arg.Any<string>(), Arg.Any<string>(), sendPush: true);
         await stats.Received(1).RecalculateByUserId("user-1");
         await stats.Received(1).RecalculateByUserId("user-2");
     }
@@ -57,7 +58,7 @@ public class StatsRecalculationJobServiceTests
         });
         var stats = Substitute.For<IUserStatRepository>();
         stats.RecalculateByUserId("bad").Returns<Task<UserStat>>(_ => throw new InvalidOperationException("bad user"));
-        var notifications = Substitute.For<INotificationService>();
+        var notifications = Substitute.For<IUserNotifier>();
         var sut = CreateSut(CreateScopeFactory(userRepository, stats, notifications));
 
         var started = sut.StartRecalculateAll("admin");
@@ -74,7 +75,7 @@ public class StatsRecalculationJobServiceTests
     {
         var userRepository = Substitute.For<IApplicationUserRepository>();
         userRepository.GetAll().Returns<Task<IList<ApplicationUser>>>(_ => throw new InvalidOperationException("database down"));
-        var notifications = Substitute.For<INotificationService>();
+        var notifications = Substitute.For<IUserNotifier>();
         var sut = CreateSut(CreateScopeFactory(userRepository, Substitute.For<IUserStatRepository>(), notifications));
 
         var started = sut.StartRecalculateAll("admin");
@@ -82,7 +83,7 @@ public class StatsRecalculationJobServiceTests
 
         failed!.Status.Should().Be(RecalculationJobStatus.Failed);
         failed.ErrorMessage.Should().Be("database down");
-        await notifications.Received(1).CreateNotificationAsync("admin", Arg.Any<string>(), Arg.Is<string>(message => message.Contains("database down")), sendPush: true);
+        await notifications.Received(1).NotifyAsync("admin", Arg.Any<string>(), Arg.Is<string>(message => message.Contains("database down")), sendPush: true);
     }
 
     private static StatsRecalculationJobService CreateSut(IServiceScopeFactory scopeFactory)
@@ -91,12 +92,12 @@ public class StatsRecalculationJobServiceTests
     private static IServiceScopeFactory CreateScopeFactory(
         IApplicationUserRepository userRepository,
         IUserStatRepository stats,
-        INotificationService notifications)
+        IUserNotifier notifications)
     {
         var provider = Substitute.For<IServiceProvider>();
         provider.GetService(typeof(IApplicationUserRepository)).Returns(userRepository);
         provider.GetService(typeof(IUserStatRepository)).Returns(stats);
-        provider.GetService(typeof(INotificationService)).Returns(notifications);
+        provider.GetService(typeof(IUserNotifier)).Returns(notifications);
         var scope = Substitute.For<IServiceScope>();
         scope.ServiceProvider.Returns(provider);
         var factory = Substitute.For<IServiceScopeFactory>();

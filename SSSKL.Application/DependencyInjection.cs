@@ -21,10 +21,7 @@ public static class ApplicationServiceCollectionExtensions
 
         return services
             .AddTransient<IApplicationUserService, ApplicationUserService>()
-            .AddTransient<IOldUserMigrationService, OldUserMigrationService>()
             .AddTransient<IOrderService, OrderService>()
-            .AddTransient<ITopUpService, TopUpService>()
-            .AddTransient<IAnnouncementService, AnnouncementService>()
             .AddTransient<IAchievementService, AchievementService>()
             .AddTransient<IEventService, EventService>()
             .AddTransient<IQuoteService, QuoteService>()

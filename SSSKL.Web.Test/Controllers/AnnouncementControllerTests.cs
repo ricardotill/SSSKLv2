@@ -1,9 +1,14 @@
 using FluentAssertions;
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NSubstitute;
+using NSubstitute.ExceptionExtensions;
+using SSSKL.Application.Features.Announcements.Commands.CreateAnnouncement;
+using SSSKL.Application.Features.Announcements.Commands.DeleteAnnouncement;
+using SSSKL.Application.Features.Announcements.Commands.UpdateAnnouncement;
+using SSSKL.Application.Features.Announcements.Queries.GetAnnouncementById;
+using SSSKL.Application.Features.Announcements.Queries.GetAnnouncements;
 using SSSKL.Contracts.Dto.Api.v1;
-using SSSKL.Contracts.Services;
 using SSSKL.Domain.Entities;
 using SSSKL.Domain.Exceptions;
 using SSSKL.Web.Controllers.v1;
@@ -13,156 +18,96 @@ namespace SSSKL.Web.Test.Controllers;
 [TestClass]
 public class AnnouncementControllerTests
 {
-    private IAnnouncementService _mockService = null!;
+    private ISender _sender = null!;
     private AnnouncementController _sut = null!;
 
     [TestInitialize]
     public void Init()
     {
-        _mockService = Substitute.For<IAnnouncementService>();
-        _sut = new AnnouncementController(_mockService);
+        _sender = Substitute.For<ISender>();
+        _sut = new AnnouncementController(_sender);
     }
 
     [TestMethod]
     public async Task GetAll_ReturnsOkWithItems()
     {
         // Arrange
-        var items = new List<Announcement>
-        {
-            new Announcement { Id = Guid.NewGuid(), Message = "A1", CreatedOn = DateTime.Now },
-            new Announcement { Id = Guid.NewGuid(), Message = "A2", CreatedOn = DateTime.Now }
-        };
-        // Stub the overload used by controller
-        _mockService.GetAllAnnouncements(Arg.Any<int>(), Arg.Any<int>()).Returns(Task.FromResult<IList<Announcement>>(items));
-        _mockService.GetCount().Returns(Task.FromResult(items.Count));
+        var page = new PaginationObject<Announcement> { Items = [new Announcement { Id = Guid.NewGuid(), Message = "M" }], TotalCount = 1 };
+        _sender.Send(new GetAnnouncementsQuery(0, 15), Arg.Any<CancellationToken>()).Returns(page);
 
         // Act
         var result = await _sut.GetAll();
 
         // Assert
-        var ok = result.Result as OkObjectResult;
-        ok.Should().NotBeNull();
-        ok!.Value.Should().BeEquivalentTo(new PaginationObject<Announcement>() { Items = items, TotalCount = items.Count});
+        result.Result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeSameAs(page);
     }
 
     [TestMethod]
     public async Task GetById_WhenFound_ReturnsOk()
     {
         // Arrange
-        var id = Guid.NewGuid();
-        var ann = new Announcement { Id = id, Message = "Found", CreatedOn = DateTime.Now };
-        _mockService.GetAnnouncementById(id).Returns(Task.FromResult<Announcement?>(ann));
+        var announcement = new Announcement { Id = Guid.NewGuid(), Message = "M" };
+        _sender.Send(new GetAnnouncementByIdQuery(announcement.Id), Arg.Any<CancellationToken>()).Returns(announcement);
 
         // Act
-        var result = await _sut.GetById(id);
+        var result = await _sut.GetById(announcement.Id);
 
         // Assert
-        var ok = result.Result as OkObjectResult;
-        ok.Should().NotBeNull();
-        ok!.Value.Should().BeEquivalentTo(ann);
+        result.Result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeSameAs(announcement);
     }
 
     [TestMethod]
-    public async Task GetById_WhenNotFound_ReturnsNotFound()
+    public async Task GetById_WhenNotFound_PropagatesNotFoundException()
     {
         // Arrange
-        var id = Guid.NewGuid();
-        _mockService.GetAnnouncementById(id).Returns(Task.FromException<Announcement?>(new NotFoundException("Announcement not found")));
+        _sender.Send(Arg.Any<GetAnnouncementByIdQuery>(), Arg.Any<CancellationToken>()).Throws(new NotFoundException("Announcement not found"));
 
         // Act
-        var result = await _sut.GetById(id);
+        var act = () => _sut.GetById(Guid.NewGuid());
 
         // Assert
-        result.Result.Should().BeOfType<NotFoundResult>();
+        await act.Should().ThrowAsync<NotFoundException>();
     }
 
     [TestMethod]
     public async Task Create_WithValidDto_ReturnsCreated()
     {
         // Arrange
-        var dto = new AnnouncementCreateDto
-        {
-            Message = "Hello",
-            IsScheduled = false
-        };
+        var dto = new AnnouncementCreateDto { Message = "Hello", Order = 1 };
+        var created = new Announcement { Id = Guid.NewGuid(), Message = "Hello", Order = 1 };
+        _sender.Send(Arg.Is<CreateAnnouncementCommand>(c => c.Announcement == dto), Arg.Any<CancellationToken>()).Returns(created);
 
         // Act
         var result = await _sut.Create(dto);
 
         // Assert
-        var created = result.Result as CreatedAtActionResult;
-        created.Should().NotBeNull();
-        // Verify service was called
-        await _mockService.Received(1).CreateAnnouncement(Arg.Any<Announcement>());
+        var createdResult = result.Result.Should().BeOfType<CreatedAtActionResult>().Subject;
+        createdResult.Value.Should().BeSameAs(created);
+        createdResult.RouteValues!["id"].Should().Be(created.Id);
+    }
+
+    [TestMethod]
+    public async Task Create_WithNull_ReturnsBadRequest()
+    {
+        // Act
+        var result = await _sut.Create(null);
+
+        // Assert
+        result.Result.Should().BeOfType<BadRequestResult>();
     }
 
     [TestMethod]
     public async Task Create_WithInvalidDto_ReturnsBadRequest()
     {
-        // Arrange: scheduled but no PlannedFrom/PlannedTill -> validator should fail
-        var dto = new AnnouncementCreateDto
-        {
-            Message = "Scheduled",
-            IsScheduled = true
-        };
+        // Arrange
+        _sut.ModelState.AddModelError("Message", "Required");
 
         // Act
-        _sut.ModelState.AddModelError("PlannedFrom", "Gepland Vanaf is verplicht.");
-        var result = await _sut.Create(dto!);
+        var result = await _sut.Create(new AnnouncementCreateDto());
 
         // Assert
         result.Result.Should().BeOfType<BadRequestObjectResult>();
-        await _mockService.DidNotReceive().CreateAnnouncement(Arg.Any<Announcement>());
-    }
-
-    [TestMethod]
-    public async Task Update_WhenNotFound_ReturnsNotFound()
-    {
-        // Arrange
-        var id = Guid.NewGuid();
-        var dto = new AnnouncementUpdateDto { Message = "x", IsScheduled = false };
-        _mockService.GetAnnouncementById(id).Returns(Task.FromException<Announcement?>(new NotFoundException("Announcement not found")));
-
-        // Act
-        var result = await _sut.Update(id, dto);
-
-        // Assert
-        result.Should().BeOfType<NotFoundResult>();
-    }
-
-    [TestMethod]
-    public async Task Update_WithInvalidDto_ReturnsBadRequest()
-    {
-        // Arrange
-        var id = Guid.NewGuid();
-        var dto = new AnnouncementUpdateDto
-        {
-            Message = "Scheduled",
-            IsScheduled = true
-        };
-        _mockService.GetAnnouncementById(id).Returns(Task.FromResult<Announcement?>(new Announcement { Id = id }));
-
-        // Act
-        _sut.ModelState.AddModelError("PlannedFrom", "Gepland Vanaf is verplicht.");
-        var result = await _sut.Update(id, dto);
-
-        // Assert
-        result.Should().BeOfType<BadRequestObjectResult>();
-        await _mockService.DidNotReceive().UpdateAnnouncement(Arg.Any<Announcement>());
-    }
-
-    [TestMethod]
-    public async Task Delete_WhenNotFound_ReturnsNotFound()
-    {
-        // Arrange
-        var id = Guid.NewGuid();
-        _mockService.GetAnnouncementById(id).Returns(Task.FromException<Announcement?>(new NotFoundException("Announcement not found")));
-
-        // Act
-        var result = await _sut.Delete(id);
-
-        // Assert
-        result.Should().BeOfType<NotFoundResult>();
+        await _sender.DidNotReceive().Send(Arg.Any<CreateAnnouncementCommand>(), Arg.Any<CancellationToken>());
     }
 
     [TestMethod]
@@ -170,15 +115,41 @@ public class AnnouncementControllerTests
     {
         // Arrange
         var id = Guid.NewGuid();
-        var dto = new AnnouncementUpdateDto { Message = "New Message", IsScheduled = false };
-        _mockService.GetAnnouncementById(id).Returns(Task.FromResult<Announcement?>(new Announcement { Id = id }));
+        var dto = new AnnouncementUpdateDto { Message = "Upd" };
 
         // Act
         var result = await _sut.Update(id, dto);
 
         // Assert
         result.Should().BeOfType<NoContentResult>();
-        await _mockService.Received(1).UpdateAnnouncement(Arg.Is<Announcement>(a => a.Id == id && a.Message == "New Message"));
+        await _sender.Received(1).Send(new UpdateAnnouncementCommand(id, dto), Arg.Any<CancellationToken>());
+    }
+
+    [TestMethod]
+    public async Task Update_WhenNotFound_PropagatesNotFoundException()
+    {
+        // Arrange
+        _sender.Send(Arg.Any<UpdateAnnouncementCommand>(), Arg.Any<CancellationToken>()).Throws(new NotFoundException("Announcement not found"));
+
+        // Act
+        var act = () => _sut.Update(Guid.NewGuid(), new AnnouncementUpdateDto { Message = "x" });
+
+        // Assert
+        await act.Should().ThrowAsync<NotFoundException>();
+    }
+
+    [TestMethod]
+    public async Task Update_WithInvalidDto_ReturnsBadRequest()
+    {
+        // Arrange
+        _sut.ModelState.AddModelError("Message", "Required");
+
+        // Act
+        var result = await _sut.Update(Guid.NewGuid(), new AnnouncementUpdateDto());
+
+        // Assert
+        result.Should().BeOfType<BadRequestObjectResult>();
+        await _sender.DidNotReceive().Send(Arg.Any<UpdateAnnouncementCommand>(), Arg.Any<CancellationToken>());
     }
 
     [TestMethod]
@@ -186,13 +157,25 @@ public class AnnouncementControllerTests
     {
         // Arrange
         var id = Guid.NewGuid();
-        _mockService.GetAnnouncementById(id).Returns(Task.FromResult<Announcement?>(new Announcement { Id = id }));
 
         // Act
         var result = await _sut.Delete(id);
 
         // Assert
         result.Should().BeOfType<NoContentResult>();
-        await _mockService.Received(1).DeleteAnnouncement(id);
+        await _sender.Received(1).Send(new DeleteAnnouncementCommand(id), Arg.Any<CancellationToken>());
+    }
+
+    [TestMethod]
+    public async Task Delete_WhenNotFound_PropagatesNotFoundException()
+    {
+        // Arrange
+        _sender.Send(Arg.Any<DeleteAnnouncementCommand>(), Arg.Any<CancellationToken>()).Throws(new NotFoundException("Announcement not found"));
+
+        // Act
+        var act = () => _sut.Delete(Guid.NewGuid());
+
+        // Assert
+        await act.Should().ThrowAsync<NotFoundException>();
     }
 }

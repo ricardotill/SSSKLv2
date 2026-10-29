@@ -8,9 +8,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using SSSKL.Application.Features.Announcements.Queries.GetAllAnnouncements;
 using SSSKL.Application.Features.Products.Queries.GetAvailableProducts;
 using SSSKL.Contracts.Dto.Api.v1;
-using SSSKL.Contracts.Services;
 using SSSKL.Domain.Entities;
 using SSSKL.Web.Controllers.v1;
 
@@ -21,14 +21,12 @@ public class RssControllerTests
 {
     private RssController _sut = null!;
     private ISender _sender = null!;
-    private IAnnouncementService _mockAnnouncementService = null!;
 
     [TestInitialize]
     public void TestInitialize()
     {
         _sender = Substitute.For<ISender>();
-        _mockAnnouncementService = Substitute.For<IAnnouncementService>();
-        _sut = new RssController(_sender, _mockAnnouncementService);
+        _sut = new RssController(_sender);
         
         // Mock HttpContext for Request.Scheme, Request.Host, etc.
         var httpContext = new DefaultHttpContext();
@@ -74,7 +72,7 @@ public class RssControllerTests
             new Announcement { Message = "M1", Description = "D1", Url = "https://link.com" },
             new Announcement { Message = "M2", Description = "D2" }
         };
-        _mockAnnouncementService.GetAllAnnouncements().Returns(announcements);
+        _sender.Send(Arg.Any<GetAllAnnouncementsQuery>(), Arg.Any<CancellationToken>()).Returns(announcements);
 
         // Act
         var result = await _sut.GetAnnouncementsFeed();
@@ -85,6 +83,6 @@ public class RssControllerTests
         fileResult.ContentType.Should().Be("application/rss+xml; charset=utf-8");
         fileResult.FileContents.Should().NotBeEmpty();
         
-        await _mockAnnouncementService.Received(1).GetAllAnnouncements();
+        await _sender.Received(1).Send(Arg.Any<GetAllAnnouncementsQuery>(), Arg.Any<CancellationToken>());
     }
 }

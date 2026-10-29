@@ -3,13 +3,13 @@ using System.Text;
 using System.Xml;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using SSSKL.Application.Features.Announcements.Queries.GetAllAnnouncements;
 using SSSKL.Application.Features.Products.Queries.GetAvailableProducts;
-using SSSKL.Contracts.Services;
 
 namespace SSSKL.Web.Controllers.v1;
 
 [Route("v1/rss")]
-public class RssController(ISender sender, IAnnouncementService announcementService) : ControllerBase
+public class RssController(ISender sender) : ControllerBase
 {
     [ResponseCache(Duration = 1200)]
     [HttpGet]
@@ -54,7 +54,7 @@ public class RssController(ISender sender, IAnnouncementService announcementServ
     [Route("announcements.rss")]
     public async Task<IActionResult> GetAnnouncementsFeed()
     {
-        var announcements = await announcementService.GetAllAnnouncements();
+        var announcements = await sender.Send(new GetAllAnnouncementsQuery());
         var url = $"{Request.Scheme}://{Request.Host}{Request.PathBase}";
         
         var feed = new SyndicationFeed(

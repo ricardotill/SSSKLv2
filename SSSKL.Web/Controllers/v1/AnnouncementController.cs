@@ -1,52 +1,31 @@
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SSSKL.Application.Features.Announcements.Commands.CreateAnnouncement;
+using SSSKL.Application.Features.Announcements.Commands.DeleteAnnouncement;
+using SSSKL.Application.Features.Announcements.Commands.UpdateAnnouncement;
+using SSSKL.Application.Features.Announcements.Queries.GetAnnouncementById;
+using SSSKL.Application.Features.Announcements.Queries.GetAnnouncements;
 using SSSKL.Contracts.Dto.Api.v1;
-using SSSKL.Contracts.Services;
-using SSSKL.Domain.Constants;
 using SSSKL.Domain.Entities;
-using SSSKL.Domain.Exceptions;
 
 namespace SSSKL.Web.Controllers.v1;
 
 [Authorize]
 [Route("v1/[controller]")]
 [ApiController]
-public class AnnouncementController : ControllerBase
+public class AnnouncementController(ISender sender) : ControllerBase
 {
-    private readonly IAnnouncementService _announcementService;
-
-    public AnnouncementController(IAnnouncementService announcementService)
-    {
-        _announcementService = announcementService;
-    }
-
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Announcement>>> GetAll([FromQuery] int skip = 0, [FromQuery] int take = 15)
+    public async Task<ActionResult<PaginationObject<Announcement>>> GetAll([FromQuery] int skip = 0, [FromQuery] int take = 15)
     {
-        var list = await _announcementService.GetAllAnnouncements(skip, take);
-        var totalCount = await _announcementService.GetCount();
-
-        return Ok(new PaginationObject<Announcement>()
-        {
-            Items = list,
-            TotalCount = totalCount
-        });
+        return Ok(await sender.Send(new GetAnnouncementsQuery(skip, take)));
     }
 
     [HttpGet("{id}")]
-    public async Task<ActionResult<Announcement?>> GetById(Guid id)
+    public async Task<ActionResult<Announcement>> GetById(Guid id)
     {
-        try
-        {
-            var item = await _announcementService.GetAnnouncementById(id);
-            if (item is null)
-                return NotFound();
-            return Ok(item);
-        }
-        catch (NotFoundException)
-        {
-            return NotFound();
-        }
+        return Ok(await sender.Send(new GetAnnouncementByIdQuery(id)));
     }
 
     [Authorize(Roles = "Admin")]
@@ -61,19 +40,7 @@ public class AnnouncementController : ControllerBase
             return BadRequest(ModelState);
         }
 
-        // Map DTO to domain model
-        var announcement = new Announcement
-        {
-            Message = dto.Message,
-            Description = dto.Description,
-            Order = dto.Order,
-            IsScheduled = dto.IsScheduled,
-            PlannedFrom = dto.PlannedFrom,
-            PlannedTill = dto.PlannedTill
-        };
-
-        await _announcementService.CreateAnnouncement(announcement);
-
+        var announcement = await sender.Send(new CreateAnnouncementCommand(dto));
         return CreatedAtAction(nameof(GetById), new { id = announcement.Id }, announcement);
     }
 
@@ -89,45 +56,15 @@ public class AnnouncementController : ControllerBase
             return BadRequest(ModelState);
         }
 
-        try
-        {
-            var existing = await _announcementService.GetAnnouncementById(id);
-            if (existing is null)
-                return NotFound();
-
-            // Map update DTO onto existing
-            existing.Message = dto.Message;
-            existing.Description = dto.Description;
-            existing.Order = dto.Order;
-            existing.IsScheduled = dto.IsScheduled;
-            existing.PlannedFrom = dto.PlannedFrom;
-            existing.PlannedTill = dto.PlannedTill;
-
-            await _announcementService.UpdateAnnouncement(existing);
-            return NoContent();
-        }
-        catch (NotFoundException)
-        {
-            return NotFound();
-        }
+        await sender.Send(new UpdateAnnouncementCommand(id, dto));
+        return NoContent();
     }
 
     [Authorize(Roles = "Admin")]
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(Guid id)
     {
-        try
-        {
-            var existing = await _announcementService.GetAnnouncementById(id);
-            if (existing is null)
-                return NotFound();
-        }
-        catch (NotFoundException)
-        {
-            return NotFound();
-        }
-
-        await _announcementService.DeleteAnnouncement(id);
+        await sender.Send(new DeleteAnnouncementCommand(id));
         return NoContent();
     }
 }

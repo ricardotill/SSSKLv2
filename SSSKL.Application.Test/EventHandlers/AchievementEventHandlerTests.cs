@@ -1,13 +1,13 @@
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
-using SSSKL.Application.Handlers;
+using SSSKL.Application.EventHandlers;
 using SSSKL.Application.Shared;
 using SSSKL.Contracts.Repositories;
 using SSSKL.Domain.Entities;
 using SSSKL.Domain.Events;
 
-namespace SSSKL.Application.Test.Services;
+namespace SSSKL.Application.Test.EventHandlers;
 
 [TestClass]
 public class AchievementEventHandlerTests

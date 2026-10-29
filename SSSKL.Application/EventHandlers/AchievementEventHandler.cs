@@ -6,7 +6,7 @@ using SSSKL.Domain.Entities;
 using SSSKL.Domain.Events;
 
 
-namespace SSSKL.Application.Handlers;
+namespace SSSKL.Application.EventHandlers;
 
 public class AchievementEventHandler(
     IAchievementRepository achievementRepository,

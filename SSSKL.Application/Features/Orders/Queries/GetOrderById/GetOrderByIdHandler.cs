@@ -10,6 +10,12 @@ internal sealed class GetOrderByIdHandler(IOrderRepository orderRepository)
     public async Task<OrderDto> Handle(GetOrderByIdQuery request, CancellationToken cancellationToken)
     {
         var order = await orderRepository.GetById(request.Id);
+
+        if (!request.IsAdmin && !string.Equals(order.User?.Id, request.UserId, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new UnauthorizedAccessException("Only admins can view orders of other users");
+        }
+
         return order.ToDto();
     }
 }

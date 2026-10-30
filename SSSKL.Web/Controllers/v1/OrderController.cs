@@ -38,10 +38,17 @@ public class OrderController(ISender sender) : ControllerBase
     }
 
     // GET v1/order/{id}
+    // Admins can read any order; non-admin users can only read their own orders.
+    [Authorize]
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetById(Guid id)
     {
-        return Ok(await sender.Send(new GetOrderByIdQuery(id)));
+        var userId = GetUserId();
+        var isAdmin = User.IsInRole("Admin");
+
+        if (!isAdmin && string.IsNullOrWhiteSpace(userId)) return Unauthorized();
+
+        return Ok(await sender.Send(new GetOrderByIdQuery(id, userId, isAdmin)));
     }
 
     // GET v1/order/latest

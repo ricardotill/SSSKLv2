@@ -88,10 +88,42 @@ public class OrderQueryHandlerTests
         var sut = new GetOrderByIdHandler(_mockOrderRepository);
 
         // Act
-        var result = await sut.Handle(new GetOrderByIdQuery(orderId), CancellationToken.None);
+        var result = await sut.Handle(new GetOrderByIdQuery(orderId, "user1-id", false), CancellationToken.None);
 
         // Assert
         result.Should().BeEquivalentTo(order.ToDto());
+    }
+
+    [TestMethod]
+    public async Task GetOrderById_AsAdminForOtherUsersOrder_ShouldReturnOrder()
+    {
+        // Arrange
+        var orderId = Guid.NewGuid();
+        var order = OrderTestData.CreateOrder(orderId, "user1", "Product 1", 2, 10.00m);
+        _mockOrderRepository.GetById(orderId).Returns(order);
+        var sut = new GetOrderByIdHandler(_mockOrderRepository);
+
+        // Act
+        var result = await sut.Handle(new GetOrderByIdQuery(orderId, "admin-id", true), CancellationToken.None);
+
+        // Assert
+        result.Should().BeEquivalentTo(order.ToDto());
+    }
+
+    [TestMethod]
+    public async Task GetOrderById_AsNonOwner_ShouldThrowUnauthorizedAccess()
+    {
+        // Arrange
+        var orderId = Guid.NewGuid();
+        var order = OrderTestData.CreateOrder(orderId, "user1", "Product 1", 2, 10.00m);
+        _mockOrderRepository.GetById(orderId).Returns(order);
+        var sut = new GetOrderByIdHandler(_mockOrderRepository);
+
+        // Act
+        Func<Task> act = () => sut.Handle(new GetOrderByIdQuery(orderId, "user2-id", false), CancellationToken.None);
+
+        // Assert
+        await act.Should().ThrowAsync<UnauthorizedAccessException>();
     }
 
     [TestMethod]
@@ -103,7 +135,7 @@ public class OrderQueryHandlerTests
         var sut = new GetOrderByIdHandler(_mockOrderRepository);
 
         // Act
-        Func<Task> act = () => sut.Handle(new GetOrderByIdQuery(orderId), CancellationToken.None);
+        Func<Task> act = () => sut.Handle(new GetOrderByIdQuery(orderId, "admin-id", true), CancellationToken.None);
 
         // Assert
         await act.Should().ThrowAsync<NotFoundException>().WithMessage("Order not found");
@@ -117,7 +149,7 @@ public class OrderQueryHandlerTests
         var sut = new GetOrderByIdHandler(_mockOrderRepository);
 
         // Act
-        Func<Task> act = () => sut.Handle(new GetOrderByIdQuery(Guid.Empty), CancellationToken.None);
+        Func<Task> act = () => sut.Handle(new GetOrderByIdQuery(Guid.Empty, "admin-id", true), CancellationToken.None);
 
         // Assert
         await act.Should().ThrowAsync<ArgumentException>().WithMessage("Invalid order ID");

@@ -17,6 +17,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
         with:
+          persist-credentials: false
           submodules: true
           lfs: false
       - name: Build And Deploy

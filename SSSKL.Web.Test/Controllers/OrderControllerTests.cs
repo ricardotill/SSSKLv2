@@ -172,7 +172,8 @@ public class OrderControllerTests
     public async Task GetById_WhenFound_ReturnsOk()
     {
         var id = Guid.NewGuid();
-        _sender.Send(new GetOrderByIdQuery(id), Arg.Any<CancellationToken>()).Returns(new OrderDto { Id = id });
+        SetUserContext("u1", "user1", isAdmin: false);
+        _sender.Send(new GetOrderByIdQuery(id, "u1", false), Arg.Any<CancellationToken>()).Returns(new OrderDto { Id = id });
 
         var result = await _sut.GetById(id);
 
@@ -180,10 +181,34 @@ public class OrderControllerTests
     }
 
     [TestMethod]
+    public async Task GetById_AdminUser_SendsAdminQuery()
+    {
+        var id = Guid.NewGuid();
+        SetUserContext("adminId", "admin", isAdmin: true);
+        _sender.Send(new GetOrderByIdQuery(id, "adminId", true), Arg.Any<CancellationToken>()).Returns(new OrderDto { Id = id });
+
+        var result = await _sut.GetById(id);
+
+        result.Should().BeOfType<OkObjectResult>();
+    }
+
+    [TestMethod]
+    public async Task GetById_NonAdminWithoutUserId_ReturnsUnauthorized()
+    {
+        SetUserContext(null, "user1", isAdmin: false);
+
+        var result = await _sut.GetById(Guid.NewGuid());
+
+        result.Should().BeOfType<UnauthorizedResult>();
+        await _sender.DidNotReceive().Send(Arg.Any<GetOrderByIdQuery>(), Arg.Any<CancellationToken>());
+    }
+
+    [TestMethod]
     public async Task GetById_WhenNotFound_PropagatesNotFoundException()
     {
         var id = Guid.NewGuid();
-        _sender.Send(new GetOrderByIdQuery(id), Arg.Any<CancellationToken>()).Throws(new NotFoundException(""));
+        SetUserContext("adminId", "admin", isAdmin: true);
+        _sender.Send(new GetOrderByIdQuery(id, "adminId", true), Arg.Any<CancellationToken>()).Throws(new NotFoundException(""));
 
         var act = () => _sut.GetById(id);
 

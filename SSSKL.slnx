@@ -1,0 +1,30 @@
+<Solution>
+  <Folder Name="/Bestanden/">
+    <File Path=".github/workflows/deploy-acceptation.yml" />
+    <File Path=".github/workflows/deploy-production.yml" />
+    <File Path=".github/workflows/dotnet.yml" />
+    <File Path=".gitignore" />
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
+    <File Path="docker-compose.yml" />
+    <File Path="LICENSE.txt" />
+    <File Path="README.md" />
+    <File Path="SIXLABORS_LICENSE_SETUP.md" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="SSSKL.Domain/SSSKL.Domain.csproj" />
+    <Project Path="SSSKL.Contracts/SSSKL.Contracts.csproj" />
+    <Project Path="SSSKL.Application/SSSKL.Application.csproj" />
+    <Project Path="SSSKL.Infrastructure/SSSKL.Infrastructure.csproj" />
+    <Project Path="SSSKL.Web/SSSKL.Web.csproj" />
+  </Folder>
+  <Folder Name="/hosting/">
+    <Project Path="SSSKL.AppHost/SSSKL.AppHost.csproj" />
+    <Project Path="SSSKL.ServiceDefaults/SSSKL.ServiceDefaults.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="SSSKL.Application.Test/SSSKL.Application.Test.csproj" />
+    <Project Path="SSSKL.Infrastructure.Test/SSSKL.Infrastructure.Test.csproj" />
+    <Project Path="SSSKL.Web.Test/SSSKL.Web.Test.csproj" />
+  </Folder>
+</Solution>

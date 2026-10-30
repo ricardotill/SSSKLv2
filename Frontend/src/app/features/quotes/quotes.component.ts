@@ -128,7 +128,7 @@ export default class QuotesComponent implements OnInit {
   loadSettings(): void {
     this.settingsService.getSetting('QuotesFeatureAllowedRoles').subscribe({
       next: (setting) => {
-        if (setting.value) {
+        if (setting?.value) {
           this.allowedRoles.set(setting.value.split(',').map(r => r.trim()));
         }
       },

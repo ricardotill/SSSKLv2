@@ -18,6 +18,7 @@ jobs:
     steps:
     - uses: actions/checkout@v5
       with:
+        persist-credentials: false
         fetch-depth: 0
 
     - name: Setup Node.js
@@ -37,7 +38,7 @@ jobs:
       run: npm run build
 
     - name: SonarQube Scan
-      uses: sonarsource/sonarqube-scan-action@v6
+      uses: sonarsource/sonarqube-scan-action@fd88b7d7ccbaefd23d8f36f73b59db7a3d246602 # v6.0.0
       env:
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

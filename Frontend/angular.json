@@ -6,7 +6,7 @@
   },
   "newProjectRoot": "projects",
   "projects": {
-    "SSSKLv2": {
+    "SSSKL": {
       "projectType": "application",
       "schematics": {},
       "root": "",
@@ -16,7 +16,7 @@
         "build": {
           "builder": "@angular/build:application",
           "options": {
-            "outputPath": "dist/SSSKLv2",
+            "outputPath": "dist/SSSKL",
             "browser": "src/main.ts",
             "tsConfig": "tsconfig.app.json",
             "assets": [
@@ -77,10 +77,10 @@
           },
           "configurations": {
             "production": {
-              "buildTarget": "SSSKLv2:build:production"
+              "buildTarget": "SSSKL:build:production"
             },
             "development": {
-              "buildTarget": "SSSKLv2:build:development"
+              "buildTarget": "SSSKL:build:development"
             }
           },
           "defaultConfiguration": "development"

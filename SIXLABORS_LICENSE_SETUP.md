@@ -13,7 +13,7 @@ For local development, you need to have a valid SixLabors license file in the re
    ```
    SSSKLv2/
    ├── sixlabors.lic  ← License file goes here
-   ├── SSSKLv2/
+   ├── SSSKL.Web/
    ├── .github/
    └── ...
    ```
@@ -24,7 +24,7 @@ For local development, you need to have a valid SixLabors license file in the re
    dotnet run
    ```
 
-The `SixLaborsLicenseFile` property in `SSSKLv2.csproj` is configured to look for the license at `../sixlabors.lic` relative to the project directory, which resolves to the repository root and keeps the CI setup consistent.
+The `SixLaborsLicenseFile` property in `Directory.Build.props` points at `sixlabors.lic` in the repository root, so every project that uses ImageSharp (`SSSKL.Application`, `SSSKL.Web`) finds it and the CI setup stays consistent.
 
 ## Pipeline/CI Setup
 

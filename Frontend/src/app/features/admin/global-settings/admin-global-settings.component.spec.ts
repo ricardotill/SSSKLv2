@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { MessageService } from 'primeng/api';
 import AdminGlobalSettingsComponent from './admin-global-settings.component';
@@ -55,6 +55,20 @@ describe('AdminGlobalSettingsComponent', () => {
     expect(form.turnstileSecretKey).toBe('');
     expect(component.turnstileSecretIsSet()).toBe(true);
     expect(settingsService.getSetting).not.toHaveBeenCalledWith('TurnstileSecretKey');
+  });
+
+  it('falls back to empty values for settings that are unset or fail to load', () => {
+    settingsService.getSetting.mockImplementation((key: string) => {
+      if (key === 'WhatsNewContent') return of(null);
+      if (key === 'GoogleMapsApiKey') return throwError(() => new Error('boom'));
+      return of({ key, value: settings[key] ?? '' });
+    });
+
+    const form = create().globalSettingsForm.getRawValue();
+
+    expect(form.whatsNewContent).toBe('');
+    expect(form.googleMapsApiKey).toBe('');
+    expect(form.turnstileSiteKey).toBe('site-key');
   });
 
   it('renders the Turnstile card with the secret marked as set', () => {

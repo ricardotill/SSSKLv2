@@ -1,0 +1,93 @@
+using System.ServiceModel.Syndication;
+using System.Text;
+using System.Xml;
+using MediatR;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using SSSKL.Application.Features.Announcements.Queries.GetAllAnnouncements;
+using SSSKL.Application.Features.Products.Queries.GetAvailableProducts;
+
+namespace SSSKL.Web.Controllers.v1;
+
+[Authorize]
+[Route("v1/rss")]
+public class RssController(ISender sender) : ControllerBase
+{
+    [ResponseCache(Duration = 1200)]
+    [AllowAnonymous]
+    [HttpGet]
+    [Route("products.rss")]
+    public async Task<IActionResult> GetProductsFeed()
+    {
+        var products = await sender.Send(new GetAvailableProductsQuery());
+        var url = $"{Request.Scheme}://{Request.Host}{Request.PathBase}";
+        
+        var feed = new SyndicationFeed(
+            "Producten",
+            "Alle beschikbare producten, met prijs en inventaris",
+            new Uri(url))
+        {
+            Items = products.Select((e) => new SyndicationItem(
+                e.Name,
+                $"{e.Price.ToString("C")} ({e.Stock} stuks)",
+                new Uri(url)
+            ))
+        };
+
+        var settings = new XmlWriterSettings
+        {
+            Encoding = Encoding.UTF8,
+            NewLineHandling = NewLineHandling.Entitize,
+            NewLineOnAttributes = true,
+            Indent = true,
+            Async = true,
+        };
+
+        using var stream = new MemoryStream();
+        await using var xmlWriter = XmlWriter.Create(stream, settings);
+        var rssFormatter = new Rss20FeedFormatter(feed, false);
+        rssFormatter.WriteTo(xmlWriter);
+        await xmlWriter.FlushAsync();
+
+        return File(stream.ToArray(), "application/rss+xml; charset=utf-8");
+    }
+    
+    [ResponseCache(Duration = 1200)]
+    [AllowAnonymous]
+    [HttpGet]
+    [Route("announcements.rss")]
+    public async Task<IActionResult> GetAnnouncementsFeed()
+    {
+        var announcements = await sender.Send(new GetAllAnnouncementsQuery());
+        var url = $"{Request.Scheme}://{Request.Host}{Request.PathBase}";
+        
+        var feed = new SyndicationFeed(
+            "Mededelingen",
+            "Alle mededelingen vanuit het barbestuur",
+            new Uri(url))
+        {
+            Items = announcements.Select((e) => new SyndicationItem(
+                e.Message,
+                e.Description,
+                new Uri(e.Url ?? url)
+            ))
+        };
+
+        var settings = new XmlWriterSettings
+        {
+            Encoding = Encoding.UTF8,
+            NewLineHandling = NewLineHandling.Entitize,
+            NewLineOnAttributes = true,
+            Indent = true,
+            Async = true,
+        };
+
+        using var stream = new MemoryStream();
+        await using var xmlWriter = XmlWriter.Create(stream, settings);
+        var rssFormatter = new Rss20FeedFormatter(feed, false);
+        rssFormatter.WriteTo(xmlWriter);
+        await xmlWriter.FlushAsync();
+
+        return File(stream.ToArray(), "application/rss+xml; charset=utf-8");
+    }
+}

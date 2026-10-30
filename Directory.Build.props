@@ -1,0 +1,11 @@
+<Project>
+  <!-- Shared by every .NET project in the repository. -->
+  <PropertyGroup>
+    <Version>3.11.2</Version>
+    <InformationalVersion>3.11.2</InformationalVersion>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+    <AssemblyVersion>3.11.2.0</AssemblyVersion>
+    <FileVersion>3.11.2.0</FileVersion>
+    <SixLaborsLicenseFile>$(MSBuildThisFileDirectory)sixlabors.lic</SixLaborsLicenseFile>
+  </PropertyGroup>
+</Project>

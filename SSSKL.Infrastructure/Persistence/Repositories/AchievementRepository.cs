@@ -1,0 +1,258 @@
+using Microsoft.EntityFrameworkCore;
+using SSSKL.Contracts.Repositories;
+using SSSKL.Domain.Entities;
+using SSSKL.Domain.Exceptions;
+
+namespace SSSKL.Infrastructure.Persistence.Repositories;
+
+public class AchievementRepository(IDbContextFactory<ApplicationDbContext> dbContextFactory) : IAchievementRepository
+{
+    public async Task<IEnumerable<Achievement>> GetAll()
+    {
+        await using var context = await dbContextFactory.CreateDbContextAsync();
+        return await context.Achievement
+            .Include(x => x.Image)
+            .OrderBy(x => x.CreatedOn)
+            .ToListAsync();
+    }
+
+    public async Task<IList<Achievement>> GetAll(int skip, int take)
+    {
+        // Ensure sensible bounds for skip/take
+        if (skip < 0) skip = 0;
+        if (take <= 0) take = 50; // default page size when invalid
+
+        await using var context = await dbContextFactory.CreateDbContextAsync();
+        return await context.Achievement
+            .Include(x => x.Image)
+            .OrderBy(x => x.CreatedOn)
+            .Skip(skip)
+            .Take(take)
+            .ToListAsync();
+    }
+
+    public async Task<int> GetCount()
+    {
+        await using var context = await dbContextFactory.CreateDbContextAsync();
+        return await context.Achievement
+            .CountAsync();
+    }
+
+    public async Task<IEnumerable<AchievementEntry>> GetAllEntries(Guid achievementId)
+    {
+        await using var context = await dbContextFactory.CreateDbContextAsync();
+        return await context.AchievementEntry
+            .Include(x => x.User)
+            .Include(x => x.Achievement.Image)
+            .Include(x => x.Achievement.ParentAchievement)
+            .Where(x => x.Achievement.Id == achievementId)
+            .OrderBy(x => x.CreatedOn)
+            .ToListAsync();
+    }
+
+    public async Task<IList<AchievementEntry>> GetAllEntriesOfUser(string userId)
+    {
+        await using var context = await dbContextFactory.CreateDbContextAsync();
+        return await context.AchievementEntry
+            .Include(x => x.Achievement)
+            .Include(x => x.Achievement.Image)
+            .Include(x => x.Achievement.ParentAchievement)
+            .Include(x => x.User)
+            .Where(x => x.User.Id == userId)
+            .OrderBy(x => x.CreatedOn)
+            .ToListAsync();
+    }
+
+    public async Task<IList<AchievementEntry>> GetPersonalUnseenAchievementEntries(string username)
+    {
+        await using var context = await dbContextFactory.CreateDbContextAsync();
+        return await context.AchievementEntry
+            .Include(x => x.Achievement)
+            .Include(x => x.Achievement.Image)
+            .Include(x => x.Achievement.ParentAchievement)
+            .Include(x => x.User)
+            .Where(x => x.User.UserName == username)
+            .Where(x => !x.HasSeen)
+            .OrderBy(x => x.CreatedOn)
+            .ToListAsync();
+    }
+
+    public async Task<Achievement> GetById(Guid id)
+    {
+        await using var context = await dbContextFactory.CreateDbContextAsync();
+        var achievement = await context.Achievement
+            .Include(x => x.Image)
+            .Where(x => x.Id == id)
+            .SingleOrDefaultAsync();
+        if (achievement != null) return achievement;
+
+        throw new NotFoundException("Achievement not found");
+    }
+
+    public async Task Create(Achievement achievement)
+    {
+        await using var context = await dbContextFactory.CreateDbContextAsync();
+        await context.AddAsync(achievement);
+        await context.SaveChangesAsync();
+    }
+
+    public async Task CreateEntryRange(IEnumerable<AchievementEntry> entries)
+    {
+        await using var context = await dbContextFactory.CreateDbContextAsync();
+
+        var entriesToAdd = new List<AchievementEntry>();
+        foreach (var entry in entries)
+        {
+            var newEntry = new AchievementEntry
+            {
+                HasSeen = entry.HasSeen,
+                CreatedOn = entry.CreatedOn,
+                Achievement = null!, // Don't set navigation property to avoid re-inserting Achievement
+                User = null! // Don't set navigation property to avoid re-inserting User
+            };
+
+            // Set the foreign keys directly
+            context.Entry(newEntry).Property("AchievementId").CurrentValue = entry.Achievement.Id;
+            context.Entry(newEntry).Property("UserId").CurrentValue = entry.User.Id;
+
+            entriesToAdd.Add(newEntry);
+        }
+
+        await context.AchievementEntry.AddRangeAsync(entriesToAdd);
+        await context.SaveChangesAsync();
+    }
+
+    public async Task Update(Achievement achievement)
+    {
+        await using var context = await dbContextFactory.CreateDbContextAsync();
+
+        // Load existing achievement including its image
+        var existing = await context.Achievement
+            .Include(a => a.Image)
+            .FirstOrDefaultAsync(a => a.Id == achievement.Id);
+
+        if (existing == null)
+            throw new NotFoundException("Achievement not found");
+
+        // Update scalar properties
+        existing.Name = achievement.Name;
+        existing.Description = achievement.Description;
+        existing.AutoAchieve = achievement.AutoAchieve;
+        existing.Action = achievement.Action;
+        existing.ComparisonOperator = achievement.ComparisonOperator;
+        existing.ComparisonValue = achievement.ComparisonValue;
+        existing.Tier = achievement.Tier;
+        existing.ParentAchievementId = achievement.ParentAchievementId;
+
+        // Handle image replacement
+        if (achievement.Image != null)
+        {
+            // New image provided. Remove old image if present, then insert new AchievementImage
+            if (existing.Image != null)
+            {
+                // Update existing image properties instead of deleting/recreating to avoid FK cascade issues
+                existing.Image.FileName = achievement.Image.FileName;
+                existing.Image.Uri = achievement.Image.Uri;
+                existing.Image.ContentType = achievement.Image.ContentType;
+                existing.Image.CreatedOn = achievement.Image.CreatedOn == default ? DateTime.Now : achievement.Image.CreatedOn;
+            }
+            else
+            {
+            var newImage = new AchievementImage
+            {
+                FileName = achievement.Image.FileName,
+                Uri = achievement.Image.Uri,
+                ContentType = achievement.Image.ContentType,
+                CreatedOn = achievement.Image.CreatedOn == default ? DateTime.Now : achievement.Image.CreatedOn
+            };
+
+            // If the incoming image object has an Id (e.g. created by BlobStorageAgent), preserve it
+            if (achievement.Image.Id != Guid.Empty)
+            {
+                newImage.Id = achievement.Image.Id;
+            }
+
+            // Add new image entity to context so it's inserted
+            await context.AchievementImage.AddAsync(newImage);
+            // Set navigation and the shadow FK explicitly to ensure proper linking
+            existing.Image = newImage;
+            // If caller provided an Id for the image, preserve it on the shadow FK.
+            // If Id is Guid.Empty, let EF generate the Id and manage the FK via the navigation property.
+            if (newImage.Id != Guid.Empty)
+            {
+                context.Entry(existing).Property("ImageId").CurrentValue = newImage.Id;
+            }
+            }
+        }
+        else if (existing.Image != null)
+        {
+            // Image removed: clear the FK and delete the orphaned image row
+            var oldImage = existing.Image;
+            existing.Image = null;
+            context.Entry(existing).Property("ImageId").CurrentValue = null;
+            context.AchievementImage.Remove(oldImage);
+        }
+
+        await context.SaveChangesAsync();
+    }
+
+    public async Task UpdateAchievementEntryRange(IEnumerable<AchievementEntry> entries)
+    {
+        await using var context = await dbContextFactory.CreateDbContextAsync();
+        foreach (var entry in entries)
+        {
+            context.AchievementEntry.Update(entry);
+        }
+        await context.SaveChangesAsync();
+    }
+
+    public async Task Delete(Guid id)
+    {
+        await using var context = await dbContextFactory.CreateDbContextAsync();
+        var achievement = await context.Achievement.FindAsync(id);
+        if (achievement != null)
+        {
+            context.Remove(achievement);
+            await context.SaveChangesAsync();
+        }
+        else throw new NotFoundException("Achievement not found");
+    }
+
+    public async Task DeleteAchievementEntryRange(IEnumerable<AchievementEntry> entries)
+    {
+        await using var context = await dbContextFactory.CreateDbContextAsync();
+        // Delete entries by their Ids to avoid issues with detached entities
+        var ids = entries.Select(e => e.Id).ToList();
+        var entriesInDb = await context.AchievementEntry.Where(e => ids.Contains(e.Id)).ToListAsync();
+        if (entriesInDb.Any())
+        {
+            context.AchievementEntry.RemoveRange(entriesInDb);
+            await context.SaveChangesAsync();
+        }
+    }
+
+    public async Task<IEnumerable<Achievement>> GetUncompletedAchievementsForUser(string username)
+    {
+        await using var context = await dbContextFactory.CreateDbContextAsync();
+
+        // Resolve the user for the provided username. If user doesn't exist, return all achievements.
+        var user = await context.Users.SingleOrDefaultAsync(u => u.UserName == username);
+        if (user == null)
+        {
+            return await context.Achievement
+                .OrderBy(achievement => achievement.CreatedOn)
+                .ToListAsync();
+        }
+
+        // Query completed achievement IDs using shadow FK properties to ensure translation
+        var completedAchievementIds = context.AchievementEntry
+            .Where(entry => EF.Property<string>(entry, "UserId") == user.Id)
+            .Select(entry => EF.Property<Guid>(entry, "AchievementId"));
+
+        // Get all achievements that are NOT in the completed list
+        return await context.Achievement
+            .Where(achievement => !completedAchievementIds.Contains(achievement.Id))
+            .OrderBy(achievement => achievement.CreatedOn)
+            .ToListAsync();
+    }
+}

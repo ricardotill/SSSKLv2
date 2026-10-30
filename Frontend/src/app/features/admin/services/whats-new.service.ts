@@ -31,6 +31,10 @@ export class WhatsNewService {
   private checkWhatsNew() {
     this.settingsService.getSetting('WhatsNewContent').subscribe({
       next: (setting) => {
+        if (!setting) {
+          return;
+        }
+
         const lastSeenVersion = localStorage.getItem(this.STORAGE_KEY);
         const currentVersion = setting.updatedOn; // Using updatedOn as version
 
@@ -40,11 +44,7 @@ export class WhatsNewService {
           this.isVisible.set(true);
         }
       },
-      error: (err) => {
-        if (err.status !== 404) {
-          console.error('Failed to fetch Whats New content', err);
-        }
-      }
+      error: (err) => console.error('Failed to fetch Whats New content', err)
     });
   }
 

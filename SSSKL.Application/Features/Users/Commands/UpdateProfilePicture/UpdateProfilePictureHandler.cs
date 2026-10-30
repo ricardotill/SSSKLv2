@@ -22,7 +22,7 @@ internal sealed class UpdateProfilePictureHandler(
         var user = await userManager.FindByIdAsync(existing.Id)
                    ?? throw new NotFoundException("User not found");
 
-        using var image = await SafeImageLoader.LoadAsync(request.Image);
+        using var image = await SafeImageLoader.LoadAsync(request.Image, cancellationToken);
         image.Mutate(x => x.Resize(new ResizeOptions
         {
             Size = new Size(400, 400),

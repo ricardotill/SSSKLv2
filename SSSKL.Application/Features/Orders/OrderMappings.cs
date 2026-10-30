@@ -11,7 +11,7 @@ public static class OrderMappings
         CreatedOn = order.CreatedOn,
         ProductId = order.Product?.Id,
         ProductName = order.ProductNaam ?? string.Empty,
-        UserId = order.User?.Id != null ? Guid.TryParse(order.User.Id, out var uid) ? uid : null : null,
+        UserId = Guid.TryParse(order.User?.Id, out var uid) ? uid : null,
         UserFullName = order.User?.FullName ?? string.Empty,
         Amount = order.Amount,
         Paid = order.Paid,

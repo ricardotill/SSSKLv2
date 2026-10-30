@@ -4,7 +4,7 @@ import { provideHttpClientTesting, HttpTestingController } from '@angular/common
 import { WhatsNewService } from './whats-new.service';
 import { GlobalSettingsService } from './global-settings.service';
 import { AuthService } from '../../../core/auth/auth.service';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { signal } from '@angular/core';
 import { vi } from 'vitest';
 
@@ -55,5 +55,34 @@ describe('WhatsNewService', () => {
     service.markAsSeen();
     expect(localStorage.getItem('ssskl_whats_new_seen_version')).toBe('1.0');
     expect(service.isVisible()).toBe(false);
+  });
+
+  it('shows unseen content once the user is signed in', () => {
+    TestBed.tick();
+    expect(mockSettingsService.getSetting).toHaveBeenCalledWith('WhatsNewContent');
+    expect(service.content()).toBe('Test');
+    expect(service.isVisible()).toBe(true);
+  });
+
+  it('stays hidden when the content was already seen', () => {
+    localStorage.setItem('ssskl_whats_new_seen_version', '1.0');
+    TestBed.tick();
+    expect(service.isVisible()).toBe(false);
+  });
+
+  it('stays hidden when no content has been set', () => {
+    mockSettingsService.getSetting.mockReturnValue(of(null));
+    TestBed.tick();
+    expect(service.isVisible()).toBe(false);
+    expect(service.content()).toBeNull();
+  });
+
+  it('logs when the content cannot be fetched', () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    mockSettingsService.getSetting.mockReturnValue(throwError(() => new Error('boom')));
+    TestBed.tick();
+    expect(consoleSpy).toHaveBeenCalledWith('Failed to fetch Whats New content', expect.any(Error));
+    expect(service.isVisible()).toBe(false);
+    consoleSpy.mockRestore();
   });
 });

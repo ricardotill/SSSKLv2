@@ -24,6 +24,18 @@ internal sealed class UpdateUserHandler(
                    ?? throw new NotFoundException("ApplicationUser not found");
         var dto = request.Changes;
 
+        await UpdateIdentityFields(user, dto);
+        await UpdateProfileFields(user, dto);
+        await ResetPassword(user, dto.Password);
+        await ReplaceRoles(user, dto.Roles);
+
+        var updated = await userManager.FindByIdAsync(user.Id) ?? user;
+        var roles = await userManager.GetRolesAsync(updated);
+        return updated.ToDetailedDto(roles);
+    }
+
+    private async Task UpdateIdentityFields(ApplicationUser user, ApplicationUserUpdateDto dto)
+    {
         if (!string.IsNullOrWhiteSpace(dto.UserName) && dto.UserName != user.UserName)
         {
             (await userManager.SetUserNameAsync(user, dto.UserName)).ThrowIfFailed();
@@ -41,7 +53,10 @@ internal sealed class UpdateUserHandler(
             (await userManager.SetPhoneNumberAsync(user, dto.PhoneNumber)).ThrowIfFailed();
             user.PhoneNumber = dto.PhoneNumber;
         }
+    }
 
+    private async Task UpdateProfileFields(ApplicationUser user, ApplicationUserUpdateDto dto)
+    {
         var needsUpdate = false;
         if (dto.Name != null && dto.Name != user.Name)
         {
@@ -62,27 +77,29 @@ internal sealed class UpdateUserHandler(
         {
             (await userManager.UpdateAsync(user)).ThrowIfFailed();
         }
+    }
 
-        // A reset token lets an admin set a password without knowing the current one
-        if (!string.IsNullOrEmpty(dto.Password))
+    // A reset token lets an admin set a password without knowing the current one
+    private async Task ResetPassword(ApplicationUser user, string? password)
+    {
+        if (string.IsNullOrEmpty(password))
+            return;
+
+        var token = await userManager.GeneratePasswordResetTokenAsync(user);
+        (await userManager.ResetPasswordAsync(user, token, password)).ThrowIfFailed();
+    }
+
+    // Replace all roles with the requested set
+    private async Task ReplaceRoles(ApplicationUser user, IList<string>? roles)
+    {
+        if (roles == null || roles.Count == 0)
+            return;
+
+        var currentRoles = await userManager.GetRolesAsync(user);
+        if (currentRoles.Count > 0)
         {
-            var token = await userManager.GeneratePasswordResetTokenAsync(user);
-            (await userManager.ResetPasswordAsync(user, token, dto.Password)).ThrowIfFailed();
+            (await userManager.RemoveFromRolesAsync(user, currentRoles)).ThrowIfFailed();
         }
-
-        // Replace all roles with the requested set
-        if (dto.Roles != null && dto.Roles.Count > 0)
-        {
-            var currentRoles = await userManager.GetRolesAsync(user);
-            if (currentRoles.Count > 0)
-            {
-                (await userManager.RemoveFromRolesAsync(user, currentRoles)).ThrowIfFailed();
-            }
-            (await userManager.AddToRolesAsync(user, dto.Roles)).ThrowIfFailed();
-        }
-
-        var updated = await userManager.FindByIdAsync(user.Id) ?? user;
-        var roles = await userManager.GetRolesAsync(updated);
-        return updated.ToDetailedDto(roles);
+        (await userManager.AddToRolesAsync(user, roles)).ThrowIfFailed();
     }
 }

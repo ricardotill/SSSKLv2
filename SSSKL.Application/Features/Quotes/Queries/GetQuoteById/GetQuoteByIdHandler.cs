@@ -21,7 +21,7 @@ internal sealed class GetQuoteByIdHandler(
         var quote = await QuoteAccess.GetExisting(quoteRepository, request.Id);
 
         // Hide role-restricted quotes from users without one of the roles
-        if (quote.VisibleToRoles.Any())
+        if (quote.VisibleToRoles.Count > 0)
         {
             if (request.UserId == null) throw new NotFoundException("Quote not found");
             var userRoles = await roleProvider.GetRoles(request.UserId);

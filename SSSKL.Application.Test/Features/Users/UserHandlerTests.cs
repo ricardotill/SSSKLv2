@@ -660,7 +660,7 @@ public class UserHandlerTests
         };
     }
 
-    private List<ProductUserStat> CreateProductUserStats(Guid productId)
+    private static List<ProductUserStat> CreateProductUserStats(Guid productId)
     {
         var user1 = CreateApplicationUser("user-1", "user1", "Test1", "User1");
         var user2 = CreateApplicationUser("user-2", "user2", "Test2", "User2");

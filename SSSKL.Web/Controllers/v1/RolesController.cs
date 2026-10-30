@@ -11,6 +11,7 @@ using SSSKL.Domain.Constants;
 
 namespace SSSKL.Web.Controllers.v1;
 
+[Authorize]
 [Route("v1/[controller]")]
 [ApiController]
 public class RolesController(ISender sender) : ControllerBase

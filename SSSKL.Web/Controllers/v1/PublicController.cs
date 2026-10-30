@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Hosting;
 using System.Reflection;
@@ -6,6 +7,7 @@ namespace SSSKL.Web.Controllers.v1;
 
 public sealed record VersionDto(string Version);
 
+[Authorize]
 [Route("v1/[controller]")]
 [ApiController]
 public class PublicController : ControllerBase
@@ -17,6 +19,7 @@ public class PublicController : ControllerBase
         _configuration = configuration; 
     }
 
+    [AllowAnonymous]
     [HttpGet("domain")]
     public ActionResult<string> GetDomain([FromServices] IWebHostEnvironment env)
     {
@@ -24,6 +27,7 @@ public class PublicController : ControllerBase
         return Ok(domain ?? (env.IsDevelopment() ? "localhost" : "ssskl.scoutingwilo.nl"));
     }
 
+    [AllowAnonymous]
     [HttpGet("version")]
     [ResponseCache(Location = ResponseCacheLocation.None, NoStore = true)]
     public ActionResult<VersionDto> GetVersion()

@@ -6,6 +6,7 @@ using SSSKL.Contracts.Dto;
 
 namespace SSSKL.Web.Controllers.v1;
 
+[Authorize]
 [Route("v1/[controller]")]
 [ApiController]
 public class LeaderboardController(ISender sender) : ControllerBase
@@ -15,14 +16,17 @@ public class LeaderboardController(ISender sender) : ControllerBase
     public Task<ActionResult<IEnumerable<LeaderboardEntryDto>>> GetLeaderboard(Guid productId) =>
         Get(productId, LeaderboardPeriod.All);
 
+    [AllowAnonymous]
     [HttpGet("monthly/{productId:guid}")]
     public Task<ActionResult<IEnumerable<LeaderboardEntryDto>>> GetMonthlyLeaderboard(Guid productId) =>
         Get(productId, LeaderboardPeriod.Monthly);
 
+    [AllowAnonymous]
     [HttpGet("12hour/{productId:guid}")]
     public Task<ActionResult<IEnumerable<LeaderboardEntryDto>>> Get12HourlyLeaderboard(Guid productId) =>
         Get(productId, LeaderboardPeriod.TwelveHours);
 
+    [AllowAnonymous]
     [HttpGet("12hour/live/{productId:guid}")]
     public Task<ActionResult<IEnumerable<LeaderboardEntryDto>>> Get12HourlyLiveLeaderboard(Guid productId) =>
         Get(productId, LeaderboardPeriod.TwelveHoursLive);

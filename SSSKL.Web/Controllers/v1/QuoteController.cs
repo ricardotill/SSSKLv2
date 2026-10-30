@@ -12,11 +12,13 @@ using SSSKL.Contracts.Dto.Api.v1;
 
 namespace SSSKL.Web.Controllers.v1;
 
+[Authorize]
 [Route("v1/[controller]")]
 [ApiController]
 public class QuoteController(ISender sender) : ControllerBase
 {
     // GET v1/quote
+    [AllowAnonymous]
     [HttpGet]
     public async Task<IActionResult> GetAll([FromQuery] int skip = 0, [FromQuery] int take = 15, [FromQuery] string? targetUserId = null)
     {
@@ -24,6 +26,7 @@ public class QuoteController(ISender sender) : ControllerBase
     }
 
     // GET v1/quote/{id}
+    [AllowAnonymous]
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetById(Guid id)
     {

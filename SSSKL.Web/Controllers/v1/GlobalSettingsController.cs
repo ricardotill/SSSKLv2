@@ -11,6 +11,7 @@ using SSSKL.Domain.Entities;
 
 namespace SSSKL.Web.Controllers.v1;
 
+[Authorize]
 [Route("v1/[controller]")]
 [ApiController]
 public class GlobalSettingsController(ISender sender) : ControllerBase
@@ -24,6 +25,7 @@ public class GlobalSettingsController(ISender sender) : ControllerBase
     }
 
     // GET v1/globalsettings/{key} - 204 when the setting hasn't been set
+    [AllowAnonymous]
     [HttpGet("{key}")]
     public async Task<ActionResult<GlobalSettingDto>> GetSetting(string key)
     {

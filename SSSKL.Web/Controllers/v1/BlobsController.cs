@@ -6,6 +6,7 @@ using SSSKL.Application.Features.Blobs.Queries.GetSocialPreview;
 
 namespace SSSKL.Web.Controllers.v1;
 
+[Authorize]
 [Route("v1/blob")]
 [ApiController]
 public class BlobsController(ISender sender) : ControllerBase

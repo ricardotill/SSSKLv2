@@ -2,16 +2,19 @@ using System.ServiceModel.Syndication;
 using System.Text;
 using System.Xml;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SSSKL.Application.Features.Announcements.Queries.GetAllAnnouncements;
 using SSSKL.Application.Features.Products.Queries.GetAvailableProducts;
 
 namespace SSSKL.Web.Controllers.v1;
 
+[Authorize]
 [Route("v1/rss")]
 public class RssController(ISender sender) : ControllerBase
 {
     [ResponseCache(Duration = 1200)]
+    [AllowAnonymous]
     [HttpGet]
     [Route("products.rss")]
     public async Task<IActionResult> GetProductsFeed()
@@ -50,6 +53,7 @@ public class RssController(ISender sender) : ControllerBase
     }
     
     [ResponseCache(Duration = 1200)]
+    [AllowAnonymous]
     [HttpGet]
     [Route("announcements.rss")]
     public async Task<IActionResult> GetAnnouncementsFeed()

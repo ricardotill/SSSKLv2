@@ -14,6 +14,7 @@ using SSSKL.Contracts.Dto.Api.v1;
 
 namespace SSSKL.Web.Controllers.v1;
 
+[Authorize]
 [Route("v1/[controller]")]
 [ApiController]
 public class OrderController(ISender sender) : ControllerBase
@@ -52,6 +53,7 @@ public class OrderController(ISender sender) : ControllerBase
     }
 
     // GET v1/order/latest
+    [AllowAnonymous]
     [HttpGet("latest")]
     public async Task<IActionResult> GetLatest([FromQuery] int take = 6)
     {

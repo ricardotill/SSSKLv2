@@ -74,7 +74,7 @@ jobs:
           cp ./sixlabors.lic ../sixlabors.lic
 
       - name: Cache SonarCloud packages
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.sonar/cache
           key: ${{ runner.os }}-sonar

@@ -57,7 +57,8 @@ public sealed class StatsRecalculationJob(
         job.Status = RecalculationJobStatus.Running;
         using var activity = SssklTelemetry.ActivitySource.StartActivity("StatsRecalculationJob");
         activity?.SetTag("job.id", job.Id);
-        logger.LogInformation("Bulk stats recalculation job {JobId} started", job.Id);
+        if (logger.IsEnabled(LogLevel.Information))
+            logger.LogInformation("Bulk stats recalculation job {JobId} started", job.Id);
         try
         {
             using var scope = scopeFactory.CreateScope();
@@ -121,8 +122,9 @@ public sealed class StatsRecalculationJob(
             job.CompletedAt ??= DateTime.UtcNow;
             var duration = job.CompletedAt.Value - job.StartedAt;
             SssklTelemetry.RecordJob("stats_recalculation", job.Status.ToString().ToLowerInvariant(), duration);
-            logger.LogInformation("Bulk stats recalculation job {JobId} finished as {Status} in {DurationMs} ms ({FailedUsers}/{TotalUsers} users failed)",
-                job.Id, job.Status, (long)duration.TotalMilliseconds, job.FailedUsers, job.TotalUsers);
+            if (logger.IsEnabled(LogLevel.Information))
+                logger.LogInformation("Bulk stats recalculation job {JobId} finished as {Status} in {DurationMs} ms ({FailedUsers}/{TotalUsers} users failed)",
+                    job.Id, job.Status, (long)duration.TotalMilliseconds, job.FailedUsers, job.TotalUsers);
         }
     }
 

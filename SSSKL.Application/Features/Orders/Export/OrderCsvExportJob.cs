@@ -68,7 +68,8 @@ public sealed class OrderCsvExportJob(
         job.Status = CsvExportJobStatus.Running;
         using var activity = SssklTelemetry.ActivitySource.StartActivity("OrderCsvExportJob");
         activity?.SetTag("job.id", job.Id);
-        logger.LogInformation("Order CSV export job {JobId} started", job.Id);
+        if (logger.IsEnabled(LogLevel.Information))
+            logger.LogInformation("Order CSV export job {JobId} started", job.Id);
 
         try
         {
@@ -95,8 +96,9 @@ public sealed class OrderCsvExportJob(
             job.CompletedAt ??= DateTime.UtcNow;
             var duration = job.CompletedAt.Value - job.StartedAt;
             SssklTelemetry.RecordJob("order_csv_export", job.Status.ToString().ToLowerInvariant(), duration);
-            logger.LogInformation("Order CSV export job {JobId} finished as {Status} in {DurationMs} ms",
-                job.Id, job.Status, (long)duration.TotalMilliseconds);
+            if (logger.IsEnabled(LogLevel.Information))
+                logger.LogInformation("Order CSV export job {JobId} finished as {Status} in {DurationMs} ms",
+                    job.Id, job.Status, (long)duration.TotalMilliseconds);
         }
     }
 

@@ -8,7 +8,8 @@ public sealed class LoggingBehavior<TRequest, TResponse>(ILogger<LoggingBehavior
 {
     public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
     {
-        logger.LogInformation("Handling {Request}", typeof(TRequest).Name);
+        if (logger.IsEnabled(LogLevel.Information))
+            logger.LogInformation("Handling {Request}", typeof(TRequest).Name);
         return await next(cancellationToken);
     }
 }

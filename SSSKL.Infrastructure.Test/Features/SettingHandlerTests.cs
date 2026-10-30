@@ -15,6 +15,8 @@ namespace SSSKL.Infrastructure.Test.Features;
 [TestClass]
 public class SettingHandlerTests
 {
+    public TestContext TestContext { get; set; } = null!;
+
     private const string MaliciousHtml = @"<script>alert('xss')</script><div onload=""alert('xss')"""
         + @"style=""background-color: rgba(0, 0, 0, 1)"">Test<img src=""test.png"""
         + @"style=""background-image: url(javascript:alert('xss')); margin: 10px""></div>";
@@ -51,7 +53,7 @@ public class SettingHandlerTests
     public async Task GetSetting_WhenExists_ReturnsSetting()
     {
         _context.GlobalSetting.Add(new GlobalSetting { Key = "test-key", Value = "test-value" });
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.CancellationToken);
 
         var result = await Get("test-key");
 
@@ -70,7 +72,7 @@ public class SettingHandlerTests
     [TestMethod]
     public async Task GetSetting_WriteOnlyKey_ThrowsUnauthorizedEvenForAdmins()
     {
-        var act = () => Get(GlobalSettingsKeys.WriteOnlyKeys.First(), isAdmin: true);
+        var act = () => Get(GlobalSettingsKeys.WriteOnlyKeys[0], isAdmin: true);
 
         await act.Should().ThrowAsync<UnauthorizedAccessException>();
     }
@@ -90,7 +92,7 @@ public class SettingHandlerTests
     {
         await Update("new-key", "new-value");
 
-        var setting = await _context.GlobalSetting.FirstOrDefaultAsync(s => s.Key == "new-key");
+        var setting = await _context.GlobalSetting.FirstOrDefaultAsync(s => s.Key == "new-key", TestContext.CancellationToken);
         setting!.Value.Should().Be("new-value");
     }
 
@@ -98,11 +100,11 @@ public class SettingHandlerTests
     public async Task UpdateSetting_WhenExists_UpdatesValue()
     {
         _context.GlobalSetting.Add(new GlobalSetting { Key = "existing-key", Value = "old-value" });
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.CancellationToken);
 
         await Update("existing-key", "updated-value");
 
-        var updated = await _context.GlobalSetting.FirstOrDefaultAsync(s => s.Key == "existing-key");
+        var updated = await _context.GlobalSetting.FirstOrDefaultAsync(s => s.Key == "existing-key", TestContext.CancellationToken);
         updated!.Value.Should().Be("updated-value");
         updated.UpdatedOn.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
     }
@@ -112,7 +114,7 @@ public class SettingHandlerTests
     {
         await Update("test-key", MaliciousHtml);
 
-        var settingInDb = await _context.GlobalSetting.FirstOrDefaultAsync(s => s.Key == "test-key");
+        var settingInDb = await _context.GlobalSetting.FirstOrDefaultAsync(s => s.Key == "test-key", TestContext.CancellationToken);
         settingInDb!.Value.Should().Be(SanitizedHtml);
     }
 
@@ -120,22 +122,22 @@ public class SettingHandlerTests
     public async Task UpdateSetting_ExistingSettingWithMaliciousHtml_ShouldSanitizeHtml()
     {
         _context.GlobalSetting.Add(new GlobalSetting { Key = "test-key", Value = "Old Value", UpdatedOn = DateTime.UtcNow });
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.CancellationToken);
 
         await Update("test-key", MaliciousHtml);
 
-        var settingInDb = await _context.GlobalSetting.FirstOrDefaultAsync(s => s.Key == "test-key");
+        var settingInDb = await _context.GlobalSetting.FirstOrDefaultAsync(s => s.Key == "test-key", TestContext.CancellationToken);
         settingInDb!.Value.Should().Be(SanitizedHtml);
     }
 
     [TestMethod]
     public async Task UpdateSetting_SensitiveKey_StoresValueVerbatim()
     {
-        var sensitive = GlobalSettingsKeys.SensitiveKeys.First();
+        var sensitive = GlobalSettingsKeys.SensitiveKeys[0];
 
         await Update(sensitive, "<b>secret</b>");
 
-        var settingInDb = await _context.GlobalSetting.FirstOrDefaultAsync(s => s.Key == sensitive);
+        var settingInDb = await _context.GlobalSetting.FirstOrDefaultAsync(s => s.Key == sensitive, TestContext.CancellationToken);
         settingInDb!.Value.Should().Be("<b>secret</b>");
     }
 

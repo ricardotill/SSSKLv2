@@ -22,6 +22,8 @@ namespace SSSKL.Infrastructure.Test.Features;
 [TestClass]
 public class NotificationHandlerTests : RepositoryTest
 {
+    public TestContext TestContext { get; set; } = null!;
+
     private ApplicationDbContext _dbContext = null!;
     private IWebPushService _webPushService = null!;
     private NotificationRepository _notificationRepository = null!;
@@ -88,14 +90,14 @@ public class NotificationHandlerTests : RepositoryTest
             new Notification { UserId = TestUser.Id, Title = "T1", Message = "M1", CreatedOn = DateTime.UtcNow.AddMinutes(-5) },
             new Notification { UserId = "other",    Title = "T2", Message = "M2", CreatedOn = DateTime.UtcNow }
         );
-        await _dbContext.SaveChangesAsync();
+        await _dbContext.SaveChangesAsync(TestContext.CancellationToken);
 
         // Act
         var result = await GetNotificationsAsync(TestUser.Id, false, 0, 10);
 
         // Assert
         result.Should().HaveCount(1);
-        result.First().Title.Should().Be("T1");
+        result[0].Title.Should().Be("T1");
     }
 
     [TestMethod]
@@ -106,14 +108,14 @@ public class NotificationHandlerTests : RepositoryTest
             new Notification { UserId = TestUser.Id, Title = "Read",   Message = "M1", IsRead = true,  CreatedOn = DateTime.UtcNow.AddMinutes(-5) },
             new Notification { UserId = TestUser.Id, Title = "Unread", Message = "M2", IsRead = false, CreatedOn = DateTime.UtcNow }
         );
-        await _dbContext.SaveChangesAsync();
+        await _dbContext.SaveChangesAsync(TestContext.CancellationToken);
 
         // Act
         var result = await GetNotificationsAsync(TestUser.Id, true, 0, 10);
 
         // Assert
         result.Should().HaveCount(1);
-        result.First().Title.Should().Be("Unread");
+        result[0].Title.Should().Be("Unread");
     }
 
     [TestMethod]
@@ -127,7 +129,7 @@ public class NotificationHandlerTests : RepositoryTest
                 UserId = TestUser.Id, Title = "T" + i, Message = "M", CreatedOn = DateTime.UtcNow.AddMinutes(i) 
             });
         }
-        await _dbContext.SaveChangesAsync();
+        await _dbContext.SaveChangesAsync(TestContext.CancellationToken);
 
         // Act
         var result = await GetNotificationsAsync(TestUser.Id, false, 1, 2);
@@ -156,7 +158,7 @@ public class NotificationHandlerTests : RepositoryTest
             new Notification { UserId = TestUser.Id, Title = "U2", Message = "M", IsRead = false },
             new Notification { UserId = "other",    Title = "U3", Message = "M", IsRead = false }
         );
-        await _dbContext.SaveChangesAsync();
+        await _dbContext.SaveChangesAsync(TestContext.CancellationToken);
 
         // Act
         var count = await GetUnreadCountAsync(TestUser.Id);
@@ -173,13 +175,13 @@ public class NotificationHandlerTests : RepositoryTest
         // Arrange
         var n = new Notification { UserId = TestUser.Id, Title = "T", Message = "M", IsRead = false };
         _dbContext.Notification.Add(n);
-        await _dbContext.SaveChangesAsync();
+        await _dbContext.SaveChangesAsync(TestContext.CancellationToken);
 
         // Act
         await MarkAsReadAsync(n.Id, TestUser.Id);
 
         // Assert
-        var updated = await _dbContext.Notification.FindAsync(n.Id);
+        var updated = await _dbContext.Notification.FindAsync([n.Id], TestContext.CancellationToken);
         updated!.IsRead.Should().BeTrue();
     }
 
@@ -192,13 +194,13 @@ public class NotificationHandlerTests : RepositoryTest
         
         var n = new Notification { UserId = "other", Title = "T", Message = "M", IsRead = false };
         _dbContext.Notification.Add(n);
-        await _dbContext.SaveChangesAsync();
+        await _dbContext.SaveChangesAsync(TestContext.CancellationToken);
 
         // Act
         await MarkAsReadAsync(n.Id, TestUser.Id);
 
         // Assert
-        var updated = await _dbContext.Notification.FindAsync(n.Id);
+        var updated = await _dbContext.Notification.FindAsync([n.Id], TestContext.CancellationToken);
         updated!.IsRead.Should().BeFalse();
     }
 
@@ -216,7 +218,7 @@ public class NotificationHandlerTests : RepositoryTest
             new Notification { UserId = TestUser.Id, Title = "T2", IsRead = false },
             new Notification { UserId = "other",    Title = "T3", IsRead = false }
         );
-        await _dbContext.SaveChangesAsync();
+        await _dbContext.SaveChangesAsync(TestContext.CancellationToken);
 
         // Act
         await MarkAllAsReadAsync(TestUser.Id);
@@ -225,10 +227,10 @@ public class NotificationHandlerTests : RepositoryTest
         _dbContext.ChangeTracker.Clear();
 
         // Assert
-        var userNotifs = await _dbContext.Notification.Where(n => n.UserId == TestUser.Id).ToListAsync();
+        var userNotifs = await _dbContext.Notification.Where(n => n.UserId == TestUser.Id).ToListAsync(TestContext.CancellationToken);
         userNotifs.Should().AllSatisfy(n => n.IsRead.Should().BeTrue());
         
-        var otherNotif = await _dbContext.Notification.FirstAsync(n => n.UserId == "other");
+        var otherNotif = await _dbContext.Notification.FirstAsync(n => n.UserId == "other", TestContext.CancellationToken);
         otherNotif.IsRead.Should().BeFalse();
     }
 
@@ -245,9 +247,9 @@ public class NotificationHandlerTests : RepositoryTest
 
         // Assert
         var sub = await _dbContext.PushSubscription
-            .FirstOrDefaultAsync(s => s.UserId == TestUser.Id && s.Endpoint == dto.Endpoint);
+            .FirstOrDefaultAsync(s => s.UserId == TestUser.Id && s.Endpoint == dto.Endpoint, TestContext.CancellationToken);
         sub.Should().NotBeNull();
-        sub!.P256dh.Should().Be("key1");
+        sub.P256dh.Should().Be("key1");
         sub.Auth.Should().Be("auth1");
     }
 
@@ -260,7 +262,7 @@ public class NotificationHandlerTests : RepositoryTest
             UserId = TestUser.Id, Endpoint = "https://push.example.com/1",
             P256dh = "old-key", Auth = "old-auth", CreatedOn = DateTime.UtcNow
         });
-        await _dbContext.SaveChangesAsync();
+        await _dbContext.SaveChangesAsync(TestContext.CancellationToken);
 
         var dto = new PushSubscriptionDto { Endpoint = "https://push.example.com/1", P256dh = "new-key", Auth = "new-auth" };
 
@@ -270,7 +272,7 @@ public class NotificationHandlerTests : RepositoryTest
         // Assert – still one record but with updated keys
         var subs = await _dbContext.PushSubscription
             .Where(s => s.UserId == TestUser.Id && s.Endpoint == dto.Endpoint)
-            .ToListAsync();
+            .ToListAsync(TestContext.CancellationToken);
         subs.Should().HaveCount(1);
         subs.Single().P256dh.Should().Be("new-key");
         subs.Single().Auth.Should().Be("new-auth");
@@ -288,13 +290,13 @@ public class NotificationHandlerTests : RepositoryTest
             UserId = TestUser.Id, Endpoint = endpoint,
             P256dh = "key", Auth = "auth", CreatedOn = DateTime.UtcNow
         });
-        await _dbContext.SaveChangesAsync();
+        await _dbContext.SaveChangesAsync(TestContext.CancellationToken);
 
         // Act
         await UnsubscribeAsync(TestUser.Id, endpoint);
 
         // Assert
-        var sub = await _dbContext.PushSubscription.FirstOrDefaultAsync(s => s.Endpoint == endpoint);
+        var sub = await _dbContext.PushSubscription.FirstOrDefaultAsync(s => s.Endpoint == endpoint, TestContext.CancellationToken);
         sub.Should().BeNull();
     }
 
@@ -316,7 +318,7 @@ public class NotificationHandlerTests : RepositoryTest
         // Arrange – create a second user
         var user2 = new ApplicationUser { Id = Guid.NewGuid().ToString(), UserName = "user2", Name = "User", Surname = "Two", Email = "u2@test.com" };
         _dbContext.Users.Add(user2);
-        await _dbContext.SaveChangesAsync();
+        await _dbContext.SaveChangesAsync(TestContext.CancellationToken);
 
         var dto = new CreateCustomNotificationDto
         {

@@ -34,7 +34,8 @@ internal sealed class CreateOrderHandler(
         if (users.Count != userIds.Count)
             throw new NotFoundException("ApplicationUser not found");
 
-        logger.LogInformation("Create order for {ProductsCount} products and {UsersCount} users", products.Count, users.Count);
+        if (logger.IsEnabled(LogLevel.Information))
+            logger.LogInformation("Create order for {ProductsCount} products and {UsersCount} users", products.Count, users.Count);
 
         var orders = products
             .SelectMany(p => GenerateUserOrders(users, p, order.Amount, order.Split))

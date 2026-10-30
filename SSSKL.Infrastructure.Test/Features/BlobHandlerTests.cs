@@ -15,6 +15,8 @@ namespace SSSKL.Infrastructure.Test.Features;
 [TestClass]
 public class BlobHandlerTests
 {
+    public TestContext TestContext { get; set; } = null!;
+
     // 1x1 transparent PNG
     private static readonly byte[] PngBytes =
     [
@@ -47,7 +49,7 @@ public class BlobHandlerTests
     {
         var item = new BlobStorageItem { Id = Guid.NewGuid(), FileName = fileName, ContentType = contentType };
         _context.BlobStorageItem.Add(item);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.CancellationToken);
         return item.Id;
     }
 
@@ -91,7 +93,7 @@ public class BlobHandlerTests
 
         var result = await new GetSocialPreviewHandler(_repository, _blobAgent).Handle(new GetSocialPreviewQuery(id), CancellationToken.None);
 
-        using var preview = await Image.LoadAsync(result.Content);
+        using var preview = await Image.LoadAsync(result.Content, TestContext.CancellationToken);
         preview.Metadata.DecodedImageFormat!.DefaultMimeType.Should().Be("image/jpeg");
         preview.Width.Should().Be(300);
     }

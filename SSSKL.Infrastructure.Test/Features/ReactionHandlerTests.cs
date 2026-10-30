@@ -22,6 +22,8 @@ namespace SSSKL.Infrastructure.Test.Features;
 [TestClass]
 public class ReactionHandlerTests : RepositoryTest
 {
+    public TestContext TestContext { get; set; } = null!;
+
     private ApplicationDbContext _dbContext = null!;
     private ReactionRepository _reactionRepository = null!;
     private EventRepository _eventRepository = null!;
@@ -83,9 +85,9 @@ public class ReactionHandlerTests : RepositoryTest
         await ToggleReaction(targetId, targetType, content, userId);
 
         // Assert
-        var reaction = await _dbContext.Reaction.FirstOrDefaultAsync(r => r.TargetId == targetId && r.Content == content);
+        var reaction = await _dbContext.Reaction.FirstOrDefaultAsync(r => r.TargetId == targetId && r.Content == content, TestContext.CancellationToken);
         reaction.Should().NotBeNull();
-        reaction!.UserId.Should().Be(userId);
+        reaction.UserId.Should().Be(userId);
         reaction.TargetType.Should().Be(ReactionTargetType.Event);
     }
 
@@ -108,13 +110,13 @@ public class ReactionHandlerTests : RepositoryTest
             CreatedOn = DateTime.UtcNow
         };
         _dbContext.Reaction.Add(existing);
-        await _dbContext.SaveChangesAsync();
+        await _dbContext.SaveChangesAsync(TestContext.CancellationToken);
 
         // Act
         await ToggleReaction(targetId, targetType.ToString(), content, userId);
 
         // Assert
-        var reaction = await _dbContext.Reaction.FirstOrDefaultAsync(r => r.TargetId == targetId && r.Content == content);
+        var reaction = await _dbContext.Reaction.FirstOrDefaultAsync(r => r.TargetId == targetId && r.Content == content, TestContext.CancellationToken);
         reaction.Should().BeNull();
     }
 
@@ -133,7 +135,7 @@ public class ReactionHandlerTests : RepositoryTest
         await ToggleReaction(targetId, "Event", "❤️", userId);
 
         // Assert
-        var reactions = await _dbContext.Reaction.Where(r => r.TargetId == targetId).ToListAsync();
+        var reactions = await _dbContext.Reaction.Where(r => r.TargetId == targetId).ToListAsync(TestContext.CancellationToken);
         reactions.Should().HaveCount(2);
     }
 
@@ -162,14 +164,14 @@ public class ReactionHandlerTests : RepositoryTest
             CreatedOn = DateTime.UtcNow
         };
         _dbContext.Reaction.Add(reaction);
-        await _dbContext.SaveChangesAsync();
+        await _dbContext.SaveChangesAsync(TestContext.CancellationToken);
 
         // Act
         var result = await GetReactionsForTarget(targetId, "Event");
 
         // Assert
         result.Should().HaveCount(1);
-        var dto = result.First();
+        var dto = result[0];
         dto.Content.Should().Be("🔥");
         dto.UserName.Should().Be(TestUser.UserName);
         dto.TargetId.Should().Be(targetId);
@@ -182,14 +184,14 @@ public class ReactionHandlerTests : RepositoryTest
         var r1 = new Reaction { TargetId = Guid.NewGuid(), TargetType = ReactionTargetType.Event, UserId = TestUser.Id, Content = "1", CreatedOn = DateTime.UtcNow.AddMinutes(-10) };
         var r2 = new Reaction { TargetId = Guid.NewGuid(), TargetType = ReactionTargetType.Event, UserId = TestUser.Id, Content = "2", CreatedOn = DateTime.UtcNow.AddMinutes(-5) };
         _dbContext.Reaction.AddRange(r1, r2);
-        await _dbContext.SaveChangesAsync();
+        await _dbContext.SaveChangesAsync(TestContext.CancellationToken);
 
         // Act
         var result = await GetTimeline(0, 10);
 
         // Assert
         result.Should().HaveCount(2);
-        result.First().Content.Should().Be("2"); // Newest first
+        result[0].Content.Should().Be("2"); // Newest first
     }
 
     [TestMethod]
@@ -209,7 +211,7 @@ public class ReactionHandlerTests : RepositoryTest
             EndDateTime = DateTime.UtcNow.AddHours(2)
         };
         _dbContext.Event.Add(evt);
-        await _dbContext.SaveChangesAsync();
+        await _dbContext.SaveChangesAsync(TestContext.CancellationToken);
 
         // Act
         await ToggleReaction(evt.Id, "Event", "👍", TestUser.Id);
@@ -241,7 +243,7 @@ public class ReactionHandlerTests : RepositoryTest
             Content = "Nice!" 
         };
         _dbContext.Reaction.Add(rootReaction);
-        await _dbContext.SaveChangesAsync();
+        await _dbContext.SaveChangesAsync(TestContext.CancellationToken);
 
         // Act
         await ToggleReaction(rootReaction.Id, "Reaction", "Reply", TestUser.Id);
@@ -286,14 +288,14 @@ public class ReactionHandlerTests : RepositoryTest
             CreatedOn = DateTime.UtcNow
         };
         _dbContext.Reaction.Add(reaction1);
-        await _dbContext.SaveChangesAsync();
+        await _dbContext.SaveChangesAsync(TestContext.CancellationToken);
         // Act - React to the reaction
         await ToggleReaction(reaction1.Id, "Reaction", "Reply", TestUser.Id);
 
         // Assert
-        var result = await _dbContext.Reaction.FirstOrDefaultAsync(r => r.TargetId == reaction1.Id && r.TargetType == ReactionTargetType.Reaction);
+        var result = await _dbContext.Reaction.FirstOrDefaultAsync(r => r.TargetId == reaction1.Id && r.TargetType == ReactionTargetType.Reaction, TestContext.CancellationToken);
         result.Should().NotBeNull();
-        result!.Content.Should().Be("Reply");
+        result.Content.Should().Be("Reply");
     }
 
     [TestMethod]
@@ -309,7 +311,7 @@ public class ReactionHandlerTests : RepositoryTest
         var level3 = new Reaction { Id = Guid.NewGuid(), TargetId = l2Id, TargetType = ReactionTargetType.Reaction, UserId = TestUser.Id, Content = "Level 3", CreatedOn = DateTime.UtcNow.AddSeconds(2) };
         
         _dbContext.Reaction.AddRange(level1, level2, level3);
-        await _dbContext.SaveChangesAsync();
+        await _dbContext.SaveChangesAsync(TestContext.CancellationToken);
 
         // Act
         var result = await GetReactionsForTarget(eventId, "Event");
@@ -318,7 +320,7 @@ public class ReactionHandlerTests : RepositoryTest
         var topLevel = result.ToList();
         topLevel.Should().HaveCount(1);
         
-        var parentDto = topLevel.First();
+        var parentDto = topLevel[0];
         parentDto.Reactions.Should().HaveCount(2); // Level 2 and Level 3 should be flattened under parent
         
         var reply2 = parentDto.Reactions.First(r => r.Content == "Level 2");
@@ -341,7 +343,7 @@ public class ReactionHandlerTests : RepositoryTest
             EndDateTime = DateTime.UtcNow.AddHours(1)
         };
         _dbContext.Event.Add(evt);
-        await _dbContext.SaveChangesAsync();
+        await _dbContext.SaveChangesAsync(TestContext.CancellationToken);
         return evt;
     }
 
@@ -356,7 +358,7 @@ public class ReactionHandlerTests : RepositoryTest
             Email = "test@test.com"
         };
         _dbContext.Users.Add(user);
-        await _dbContext.SaveChangesAsync();
+        await _dbContext.SaveChangesAsync(TestContext.CancellationToken);
     }
 
     [TestMethod]
@@ -375,7 +377,7 @@ public class ReactionHandlerTests : RepositoryTest
             RequiredRoles = new List<IdentityRole> { role }
         };
         _dbContext.Event.Add(evt);
-        await _dbContext.SaveChangesAsync();
+        await _dbContext.SaveChangesAsync(TestContext.CancellationToken);
 
         _roleProvider.GetRoles(TestUser.Id).Returns(new List<string> { Roles.User });
 
@@ -401,7 +403,7 @@ public class ReactionHandlerTests : RepositoryTest
             RequiredRoles = new List<IdentityRole> { role }
         };
         _dbContext.Event.Add(evt);
-        await _dbContext.SaveChangesAsync();
+        await _dbContext.SaveChangesAsync(TestContext.CancellationToken);
 
         _roleProvider.GetRoles(TestUser.Id).Returns(new List<string> { roleName });
 
@@ -409,7 +411,7 @@ public class ReactionHandlerTests : RepositoryTest
         await ToggleReaction(evt.Id, "Event", "👍", TestUser.Id);
 
         // Assert
-        var reaction = await _dbContext.Reaction.FirstOrDefaultAsync(r => r.TargetId == evt.Id);
+        var reaction = await _dbContext.Reaction.FirstOrDefaultAsync(r => r.TargetId == evt.Id, TestContext.CancellationToken);
         reaction.Should().NotBeNull();
     }
 
@@ -429,7 +431,7 @@ public class ReactionHandlerTests : RepositoryTest
             RequiredRoles = new List<IdentityRole> { role }
         };
         _dbContext.Event.Add(evt);
-        await _dbContext.SaveChangesAsync();
+        await _dbContext.SaveChangesAsync(TestContext.CancellationToken);
 
         _roleProvider.GetRoles(TestUser.Id).Returns(new List<string> { Roles.Admin });
 
@@ -437,7 +439,7 @@ public class ReactionHandlerTests : RepositoryTest
         await ToggleReaction(evt.Id, "Event", "👍", TestUser.Id);
 
         // Assert
-        var reaction = await _dbContext.Reaction.FirstOrDefaultAsync(r => r.TargetId == evt.Id);
+        var reaction = await _dbContext.Reaction.FirstOrDefaultAsync(r => r.TargetId == evt.Id, TestContext.CancellationToken);
         reaction.Should().NotBeNull();
     }
 
@@ -453,7 +455,7 @@ public class ReactionHandlerTests : RepositoryTest
         
         _dbContext.Event.Add(evt);
         _dbContext.Reaction.Add(rootReaction);
-        await _dbContext.SaveChangesAsync();
+        await _dbContext.SaveChangesAsync(TestContext.CancellationToken);
 
         _roleProvider.GetRoles(TestUser.Id).Returns(new List<string> { Roles.User });
 
@@ -469,13 +471,13 @@ public class ReactionHandlerTests : RepositoryTest
         var evt = await CreateTestEvent();
         var reaction = new Reaction { TargetId = evt.Id, TargetType = ReactionTargetType.Event, UserId = TestUser.Id, Content = "To Delete" };
         _dbContext.Reaction.Add(reaction);
-        await _dbContext.SaveChangesAsync();
+        await _dbContext.SaveChangesAsync(TestContext.CancellationToken);
 
         // Act
         await DeleteReaction(reaction.Id, TestUser.Id, false);
 
         // Assert
-        var result = await _dbContext.Reaction.FindAsync(reaction.Id);
+        var result = await _dbContext.Reaction.FindAsync([reaction.Id], TestContext.CancellationToken);
         result.Should().BeNull();
     }
 
@@ -488,13 +490,13 @@ public class ReactionHandlerTests : RepositoryTest
         await CreateUser(otherUserId);
         var reaction = new Reaction { TargetId = evt.Id, TargetType = ReactionTargetType.Event, UserId = otherUserId, Content = "To Delete" };
         _dbContext.Reaction.Add(reaction);
-        await _dbContext.SaveChangesAsync();
+        await _dbContext.SaveChangesAsync(TestContext.CancellationToken);
 
         // Act
         await DeleteReaction(reaction.Id, "admin-id", true);
 
         // Assert
-        var result = await _dbContext.Reaction.FindAsync(reaction.Id);
+        var result = await _dbContext.Reaction.FindAsync([reaction.Id], TestContext.CancellationToken);
         result.Should().BeNull();
     }
 
@@ -507,7 +509,7 @@ public class ReactionHandlerTests : RepositoryTest
         await CreateUser(otherUserId);
         var reaction = new Reaction { TargetId = evt.Id, TargetType = ReactionTargetType.Event, UserId = otherUserId, Content = "To Delete" };
         _dbContext.Reaction.Add(reaction);
-        await _dbContext.SaveChangesAsync();
+        await _dbContext.SaveChangesAsync(TestContext.CancellationToken);
 
         // Act & Assert
         await this.Invoking(s => s.DeleteReaction(reaction.Id, TestUser.Id, false))
@@ -524,14 +526,14 @@ public class ReactionHandlerTests : RepositoryTest
         var l3 = new Reaction { Id = Guid.NewGuid(), TargetId = l2.Id, TargetType = ReactionTargetType.Reaction, UserId = TestUser.Id, Content = "L3" };
         
         _dbContext.Reaction.AddRange(l1, l2, l3);
-        await _dbContext.SaveChangesAsync();
+        await _dbContext.SaveChangesAsync(TestContext.CancellationToken);
 
         // Act
         await DeleteReaction(l1.Id, TestUser.Id, false);
 
         // Assert
-        _dbContext.Reaction.Any(r => r.Id == l1.Id).Should().BeFalse();
-        _dbContext.Reaction.Any(r => r.Id == l2.Id).Should().BeFalse();
-        _dbContext.Reaction.Any(r => r.Id == l3.Id).Should().BeFalse();
+        (await _dbContext.Reaction.AnyAsync(r => r.Id == l1.Id, TestContext.CancellationToken)).Should().BeFalse();
+        (await _dbContext.Reaction.AnyAsync(r => r.Id == l2.Id, TestContext.CancellationToken)).Should().BeFalse();
+        (await _dbContext.Reaction.AnyAsync(r => r.Id == l3.Id, TestContext.CancellationToken)).Should().BeFalse();
     }
 }

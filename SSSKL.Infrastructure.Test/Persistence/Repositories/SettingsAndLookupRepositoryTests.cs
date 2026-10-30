@@ -60,8 +60,8 @@ public class SettingsAndLookupRepositoryTests : RepositoryTest
         var roles = await sut.GetByNames(["Leiding", "Unknown"]);
         var userIds = await sut.GetUserIdsInRoles(["Leiding", "Bar"]);
 
-        roles.Select(r => r.Name).Should().BeEquivalentTo(new[] { "Leiding" });
-        userIds.Should().BeEquivalentTo(new[] { TestUser.Id });
+        roles.Should().ContainSingle().Which.Name.Should().Be("Leiding");
+        userIds.Should().ContainSingle().Which.Should().Be(TestUser.Id);
     }
 
     [TestMethod]

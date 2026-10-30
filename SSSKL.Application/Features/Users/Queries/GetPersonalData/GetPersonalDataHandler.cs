@@ -13,7 +13,8 @@ internal sealed class GetPersonalDataHandler(UserManager<ApplicationUser> userMa
         var user = await userManager.FindByIdAsync(request.UserId)
                    ?? throw new NotFoundException($"Unable to load user with ID '{request.UserId}'.");
 
-        logger.LogInformation("User with ID '{UserId}' requested personal data.", user.Id);
+        if (logger.IsEnabled(LogLevel.Information))
+            logger.LogInformation("User with ID '{UserId}' requested personal data.", user.Id);
 
         return typeof(ApplicationUser).GetProperties()
             .Where(prop => Attribute.IsDefined(prop, typeof(PersonalDataAttribute)))

@@ -212,7 +212,7 @@ public class UserHandlerTests
         var product = CreateProduct(productId, "Test Product");
         var stats = CreateProductUserStats(productId);
         
-        _mockProductRepository.GetById(productId).Returns(product!);
+        _mockProductRepository.GetById(productId).Returns(product);
         _mockProductUserStatRepository.GetAllForProduct(productId).Returns(stats);
 
         // Act
@@ -250,7 +250,7 @@ public class UserHandlerTests
             TotalAmount = int.MaxValue
         };
         
-        _mockProductRepository.GetById(productId).Returns(product!);
+        _mockProductRepository.GetById(productId).Returns(product);
         _mockProductUserStatRepository.GetAllForProduct(productId).Returns(new List<ProductUserStat> { stat });
 
         // Act
@@ -273,7 +273,7 @@ public class UserHandlerTests
         var productId = Guid.NewGuid();
         var product = CreateProduct(productId, "Test Product");
         
-        _mockProductRepository.GetById(productId).Returns(product!);
+        _mockProductRepository.GetById(productId).Returns(product);
         _mockProductUserStatRepository.GetAllForProduct(productId).Returns(new List<ProductUserStat>());
 
         // Act
@@ -305,7 +305,7 @@ public class UserHandlerTests
             new OrderAggregate(user2.Id, 3)
         };
 
-        _mockProductRepository.GetById(productId).Returns(product!);
+        _mockProductRepository.GetById(productId).Returns(product);
         _mockOrderRepository.GetAmountAggregates(productId, Arg.Any<DateTime>(), Arg.Any<DateTime?>(), null).Returns(aggregates);
         _mockUserRepository.GetByIds(Arg.Any<IEnumerable<string>>()).Returns(new List<ApplicationUser> { user1, user2 });
 
@@ -334,7 +334,7 @@ public class UserHandlerTests
         // SQL-side sum uses long, so an over-int totals is represented exactly here
         var aggregates = new List<OrderAggregate> { new OrderAggregate(user.Id, (long)int.MaxValue * 2) };
 
-        _mockProductRepository.GetById(productId).Returns(product!);
+        _mockProductRepository.GetById(productId).Returns(product);
         _mockOrderRepository.GetAmountAggregates(productId, Arg.Any<DateTime>(), Arg.Any<DateTime?>(), null).Returns(aggregates);
         _mockUserRepository.GetByIds(Arg.Any<IEnumerable<string>>()).Returns(new List<ApplicationUser> { user });
 
@@ -355,7 +355,7 @@ public class UserHandlerTests
         var productId = Guid.NewGuid();
         var product = CreateProduct(productId, "Test Product");
 
-        _mockProductRepository.GetById(productId).Returns(product!);
+        _mockProductRepository.GetById(productId).Returns(product);
         _mockOrderRepository.GetAmountAggregates(productId, Arg.Any<DateTime>(), Arg.Any<DateTime?>(), null).Returns(new List<OrderAggregate>());
 
         // Act
@@ -386,7 +386,7 @@ public class UserHandlerTests
             new OrderAggregate(user2.Id, 8)
         };
 
-        _mockProductRepository.GetById(productId).Returns(product!);
+        _mockProductRepository.GetById(productId).Returns(product);
         _mockOrderRepository.GetAmountAggregates(productId, Arg.Any<DateTime>(), null, null).Returns(aggregates);
         _mockUserRepository.GetByIds(Arg.Any<IEnumerable<string>>()).Returns(new List<ApplicationUser> { user1, user2 });
 
@@ -414,7 +414,7 @@ public class UserHandlerTests
 
         var aggregates = new List<OrderAggregate> { new OrderAggregate(user.Id, (long)int.MaxValue * 2) };
 
-        _mockProductRepository.GetById(productId).Returns(product!);
+        _mockProductRepository.GetById(productId).Returns(product);
         _mockOrderRepository.GetAmountAggregates(productId, Arg.Any<DateTime>(), null, null).Returns(aggregates);
         _mockUserRepository.GetByIds(Arg.Any<IEnumerable<string>>()).Returns(new List<ApplicationUser> { user });
 
@@ -435,7 +435,7 @@ public class UserHandlerTests
         var productId = Guid.NewGuid();
         var product = CreateProduct(productId, "Test Product");
 
-        _mockProductRepository.GetById(productId).Returns(product!);
+        _mockProductRepository.GetById(productId).Returns(product);
         _mockOrderRepository.GetAmountAggregates(productId, Arg.Any<DateTime>(), null, null).Returns(new List<OrderAggregate>());
 
         // Act
@@ -466,7 +466,7 @@ public class UserHandlerTests
             new OrderAggregate(user2.Id, 8)
         };
 
-        _mockProductRepository.GetById(productId).Returns(product!);
+        _mockProductRepository.GetById(productId).Returns(product);
         _mockUserRepository.GetTopActiveUserIds(10).Returns(new List<string> { user1.Id, user2.Id });
         _mockOrderRepository.GetAmountAggregates(productId, Arg.Any<DateTime>(), null, Arg.Any<IEnumerable<string>>()).Returns(aggregates);
         _mockUserRepository.GetByIds(Arg.Any<IEnumerable<string>>()).Returns(new List<ApplicationUser> { user1, user2 });
@@ -496,7 +496,7 @@ public class UserHandlerTests
 
         var aggregates = new List<OrderAggregate> { new OrderAggregate(user.Id, (long)int.MaxValue * 2) };
 
-        _mockProductRepository.GetById(productId).Returns(product!);
+        _mockProductRepository.GetById(productId).Returns(product);
         _mockUserRepository.GetTopActiveUserIds(10).Returns(new List<string> { user.Id });
         _mockOrderRepository.GetAmountAggregates(productId, Arg.Any<DateTime>(), null, Arg.Any<IEnumerable<string>>()).Returns(aggregates);
         _mockUserRepository.GetByIds(Arg.Any<IEnumerable<string>>()).Returns(new List<ApplicationUser> { user });
@@ -518,7 +518,7 @@ public class UserHandlerTests
         var productId = Guid.NewGuid();
         var product = CreateProduct(productId, "Test Product");
 
-        _mockProductRepository.GetById(productId).Returns(product!);
+        _mockProductRepository.GetById(productId).Returns(product);
         _mockUserRepository.GetTopActiveUserIds(10).Returns(new List<string>());
 
         // Act
@@ -626,7 +626,7 @@ public class UserHandlerTests
 
     #region Helper Methods
 
-    private ApplicationUser CreateApplicationUser(
+    private static ApplicationUser CreateApplicationUser(
         string id, 
         string username = "testuser", 
         string name = "Test", 
@@ -646,7 +646,7 @@ public class UserHandlerTests
         };
     }
 
-    private Product CreateProduct(Guid id, string name)
+    private static Product CreateProduct(Guid id, string name)
     {
         return new Product
         {
@@ -675,7 +675,7 @@ public class UserHandlerTests
 
 
     // Helper method to invoke private DeterminePositions method using reflection
-    private IEnumerable<LeaderboardEntryDto> InvokeDeterminePositions(IEnumerable<LeaderboardEntryDto> entries)
+    private static IEnumerable<LeaderboardEntryDto> InvokeDeterminePositions(IEnumerable<LeaderboardEntryDto> entries)
     {
         var methodInfo = typeof(GetLeaderboardHandler).GetMethod(
             "DeterminePositions", 

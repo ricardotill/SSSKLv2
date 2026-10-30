@@ -19,6 +19,8 @@ namespace SSSKL.Web.Test.Integration;
 [TestClass]
 public class MediatRPipelineTests
 {
+    public TestContext TestContext { get; set; } = null!;
+
     private static WebApplicationFactory<Program> _factory = default!;
     private static SqliteConnection _connection = default!;
 
@@ -70,10 +72,10 @@ public class MediatRPipelineTests
     {
         var client = _factory.CreateClient();
 
-        var response = await client.GetAsync("/api/v1/product?skip=0&take=10");
+        var response = await client.GetAsync("/api/v1/product?skip=0&take=10", TestContext.CancellationToken);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync(TestContext.CancellationToken));
         doc.RootElement.GetProperty("totalCount").GetInt32().Should().Be(1);
         doc.RootElement.GetProperty("items")[0].GetProperty("name").GetString().Should().Be("Pipeline product");
     }
@@ -83,7 +85,7 @@ public class MediatRPipelineTests
     {
         var client = _factory.CreateClient();
 
-        var response = await client.GetAsync($"/api/v1/product/{Guid.NewGuid()}");
+        var response = await client.GetAsync($"/api/v1/product/{Guid.NewGuid()}", TestContext.CancellationToken);
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }

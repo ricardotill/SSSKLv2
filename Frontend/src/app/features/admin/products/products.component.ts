@@ -32,7 +32,7 @@ import { LanguageService } from '../../../core/services/language.service';
     ToggleSwitchModule
   ],
   template: `
-    <div class="flex justify-between items-center mb-4">
+    <div class="flex flex-wrap justify-between items-center gap-2 mb-4">
       <h1 class="text-2xl font-bold m-0 text-surface-900 dark:text-surface-0">{{ ls.t().products }}</h1>
       <div class="flex gap-2">
         <p-button icon="pi pi-plus" severity="info" [rounded]="true" (onClick)="openCreateDialog()" [ariaLabel]="ls.t().add_product"></p-button>
@@ -41,7 +41,7 @@ import { LanguageService } from '../../../core/services/language.service';
     </div>
     <p-confirm-dialog></p-confirm-dialog>
     <p-card>
-      <p-table stripedRows [value]="products()" [loading]="loading()" [paginator]="true" [rows]="10" [totalRecords]="totalRecords()">
+      <p-table class="responsive-stack-table" stripedRows [value]="products()" [loading]="loading()" [paginator]="true" [rows]="10" [totalRecords]="totalRecords()">
         <ng-template #header>
           <tr>
             <th>{{ ls.t().product_name }}</th>
@@ -54,14 +54,14 @@ import { LanguageService } from '../../../core/services/language.service';
         </ng-template>
         <ng-template #body let-product>
           <tr>
-            <td>{{ product.name }}</td>
-            <td>{{ product.description }}</td>
-            <td>{{ product.price | currency:'EUR' }}</td>
-            <td>{{ product.stock }}</td>
-            <td class="text-center">
+            <td [attr.data-label]="ls.t().product_name">{{ product.name }}</td>
+            <td class="stack-cell-block" [attr.data-label]="ls.t().product_description">{{ product.description }}</td>
+            <td [attr.data-label]="ls.t().price">{{ product.price | currency:'EUR' }}</td>
+            <td [attr.data-label]="ls.t().stock">{{ product.stock }}</td>
+            <td class="text-center" [attr.data-label]="ls.t().leaderboard">
               <i class="pi" [class.pi-check-circle]="product.enableLeaderboard" [class.text-primary-500]="product.enableLeaderboard" [class.pi-times-circle]="!product.enableLeaderboard" [class.text-red-500]="!product.enableLeaderboard"></i>
             </td>
-            <td>
+            <td [attr.data-label]="ls.t().actions">
               <div class="flex gap-2">
                 <p-button icon="pi pi-pencil" [rounded]="true" [text]="true" severity="info" (onClick)="openEditDialog(product)" [ariaLabel]="ls.t().edit"></p-button>
                 <p-button icon="pi pi-trash" [rounded]="true" [text]="true" severity="danger" (onClick)="confirmDelete(product)" [loading]="deletingProductId() === product.id" [ariaLabel]="ls.t().delete"></p-button>

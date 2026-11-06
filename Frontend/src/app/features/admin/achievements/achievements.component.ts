@@ -58,7 +58,7 @@ interface PickListAchievement {
     ResolveApiUrlPipe,
   ],
   template: `
-    <div class="flex justify-between items-center mb-4">
+    <div class="flex flex-wrap justify-between items-center gap-2 mb-4">
       <h1 class="text-2xl font-bold m-0 text-surface-900 dark:text-surface-0">Achievements</h1>
       <div class="flex gap-2">
         <p-button
@@ -86,7 +86,7 @@ interface PickListAchievement {
     <p-confirm-dialog></p-confirm-dialog>
 
     <p-card>
-      <p-table
+      <p-table class="responsive-stack-table"
         stripedRows
         [value]="achievements()"
         [loading]="loading()"
@@ -108,7 +108,7 @@ interface PickListAchievement {
         </ng-template>
         <ng-template #body let-ach>
           <tr>
-            <td>
+            <td data-label="Icoon">
               <img
                 *ngIf="ach.image?.uri"
                 [src]="
@@ -117,9 +117,9 @@ interface PickListAchievement {
                 class="w-10 h-10 object-contain shadow-sm rounded-md"
               />
             </td>
-            <td>{{ ach.name }}</td>
-            <td>{{ ach.description }}</td>
-            <td>
+            <td data-label="Naam">{{ ach.name }}</td>
+            <td class="stack-cell-block" data-label="Beschrijving">{{ ach.description }}</td>
+            <td data-label="Tier">
               <span
                 class="px-2 py-1 rounded text-xs font-bold"
                 [ngClass]="{
@@ -136,7 +136,7 @@ interface PickListAchievement {
                 {{ ach.tier }}
               </span>
             </td>
-            <td>
+            <td data-label="Automatisch">
               <i
                 class="pi"
                 [ngClass]="{
@@ -145,13 +145,13 @@ interface PickListAchievement {
                 }"
               ></i>
             </td>
-            <td>
+            <td data-label="Voorwaarde">
               <span *ngIf="ach.autoAchieve" class="text-sm">
                 {{ ach.action }} {{ ach.comparisonOperator }} {{ ach.comparisonValue }}
               </span>
               <span *ngIf="!ach.autoAchieve" class="text-sm text-surface-500">Handmatig</span>
             </td>
-            <td>
+            <td data-label="Acties">
               <div class="flex gap-2">
                 <p-button
                   icon="pi pi-users"

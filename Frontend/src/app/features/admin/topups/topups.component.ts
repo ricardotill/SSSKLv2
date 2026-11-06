@@ -32,7 +32,7 @@ import { AuthService } from '../../../core/auth/auth.service';
     CardModule
   ],
   template: `
-    <div class="flex justify-between items-center mb-4">
+    <div class="flex flex-wrap justify-between items-center gap-2 mb-4">
       <h1 class="text-2xl font-bold m-0 text-surface-900 dark:text-surface-0">{{ ls.t().top_ups }}</h1>
       <div class="flex gap-2">
         <p-button icon="pi pi-plus" severity="info" [rounded]="true" (onClick)="openCreateDialog()" [ariaLabel]="ls.t().add_top_up"></p-button>
@@ -41,7 +41,7 @@ import { AuthService } from '../../../core/auth/auth.service';
     </div>
     <p-confirm-dialog></p-confirm-dialog>
     <p-card>
-      <p-table 
+      <p-table class="responsive-stack-table" 
         stripedRows
         [value]="topUps()" 
         [loading]="loading()" 
@@ -60,9 +60,9 @@ import { AuthService } from '../../../core/auth/auth.service';
         </ng-template>
         <ng-template #body let-topUp>
           <tr>
-            <td>{{ topUp.userName }}</td>
-            <td class="font-medium text-primary">{{ topUp.saldo | currency:'EUR' }}</td>
-            <td class="text-center">
+            <td [attr.data-label]="ls.t().username">{{ topUp.userName }}</td>
+            <td class="font-medium text-primary" [attr.data-label]="ls.t().amount">{{ topUp.saldo | currency:'EUR' }}</td>
+            <td class="text-center" [attr.data-label]="ls.t().actions">
               <p-button icon="pi pi-trash" [rounded]="true" [text]="true" severity="danger" (onClick)="confirmDelete(topUp)" [loading]="deletingTopUpId() === topUp.id" [ariaLabel]="ls.t().delete"></p-button>
             </td>
           </tr>

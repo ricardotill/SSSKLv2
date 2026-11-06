@@ -27,7 +27,7 @@ const CSV_EXPORT_POLL_INTERVAL_MS = 3000;
     ConfirmDialogModule
   ],
   template: `
-    <div class="flex justify-between items-center mb-4">
+    <div class="flex flex-wrap justify-between items-center gap-2 mb-4">
       <h1 class="text-2xl font-bold m-0 text-surface-900 dark:text-surface-0">{{ ls.t().admin_orders }}</h1>
       <div class="flex gap-2">
         <p-button [label]="ls.t().export_csv" icon="pi pi-download" (onClick)="exportCsv()" [loading]="exporting()" severity="secondary" [rounded]="true"></p-button>
@@ -36,7 +36,7 @@ const CSV_EXPORT_POLL_INTERVAL_MS = 3000;
     </div>
     <p-confirm-dialog></p-confirm-dialog>
     <p-card>
-      <p-table 
+      <p-table class="responsive-stack-table" 
         stripedRows
         [value]="orders()" 
         [loading]="loading()" 
@@ -61,12 +61,12 @@ const CSV_EXPORT_POLL_INTERVAL_MS = 3000;
         </ng-template>
         <ng-template #body let-order>
           <tr>
-            <td>{{ order.createdOn | date:'dd-MM-yyyy HH:mm' }}</td>
-            <td>{{ order.userFullName }}</td>
-            <td>{{ order.productName }}</td>
-            <td>{{ order.amount }}</td>
-            <td>{{ order.paid | currency:'EUR' }}</td>
-            <td>
+            <td [attr.data-label]="ls.t().date">{{ order.createdOn | date:'dd-MM-yyyy HH:mm' }}</td>
+            <td [attr.data-label]="ls.t().user">{{ order.userFullName }}</td>
+            <td [attr.data-label]="ls.t().product">{{ order.productName }}</td>
+            <td [attr.data-label]="ls.t().amount">{{ order.amount }}</td>
+            <td [attr.data-label]="ls.t().price">{{ order.paid | currency:'EUR' }}</td>
+            <td [attr.data-label]="ls.t().actions">
               <div class="flex gap-2">
                 <p-button icon="pi pi-trash" [rounded]="true" [text]="true" severity="danger" (onClick)="confirmDelete(order)" [loading]="deletingOrderId() === order.id" [ariaLabel]="ls.t().delete"></p-button>
               </div>

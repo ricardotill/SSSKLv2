@@ -25,3 +25,59 @@ body {
   --color-primary-900: var(--p-primary-900);
   --color-primary-950: var(--p-primary-950);
 }
+
+/*
+ * Responsive tables: add class="responsive-stack-table" to a <p-table> and a
+ * data-label attribute to each body cell. Below the md breakpoint every row is
+ * shown as a card with "label: value" lines instead of a wide table.
+ * Add "stack-cell-block" to a cell whose value is long text, so the value sits
+ * under its label instead of next to it.
+ */
+@media (max-width: 767.98px) {
+  .responsive-stack-table .p-datatable-thead {
+    display: none;
+  }
+
+  .responsive-stack-table .p-datatable-table {
+    table-layout: auto;
+  }
+
+  .responsive-stack-table .p-datatable-tbody > tr {
+    display: block;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--p-datatable-body-cell-border-color);
+  }
+
+  .responsive-stack-table .p-datatable-tbody > tr > td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    width: auto;
+    padding: 0.25rem 1rem;
+    border: 0;
+    text-align: right;
+    overflow-wrap: anywhere;
+  }
+
+  .responsive-stack-table .p-datatable-tbody > tr > td[data-label]::before {
+    content: attr(data-label);
+    flex-shrink: 0;
+    font-weight: 600;
+    text-align: left;
+    color: var(--p-text-muted-color);
+  }
+
+  .responsive-stack-table .p-datatable-tbody > tr > td.stack-cell-block {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+    text-align: left;
+  }
+
+  /* Cells without a label, such as the empty message, span the whole card. */
+  .responsive-stack-table .p-datatable-tbody > tr > td:not([data-label]) {
+    justify-content: center;
+    text-align: center;
+  }
+}

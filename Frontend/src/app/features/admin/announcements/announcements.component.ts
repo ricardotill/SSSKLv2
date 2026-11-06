@@ -35,7 +35,7 @@ import { LanguageService } from '../../../core/services/language.service';
     CardModule
   ],
   template: `
-    <div class="flex justify-between items-center mb-4">
+    <div class="flex flex-wrap justify-between items-center gap-2 mb-4">
       <h1 class="text-2xl font-bold m-0 text-surface-900 dark:text-surface-0">{{ ls.t().announcements }}</h1>
       <div class="flex gap-2">
         <p-button icon="pi pi-plus" severity="info" [rounded]="true" (onClick)="openCreateDialog()" [ariaLabel]="ls.t().add_announcement"></p-button>
@@ -46,7 +46,7 @@ import { LanguageService } from '../../../core/services/language.service';
     <p-confirm-dialog></p-confirm-dialog>
 
     <p-card>
-      <p-table stripedRows [value]="announcements()" [loading]="loading()" [paginator]="true" [rows]="10">
+      <p-table class="responsive-stack-table" stripedRows [value]="announcements()" [loading]="loading()" [paginator]="true" [rows]="10">
         <ng-template #header>
           <tr>
             <th>{{ ls.t().message }}</th>
@@ -59,17 +59,17 @@ import { LanguageService } from '../../../core/services/language.service';
         </ng-template>
         <ng-template #body let-announcement>
           <tr>
-            <td>
+            <td class="stack-cell-block" [attr.data-label]="ls.t().message">
               <div class="font-bold">{{ announcement.message }}</div>
               <div class="text-xs text-surface-600 dark:text-surface-400">{{ announcement.description }}</div>
             </td>
-            <td class="text-center">{{ announcement.order }}</td>
-            <td class="text-center">
+            <td class="text-center" [attr.data-label]="ls.t().announcement_order">{{ announcement.order }}</td>
+            <td class="text-center" [attr.data-label]="ls.t().is_scheduled">
               <i class="pi" [class.pi-check]="announcement.isScheduled" [class.text-green-500]="announcement.isScheduled" [class.pi-times]="!announcement.isScheduled" [class.text-red-500]="!announcement.isScheduled"></i>
             </td>
-            <td>{{ announcement.plannedFrom ? (announcement.plannedFrom | date:'dd-MM-yyyy HH:mm') : '-' }}</td>
-            <td>{{ announcement.plannedTill ? (announcement.plannedTill | date:'dd-MM-yyyy HH:mm') : '-' }}</td>
-            <td>
+            <td [attr.data-label]="ls.t().planned_from">{{ announcement.plannedFrom ? (announcement.plannedFrom | date:'dd-MM-yyyy HH:mm') : '-' }}</td>
+            <td [attr.data-label]="ls.t().planned_till">{{ announcement.plannedTill ? (announcement.plannedTill | date:'dd-MM-yyyy HH:mm') : '-' }}</td>
+            <td [attr.data-label]="ls.t().actions">
               <div class="flex gap-2">
                 <p-button icon="pi pi-pencil" [rounded]="true" [text]="true" severity="info" (onClick)="openEditDialog(announcement)" [ariaLabel]="ls.t().edit"></p-button>
                 <p-button icon="pi pi-trash" [rounded]="true" [text]="true" severity="danger" (onClick)="confirmDelete(announcement)" [loading]="deletingId() === announcement.id" [ariaLabel]="ls.t().delete"></p-button>

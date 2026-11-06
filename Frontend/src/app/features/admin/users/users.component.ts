@@ -57,7 +57,7 @@ const RECALCULATE_ALL_POLL_INTERVAL_MS = 3000;
     ProgressBarModule,
   ],
   template: `
-    <div class="flex justify-between items-center mb-4">
+    <div class="flex flex-wrap justify-between items-center gap-2 mb-4">
       <h1 class="text-2xl font-bold m-0 text-surface-900 dark:text-surface-0">
         {{ ls.t().users }}
       </h1>
@@ -99,7 +99,7 @@ const RECALCULATE_ALL_POLL_INTERVAL_MS = 3000;
     }
 
     <p-card>
-      <p-table
+      <p-table class="responsive-stack-table"
         stripedRows
         [value]="users()"
         [loading]="loading()"
@@ -119,7 +119,7 @@ const RECALCULATE_ALL_POLL_INTERVAL_MS = 3000;
         </ng-template>
         <ng-template #body let-user>
           <tr>
-            <td>
+            <td [attr.data-label]="ls.t().username">
               <div class="flex items-center gap-3">
                 <p-avatar
                   [image]="(user.profilePictureUrl | resolveApiUrl) || undefined"
@@ -135,12 +135,12 @@ const RECALCULATE_ALL_POLL_INTERVAL_MS = 3000;
                 <span>{{ user.userName }}</span>
               </div>
             </td>
-            <td>{{ user.fullName }}</td>
-            <td>{{ user.saldo | currency: 'EUR' }}</td>
-            <td>
+            <td [attr.data-label]="ls.t().full_name">{{ user.fullName }}</td>
+            <td [attr.data-label]="ls.t().balance">{{ user.saldo | currency: 'EUR' }}</td>
+            <td [attr.data-label]="ls.t().last_ordered">
               {{ user.lastOrdered ? (user.lastOrdered | date: 'dd-MM-yyyy HH:mm') : ls.t().never }}
             </td>
-            <td>
+            <td [attr.data-label]="ls.t().actions">
               <div class="flex gap-2">
                 <p-button
                   icon="pi pi-pencil"

@@ -30,7 +30,7 @@ import { finalize } from 'rxjs';
   ],
   providers: [ConfirmationService],
   template: `
-    <div class="flex justify-between items-center mb-4">
+    <div class="flex flex-wrap justify-between items-center gap-2 mb-4">
       <h1 class="text-2xl font-bold m-0 text-surface-900 dark:text-surface-0">{{ ls.t().roles_title }}</h1>
       <div class="flex gap-2">
         <p-button icon="pi pi-refresh" [rounded]="true" [text]="true" (onClick)="loadRoles()" [ariaLabel]="ls.t().refresh"></p-button>
@@ -41,7 +41,7 @@ import { finalize } from 'rxjs';
     <p-confirm-dialog></p-confirm-dialog>
 
     <p-card>
-      <p-table 
+      <p-table class="responsive-stack-table" 
         [value]="roles()" 
         [loading]="loading()" 
         [rowHover]="true" 
@@ -57,7 +57,7 @@ import { finalize } from 'rxjs';
         </ng-template>
         <ng-template #body let-role>
           <tr>
-            <td>
+            <td [attr.data-label]="ls.t().roles_name">
               <span class="font-medium">{{ role.name }}</span>
               @if (isSystemRole(role.name)) {
                 <span class="ml-2 px-2 py-0.5 text-xs bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400 rounded-full border border-surface-200 dark:border-surface-700">
@@ -65,7 +65,7 @@ import { finalize } from 'rxjs';
                 </span>
               }
             </td>
-            <td>
+            <td [attr.data-label]="ls.t().roles_actions">
               <div class="flex gap-2">
                 <p-button 
                   icon="pi pi-pencil" 

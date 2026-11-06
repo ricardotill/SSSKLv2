@@ -20,13 +20,13 @@ import { CardModule } from 'primeng/card';
   template: `
     <p-confirm-dialog />
     
-    <div class="flex justify-between items-center mb-4">
+    <div class="flex flex-wrap justify-between items-center gap-2 mb-4">
       <h1 class="text-2xl font-bold m-0 text-surface-900 dark:text-surface-0">{{ ls.t().my_orders }}</h1>
       <p-button icon="pi pi-refresh" [rounded]="true" [text]="false" (onClick)="refreshTable()" [ariaLabel]="ls.t().refresh"></p-button>
     </div>
 
     <p-card>
-      <p-table
+      <p-table class="responsive-stack-table"
         stripedRows
         #dt
         [value]="orders()"
@@ -52,11 +52,11 @@ import { CardModule } from 'primeng/card';
         </ng-template>
         <ng-template #body let-order>
           <tr>
-            <td>{{ order.createdOn | date: 'dd-MM-yyyy HH:mm' }}</td>
-            <td>{{ order.productName }}</td>
-            <td>{{ order.amount }}x</td>
-            <td class="font-medium text-primary">{{ order.paid | currency: 'EUR' }}</td>
-            <td>
+            <td [attr.data-label]="ls.t().date">{{ order.createdOn | date: 'dd-MM-yyyy HH:mm' }}</td>
+            <td [attr.data-label]="ls.t().product">{{ order.productName }}</td>
+            <td [attr.data-label]="ls.t().amount">{{ order.amount }}x</td>
+            <td class="font-medium text-primary" [attr.data-label]="ls.t().price">{{ order.paid | currency: 'EUR' }}</td>
+            <td [attr.data-label]="ls.t().actions">
               <p-button
                 icon="pi pi-trash"
                 [rounded]="true"

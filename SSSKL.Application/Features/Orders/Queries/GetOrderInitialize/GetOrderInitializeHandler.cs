@@ -26,7 +26,8 @@ internal sealed class GetOrderInitializeHandler(
             Users = users.Select(u => new OrderInitializeUserDto
             {
                 Id = u.Id,
-                FullName = u.FullName
+                FullName = u.FullName,
+                ProfilePictureUrl = u.ProfileImageId != null ? $"/api/v1/blob/profilepicture/image/{u.ProfileImageId}" : null
             }).ToList()
         };
     }

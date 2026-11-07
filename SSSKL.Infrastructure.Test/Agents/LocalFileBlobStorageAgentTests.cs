@@ -10,6 +10,8 @@ namespace SSSKL.Infrastructure.Test.Agents;
 [TestClass]
 public class LocalFileBlobStorageAgentTests
 {
+    public TestContext TestContext { get; set; } = null!;
+
     private string _contentRoot = null!;
     private LocalFileBlobStorageAgent _sut = null!;
 
@@ -58,7 +60,7 @@ public class LocalFileBlobStorageAgentTests
         var item = await _sut.UploadFileToBlobAsync("photo.png", " image/png ", Content("hello"));
 
         var path = Path.Combine(_contentRoot, "blobs", "photo.png");
-        (await File.ReadAllTextAsync(path)).Should().Be("hello");
+        (await File.ReadAllTextAsync(path, TestContext.CancellationToken)).Should().Be("hello");
         item.FileName.Should().Be("photo.png");
         item.ContentType.Should().Be("image/png");
         item.Uri.Should().Be(new Uri(path).AbsoluteUri);
@@ -81,7 +83,7 @@ public class LocalFileBlobStorageAgentTests
         await _sut.UploadFileToBlobAsync("file.txt", "text/plain", Content("first version"));
         await _sut.UploadFileToBlobAsync("file.txt", "text/plain", Content("second"));
 
-        (await File.ReadAllTextAsync(Path.Combine(_contentRoot, "blobs", "file.txt"))).Should().Be("second");
+        (await File.ReadAllTextAsync(Path.Combine(_contentRoot, "blobs", "file.txt"), TestContext.CancellationToken)).Should().Be("second");
     }
 
     [TestMethod]
@@ -91,7 +93,7 @@ public class LocalFileBlobStorageAgentTests
 
         await using var stream = await _sut.OpenDownloadStreamAsync("file.txt");
         using var reader = new StreamReader(stream);
-        (await reader.ReadToEndAsync()).Should().Be("payload");
+        (await reader.ReadToEndAsync(TestContext.CancellationToken)).Should().Be("payload");
     }
 
     [TestMethod]

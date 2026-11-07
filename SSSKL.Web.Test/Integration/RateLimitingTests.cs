@@ -7,6 +7,8 @@ namespace SSSKL.Web.Test.Integration;
 [TestClass]
 public class RateLimitingTests
 {
+    public TestContext TestContext { get; set; } = null!;
+
     // Production limits: the shared factory raises them for every other test.
     private static SssklWebApplicationFactory CreateFactory() =>
         new SssklWebApplicationFactory()
@@ -21,11 +23,11 @@ public class RateLimitingTests
 
         for (var i = 0; i < 10; i++)
         {
-            var ok = await client.PostAsJsonAsync("/api/v1/identity/forgotPassword", new { email = "nobody@example.com" });
+            var ok = await client.PostAsJsonAsync("/api/v1/identity/forgotPassword", new { email = "nobody@example.com" }, TestContext.CancellationToken);
             Assert.AreNotEqual(HttpStatusCode.TooManyRequests, ok.StatusCode, $"request {i + 1} was limited");
         }
 
-        var limited = await client.PostAsJsonAsync("/api/v1/identity/forgotPassword", new { email = "nobody@example.com" });
+        var limited = await client.PostAsJsonAsync("/api/v1/identity/forgotPassword", new { email = "nobody@example.com" }, TestContext.CancellationToken);
 
         Assert.AreEqual(HttpStatusCode.TooManyRequests, limited.StatusCode);
         Assert.IsTrue(limited.Headers.Contains("Retry-After"));
@@ -39,7 +41,7 @@ public class RateLimitingTests
 
         for (var i = 0; i < 40; i++)
         {
-            var response = await client.GetAsync("/healthz");
+            var response = await client.GetAsync("/healthz", TestContext.CancellationToken);
             Assert.AreNotEqual(HttpStatusCode.TooManyRequests, response.StatusCode);
         }
     }
@@ -52,11 +54,11 @@ public class RateLimitingTests
 
         for (var i = 0; i < 3; i++)
         {
-            var response = await client.PostAsJsonAsync("/api/v1/identity/login", new { userName = "nobody", password = "wrong" });
+            var response = await client.PostAsJsonAsync("/api/v1/identity/login", new { userName = "nobody", password = "wrong" }, TestContext.CancellationToken);
             Assert.AreNotEqual(HttpStatusCode.TooManyRequests, response.StatusCode, $"request {i + 1} was limited");
         }
 
-        var limited = await client.PostAsJsonAsync("/api/v1/identity/login", new { userName = "nobody", password = "wrong" });
+        var limited = await client.PostAsJsonAsync("/api/v1/identity/login", new { userName = "nobody", password = "wrong" }, TestContext.CancellationToken);
 
         Assert.AreEqual(HttpStatusCode.TooManyRequests, limited.StatusCode);
     }

@@ -164,7 +164,7 @@ describe('PosComponent', () => {
     component.toggleProduct('p1');
     fixture.detectChanges();
     const el: HTMLElement = fixture.nativeElement;
-    expect(el.querySelectorAll('.pos-pay').length).toBe(1);
+    expect(el.querySelectorAll('.pos-pay')).toHaveLength(1);
     expect(el.querySelector('.pos-pay .order-btn')?.textContent).toContain('1.50');
   });
 });

@@ -8,12 +8,11 @@ namespace SSSKL.Web.Registrations;
 
 /// <summary>
 /// Fixed users and data for the Playwright suite. Only runs in the E2E environment.
-/// Keep in sync with <c>Frontend/e2e/support/users.ts</c>.
+/// The password for every seeded user comes from <c>E2E:UserPassword</c> (<c>appsettings.E2E.json</c>).
+/// Keep users and password in sync with <c>Frontend/e2e/support/users.ts</c>.
 /// </summary>
 internal static class E2ESeeder
 {
-    public const string Password = "E2e-Passw0rd!";
-
     private static readonly (string UserName, string Name, string Surname, string Role, decimal Saldo)[] Users =
     [
         ("e2e-admin", "Admin", "E2E", Roles.Admin, 100m),
@@ -34,6 +33,9 @@ internal static class E2ESeeder
     {
         var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
         var db = services.GetRequiredService<ApplicationDbContext>();
+        var password = services.GetRequiredService<IConfiguration>()["E2E:UserPassword"];
+        if (string.IsNullOrEmpty(password))
+            throw new InvalidOperationException("E2E:UserPassword must be configured to seed the E2E users.");
 
         foreach (var (userName, name, surname, role, saldo) in Users)
         {
@@ -48,7 +50,7 @@ internal static class E2ESeeder
                 Surname = surname,
                 Saldo = saldo,
             };
-            EnsureSucceeded(await userManager.CreateAsync(user, Password), userName);
+            EnsureSucceeded(await userManager.CreateAsync(user, password), userName);
             EnsureSucceeded(await userManager.AddToRoleAsync(user, role), userName);
         }
 

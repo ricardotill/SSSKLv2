@@ -7,9 +7,11 @@ internal static class E2EGuard
 {
     private static readonly string[] HostedMarkers = ["WEBSITE_INSTANCE_ID", "WEBSITE_SITE_NAME", "AZURE_SQL_CONNECTIONSTRING"];
 
-    public static void EnsureNotHosted()
+    public static void EnsureNotHosted() => EnsureNotHosted(Environment.GetEnvironmentVariable);
+
+    internal static void EnsureNotHosted(Func<string, string?> getVariable)
     {
-        var marker = HostedMarkers.FirstOrDefault(m => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable(m)));
+        var marker = HostedMarkers.FirstOrDefault(m => !string.IsNullOrEmpty(getVariable(m)));
         if (marker != null)
         {
             throw new InvalidOperationException(

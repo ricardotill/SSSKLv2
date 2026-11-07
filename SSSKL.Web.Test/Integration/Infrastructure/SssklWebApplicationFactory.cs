@@ -23,6 +23,7 @@ public sealed class SssklWebApplicationFactory : WebApplicationFactory<Program>
     private readonly string _dbPath = Path.Combine(Path.GetTempPath(), $"ssskl-it-{Guid.NewGuid():N}.db");
     private readonly Dictionary<string, string?> _settings = new();
     private readonly List<Action<IServiceCollection>> _serviceOverrides = [];
+    private string _environment = TestEnvironments.IntegrationTest;
 
     public FakeEmailSender Emails { get; } = new();
     public FakeWebPushService Push { get; } = new();
@@ -44,6 +45,13 @@ public sealed class SssklWebApplicationFactory : WebApplicationFactory<Program>
         return this;
     }
 
+    /// <summary>Runs the host in another environment, e.g. <see cref="TestEnvironments.E2E"/>. Call before the first request.</summary>
+    public SssklWebApplicationFactory WithEnvironment(string environment)
+    {
+        _environment = environment;
+        return this;
+    }
+
     /// <summary>Applies extra service registrations after the defaults. Call before the first request.</summary>
     public SssklWebApplicationFactory WithServices(Action<IServiceCollection> configure)
     {
@@ -53,7 +61,7 @@ public sealed class SssklWebApplicationFactory : WebApplicationFactory<Program>
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
-        builder.UseEnvironment(TestEnvironments.IntegrationTest);
+        builder.UseEnvironment(_environment);
 
         // UseSetting is visible to code in Program.cs that reads configuration before Build().
         foreach (var (key, value) in _settings)

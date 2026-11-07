@@ -47,6 +47,8 @@ jobs:
   scan:
     name: SonarCloud Analyze
     needs: build
+    # Dependabot PRs get no SONAR_TOKEN; the build job still verifies them.
+    if: github.event.pull_request.user.login != 'dependabot[bot]'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7

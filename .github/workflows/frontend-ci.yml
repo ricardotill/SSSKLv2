@@ -38,6 +38,8 @@ jobs:
       run: npm run build
 
     - name: SonarQube Scan
+      # Dependabot PRs get no SONAR_TOKEN.
+      if: github.event.pull_request.user.login != 'dependabot[bot]'
       uses: sonarsource/sonarqube-scan-action@e805d875275f728fac1885b413934be6d7c63f65 # v8.4.1
       env:
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

@@ -8,7 +8,8 @@ namespace SSSKL.Web.Registrations;
 
 /// <summary>
 /// Fixed users and data for the Playwright suite. Only runs in the E2E environment.
-/// The password for every seeded user comes from <c>E2E:UserPassword</c> (<c>appsettings.E2E.json</c>).
+/// The password for every seeded user comes from <c>E2E:UserPassword</c>; Playwright sets it as the
+/// <c>E2E__UserPassword</c> environment variable from <c>Frontend/e2e/support/users.ts</c>.
 /// Keep users and password in sync with <c>Frontend/e2e/support/users.ts</c>.
 /// </summary>
 internal static class E2ESeeder

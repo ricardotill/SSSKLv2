@@ -1,4 +1,5 @@
 import { defineConfig, devices } from '@playwright/test';
+import { PASSWORD } from './e2e/support/users';
 
 // The E2E suite runs the real API (SSSKL.Web, ASPNETCORE_ENVIRONMENT=E2E) on a fresh, seeded SQLite
 // database and serves the SPA with the dev server, which proxies /api and /hubs to that API.
@@ -38,6 +39,8 @@ export default defineConfig({
       reuseExistingServer: !CI,
       timeout: 240_000,
       stdout: 'pipe',
+      // E2ESeeder gives every seeded user this password.
+      env: { E2E__UserPassword: PASSWORD },
     },
     {
       // Calls ng-env.js directly (not `npm start`) to skip the HTTPS certificate setup.

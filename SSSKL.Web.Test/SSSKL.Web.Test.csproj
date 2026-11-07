@@ -22,7 +22,7 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\SSSKL.Web\SSSKL.Web.csproj" />

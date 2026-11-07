@@ -1,14 +1,11 @@
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Data.Sqlite;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
 using SSSKL.Infrastructure.Persistence;
+using SSSKL.Web.Test.Integration.Infrastructure;
 
 namespace SSSKL.Web.Test.Integration
 {
@@ -21,44 +18,8 @@ namespace SSSKL.Web.Test.Integration
         [TestMethod]
         public async Task Login_WithCookies_Then_Refresh_Uses_HttpOnly_Cookies()
         {
-            var factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
+            await using var factory = new SssklWebApplicationFactory().WithServices(services =>
             {
-                builder.UseEnvironment("IntegrationTest");
-
-                builder.ConfigureAppConfiguration((context, configBuilder) =>
-                {
-                    // Map "db" connection string to match Program.cs expectations
-                    var dict = new[] { 
-                        new KeyValuePair<string, string?>("ConnectionStrings:db", "Filename=:memory:"),
-                        new KeyValuePair<string, string?>("WEBSITE_DOMAIN", "https://localhost")
-                    };
-                    configBuilder.AddInMemoryCollection(dict);
-                });
-
-                builder.ConfigureServices(services =>
-                {
-                    // Use a separate SQLite connection for the in-memory database to keep it alive
-                    var connection = new Microsoft.Data.Sqlite.SqliteConnection("Filename=:memory:");
-                    connection.Open();
-
-                    // Remove existing DbContext registration
-                    var descriptor = services.SingleOrDefault(d => d.ServiceType == typeof(DbContextOptions<ApplicationDbContext>));
-                    if (descriptor != null) services.Remove(descriptor);
-                    
-                    var factoryDescriptor = services.SingleOrDefault(d => d.ServiceType == typeof(IDbContextFactory<ApplicationDbContext>));
-                    if (factoryDescriptor != null) services.Remove(factoryDescriptor);
-
-                    // Add SQLite in-memory DbContext
-                    services.AddDbContext<ApplicationDbContext>(options =>
-                    {
-                        options.UseSqlite(connection);
-                    });
-                    services.AddDbContextFactory<ApplicationDbContext>(options =>
-                    {
-                        options.UseSqlite(connection);
-                    });
-
-                    // Ensure cookies are always marked Secure/HttpOnly for the test host
                     services.PostConfigure<Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationOptions>(
                         Microsoft.AspNetCore.Identity.IdentityConstants.ApplicationScheme,
                         options =>
@@ -76,7 +37,6 @@ namespace SSSKL.Web.Test.Integration
                             options.Cookie.HttpOnly = true;
                             options.Cookie.SameSite = Microsoft.AspNetCore.Http.SameSiteMode.Lax;
                         });
-                });
             });
 
             var client = factory.CreateClient(new WebApplicationFactoryClientOptions

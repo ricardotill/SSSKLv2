@@ -1,40 +1,17 @@
 using System.Net;
 using System.Net.Http.Json;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Data.Sqlite;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using SSSKL.Infrastructure.Persistence;
+using SSSKL.Web.Test.Integration.Infrastructure;
 
 namespace SSSKL.Web.Test.Integration;
 
 [TestClass]
 public class RateLimitingTests
 {
-    private static WebApplicationFactory<Program> CreateFactory() =>
-        new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
-        {
-            builder.UseEnvironment("IntegrationTest");
-            builder.ConfigureAppConfiguration((_, configBuilder) =>
-            {
-                configBuilder.AddInMemoryCollection([new KeyValuePair<string, string?>("ConnectionStrings:db", "Filename=:memory:")]);
-            });
-            builder.ConfigureServices(services =>
-            {
-                var connection = new SqliteConnection("Filename=:memory:");
-                connection.Open();
-
-                var descriptor = services.SingleOrDefault(d => d.ServiceType == typeof(DbContextOptions<ApplicationDbContext>));
-                if (descriptor != null) services.Remove(descriptor);
-                var factoryDescriptor = services.SingleOrDefault(d => d.ServiceType == typeof(IDbContextFactory<ApplicationDbContext>));
-                if (factoryDescriptor != null) services.Remove(factoryDescriptor);
-
-                services.AddDbContext<ApplicationDbContext>(options => options.UseSqlite(connection));
-                services.AddDbContextFactory<ApplicationDbContext>(options => options.UseSqlite(connection));
-            });
-        });
+    // Production limits: the shared factory raises them for every other test.
+    private static SssklWebApplicationFactory CreateFactory() =>
+        new SssklWebApplicationFactory()
+            .WithSetting("RateLimiting:SignInPermitLimit", "30")
+            .WithSetting("RateLimiting:EmailPermitLimit", "10");
 
     [TestMethod]
     public async Task ForgotPassword_AfterLimit_Returns429WithRetryAfter()
@@ -65,5 +42,22 @@ public class RateLimitingTests
             var response = await client.GetAsync("/healthz");
             Assert.AreNotEqual(HttpStatusCode.TooManyRequests, response.StatusCode);
         }
+    }
+
+    [TestMethod]
+    public async Task Login_RespectsConfiguredLimit()
+    {
+        await using var factory = new SssklWebApplicationFactory().WithSetting("RateLimiting:SignInPermitLimit", "3");
+        var client = factory.CreateClient();
+
+        for (var i = 0; i < 3; i++)
+        {
+            var response = await client.PostAsJsonAsync("/api/v1/identity/login", new { userName = "nobody", password = "wrong" });
+            Assert.AreNotEqual(HttpStatusCode.TooManyRequests, response.StatusCode, $"request {i + 1} was limited");
+        }
+
+        var limited = await client.PostAsJsonAsync("/api/v1/identity/login", new { userName = "nobody", password = "wrong" });
+
+        Assert.AreEqual(HttpStatusCode.TooManyRequests, limited.StatusCode);
     }
 }

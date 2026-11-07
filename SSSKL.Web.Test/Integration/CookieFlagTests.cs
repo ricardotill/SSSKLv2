@@ -1,14 +1,11 @@
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Data.Sqlite;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
 using SSSKL.Infrastructure.Persistence;
+using SSSKL.Web.Test.Integration.Infrastructure;
 
 namespace SSSKL.Web.Test.Integration
 {
@@ -21,46 +18,9 @@ namespace SSSKL.Web.Test.Integration
         [TestMethod]
         public async Task Login_WithCookies_Sets_HttpOnly_And_Secure_On_Cookie()
         {
-            // Arrange: create factory and replace EF Core with InMemory and set environment to Production
-            var factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
+            // Arrange: force Secure/HttpOnly on the Identity cookies in the test host
+            await using var factory = new SssklWebApplicationFactory().WithServices(services =>
             {
-                // Run Program in Development and provide DefaultConnection so Program uses the dev code path.
-                builder.UseEnvironment("IntegrationTest");
-
-                builder.ConfigureAppConfiguration((context, configBuilder) =>
-                {
-                    // Map "db" connection string to match Program.cs expectations
-                    var dict = new[] { 
-                        new KeyValuePair<string, string?>("ConnectionStrings:db", "Filename=:memory:"),
-                        new KeyValuePair<string, string?>("WEBSITE_DOMAIN", "https://localhost")
-                    };
-                    configBuilder.AddInMemoryCollection(dict);
-                });
-
-                builder.ConfigureServices(services =>
-                {
-                    // Use a separate SQLite connection for the in-memory database to keep it alive
-                    var connection = new SqliteConnection("Filename=:memory:");
-                    connection.Open();
-
-                    // Remove existing DbContext registration
-                    var descriptor = services.SingleOrDefault(d => d.ServiceType == typeof(DbContextOptions<ApplicationDbContext>));
-                    if (descriptor != null) services.Remove(descriptor);
-                    
-                    var factoryDescriptor = services.SingleOrDefault(d => d.ServiceType == typeof(IDbContextFactory<ApplicationDbContext>));
-                    if (factoryDescriptor != null) services.Remove(factoryDescriptor);
-
-                    // Add SQLite in-memory DbContext
-                    services.AddDbContext<ApplicationDbContext>(options =>
-                    {
-                        options.UseSqlite(connection);
-                    });
-                    services.AddDbContextFactory<ApplicationDbContext>(options =>
-                    {
-                        options.UseSqlite(connection);
-                    });
-
-                    // Only override cookie metadata in the test host so TestServer will emit Secure/HttpOnly flags.
                     services.PostConfigure<Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationOptions>(
                         Microsoft.AspNetCore.Identity.IdentityConstants.ApplicationScheme,
                         options =>
@@ -78,7 +38,6 @@ namespace SSSKL.Web.Test.Integration
                             options.Cookie.HttpOnly = true;
                             options.Cookie.SameSite = Microsoft.AspNetCore.Http.SameSiteMode.Lax;
                         });
-                });
             });
 
             // Register a new user via the identity API so the test doesn't need to resolve internal services.

@@ -57,7 +57,25 @@ public class QuoteRepository(ApplicationDbContext dbContext) : IQuoteRepository
 
     public async Task Update(Quote quote)
     {
-        dbContext.Quote.Update(quote);
+        // The authors are replaced on every update. The new QuoteAuthor rows already carry a
+        // client-generated Id, so EF would track them as existing rows (UPDATE, 0 rows affected).
+        // Mark the ones that aren't in the database yet as Added; removed authors are deleted as orphans.
+        var existingAuthorIds = await dbContext.QuoteAuthor
+            .AsNoTracking()
+            .Where(a => a.QuoteId == quote.Id)
+            .Select(a => a.Id)
+            .ToListAsync();
+
+        if (dbContext.Entry(quote).State == EntityState.Detached)
+        {
+            dbContext.Quote.Update(quote);
+        }
+
+        foreach (var author in quote.Authors.Where(a => !existingAuthorIds.Contains(a.Id)))
+        {
+            dbContext.Entry(author).State = EntityState.Added;
+        }
+
         await dbContext.SaveChangesAsync();
     }
 

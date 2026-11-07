@@ -11,6 +11,8 @@
 
   <ItemGroup>
     <Content Remove="compilerconfig.json" />
+    <!-- Local test configuration only; never deploy it -->
+    <Content Update="appsettings.E2E.json" CopyToPublishDirectory="Never" />
   </ItemGroup>
 
   <ItemGroup>

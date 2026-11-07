@@ -1,44 +1,22 @@
 using System.Net;
 using System.Net.Http.Json;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Data.Sqlite;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using NSubstitute;
 using SSSKL.Contracts.Services;
-using SSSKL.Infrastructure.Persistence;
 using SSSKL.Web.Registrations;
+using SSSKL.Web.Test.Integration.Infrastructure;
 
 namespace SSSKL.Web.Test.Integration;
 
 [TestClass]
 public class TurnstileIntegrationTests
 {
-    private static WebApplicationFactory<Program> CreateFactory(ITurnstileService turnstile) =>
-        new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
+    private static SssklWebApplicationFactory CreateFactory(ITurnstileService turnstile) =>
+        new SssklWebApplicationFactory().WithServices(services =>
         {
-            builder.UseEnvironment("IntegrationTest");
-            builder.ConfigureAppConfiguration((_, configBuilder) =>
-            {
-                configBuilder.AddInMemoryCollection([new KeyValuePair<string, string?>("ConnectionStrings:db", "Filename=:memory:")]);
-            });
-            builder.ConfigureServices(services =>
-            {
-                var connection = new SqliteConnection("Filename=:memory:");
-                connection.Open();
-
-                var descriptor = services.SingleOrDefault(d => d.ServiceType == typeof(DbContextOptions<ApplicationDbContext>));
-                if (descriptor != null) services.Remove(descriptor);
-                var factoryDescriptor = services.SingleOrDefault(d => d.ServiceType == typeof(IDbContextFactory<ApplicationDbContext>));
-                if (factoryDescriptor != null) services.Remove(factoryDescriptor);
-
-                services.AddDbContext<ApplicationDbContext>(options => options.UseSqlite(connection));
-                services.AddDbContextFactory<ApplicationDbContext>(options => options.UseSqlite(connection));
-
-                services.AddSingleton(turnstile);
-            });
+            services.RemoveAll<ITurnstileService>();
+            services.AddSingleton(turnstile);
         });
 
     private static ITurnstileService EnabledTurnstile()

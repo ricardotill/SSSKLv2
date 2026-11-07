@@ -69,13 +69,16 @@ public class OrderController(ISender sender) : ControllerBase
     }
 
     // POST v1/order
-    [Authorize(Roles = "User,Admin")]
+    // Kiosk accounts order for the users standing at the device, so their orders don't trigger
+    // "someone ordered for you" notifications.
+    [Authorize(Roles = "User,Admin,Kiosk")]
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] OrderSubmitDto? bestelling)
     {
         if (bestelling == null) return BadRequest();
 
-        await sender.Send(new CreateOrderCommand(bestelling, GetUserId()));
+        var actingUserId = User.IsInRole("Kiosk") ? null : GetUserId();
+        await sender.Send(new CreateOrderCommand(bestelling, actingUserId));
         return Ok();
     }
 

@@ -14,8 +14,15 @@ updates:
     groups:
       angular:
         patterns: ["@angular/*", "@angular-devkit/*"]
+      vitest:
+        # vitest and its plugins must move in lockstep or npm ci fails with ERESOLVE.
+        patterns: ["vitest", "@vitest/*"]
       npm-minor-patch:
         update-types: [minor, patch]
+    ignore:
+      # TypeScript is pinned by the @angular/build peer range; bump it together with Angular.
+      - dependency-name: typescript
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
   - package-ecosystem: github-actions
     directory: /
     schedule:

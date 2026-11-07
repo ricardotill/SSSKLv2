@@ -27,9 +27,12 @@ testem.log
 typings/
 .angular/
 
-# e2e
-e2e/*.js
-e2e/*.map
+# e2e (Playwright)
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+/e2e/.auth/
 
 # System Files
 .DS_Store/

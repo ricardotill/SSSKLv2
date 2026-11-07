@@ -788,3 +788,6 @@ SSSKLv2/wwwroot/*
 
 # SixLabors
 sixlabors.lic
+# E2E environment (SSSKL.Web, ASPNETCORE_ENVIRONMENT=E2E)
+SSSKL.Web/ssskl-e2e.db*
+SSSKL.Web/e2e-blobs/

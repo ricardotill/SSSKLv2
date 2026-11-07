@@ -1,5 +1,6 @@
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.Extensions.Options;
 
 namespace SSSKL.Web.Registrations;
 
@@ -32,6 +33,8 @@ public static class RateLimitingRegistrations
             options.KnownProxies.Clear();
         });
 
+        services.AddOptions<RateLimitingOptions>().BindConfiguration(RateLimitingOptions.SectionName);
+
         services.AddRateLimiter(options =>
         {
             options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -51,14 +54,15 @@ public static class RateLimitingRegistrations
             options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
             {
                 var path = context.Request.Path;
+                var limits = context.RequestServices.GetRequiredService<IOptionsMonitor<RateLimitingOptions>>().CurrentValue;
                 var ip = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
 
                 if (Matches(path, SignInPaths))
                 {
                     return RateLimitPartition.GetFixedWindowLimiter("signin:" + ip, _ => new FixedWindowRateLimiterOptions
                     {
-                        PermitLimit = 30,
-                        Window = TimeSpan.FromMinutes(1),
+                        PermitLimit = limits.SignInPermitLimit,
+                        Window = TimeSpan.FromSeconds(limits.SignInWindowSeconds),
                         QueueLimit = 0
                     });
                 }
@@ -67,8 +71,8 @@ public static class RateLimitingRegistrations
                 {
                     return RateLimitPartition.GetFixedWindowLimiter("email:" + ip, _ => new FixedWindowRateLimiterOptions
                     {
-                        PermitLimit = 10,
-                        Window = TimeSpan.FromMinutes(5),
+                        PermitLimit = limits.EmailPermitLimit,
+                        Window = TimeSpan.FromSeconds(limits.EmailWindowSeconds),
                         QueueLimit = 0
                     });
                 }
@@ -82,4 +86,18 @@ public static class RateLimitingRegistrations
 
     private static bool Matches(PathString path, string[] candidates) =>
         candidates.Any(c => path.Equals(c, StringComparison.OrdinalIgnoreCase));
+}
+
+/// <summary>
+/// Per-IP limits for the anonymous identity endpoints, bound from the <c>RateLimiting</c> section.
+/// The defaults are the production values; test environments raise them.
+/// </summary>
+public sealed class RateLimitingOptions
+{
+    public const string SectionName = "RateLimiting";
+
+    public int SignInPermitLimit { get; set; } = 30;
+    public int SignInWindowSeconds { get; set; } = 60;
+    public int EmailPermitLimit { get; set; } = 10;
+    public int EmailWindowSeconds { get; set; } = 300;
 }

@@ -16,13 +16,13 @@ jobs:
         working-directory: Frontend
 
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v7
       with:
         persist-credentials: false
         fetch-depth: 0
 
     - name: Setup Node.js
-      uses: actions/setup-node@v4
+      uses: actions/setup-node@v7
       with:
         node-version: '22'
         cache: 'npm'
@@ -38,9 +38,87 @@ jobs:
       run: npm run build
 
     - name: SonarQube Scan
-      uses: sonarsource/sonarqube-scan-action@fd88b7d7ccbaefd23d8f36f73b59db7a3d246602 # v6.0.0
+      # Dependabot PRs get no SONAR_TOKEN.
+      if: github.event.pull_request.user.login != 'dependabot[bot]'
+      uses: sonarsource/sonarqube-scan-action@e805d875275f728fac1885b413934be6d7c63f65 # v8.4.1
       env:
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         projectBaseDir: Frontend
+
+  e2e:
+    # Playwright against the real API (ASPNETCORE_ENVIRONMENT=E2E, seeded SQLite) and the dev server.
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    defaults:
+      run:
+        working-directory: Frontend
+
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        persist-credentials: false
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v6
+      with:
+        dotnet-version: '11.0.x'
+        dotnet-quality: 'preview'
+
+    - name: Decode and save SixLabors license
+      working-directory: .
+      env:
+        SIXLABORS_LICENSE: ${{ secrets.SixLaborsLicense }}
+      run: |
+        if [ -z "$SIXLABORS_LICENSE" ]; then
+          echo "SixLaborsLicense secret is missing or empty"
+          exit 1
+        fi
+        echo "$SIXLABORS_LICENSE" | base64 -d > ./sixlabors.lic
+
+    - name: Build API
+      working-directory: .
+      run: dotnet build SSSKL.Web/SSSKL.Web.csproj -c Release
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v7
+      with:
+        node-version: '22'
+        cache: 'npm'
+        cache-dependency-path: Frontend/package-lock.json
+
+    - name: Install dependencies
+      run: npm ci --ignore-scripts
+
+    - name: Cache Playwright browsers
+      id: playwright-cache
+      uses: actions/cache@v6
+      with:
+        path: ~/.cache/ms-playwright
+        key: ${{ runner.os }}-playwright-${{ hashFiles('Frontend/package-lock.json') }}
+
+    - name: Install Playwright browser
+      if: steps.playwright-cache.outputs.cache-hit != 'true'
+      run: ./node_modules/.bin/playwright install --with-deps chromium
+
+    - name: Install Playwright system dependencies
+      if: steps.playwright-cache.outputs.cache-hit == 'true'
+      run: ./node_modules/.bin/playwright install-deps chromium
+
+    - name: Run E2E tests
+      env:
+        CI: 'true'
+        PRIMEUI_LICENSE_KEY: ${{ secrets.PRIMEUI_LICENSE_KEY }}
+      run: npm run e2e
+
+    - name: Upload Playwright report
+      if: ${{ !cancelled() }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: playwright-report
+        path: |
+          Frontend/playwright-report
+          Frontend/test-results
+        retention-days: 7

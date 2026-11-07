@@ -6,6 +6,7 @@ using Scalar.AspNetCore;
 using SSSKL.Application;
 using SSSKL.Contracts.Services;
 using SSSKL.Infrastructure;
+using SSSKL.Infrastructure.Hosting;
 using SSSKL.Web.Hubs;
 using SSSKL.Web.Registrations;
 using SSSKL.Web.Services;
@@ -15,9 +16,9 @@ var builder = WebApplication.CreateBuilder(args);
 // OpenTelemetry, service discovery, resilience and the "self" health check.
 builder.AddServiceDefaults();
 
-// Treat the IntegrationTest environment like Development for dev-friendly behaviors such as
-// SameAsRequest cookies, so antiforgery and cookie code paths don't require SSL under TestServer.
-var isIntegrationLikeEnvironment = builder.Environment.IsDevelopment() || builder.Environment.IsEnvironment("IntegrationTest");
+// Treat the test environments (IntegrationTest, E2E) like Development for dev-friendly behaviors such as
+// SameAsRequest cookies, so antiforgery and cookie code paths don't require SSL under TestServer or plain HTTP.
+var isIntegrationLikeEnvironment = builder.Environment.IsDevelopment() || builder.Environment.IsTestLike();
 var cookieSecurePolicy = isIntegrationLikeEnvironment ? CookieSecurePolicy.SameAsRequest : CookieSecurePolicy.Always;
 var websiteDomain = builder.Configuration["WEBSITE_DOMAIN"] ?? (builder.Environment.IsDevelopment() ? "localhost" : "ssskl.scoutingwilo.nl");
 

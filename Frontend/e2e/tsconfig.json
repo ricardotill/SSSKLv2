@@ -1,0 +1,8 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "types": ["node"],
+    "noPropertyAccessFromIndexSignature": false
+  },
+  "include": ["**/*.ts", "../playwright.config.ts"]
+}

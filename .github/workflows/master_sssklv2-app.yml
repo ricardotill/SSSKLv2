@@ -16,15 +16,16 @@ jobs:
       contents: read #This is required for actions/checkout
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
           fetch-depth: 0
 
       - name: Set up .NET Core
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: '10.x'
+          dotnet-version: '11.0.x'
+          dotnet-quality: 'preview'
           
       - name: Decode and save SixLabors license
         run: |
@@ -48,7 +49,7 @@ jobs:
         run: dotnet publish SSSKL.Web/SSSKL.Web.csproj -c Release -o ${{env.DOTNET_ROOT}}/myapp --no-restore
 
       - name: Upload artifact for deployment job
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: .net-app
           path: ${{env.DOTNET_ROOT}}/myapp
@@ -62,12 +63,12 @@ jobs:
 
     steps:
       - name: Download artifact from build job
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: .net-app
       
       - name: Login to Azure
-        uses: azure/login@v2
+        uses: azure/login@a641126d1b8aa4d1fa005f4f92df94a3a4c4c906 # v3.1.0
         with:
           client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_9FF75231646C4B1695B25E9C7BB183C0 }}
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_5C5CD7DA74434C6B8A323C5E4759198B }}
@@ -75,8 +76,9 @@ jobs:
 
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
-        uses: azure/webapps-deploy@v3
+        uses: azure/webapps-deploy@02a81bead70021f5284939794bcec79c271ab383 # v3.0.8
         with:
           app-name: 'sssklv2-app'
           slot-name: 'Production'
           package: .
+          clean: true

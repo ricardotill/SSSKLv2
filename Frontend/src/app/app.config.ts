@@ -1,4 +1,4 @@
-import { ApplicationConfig, provideBrowserGlobalErrorListeners, LOCALE_ID, isDevMode } from '@angular/core';
+import { ApplicationConfig, provideAppInitializer, provideBrowserGlobalErrorListeners, inject, LOCALE_ID, isDevMode } from '@angular/core';
 import { provideServiceWorker } from '@angular/service-worker';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { registerLocaleData } from '@angular/common';
@@ -17,6 +17,7 @@ import { provideHttpClient, withFetch, withInterceptors, withXsrfConfiguration }
 import { authInterceptor } from './core/auth/auth.interceptor';
 import { apiBaseInterceptor } from './core/interceptors/api-base.interceptor';
 import { environment } from '../environments/environment';
+import { PwaZoomLockService } from './core/services/pwa-zoom-lock.service';
 
 const MyPreset = definePreset(Aura, {
   semantic: {
@@ -61,6 +62,8 @@ export const appConfig: ApplicationConfig = {
     { provide: MessageService, useClass: MessageService },
     { provide: ConfirmationService, useClass: ConfirmationService },
     { provide: LOCALE_ID, useValue: 'nl-NL' },
+    // Installed app only: no pinch/double-tap/keyboard zoom, like a native app
+    provideAppInitializer(() => inject(PwaZoomLockService).init()),
     provideServiceWorker('ngsw-worker.js', {
       enabled: true,
       registrationStrategy: 'registerImmediately'

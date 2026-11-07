@@ -12,6 +12,27 @@ body {
 
 @variant dark (&:where(.dark, .dark *));
 
+/*
+ * Installed PWA (class set by PwaZoomLockService): no double-tap zoom.
+ * Zero specificity, so components that need e.g. touch-action: none still win.
+ */
+:where(.pwa-standalone),
+:where(.pwa-standalone) * {
+    touch-action: manipulation;
+}
+
+/*
+ * Keep bottom toasts clear of fixed bottom bars (e.g. the POS payment sheet on phones).
+ * A page with such a bar sets --app-bottom-offset on <html> to the bar's height.
+ * PrimeNG positions the toast with an inline style (bottom: 20px), hence !important;
+ * without an offset the result is the same 20px.
+ */
+.p-toast.p-toast-bottom-left,
+.p-toast.p-toast-bottom-center,
+.p-toast.p-toast-bottom-right {
+    bottom: max(20px, calc(var(--app-bottom-offset, 0px) + 12px)) !important;
+}
+
 @theme {
   --color-primary-50: var(--p-primary-50);
   --color-primary-100: var(--p-primary-100);

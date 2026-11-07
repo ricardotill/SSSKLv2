@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-SSSKL is a POS / club management system for Scouting Wilo: a .NET 10 ASP.NET Core API (onion architecture across `SSSKL.Domain`, `SSSKL.Contracts`, `SSSKL.Application`, `SSSKL.Infrastructure` and `SSSKL.Web`) plus an Angular 22 SPA (`Frontend/`), orchestrated locally with .NET Aspire (`SSSKL.AppHost/`). The solution file is `SSSKL.slnx`. Package versions are centrally managed in `Directory.Packages.props` (add `<PackageReference>` without a version in csproj files); shared MSBuild properties (version, SixLabors license path) live in `Directory.Build.props`.
+SSSKL is a POS / club management system for Scouting Wilo: a .NET 11 ASP.NET Core API (onion architecture across `SSSKL.Domain`, `SSSKL.Contracts`, `SSSKL.Application`, `SSSKL.Infrastructure` and `SSSKL.Web`) plus an Angular 22 SPA (`Frontend/`), orchestrated locally with .NET Aspire (`SSSKL.AppHost/`). The solution file is `SSSKL.slnx`. Package versions are centrally managed in `Directory.Packages.props` (add `<PackageReference>` without a version in csproj files); shared MSBuild properties (version, SixLabors license path) live in `Directory.Build.props`.
 
 ## Commands
 
@@ -30,7 +30,11 @@ npm test                   # Vitest via @angular/build:unit-test, single run
 npm run test:coverage
 npm run test:update        # update snapshots
 npx ng test --no-watch --include src/app/features/orders/services/order.service.spec.ts   # single spec
+npm run e2e:install        # once: Playwright Chromium
+npm run e2e                # Playwright; starts the API (E2E env, :5252) and ng serve (:4300), or reuses running ones
+npx playwright test e2e/pos-order.e2e.ts   # single e2e spec
 ```
+- E2E specs live in `Frontend/e2e/*.e2e.ts` (outside `src/`, so Vitest and Sonar skip them). `auth.setup.ts` stores a logged-in state per role in `e2e/.auth/`; seeded users are mirrored in `e2e/support/users.ts`. Specs run serially against one database and must tolerate data left by earlier runs when servers are reused (assert deltas, use unique names).
 - `npm start` and `npm run build` go through `ng-env.js`, which injects `PRIMEUI_LICENSE_KEY` (from the environment or gitignored `Frontend/.env`, see `.env.example`) as a build-time define. The Static Web Apps deploy reads it from the `PRIMEUI_LICENSE_KEY` repo secret; without it the app builds but PrimeUI shows a license banner.
 
 ## Backend architecture
@@ -50,7 +54,7 @@ SSSKL.Domain ← SSSKL.Contracts ← SSSKL.Application ← SSSKL.Web
 - **`SSSKL.Web`**: composition root. `Program.cs`, controllers (`Controllers/v1/`, `[Route("v1/[controller]")]`, mounted under a `/api` group so real routes are `/api/v1/...`) that read claims, parse input and send requests through `ISender`, Identity endpoints incl. passkeys at `/api/v1/identity` (`Registrations/IdentityApiEndpointRouteBuilderExtensions.cs`), and the SignalR hub `Hubs/LiveMetricsHub` at `/hubs/livemetrics`, fed by singleton `Services/PurchaseNotifier`/`EventNotifier`. Production uses Azure SignalR.
 - **Background jobs**: `Features/Users/Stats/StatsRecalculationJob` and `Features/Orders/Export/OrderCsvExportJob` are singletons that track jobs in memory and run work on background threads using `IServiceScopeFactory` (one active job at a time; frontend polls status). Controllers reach them through start/status commands and queries.
 - **Auth**: ASP.NET Core Identity with a `BearerOrCookie` policy scheme (Bearer header → bearer token, otherwise Identity cookie). Roles are seeded on startup. Antiforgery: a middleware issues a readable `XSRF-TOKEN` cookie; clients send `X-XSRF-TOKEN`.
-- **Environments**: `IntegrationTest` is treated like Development for cookie security and skips SQL Server registration/migrations (uses `EnsureCreated`). Blob storage is configured from Aspire's `blobs` connection string, `Storage:ConnectionString`, or `Storage:ServiceUri` (managed identity), in that order.
+- **Environments**: the test environments `IntegrationTest` and `E2E` (`SSSKL.Infrastructure/Hosting/TestEnvironments`, `IsTestLike()`) are treated like Development for cookie security, run on SQLite from `ConnectionStrings:db` (`SqliteFunctionsInterceptor` adds `GETDATE`/`GETUTCDATE`) and use `EnsureCreated` instead of migrations. `E2E` also deletes and recreates its database on startup, seeds fixed users/products/an event (`Registrations/E2ESeeder`, password from `E2E:UserPassword`, which `playwright.config.ts` sets as `E2E__UserPassword` from `e2e/support/users.ts`; set it yourself when you start the `e2e` profile by hand), stores blobs on disk (`LocalFileBlobStorageAgent`) and refuses to start on App Service (`E2EGuard`); config is `appsettings.E2E.json` (never published), launch profile `e2e` on http://localhost:5252. Rate limits for the identity endpoints come from the `RateLimiting` section. Blob storage is configured from Aspire's `blobs` connection string, `Storage:ConnectionString`, or `Storage:ServiceUri` (managed identity), in that order.
 - **Telemetry**: `SssklTelemetry.Name` (`"SSSKL"`) must match `BusinessTelemetryName` in `SSSKL.ServiceDefaults/Extensions.cs`, which subscribes to it. KQL queries for Application Insights are in `APPLICATION_INSIGHTS_QUERIES.md`; update it when you add metrics or log messages.
 
 ## Backend tests
@@ -58,7 +62,7 @@ SSSKL.Domain ← SSSKL.Contracts ← SSSKL.Application ← SSSKL.Web
 MSTest + FluentAssertions + NSubstitute + Bogus, one test project per layer:
 - **`SSSKL.Application.Test`**: handler tests (`Features/<Feature>/`), shared-service, event handler, validator and util tests; dependencies mocked with NSubstitute, no database. Handlers are internal (`InternalsVisibleTo`); use `NullLogger<T>.Instance` for their loggers, because NSubstitute can't proxy `ILogger<T>` of an internal type.
 - **`SSSKL.Infrastructure.Test`**: repository tests inherit `Util/RepositoryTest` (in-memory SQLite, `InitializeDatabase()`/`CleanupDatabase()`, seeded `TestUser`/`TestProduct`) and use `Util/MockDbContextFactory`; also agent, web push and Turnstile tests, plus handler tests (`Features/`: reactions, notifications, roles, settings, blobs) that run against real repositories.
-- **`SSSKL.Web.Test`**: controller tests that mock `ISender`, and integration tests (`Integration/`, incl. `MediatRPipelineTests`) that use `WebApplicationFactory<Program>` with `UseEnvironment("IntegrationTest")`, replacing the DbContext/factory registrations with a shared in-memory SQLite connection.
+- **`SSSKL.Web.Test`**: controller tests that mock `ISender`, and integration tests (`Integration/`) that send real HTTP requests through `Integration/Infrastructure/SssklWebApplicationFactory` (IntegrationTest environment, one temp SQLite file per factory, fakes for email/web push/blob storage exposed as `Emails`/`Push`/`Blobs`; `WithSetting`/`WithServices` for overrides). Test classes derive from `IntegrationTestBase`, own one static factory (`[ClassInitialize]`/`[ClassCleanup]`) and use its helpers (`CreateAuthenticatedClientAsync(role)`, `SeedProductAsync`, `WithDbAsync`, `PollAsync`). Classes run in parallel (`MSTestSettings.cs`), so give each test its own users and data.
 - CI (`.github/workflows/dotnet.yml`) excludes Migrations, Controllers, `Program.cs` and `DependencyInjection.cs` from Sonar coverage.
 
 ## Frontend architecture (`Frontend/src/app/`)

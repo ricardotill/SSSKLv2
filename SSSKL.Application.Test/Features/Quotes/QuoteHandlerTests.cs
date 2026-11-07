@@ -134,6 +134,7 @@ public class QuoteHandlerTests
     {
         // Arrange
         var quoteId = Guid.NewGuid();
+        _quoteRepository.GetById(quoteId).Returns(new Quote { Id = quoteId });
         _quoteRepository.GetVote(quoteId, UserId).Returns((QuoteVote?)null);
         var sut = new ToggleQuoteVoteHandler(_quoteRepository, _mockUserStatRepository, _mockEventDispatcher, _quoteAccess);
 
@@ -147,11 +148,28 @@ public class QuoteHandlerTests
     }
 
     [TestMethod]
+    public async Task ToggleVote_UnknownQuote_ThrowsNotFound()
+    {
+        // Arrange
+        var quoteId = Guid.NewGuid();
+        _quoteRepository.GetById(quoteId).Returns((Quote?)null);
+        var sut = new ToggleQuoteVoteHandler(_quoteRepository, _mockUserStatRepository, _mockEventDispatcher, _quoteAccess);
+
+        // Act
+        var act = () => sut.Handle(new ToggleQuoteVoteCommand(quoteId, UserId), CancellationToken.None);
+
+        // Assert
+        await act.Should().ThrowAsync<NotFoundException>();
+        await _quoteRepository.DidNotReceive().AddVote(Arg.Any<QuoteVote>());
+    }
+
+    [TestMethod]
     public async Task ToggleVote_ExistingVote_ShouldRemoveVoteAndRecalculateStats()
     {
         // Arrange
         var quoteId = Guid.NewGuid();
         var vote = new QuoteVote { QuoteId = quoteId, UserId = UserId };
+        _quoteRepository.GetById(quoteId).Returns(new Quote { Id = quoteId });
         _quoteRepository.GetVote(quoteId, UserId).Returns(vote);
         _quoteRepository.GetAuthorUserIds(quoteId).Returns(new List<string> { "author-1" });
         var sut = new ToggleQuoteVoteHandler(_quoteRepository, _mockUserStatRepository, _mockEventDispatcher, _quoteAccess);

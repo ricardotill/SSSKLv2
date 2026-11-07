@@ -58,6 +58,16 @@ export class LanguageService {
     'order_placed': 'Order geplaatst!',
     'order_failed': 'Bestelling mislukt',
     'load_failed': 'Laden van gegevens mislukt',
+    'search_people': 'Zoek op naam',
+    'no_people_found': 'Niemand gevonden',
+    'per_person': 'p.p.',
+    'pos_select_hint': 'Kies wat en voor wie',
+    'decrease_amount': 'Aantal verlagen',
+    'increase_amount': 'Aantal verhogen',
+    'guest_cannot_order': 'Gasten kunnen niet bestellen.',
+    'split_short': 'Splitsen',
+    'selected_count': '{count} gekozen',
+    'people_count': '{count} pers.',
 
     // Orders
     'date': 'Datum',

@@ -15,6 +15,8 @@ internal sealed class ToggleQuoteVoteHandler(
     public async Task<bool> Handle(ToggleQuoteVoteCommand request, CancellationToken cancellationToken)
     {
         await quoteAccess.EnsureUserHasAccess(request.UserId);
+        // 404 for an unknown quote instead of a foreign key violation when the vote is saved
+        await QuoteAccess.GetExisting(quoteRepository, request.QuoteId);
         var existingVote = await quoteRepository.GetVote(request.QuoteId, request.UserId);
 
         if (existingVote != null)

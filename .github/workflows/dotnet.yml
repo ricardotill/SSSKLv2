@@ -8,22 +8,23 @@ on:
   workflow_dispatch:
 
 env:
-  DOTNET_VERSION: '10.0.x'                 # set this to the .NET Core version to use
+  DOTNET_VERSION: '11.0.x'                 # set this to the .NET Core version to use
 
 jobs:
   build:
     name: Build & Test
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v7
       with:
         persist-credentials: false
         fetch-depth: 0
     
     - name: Setup .NET
-      uses: actions/setup-dotnet@v4
+      uses: actions/setup-dotnet@v6
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
+        dotnet-quality: 'preview'
     
     - name: Decode and save SixLabors license
       run: |
@@ -46,23 +47,26 @@ jobs:
   scan:
     name: SonarCloud Analyze
     needs: build
+    # Dependabot PRs get no SONAR_TOKEN; the build job still verifies them.
+    if: github.event.pull_request.user.login != 'dependabot[bot]'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
           fetch-depth: 0
 
       - name: Setup JDK 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           java-version: 21
           distribution: 'zulu'
           
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v6
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
+          dotnet-quality: 'preview'
 
       - name: Decode and save SixLabors license
         run: |
@@ -74,7 +78,7 @@ jobs:
           cp ./sixlabors.lic ../sixlabors.lic
 
       - name: Cache SonarCloud packages
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.sonar/cache
           key: ${{ runner.os }}-sonar

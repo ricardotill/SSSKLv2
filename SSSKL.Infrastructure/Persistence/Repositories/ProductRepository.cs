@@ -69,6 +69,7 @@ public class ProductRepository(IDbContextFactory<ApplicationDbContext> dbContext
     public async Task Create(Product obj)
     {
         await using var context = await dbContextFactory.CreateDbContextAsync();
+        await EnsureNameIsUnique(context, obj);
         context.Product.Add(obj);
         await context.SaveChangesAsync();
     }
@@ -76,6 +77,7 @@ public class ProductRepository(IDbContextFactory<ApplicationDbContext> dbContext
     public async Task Update(Product obj)
     {
         await using var context = await dbContextFactory.CreateDbContextAsync();
+        await EnsureNameIsUnique(context, obj);
         context.Product.Update(obj);
         await context.SaveChangesAsync();
     }
@@ -90,5 +92,14 @@ public class ProductRepository(IDbContextFactory<ApplicationDbContext> dbContext
             await context.SaveChangesAsync();
         }
         else throw new NotFoundException("Product Not Found");
+    }
+
+    // Product.Name has a unique index; report a clash as 409 instead of an unhandled DbUpdateException.
+    private static async Task EnsureNameIsUnique(ApplicationDbContext context, Product obj)
+    {
+        if (await context.Product.AnyAsync(p => p.Name == obj.Name && p.Id != obj.Id))
+        {
+            throw new ConflictException($"A product named '{obj.Name}' already exists.");
+        }
     }
 }

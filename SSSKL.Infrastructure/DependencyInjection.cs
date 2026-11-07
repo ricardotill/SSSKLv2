@@ -8,6 +8,7 @@ using SSSKL.Contracts.Repositories;
 using SSSKL.Contracts.Services;
 using SSSKL.Domain.Entities;
 using SSSKL.Infrastructure.Agents;
+using SSSKL.Infrastructure.Hosting;
 using SSSKL.Infrastructure.Persistence;
 using SSSKL.Infrastructure.Persistence.Repositories;
 using SSSKL.Infrastructure.Services;
@@ -21,9 +22,13 @@ public static class InfrastructureServiceCollectionExtensions
         builder.AddPersistence();
         builder.AddBlobStorage();
 
+        if (builder.Environment.IsE2E())
+            builder.Services.AddSingleton<IBlobStorageAgent, LocalFileBlobStorageAgent>();
+        else
+            builder.Services.AddSingleton<IBlobStorageAgent, BlobStorageAgent>();
+
         builder.Services
             .AddRepositories()
-            .AddSingleton<IBlobStorageAgent, BlobStorageAgent>()
             // Implement a proper IEmailSender using SMTP
             .AddTransient<IEmailSender<ApplicationUser>, SmtpEmailSender>()
             .AddTransient<IWebPushService, WebPushService>()
@@ -35,8 +40,20 @@ public static class InfrastructureServiceCollectionExtensions
 
     private static void AddPersistence(this IHostApplicationBuilder builder)
     {
-        // Integration tests register their own (SQLite) context
-        if (builder.Environment.IsEnvironment("IntegrationTest")) return;
+        // Test environments (integration tests, E2E) run on SQLite. The connection string is read when the
+        // context is built, so WebApplicationFactory configuration overrides are applied.
+        if (builder.Environment.IsTestLike())
+        {
+            builder.Services.AddDbContextFactory<ApplicationDbContext>((sp, options) =>
+            {
+                var sqliteConnectionString = sp.GetRequiredService<IConfiguration>().GetConnectionString("db")
+                    ?? throw new InvalidOperationException(
+                        $"ConnectionStrings:db is required in the {builder.Environment.EnvironmentName} environment.");
+                options.UseSqlite(sqliteConnectionString)
+                    .AddInterceptors(new SqliteFunctionsInterceptor());
+            });
+            return;
+        }
 
         var connectionString = (builder.Environment.IsProduction() ? builder.Configuration["AZURE_SQL_CONNECTIONSTRING"] : null)
                               ?? builder.Configuration.GetConnectionString("db")

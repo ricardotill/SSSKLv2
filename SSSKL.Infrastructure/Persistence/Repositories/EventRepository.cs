@@ -90,6 +90,13 @@ public class EventRepository(IDbContextFactory<ApplicationDbContext> dbContextFa
     {
         await using var context = await dbContextFactory.CreateDbContextAsync();
 
+        // The required roles were loaded by another context; attach them as existing rows so
+        // only the join entries are inserted, not the roles themselves.
+        foreach (var role in entity.RequiredRoles)
+        {
+            context.Attach(role);
+        }
+
         await context.Event.AddAsync(entity);
         await context.SaveChangesAsync();
     }

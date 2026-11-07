@@ -308,12 +308,9 @@ function initialsOf(name: string): string {
       }
     }
 
-    /* Desktop: content in a card, pay column sticks while scrolling the people list */
+    /* Desktop: no bottom sheet, pay column sticks while scrolling the people list */
     @media (min-width: 1024px) {
-      .pos-page {
-        padding: 2rem; border-radius: 1.5rem;
-        background: var(--p-content-background, var(--pos-bg)); box-shadow: 0 0 0 1px var(--pos-line);
-      }
+      .pos-page { padding-bottom: 0; }
       .pos-pay { position: sticky; top: 0; align-self: start; padding: 1.25rem; border-radius: 1.25rem; background: var(--pos-pay-bg); }
       .pos-pay .stepper, .pos-pay .split-chip:not([aria-pressed='true']) { background: var(--pos-bg); }
       .pos-pay .order-btn { min-height: 3.75rem; }
@@ -377,7 +374,7 @@ export default class PosComponent implements OnInit {
       return this.sortedUsers();
     }
     return this.sortedUsers().filter(u =>
-      u.displayName.toLowerCase().includes(query) || u.userName.toLowerCase().includes(query));
+      u.displayName.toLowerCase().includes(query) || (u.userName ?? '').toLowerCase().includes(query));
   });
 
   readonly canSplit = computed(() => this.selectedUsers().length > 1);

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-SSSKL is a POS / club management system for Scouting Wilo: a .NET 10 ASP.NET Core API (onion architecture across `SSSKL.Domain`, `SSSKL.Contracts`, `SSSKL.Application`, `SSSKL.Infrastructure` and `SSSKL.Web`) plus an Angular 22 SPA (`Frontend/`), orchestrated locally with .NET Aspire (`SSSKL.AppHost/`). The solution file is `SSSKL.slnx`. Package versions are centrally managed in `Directory.Packages.props` (add `<PackageReference>` without a version in csproj files); shared MSBuild properties (version, SixLabors license path) live in `Directory.Build.props`.
+SSSKL is a POS / club management system for Scouting Wilo: a .NET 11 ASP.NET Core API (onion architecture across `SSSKL.Domain`, `SSSKL.Contracts`, `SSSKL.Application`, `SSSKL.Infrastructure` and `SSSKL.Web`) plus an Angular 22 SPA (`Frontend/`), orchestrated locally with .NET Aspire (`SSSKL.AppHost/`). The solution file is `SSSKL.slnx`. Package versions are centrally managed in `Directory.Packages.props` (add `<PackageReference>` without a version in csproj files); shared MSBuild properties (version, SixLabors license path) live in `Directory.Build.props`.
 
 ## Commands
 

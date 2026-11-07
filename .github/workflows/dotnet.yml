@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 env:
-  DOTNET_VERSION: '10.0.x'                 # set this to the .NET Core version to use
+  DOTNET_VERSION: '11.0.x'                 # set this to the .NET Core version to use
 
 jobs:
   build:
@@ -24,6 +24,7 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
+        dotnet-quality: 'preview'
     
     - name: Decode and save SixLabors license
       run: |
@@ -63,6 +64,7 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
+          dotnet-quality: 'preview'
 
       - name: Decode and save SixLabors license
         run: |

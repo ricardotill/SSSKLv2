@@ -24,7 +24,8 @@ jobs:
       - name: Set up .NET Core
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '10.x'
+          dotnet-version: '11.0.x'
+          dotnet-quality: 'preview'
           
       - name: Decode and save SixLabors license
         run: |

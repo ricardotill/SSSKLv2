@@ -49,7 +49,7 @@
     <!-- Needs the MAUI workload: shown in the IDE, but `dotnet build SSSKL.slnx` (and backend CI) skip it.
          Build it with `dotnet build Mobile/SSSKL.Mobile -f net11.0-android|net11.0-ios`. -->
     <Project Path="Mobile/SSSKL.Mobile/SSSKL.Mobile.csproj">
-      <Build Solution="Release|*" Project="false" />
+      <Build Project="false" />
     </Project>
   </Folder>
   <Folder Name="/tests/">

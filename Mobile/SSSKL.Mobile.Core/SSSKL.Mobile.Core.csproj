@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Platform-independent part of the mobile app: API client, auth, popups and view models.
+       No MAUI dependency, so it is unit tested on plain net11.0 (SSSKL.Mobile.Test). -->
+  <PropertyGroup>
+    <TargetFramework>net11.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <!-- The app ships with Native AOT: enables the trim/AOT/single-file analyzers here. -->
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="SSSKL.Mobile.Test" />
+  </ItemGroup>
+</Project>

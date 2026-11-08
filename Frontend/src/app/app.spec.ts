@@ -15,6 +15,7 @@ import { vi } from 'vitest';
 import { providePrimeNG } from 'primeng/config';
 import Aura from '@primeuix/themes/aura';
 import { AppUpdateService } from './core/services/app-update.service';
+import { EmbeddedService } from './core/services/embedded.service';
 
 describe('App', () => {
   beforeEach(async () => {
@@ -66,5 +67,23 @@ describe('App', () => {
     await fixture.whenStable();
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.querySelector('router-outlet')).toBeTruthy();
+  });
+
+  it('renders the achievement and what\'s-new popups in a browser', async () => {
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('app-achievement-modal')).toBeTruthy();
+    expect(compiled.querySelector('app-whats-new-modal')).toBeTruthy();
+  });
+
+  it('leaves the popups to the mobile app when embedded', async () => {
+    TestBed.overrideProvider(EmbeddedService, { useValue: { isEmbedded: true, notifyNative: vi.fn() } });
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('app-achievement-modal')).toBeNull();
+    expect(compiled.querySelector('app-whats-new-modal')).toBeNull();
+    expect(compiled.querySelector('app-user-profile-drawer')).toBeTruthy();
   });
 });

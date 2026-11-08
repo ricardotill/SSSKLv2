@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-SSSKL is a POS / club management system for Scouting Wilo: a .NET 11 ASP.NET Core API (onion architecture across `SSSKL.Domain`, `SSSKL.Contracts`, `SSSKL.Application`, `SSSKL.Infrastructure` and `SSSKL.Web`) plus an Angular 22 SPA (`Frontend/`), orchestrated locally with .NET Aspire (`SSSKL.AppHost/`). The solution file is `SSSKL.slnx`. Package versions are centrally managed in `Directory.Packages.props` (add `<PackageReference>` without a version in csproj files); shared MSBuild properties (version, SixLabors license path) live in `Directory.Build.props`.
+SSSKL is a POS / club management system for Scouting Wilo: a .NET 11 ASP.NET Core API (onion architecture across `SSSKL.Domain`, `SSSKL.Contracts`, `SSSKL.Application`, `SSSKL.Infrastructure` and `SSSKL.Web`) plus an Angular 22 SPA (`Frontend/`) and a .NET MAUI mobile app (`Mobile/`, see below), orchestrated locally with .NET Aspire (`SSSKL.AppHost/`). The solution file is `SSSKL.slnx`. Package versions are centrally managed in `Directory.Packages.props` (add `<PackageReference>` without a version in csproj files); shared MSBuild properties (version, SixLabors license path) live in `Directory.Build.props`.
 
 ## Commands
 
@@ -74,6 +74,78 @@ MSTest + FluentAssertions + NSubstitute + Bogus, one test project per layer:
 - PWA with service worker (`ngsw-config.json`) and web push notifications.
 
 Follow `Frontend/AGENTS.md` for Angular code. Key rules: standalone components (don't set `standalone: true`), `ChangeDetectionStrategy.OnPush`, signals + `computed()` for state, `input()`/`output()` functions, `inject()` instead of constructor injection, native control flow (`@if`/`@for`), `class`/`style` bindings instead of `ngClass`/`ngStyle`, `host` object instead of `@HostBinding`/`@HostListener`, reactive forms, and WCAG AA / AXE compliance.
+
+## Mobile app (`Mobile/`)
+
+.NET MAUI app for iOS and Android. It talks to the same API.
+
+It is in `SSSKL.slnx` (folder `/mobile/`), and also has its own solution `Mobile/SSSKL.Mobile.slnx`. Core and Test build and test with the rest of the solution. The MAUI app project is marked `<Build Project="false" />` in `SSSKL.slnx`, so `dotnet restore/build SSSKL.slnx` and backend CI skip it and don't need the MAUI workload. Build it explicitly with `-f net11.0-android|net11.0-ios`.
+
+**Projects**
+- **`SSSKL.Mobile.Core`** (net11.0, no MAUI): the API client (`Api/SssklApiClient`, client-side DTO copies in `Models/`), auth, popup coordinators, view models (CommunityToolkit.Mvvm), Dutch strings (`Localization/Texts`) and the WebView rules (`Web/`).
+  - **`Auth/AuthSession`** holds the bearer tokens and refreshes them, one refresh at a time.
+  - **`Auth/AuthTokenHandler`** adds the bearer header and retries once after a refresh on a 401.
+- **`SSSKL.Mobile`** (net11.0-android/net11.0-ios): XAML pages, Shell and the platform code (`Platforms/*/WebViewPlatform.*.cs`).
+- **`SSSKL.Mobile.Test`**: MSTest tests for Core.
+
+**Native vs. web**
+- Native screens: Kassa (POS), Profiel, and the achievement and "what's new" popups.
+- The "Meer" tab, and login, show the SPA in a WebView.
+
+**Login**
+- Login uses the SPA's own `/login` page, so Turnstile, 2FA and passkeys keep working.
+- After login the app reads `access_token`/`refresh_token` from the WebView's storage and keeps them in SecureStorage.
+- The app then injects them into every SPA page with a document-start script (`Web/WebSessionScript`). That script also sets `window.SSSKL_APP`.
+
+**SPA embedded mode** (`core/services/embedded.service.ts`)
+- Detected by `window.SSSKL_APP` or the `SSSKLApp/` user-agent token.
+- In embedded mode the SPA skips its achievement and what's-new modals, the push prompt and the service worker.
+- It hands `/pos` (`core/auth/native-route.guard.ts`) and logout over to the app by navigating to `ssskl-app://<action>`. `Web/WebNavigationPolicy` intercepts these navigations.
+- `GET achievement/entries/unseen` marks the entries as seen. Only the app's `AchievementPopupCoordinator` may call it in embedded mode.
+
+**Commands**
+
+```bash
+dotnet test Mobile/SSSKL.Mobile.Test                                  # no workload needed
+sudo dotnet workload install maui-android maui-ios                    # once, for the app itself
+cd Frontend && npm run start:mobile                                   # SPA on http://0.0.0.0:4300, proxies /api to $SSSKL_API_URL (default http://localhost:5251)
+dotnet build Mobile/SSSKL.Mobile -t:Run -f net11.0-android            # Debug: http://10.0.2.2:4300
+dotnet build Mobile/SSSKL.Mobile -t:Run -f net11.0-ios                # Debug: http://localhost:4300
+dotnet build Mobile/SSSKL.Mobile -c Release -p:SssklWebUrl=https://... # override URL; API defaults to the SPA origin (-p:SssklApiUrl=...)
+```
+
+Release builds default to `https://ssskl.scoutingwilo.nl`.
+
+**Native AOT**
+- Release publishes use Native AOT (`PublishAot`); Debug builds don't.
+- On iOS it only applies to device publishes (`-r ios-arm64`), not simulator builds. On Android the SDK still marks it experimental (warning XA1040).
+- Keep the code reflection-free:
+  - compiled bindings with `x:DataType`
+  - JSON only through the source-generated `ApiJsonContext` in Core; add new DTO types there
+- `SSSKL.Mobile.Core` has `IsAotCompatible` set, so the analyzers flag reflection use.
+- The only expected trim warning is IL2104 from CommunityToolkit.Maui. CI is `.github/workflows/mobile.yml`: Core tests and an Android build, plus an unsigned iOS simulator build.
+
+## Error monitoring (Sentry)
+
+Sentry org `ricardo-tillemans` (EU region). One project per app: `ssskl-api`, `ssskl-frontend`, `ssskl-mobile`. The DSNs are public client keys and are committed.
+
+**Where each app sets it up**
+- **API:** `Sentry.AspNetCore`, configured in `SSSKL.Web/Program.cs` and the `Sentry` section of `appsettings.json`.
+  - Sentry is off in the IntegrationTest and E2E environments (`IsTestLike()`).
+  - Exceptions that `GlobalExceptionHandler` maps to 4xx are filtered out.
+- **SPA:** `@sentry/angular`, set up in `Frontend/src/sentry.ts` and called from `main.ts` before bootstrap. `app.config.ts` provides the error handler and `TraceService`.
+  - Sentry is off in automated browsers (`navigator.webdriver`), so Playwright and Vitest runs don't report.
+  - Events carry an `embedded` tag, true inside the mobile app.
+- **Mobile app:** `Sentry.Maui`, set up with `UseSentry` in `MauiProgram.cs`.
+
+**Releases**
+- All three use the `Version` from `Directory.Build.props`: `SSSKL.Web@<v>`, `SSSKL.Mobile@<v>` and `ssskl-frontend@<v>`. The SPA's is computed in `Frontend/sentry-release.js` and injected by `ng-env.js`.
+
+**Readable stack traces**
+- Uploads only run when `SENTRY_AUTH_TOKEN` is set. It's a repository secret holding a Sentry organization auth token.
+- **API:** the Release `dotnet publish` in `master_sssklv2-app.yml` uploads PDBs and sources. The settings are in `SSSKL.Web.csproj`.
+- **SPA:** production builds emit hidden source maps. `postbuild` (`Frontend/sentry-sourcemaps.js`) injects Debug IDs, uploads the maps, then deletes all `.map` files so they're never deployed.
+- **Mobile app:** `SSSKL.Mobile.csproj` uploads symbols in Release builds that have the token set. CI doesn't pass the token, because CI builds aren't shipped.
 
 ## Versioning & deployment
 

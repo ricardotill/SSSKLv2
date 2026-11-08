@@ -46,6 +46,8 @@
     <PackageVersion Include="Scalar.AspNetCore" Version="2.19.0" />
     <PackageVersion Include="Scalar.AspNetCore.Microsoft" Version="2.19.0" />
     <PackageVersion Include="SendGrid" Version="9.29.3" />
+    <PackageVersion Include="Sentry.AspNetCore" Version="6.12.1" />
+    <PackageVersion Include="Sentry.Maui" Version="6.12.1" />
     <PackageVersion Include="SixLabors.ImageSharp" Version="4.1.3" />
     <PackageVersion Include="System.Configuration.ConfigurationManager" Version="11.0.0-rc.3.26522.148" />
     <PackageVersion Include="System.ServiceModel.Syndication" Version="11.0.0-rc.3.26522.148" />
@@ -65,5 +67,13 @@
     <PackageVersion Include="MailKit" Version="4.18.2" />
     <PackageVersion Include="MediatR" Version="14.3.0" />
     <PackageVersion Include="MediatR.Contracts" Version="2.0.1" />
+    <!-- Mobile app (Mobile/) -->
+    <PackageVersion Include="CommunityToolkit.Maui" Version="15.0.1" />
+    <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <PackageVersion Include="Microsoft.Extensions.Http" Version="11.0.0-rc.3.26522.148" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Debug" Version="11.0.0-rc.3.26522.148" />
+    <PackageVersion Include="Microsoft.Extensions.TimeProvider.Testing" Version="10.11.0" />
+    <PackageVersion Include="Microsoft.Maui.Controls" Version="11.0.0-rc.2.26505.5" />
+    <PackageVersion Include="Xamarin.AndroidX.WebKit" Version="1.17.1" />
   </ItemGroup>
 </Project>

@@ -1,8 +1,14 @@
 <Solution>
+  <Configurations>
+    <BuildType Name="Debug" />
+    <BuildType Name="Release" />
+    <BuildType Name="DebugProduction" />
+  </Configurations>
   <Folder Name="/Bestanden/">
     <File Path=".github/workflows/deploy-acceptation.yml" />
     <File Path=".github/workflows/deploy-production.yml" />
     <File Path=".github/workflows/dotnet.yml" />
+    <File Path=".github/workflows/mobile.yml" />
     <File Path=".gitignore" />
     <File Path="Directory.Build.props" />
     <File Path="Directory.Packages.props" />
@@ -12,19 +18,52 @@
     <File Path="SIXLABORS_LICENSE_SETUP.md" />
   </Folder>
   <Folder Name="/src/">
-    <Project Path="SSSKL.Domain/SSSKL.Domain.csproj" />
-    <Project Path="SSSKL.Contracts/SSSKL.Contracts.csproj" />
-    <Project Path="SSSKL.Application/SSSKL.Application.csproj" />
-    <Project Path="SSSKL.Infrastructure/SSSKL.Infrastructure.csproj" />
-    <Project Path="SSSKL.Web/SSSKL.Web.csproj" />
+    <Project Path="SSSKL.Domain/SSSKL.Domain.csproj">
+      <BuildType Solution="DebugProduction|*" Project="Debug" />
+    </Project>
+    <Project Path="SSSKL.Contracts/SSSKL.Contracts.csproj">
+      <BuildType Solution="DebugProduction|*" Project="Debug" />
+    </Project>
+    <Project Path="SSSKL.Application/SSSKL.Application.csproj">
+      <BuildType Solution="DebugProduction|*" Project="Debug" />
+    </Project>
+    <Project Path="SSSKL.Infrastructure/SSSKL.Infrastructure.csproj">
+      <BuildType Solution="DebugProduction|*" Project="Debug" />
+    </Project>
+    <Project Path="SSSKL.Web/SSSKL.Web.csproj">
+      <BuildType Solution="DebugProduction|*" Project="Debug" />
+    </Project>
   </Folder>
   <Folder Name="/hosting/">
-    <Project Path="SSSKL.AppHost/SSSKL.AppHost.csproj" />
-    <Project Path="SSSKL.ServiceDefaults/SSSKL.ServiceDefaults.csproj" />
+    <Project Path="SSSKL.AppHost/SSSKL.AppHost.csproj">
+      <BuildType Solution="DebugProduction|*" Project="Debug" />
+    </Project>
+    <Project Path="SSSKL.ServiceDefaults/SSSKL.ServiceDefaults.csproj">
+      <BuildType Solution="DebugProduction|*" Project="Debug" />
+    </Project>
+  </Folder>
+  <Folder Name="/mobile/">
+    <Project Path="Mobile/SSSKL.Mobile.Core/SSSKL.Mobile.Core.csproj">
+      <BuildType Solution="DebugProduction|*" Project="Debug" />
+    </Project>
+    <!-- Needs the MAUI workload: shown in the IDE, but `dotnet build SSSKL.slnx` (and backend CI) skip it.
+         Build it with `dotnet build Mobile/SSSKL.Mobile -f net11.0-android|net11.0-ios`. -->
+    <Project Path="Mobile/SSSKL.Mobile/SSSKL.Mobile.csproj">
+      <Build Solution="Release|*" Project="false" />
+    </Project>
   </Folder>
   <Folder Name="/tests/">
-    <Project Path="SSSKL.Application.Test/SSSKL.Application.Test.csproj" />
-    <Project Path="SSSKL.Infrastructure.Test/SSSKL.Infrastructure.Test.csproj" />
-    <Project Path="SSSKL.Web.Test/SSSKL.Web.Test.csproj" />
+    <Project Path="SSSKL.Application.Test/SSSKL.Application.Test.csproj">
+      <BuildType Solution="DebugProduction|*" Project="Debug" />
+    </Project>
+    <Project Path="SSSKL.Infrastructure.Test/SSSKL.Infrastructure.Test.csproj">
+      <BuildType Solution="DebugProduction|*" Project="Debug" />
+    </Project>
+    <Project Path="SSSKL.Web.Test/SSSKL.Web.Test.csproj">
+      <BuildType Solution="DebugProduction|*" Project="Debug" />
+    </Project>
+    <Project Path="Mobile/SSSKL.Mobile.Test/SSSKL.Mobile.Test.csproj">
+      <BuildType Solution="DebugProduction|*" Project="Debug" />
+    </Project>
   </Folder>
 </Solution>

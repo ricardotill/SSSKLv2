@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:SSSKL.Mobile.Controls"
+             xmlns:loc="clr-namespace:SSSKL.Mobile.Core.Localization;assembly=SSSKL.Mobile.Core"
+             x:Class="SSSKL.Mobile.Views.LoginPage"
+             Shell.NavBarIsVisible="False">
+    <Grid>
+        <controls:SssklWebView x:Name="WebView"
+                               Navigating="OnNavigating"
+                               Navigated="OnNavigated" />
+        <ActivityIndicator x:Name="Loading" IsRunning="True" HorizontalOptions="Center" VerticalOptions="Center" />
+        <VerticalStackLayout x:Name="ErrorPanel" IsVisible="False" Spacing="12" Padding="24"
+                             HorizontalOptions="Center" VerticalOptions="Center">
+            <Label Text="{x:Static loc:Texts.LoadFailed}" HorizontalTextAlignment="Center" />
+            <Button Text="Opnieuw proberen" Clicked="OnRetry" />
+        </VerticalStackLayout>
+    </Grid>
+</ContentPage>

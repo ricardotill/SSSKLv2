@@ -11,6 +11,7 @@ import { PushPermissionDialogComponent } from './layout/push-permission-dialog/p
 import { PushNotificationService } from './core/services/push-notification.service';
 import { CommonModule } from '@angular/common';
 import { AppUpdateService } from './core/services/app-update.service';
+import { EmbeddedService } from './core/services/embedded.service';
 
 @Component({
   selector: 'app-root',
@@ -34,6 +35,8 @@ export class App {
   private popupService = inject(AchievementPopupService);
   private appUpdateService = inject(AppUpdateService);
   protected pushService = inject(PushNotificationService);
+  /** In the mobile app the achievement and what's-new popups are native. */
+  protected readonly embedded = inject(EmbeddedService).isEmbedded;
 
   constructor() {
     this.themeService.init();
@@ -42,9 +45,10 @@ export class App {
 
     // Check for unseen achievements whenever the current user changes (login, app init if authenticated)
     // Use an effect to reactively check when user session establishes
+    // Not in the mobile app: it is the only caller of the (consuming) unseen-achievements endpoint.
     effect(() => {
       const user = this.authService.currentUser();
-      if (user) {
+      if (user && !this.embedded) {
         // Small delay to ensure any redirects (like login -> pos) finish before triggering modal
         setTimeout(() => {
           this.popupService.checkUnseenAchievements();

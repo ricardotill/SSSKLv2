@@ -5,6 +5,7 @@ using Microsoft.OpenApi;
 using Scalar.AspNetCore;
 using SSSKL.Application;
 using SSSKL.Contracts.Services;
+using SSSKL.Domain.Exceptions;
 using SSSKL.Infrastructure;
 using SSSKL.Infrastructure.Hosting;
 using SSSKL.Web.Hubs;
@@ -15,6 +16,21 @@ var builder = WebApplication.CreateBuilder(args);
 
 // OpenTelemetry, service discovery, resilience and the "self" health check.
 builder.AddServiceDefaults();
+
+// Errors and traces to Sentry (project ssskl-api), configured from the "Sentry" section of appsettings.
+// Not in the test environments, so integration and E2E runs never report.
+if (!builder.Environment.IsTestLike())
+{
+    builder.WebHost.UseSentry(options =>
+    {
+        // GlobalExceptionHandler turns these into 4xx responses: expected outcomes, not bugs.
+        options.AddExceptionFilterForType<NotFoundException>();
+        options.AddExceptionFilterForType<ConflictException>();
+        options.AddExceptionFilterForType<UnauthorizedAccessException>();
+        options.AddExceptionFilterForType<ArgumentException>();
+        options.AddExceptionFilterForType<BadHttpRequestException>();
+    });
+}
 
 // Treat the test environments (IntegrationTest, E2E) like Development for dev-friendly behaviors such as
 // SameAsRequest cookies, so antiforgery and cookie code paths don't require SSL under TestServer or plain HTTP.

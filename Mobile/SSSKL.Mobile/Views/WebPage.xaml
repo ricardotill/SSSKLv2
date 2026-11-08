@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:SSSKL.Mobile.Controls"
+             xmlns:loc="clr-namespace:SSSKL.Mobile.Core.Localization;assembly=SSSKL.Mobile.Core"
+             x:Class="SSSKL.Mobile.Views.WebPage"
+             Title="{x:Static loc:Texts.TabMore}"
+             Shell.NavBarIsVisible="False">
+    <Grid>
+        <controls:SssklWebView x:Name="WebView"
+                               Navigating="OnNavigating"
+                               Navigated="OnNavigated" />
+        <ActivityIndicator x:Name="Loading" IsRunning="True" HorizontalOptions="Center" VerticalOptions="Center" />
+    </Grid>
+</ContentPage>

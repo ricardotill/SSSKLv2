@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Shell xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+       xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+       xmlns:loc="clr-namespace:SSSKL.Mobile.Core.Localization;assembly=SSSKL.Mobile.Core"
+       x:Class="SSSKL.Mobile.AppShell"
+       Shell.FlyoutBehavior="Disabled">
+    <TabBar>
+        <Tab Title="{x:Static loc:Texts.TabPos}" Route="pos" Icon="tab_pos.png">
+            <ShellContent x:Name="PosContent" />
+        </Tab>
+        <Tab Title="{x:Static loc:Texts.TabProfile}" Route="profile" Icon="tab_profile.png">
+            <ShellContent x:Name="ProfileContent" />
+        </Tab>
+        <Tab Title="{x:Static loc:Texts.TabMore}" Route="more" Icon="tab_more.png">
+            <ShellContent x:Name="MoreContent" />
+        </Tab>
+    </TabBar>
+</Shell>

@@ -6,6 +6,7 @@ import { tap } from 'rxjs/operators';
 import { PasskeyDto } from '../models/passkey.model';
 import { fileToBase64 } from '../../shared/utils/file-to-base64';
 import { TurnstileService } from '../services/turnstile.service';
+import { EmbeddedService } from '../services/embedded.service';
 
 export interface AccessTokenResponse {
     tokenType: string | null;
@@ -77,6 +78,7 @@ export class AuthService {
     private http = inject(HttpClient);
     private router = inject(Router);
     private turnstile = inject(TurnstileService);
+    private embedded = inject(EmbeddedService);
 
     private readonly API_URL = `/api/v1/identity`;
     private readonly USER_API_URL = `/api/v1/ApplicationUser`;
@@ -139,6 +141,8 @@ export class AuthService {
         }
         this.clearTokens();
         this.currentUserSignal.set(null);
+        // In the mobile app the session is native: signing out here signs out the app.
+        this.embedded.notifyNative('logout');
         void this.router.navigate(['/']);
     }
 

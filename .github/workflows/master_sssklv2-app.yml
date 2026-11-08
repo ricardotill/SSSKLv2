@@ -46,7 +46,12 @@ jobs:
         run: dotnet test --no-build --verbosity normal
 
       - name: Publish
-        run: dotnet publish SSSKL.Web/SSSKL.Web.csproj -c Release -o ${{env.DOTNET_ROOT}}/myapp --no-restore
+        env:
+          # Uploads debug symbols to Sentry (ssskl-api) during the Release publish; see SSSKL.Web.csproj.
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+        run: |
+          [ -n "$SENTRY_AUTH_TOKEN" ] && echo "SENTRY_AUTH_TOKEN=set" || echo "::warning::SENTRY_AUTH_TOKEN not set; no Sentry symbol upload"
+          dotnet publish SSSKL.Web/SSSKL.Web.csproj -c Release -o ${{env.DOTNET_ROOT}}/myapp --no-restore
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v7

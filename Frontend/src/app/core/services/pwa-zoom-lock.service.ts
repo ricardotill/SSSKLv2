@@ -1,4 +1,5 @@
 import { DOCUMENT, Injectable, inject } from '@angular/core';
+import { isEmbedded } from './embedded.service';
 
 const LOCKED_VIEWPORT = 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no';
 const ZOOM_KEYS = new Set(['+', '=', '-', '_', '0']);
@@ -6,8 +7,8 @@ const ZOOM_KEYS = new Set(['+', '=', '-', '_', '0']);
 /**
  * Makes the installed PWA behave like a native app by disabling zoom.
  *
- * Only active when running as an installed app (display-mode standalone/fullscreen, or iOS
- * home-screen mode). In a normal browser tab zoom stays available, because blocking it there
+ * Only active when running as an installed app (display-mode standalone/fullscreen, iOS
+ * home-screen mode, or the SSSKL mobile app's WebView). In a normal browser tab zoom stays available, because blocking it there
  * fails WCAG 1.4.4 (Resize Text) and the AXE "meta-viewport" check.
  */
 @Injectable({ providedIn: 'root' })
@@ -59,6 +60,6 @@ export class PwaZoomLockService {
   private isInstalledApp(win: Window): boolean {
     const displayMode = (mode: string) => win.matchMedia?.(`(display-mode: ${mode})`).matches ?? false;
     const iosStandalone = (win.navigator as Navigator & { standalone?: boolean }).standalone === true;
-    return displayMode('standalone') || displayMode('fullscreen') || iosStandalone;
+    return displayMode('standalone') || displayMode('fullscreen') || iosStandalone || isEmbedded(win);
   }
 }

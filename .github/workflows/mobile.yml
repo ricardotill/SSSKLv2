@@ -1,0 +1,63 @@
+name: Mobile CI
+
+on:
+  push:
+    branches: [ "master" ]
+    paths: [ "Mobile/**", "Directory.Packages.props", "Directory.Build.props", ".github/workflows/mobile.yml" ]
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths: [ "Mobile/**", "Directory.Packages.props", "Directory.Build.props", ".github/workflows/mobile.yml" ]
+  workflow_dispatch:
+
+env:
+  DOTNET_VERSION: '11.0.x'
+
+jobs:
+  test-android:
+    name: Test & build Android
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        persist-credentials: false
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v6
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+        dotnet-quality: 'preview'
+
+    - name: Test (Core, no workload needed)
+      run: dotnet test Mobile/SSSKL.Mobile.Test --verbosity normal
+
+    - name: Setup Java
+      uses: actions/setup-java@v6
+      with:
+        java-version: 17
+        distribution: 'microsoft'
+
+    - name: Install MAUI Android workload
+      run: dotnet workload install maui-android
+
+    - name: Build Android
+      run: dotnet build Mobile/SSSKL.Mobile -f net11.0-android -c Release
+
+  build-ios:
+    name: Build iOS (simulator, unsigned)
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        persist-credentials: false
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v6
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+        dotnet-quality: 'preview'
+
+    - name: Install MAUI iOS workload
+      run: dotnet workload install maui-ios
+
+    - name: Build iOS
+      run: dotnet build Mobile/SSSKL.Mobile -f net11.0-ios -c Release -p:RuntimeIdentifier=iossimulator-arm64

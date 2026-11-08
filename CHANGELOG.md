@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Mobile app (.NET MAUI, iOS and Android) in `Mobile/`: native POS, profile, and achievement and "what's new" popups; the rest of the SPA runs in a WebView that shares the app's session.
+- Embedded mode in the SPA: inside the mobile app it skips its own popups, push prompt and service worker, and hands `/pos` and logout over to the app.
+
 ## 3.11.0 - 2026-10-25
 
 ### Added

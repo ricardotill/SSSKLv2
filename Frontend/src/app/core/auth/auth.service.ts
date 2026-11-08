@@ -133,12 +133,16 @@ export class AuthService {
         return this.http.post(`${this.API_URL}/register`, userData, { headers: this.turnstile.headers(turnstileToken) });
     }
 
+    /** True inside the mobile app's WebView, where the native app owns the session. */
+    get isEmbedded(): boolean {
+        return this.embedded.isEmbedded;
+    }
+
+    /**
+     * Signs out. Only call this when the user asked for it or the session is really gone (refresh token
+     * rejected): in the mobile app it also signs out the whole native app.
+     */
     logout(): void {
-        const refreshToken = this.getRefreshToken();
-        if (refreshToken) {
-            // Optional: call logout on backend
-            // this.http.post(`${this.API_URL}/logout`, undefined, { params: { useCookies: 'false' } }).subscribe();
-        }
         this.clearTokens();
         this.currentUserSignal.set(null);
         // In the mobile app the session is native: signing out here signs out the app.

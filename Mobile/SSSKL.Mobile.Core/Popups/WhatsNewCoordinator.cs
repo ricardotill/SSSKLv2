@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using SSSKL.Mobile.Core.Api;
 using SSSKL.Mobile.Core.Services;
@@ -37,7 +38,7 @@ public sealed class WhatsNewCoordinator(
             await presenter.ShowWhatsNewAsync(setting.Value);
             settings.Set(SeenVersionKey, setting.UpdatedOn);
         }
-        catch (Exception ex) when (ex is ApiException or HttpRequestException or TaskCanceledException)
+        catch (Exception ex) when (ex is ApiException or HttpRequestException or TaskCanceledException or JsonException)
         {
             logger.LogWarning(ex, "Checking what's new failed");
         }

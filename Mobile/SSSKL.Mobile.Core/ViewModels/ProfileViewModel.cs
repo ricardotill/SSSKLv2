@@ -111,7 +111,23 @@ public sealed partial class ProfileViewModel(
     [RelayCommand]
     private async Task ChangePictureAsync()
     {
-        var photo = await photoPicker.PickAsync();
+        PickedPhoto? photo;
+        try
+        {
+            photo = await photoPicker.PickAsync();
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+        catch (Exception ex)
+        {
+            // MAUI's PermissionException / FeatureNotSupportedException, image decode errors, ... (Core has no
+            // MAUI reference, so catch broadly): an unhandled exception here would crash the app.
+            logger.LogWarning(ex, "Picking a profile picture failed");
+            await dialogs.AlertAsync(Texts.Error, Texts.ProfilePictureFailed);
+            return;
+        }
         if (photo is null)
         {
             return;

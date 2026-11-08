@@ -11,6 +11,7 @@ public abstract class PopupPage : ContentPage
 {
     private readonly TaskCompletionSource _closed = new();
     private readonly Border _card;
+    private bool _closing;
 
     protected PopupPage()
     {
@@ -31,8 +32,21 @@ public abstract class PopupPage : ContentPage
         };
         _card.SetAppThemeColor(BackgroundColorProperty, (Color)Application.Current!.Resources["SurfaceLight"], (Color)Application.Current.Resources["SurfaceDark"]);
         Content = _card;
+
+        // The page can also go away without CloseAsync, e.g. when the window's root page is replaced on
+        // sign-out or session expiry. Closed must still complete, or the PopupPresenter's gate and the
+        // coordinators' running flags stay taken forever.
+        Unloaded += (_, _) => _closed.TrySetResult();
+        ParentChanged += (_, _) =>
+        {
+            if (Parent is null)
+            {
+                _closed.TrySetResult();
+            }
+        };
     }
 
+    /// <summary>Completes when the popup is dismissed or removed in any other way.</summary>
     public Task Closed => _closed.Task;
 
     protected void SetCardContent(View content) => _card.Content = content;
@@ -58,14 +72,22 @@ public abstract class PopupPage : ContentPage
 
     public async Task CloseAsync()
     {
-        if (_closed.Task.IsCompleted)
+        // Idempotent: a double tap (or back press during the pop) must not pop a second page.
+        if (_closed.Task.IsCompleted || _closing)
         {
             return;
         }
-        if (Navigation.ModalStack.Contains(this))
+        _closing = true;
+        try
         {
-            await Navigation.PopModalAsync(animated: false);
+            if (Navigation.ModalStack.Contains(this))
+            {
+                await Navigation.PopModalAsync(animated: false);
+            }
         }
-        _closed.TrySetResult();
+        finally
+        {
+            _closed.TrySetResult();
+        }
     }
 }

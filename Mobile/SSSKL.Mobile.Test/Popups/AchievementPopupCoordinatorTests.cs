@@ -2,6 +2,7 @@ using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Time.Testing;
 using NSubstitute;
+using NSubstitute.ExceptionExtensions;
 using SSSKL.Mobile.Core.Api;
 using SSSKL.Mobile.Core.Models;
 using SSSKL.Mobile.Core.Popups;
@@ -81,6 +82,22 @@ public class AchievementPopupCoordinatorTests
         await sut.CheckOnResumeAsync();
 
         // Assert
+        await _api.Received(2).GetUnseenAchievementsAsync();
+    }
+
+    [TestMethod]
+    public async Task CheckAsync_MalformedResponse_DoesNotThrowAndCanRunAgain()
+    {
+        // Arrange
+        _api.GetUnseenAchievementsAsync().ThrowsAsync(new System.Text.Json.JsonException("bad json"));
+        var sut = CreateSut();
+
+        // Act
+        var act = () => sut.CheckAsync();
+
+        // Assert
+        await act.Should().NotThrowAsync();
+        await sut.CheckAsync();
         await _api.Received(2).GetUnseenAchievementsAsync();
     }
 }

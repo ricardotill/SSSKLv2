@@ -91,6 +91,78 @@ public class AuthSessionTests
     }
 
     [TestMethod]
+    public async Task RefreshAsync_SignedOutWhileRefreshing_DiscardsRenewedTokens()
+    {
+        // Arrange
+        var store = new InMemoryTokenStore(Old);
+        var refresher = Substitute.For<ITokenRefresher>();
+        var gate = new TaskCompletionSource<TokenSet?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        refresher.RefreshAsync("old-refresh", Arg.Any<CancellationToken>()).Returns(gate.Task);
+        var sut = new AuthSession(store, refresher, NullLogger<AuthSession>.Instance);
+        var tokensChanged = false;
+        var expired = false;
+        sut.TokensChanged += (_, _) => tokensChanged = true;
+        sut.SessionExpired += (_, _) => expired = true;
+
+        // Act
+        var refresh = sut.RefreshAsync("old-access", CancellationToken.None);
+        await sut.SignOutAsync();
+        gate.SetResult(New);
+        var result = await refresh;
+
+        // Assert
+        result.Should().BeNull();
+        store.Tokens.Should().BeNull();
+        (await sut.GetTokensAsync()).Should().BeNull();
+        tokensChanged.Should().BeFalse();
+        expired.Should().BeFalse();
+    }
+
+    [TestMethod]
+    public async Task RefreshAsync_SignedInAgainWhileRefreshing_KeepsNewSession()
+    {
+        // Arrange
+        var other = new TokenSet("other-access", "other-refresh");
+        var store = new InMemoryTokenStore(Old);
+        var refresher = Substitute.For<ITokenRefresher>();
+        var gate = new TaskCompletionSource<TokenSet?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        refresher.RefreshAsync("old-refresh", Arg.Any<CancellationToken>()).Returns(gate.Task);
+        var sut = new AuthSession(store, refresher, NullLogger<AuthSession>.Instance);
+
+        // Act
+        var refresh = sut.RefreshAsync("old-access", CancellationToken.None);
+        await sut.SignOutAsync();
+        await sut.SignInAsync(other);
+        gate.SetResult(New);
+        var result = await refresh;
+
+        // Assert
+        result.Should().BeNull();
+        store.Tokens.Should().Be(other);
+    }
+
+    [TestMethod]
+    public async Task RefreshAsync_FailingSubscriber_DoesNotBreakRefreshOrOtherSubscribers()
+    {
+        // Arrange
+        var store = new InMemoryTokenStore(Old);
+        var refresher = Substitute.For<ITokenRefresher>();
+        refresher.RefreshAsync(default!, default).ReturnsForAnyArgs(New);
+        var sut = new AuthSession(store, refresher, NullLogger<AuthSession>.Instance);
+        TokenSet? raised = null;
+        sut.TokensChanged += (_, _) => throw new InvalidOperationException("disposed view");
+        sut.TokensChanged += (_, t) => raised = t;
+
+        // Act
+        var result = await sut.RefreshAsync("old-access", CancellationToken.None);
+
+        // Assert
+        result.Should().Be("new-access");
+        raised.Should().Be(New);
+        store.Tokens.Should().Be(New);
+    }
+
+    [TestMethod]
     public async Task SignInAsync_StoresTokensAndRaisesTokensChanged()
     {
         // Arrange

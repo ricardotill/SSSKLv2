@@ -75,4 +75,20 @@ public class WhatsNewCoordinatorTests
         // Assert
         await act.Should().NotThrowAsync();
     }
+
+    [TestMethod]
+    public async Task CheckAsync_MalformedResponse_DoesNotThrowAndCanRunAgain()
+    {
+        // Arrange
+        _api.GetGlobalSettingAsync(default!).ThrowsAsyncForAnyArgs(new System.Text.Json.JsonException("bad json"));
+        var sut = CreateSut();
+
+        // Act
+        var act = () => sut.CheckAsync();
+
+        // Assert
+        await act.Should().NotThrowAsync();
+        await sut.CheckAsync();
+        await _api.ReceivedWithAnyArgs(2).GetGlobalSettingAsync(default!);
+    }
 }

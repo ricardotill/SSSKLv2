@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using SSSKL.Mobile.Core.Api;
 using SSSKL.Mobile.Core.Services;
@@ -38,7 +39,7 @@ public sealed class AchievementPopupCoordinator(
                 await presenter.ShowAchievementsAsync(entries);
             }
         }
-        catch (Exception ex) when (ex is ApiException or HttpRequestException or TaskCanceledException)
+        catch (Exception ex) when (ex is ApiException or HttpRequestException or TaskCanceledException or JsonException)
         {
             logger.LogWarning(ex, "Checking unseen achievements failed");
         }

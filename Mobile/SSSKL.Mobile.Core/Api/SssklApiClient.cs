@@ -33,11 +33,16 @@ public sealed class SssklApiClient(HttpClient httpClient) : ISssklApi
     public async Task<GlobalSetting?> GetGlobalSettingAsync(string key, CancellationToken cancellationToken = default)
     {
         using var response = await httpClient.GetAsync($"api/v1/GlobalSettings/{Uri.EscapeDataString(key)}", cancellationToken);
-        if (response.StatusCode == HttpStatusCode.NotFound)
+        // An unset setting is 204 No Content (GlobalSettingsController.GetSetting); 404 is treated the same.
+        if (response.StatusCode is HttpStatusCode.NoContent or HttpStatusCode.NotFound)
         {
             return null;
         }
         await EnsureSuccessAsync(response, cancellationToken);
+        if (response.Content.Headers.ContentLength == 0)
+        {
+            return null;
+        }
         return await response.Content.ReadFromJsonAsync(ApiJsonContext.Default.GlobalSetting, cancellationToken);
     }
 

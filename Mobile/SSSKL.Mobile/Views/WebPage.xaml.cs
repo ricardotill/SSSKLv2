@@ -22,8 +22,7 @@ public partial class WebPage : ContentPage
         _navigator = navigator;
         _policy = policy;
         _endpoints = endpoints;
-        navigator.Attach(this);
-        NavigateTo(StartPath);
+        NavigateTo(navigator.Attach(this));
     }
 
     public void NavigateTo(string path)

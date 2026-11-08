@@ -83,7 +83,7 @@ It is in `SSSKL.slnx` (folder `/mobile/`), and also has its own solution `Mobile
 
 **Projects**
 - **`SSSKL.Mobile.Core`** (net11.0, no MAUI): the API client (`Api/SssklApiClient`, client-side DTO copies in `Models/`), auth, popup coordinators, view models (CommunityToolkit.Mvvm), Dutch strings (`Localization/Texts`) and the WebView rules (`Web/`).
-  - **`Auth/AuthSession`** holds the bearer tokens and refreshes them, one refresh at a time.
+  - **`Auth/AuthSession`** holds the bearer tokens and refreshes them, one refresh at a time. Sign-in and sign-out bump a session generation; a refresh that finishes after the session changed is discarded (no store write, no `TokensChanged`).
   - **`Auth/AuthTokenHandler`** adds the bearer header and retries once after a refresh on a 401.
 - **`SSSKL.Mobile`** (net11.0-android/net11.0-ios): XAML pages, Shell and the platform code (`Platforms/*/WebViewPlatform.*.cs`).
 - **`SSSKL.Mobile.Test`**: MSTest tests for Core.
@@ -101,6 +101,7 @@ It is in `SSSKL.slnx` (folder `/mobile/`), and also has its own solution `Mobile
 - Detected by `window.SSSKL_APP` or the `SSSKLApp/` user-agent token.
 - In embedded mode the SPA skips its achievement and what's-new modals, the push prompt and the service worker.
 - It hands `/pos` (`core/auth/native-route.guard.ts`) and logout over to the app by navigating to `ssskl-app://<action>`. `Web/WebNavigationPolicy` intercepts these navigations.
+- The SPA only hands logout to the app when the user signs out or the refresh token is rejected (400/401). Other refresh failures (offline, 5xx) don't sign out in embedded mode (`auth.interceptor.ts`).
 - `GET achievement/entries/unseen` marks the entries as seen. Only the app's `AchievementPopupCoordinator` may call it in embedded mode.
 
 **Commands**
@@ -144,7 +145,7 @@ Sentry org `ricardo-tillemans` (EU region). One project per app: `ssskl-api`, `s
 **Readable stack traces**
 - Uploads only run when `SENTRY_AUTH_TOKEN` is set. It's a repository secret holding a Sentry organization auth token.
 - **API:** the Release `dotnet publish` in `master_sssklv2-app.yml` uploads PDBs and sources. The settings are in `SSSKL.Web.csproj`.
-- **SPA:** production builds emit hidden source maps. `postbuild` (`Frontend/sentry-sourcemaps.js`) injects Debug IDs, uploads the maps, then deletes all `.map` files so they're never deployed.
+- **SPA:** production builds emit hidden source maps. `postbuild` (`Frontend/sentry-sourcemaps.js`) injects Debug IDs, uploads the maps, then deletes all `.map` files so they're never deployed. Injecting changes JS files, so it rehashes `ngsw.json` afterwards (otherwise service-worker updates never install). A Sentry failure only prints a `::warning::`; the build still succeeds.
 - **Mobile app:** `SSSKL.Mobile.csproj` uploads symbols in Release builds that have the token set. CI doesn't pass the token, because CI builds aren't shipped.
 
 ## Versioning & deployment

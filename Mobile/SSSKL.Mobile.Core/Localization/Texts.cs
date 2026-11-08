@@ -47,6 +47,12 @@ public static class Texts
     public static string Settings => "Instellingen";
     public static string Stats => "Statistieken";
     public static string MyOrders => "Mijn bestellingen";
+    public static string Login => "Inloggen";
+    public static string Retry => "Opnieuw proberen";
+    public static string Logo => "SSSKL-logo";
+    public static string MadeWithLoveBy => "Made with ❤️ by";
+    public static string Author => "Ricardo Tillemans";
+    public static string OpenAuthorWebsite => "Website van Ricardo Tillemans openen";
     public static string Logout => "Uitloggen";
     public static string ConfirmLogout => "Weet je zeker dat je wilt uitloggen?";
 

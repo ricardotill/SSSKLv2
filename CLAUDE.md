@@ -89,11 +89,13 @@ It is in `SSSKL.slnx` (folder `/mobile/`), and also has its own solution `Mobile
 - **`SSSKL.Mobile.Test`**: MSTest tests for Core.
 
 **Native vs. web**
-- Native screens: Kassa (POS), Profiel, and the achievement and "what's new" popups.
-- The "Meer" tab, and login, show the SPA in a WebView.
+- Native screens: the welcome page (signed out), Kassa (POS), Profiel, and the achievement and "what's new" popups.
+- The "Meer" tab, and the login sheet, show the SPA in a WebView.
 
 **Login**
-- Login uses the SPA's own `/login` page, so Turnstile, 2FA and passkeys keep working.
+- Signed out (also after sign-out, session expiry and the SPA's `ssskl-app://logout`), the window root is the native `Views/WelcomePage` (logo, version, "Inloggen").
+- "Inloggen" opens `Views/LoginPage` as a modal sheet (page sheet on iOS, swipe-down closes it; close button and Android back close it too). A new `LoginPage` is resolved per tap.
+- The sheet uses the SPA's own `/login` page, so Turnstile, 2FA and passkeys keep working. When it has the tokens it dismisses itself and `AppNavigator.CompleteSignInAsync` switches the root to the `AppShell`.
 - After login the app reads `access_token`/`refresh_token` from the WebView's storage and keeps them in SecureStorage.
 - The app then injects them into every SPA page with a document-start script (`Web/WebSessionScript`). That script also sets `window.SSSKL_APP`.
 

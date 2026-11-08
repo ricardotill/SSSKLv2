@@ -27,6 +27,7 @@ public sealed class AppNavigator(
     private WebPage? _webPage;
     private string? _pendingWebPath;
     private bool _started;
+    private bool _signingIn;
 
     /// <summary>
     /// The "Meer" tab registers itself when the shell creates it (a new one per shell, so per session) and
@@ -65,11 +66,23 @@ public sealed class AppNavigator(
         }
     }
 
-    /// <summary>Called by the login page with the tokens the SPA obtained.</summary>
+    /// <summary>Called by the login sheet (after dismissing itself) with the tokens the SPA obtained.</summary>
     public async Task CompleteSignInAsync(TokenSet tokens)
     {
-        await session.SignInAsync(tokens);
-        ShowMain();
+        if (_signingIn)
+        {
+            return;
+        }
+        _signingIn = true;
+        try
+        {
+            await session.SignInAsync(tokens);
+            ShowMain();
+        }
+        finally
+        {
+            _signingIn = false;
+        }
     }
 
     public async Task SignOutAsync()
@@ -108,7 +121,8 @@ public sealed class AppNavigator(
         ShowLogin();
     }
 
-    private void ShowLogin() => SetRoot(services.GetRequiredService<LoginPage>());
+    /// <summary>Signed out: the welcome page, which opens the SPA login as a sheet.</summary>
+    private void ShowLogin() => SetRoot(services.GetRequiredService<WelcomePage>());
 
     private void DetachWebPage()
     {

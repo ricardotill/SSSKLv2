@@ -83,6 +83,7 @@ public static class MauiProgram
         // Transient: every AppShell (one per sign-in) creates a fresh "Meer" tab that attaches itself, so no
         // SPA state of a previous user survives.
         services.AddTransient<WebPage>();
+        services.AddTransient<WelcomePage>();
         services.AddTransient<LoginPage>();
         services.AddTransient<AppShell>();
 

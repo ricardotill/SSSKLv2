@@ -13,7 +13,9 @@ For local development, you need to have a valid SixLabors license file in the re
    ```
    SSSKLv2/
    ├── sixlabors.lic  ← License file goes here
-   ├── SSSKL.Web/
+   ├── Backend/
+   ├── Frontend/
+   ├── Mobile/
    ├── .github/
    └── ...
    ```
@@ -33,6 +35,14 @@ The GitHub Actions workflow (`dotnet.yml`) automatically handles license setup:
 1. The workflow expects a `SixLaborsLicense` secret containing the **base64-encoded** license file
 2. During the build, it decodes the secret and saves it as `./sixlabors.lic` in the repository root
 3. The build then proceeds with the license available
+
+The Docker image of the API (`Backend/Dockerfile`) gets the license as a BuildKit secret, so it never ends up in an image layer:
+
+```bash
+docker buildx build -f Backend/Dockerfile --secret id=sixlabors_lic,src=sixlabors.lic .
+```
+
+CI (`dotnet.yml`, job "Docker image") passes the same `SixLaborsLicense` secret that way. See [docker.md](docker.md).
 
 ### To set up the GitHub secret:
 

@@ -17,7 +17,7 @@ var backend = builder.AddProject<Projects.SSSKL_Web>("ssskl")
     .WaitFor(db)
     .WaitFor(blobs);
 
-builder.AddNpmApp("frontend", "../Frontend")
+builder.AddNpmApp("frontend", "../../Frontend")
     .WithReference(backend)
     .WaitFor(backend)
     .WithHttpsEndpoint(port: 4200, env: "PORT")

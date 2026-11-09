@@ -2,7 +2,7 @@
 
 The backend uses MediatR 14 for its commands, queries and domain events. Since version 13, MediatR is commercial software from Lucky Penny Software. Organizations with less than $5M annual gross revenue can use the free **Community** license. Scouting Wilo qualifies, but MediatR still needs the license key to know that.
 
-The key is read at startup from the configuration value `MediatR:LicenseKey` (see `SSSKL.Application/DependencyInjection.cs`). If the key is missing or invalid, MediatR still works but logs a license warning. A missing key never breaks the build, the tests or the app.
+The key is read at startup from the configuration value `MediatR:LicenseKey` (see `Backend/SSSKL.Application/DependencyInjection.cs`). If the key is missing or invalid, MediatR still works but logs a license warning. A missing key never breaks the build, the tests or the app.
 
 ## Get a license key
 

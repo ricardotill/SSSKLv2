@@ -1,11 +1,27 @@
+# Tests and builds the SPA on every push to master, version tag and pull request, and runs the Playwright E2E
+# suite against the real API. On master and on version tags it then pushes the web app's Docker image
+# (the SPA served by Caddy, linux/amd64 and linux/arm64) to ghcr.io/ricardotill/ssskl-frontend; a pull request
+# only checks that the image builds. Image tags: see dotnet.yml. See docs/docker.md.
 name: Frontend CI
 
 on:
   push:
     branches: [ "master" ]
+    tags: [ "v*" ]
   pull_request:
     types: [opened, synchronize, reopened]
   workflow_dispatch:
+
+concurrency:
+  group: frontend-ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+env:
+  # The registry wants a lower-case name
+  IMAGE: ghcr.io/ricardotill/ssskl-frontend
 
 jobs:
   build-and-test:
@@ -24,7 +40,7 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v7
       with:
-        node-version: '22'
+        node-version: '26'
         cache: 'npm'
         cache-dependency-path: Frontend/package-lock.json
 
@@ -38,8 +54,8 @@ jobs:
       run: npm run build
 
     - name: SonarQube Scan
-      # Dependabot PRs get no SONAR_TOKEN.
-      if: github.event.pull_request.user.login != 'dependabot[bot]'
+      # Dependabot PRs get no SONAR_TOKEN. Tags are the master commit, already analyzed.
+      if: github.event.pull_request.user.login != 'dependabot[bot]' && !startsWith(github.ref, 'refs/tags/')
       uses: sonarsource/sonarqube-scan-action@e805d875275f728fac1885b413934be6d7c63f65 # v8.4.1
       env:
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -80,12 +96,12 @@ jobs:
 
     - name: Build API
       working-directory: .
-      run: dotnet build SSSKL.Web/SSSKL.Web.csproj -c Release
+      run: dotnet build Backend/SSSKL.Web/SSSKL.Web.csproj -c Release
 
     - name: Setup Node.js
       uses: actions/setup-node@v7
       with:
-        node-version: '22'
+        node-version: '26'
         cache: 'npm'
         cache-dependency-path: Frontend/package-lock.json
 
@@ -122,3 +138,73 @@ jobs:
           Frontend/playwright-report
           Frontend/test-results
         retention-days: 7
+
+  version:
+    name: Version
+    uses: ./.github/workflows/version.yml
+
+  image:
+    name: Docker image
+    needs: [build-and-test, e2e, version]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051 # v5.10.0
+        id: meta
+        with:
+          images: ${{ env.IMAGE }}
+          tags: |
+            type=ref,event=branch,enable={{is_default_branch}}
+            type=sha,enable=${{ github.ref == 'refs/heads/master' }}
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}},enable=${{ needs.version.outputs.stable == 'true' }}
+            type=raw,value=latest,enable=${{ needs.version.outputs.stable == 'true' }}
+          labels: |
+            org.opencontainers.image.title=SSSKL web app
+
+      # The Angular build runs once on the runner's platform; only the Caddy stage is per architecture
+      - uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3.7.0
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
+        if: github.event_name != 'pull_request'
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
+        id: build
+        with:
+          context: .
+          file: Frontend/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          # A pull request only checks that the image builds
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: VERSION=${{ needs.version.outputs.version }}
+          # Without them the build still works: PrimeUI shows its license banner, no source maps go to Sentry
+          secrets: |
+            primeui_license_key=${{ secrets.PRIMEUI_LICENSE_KEY }}
+            sentry_auth_token=${{ github.event_name != 'pull_request' && secrets.SENTRY_AUTH_TOKEN || '' }}
+          cache-from: type=gha,scope=ssskl-frontend
+          cache-to: type=gha,mode=max,scope=ssskl-frontend
+          provenance: true
+          sbom: true
+
+      - uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be # v2.4.0
+        if: github.event_name != 'pull_request'
+        with:
+          subject-name: ${{ env.IMAGE }}
+          subject-digest: ${{ steps.build.outputs.digest }}
+          push-to-registry: true

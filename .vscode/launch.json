@@ -10,9 +10,9 @@
             "request": "launch",
             "preLaunchTask": "build",
             // If you have changed target frameworks, make sure to update the program path.
-            "program": "${workspaceFolder}/SSSKLv2.AppHost/bin/Debug/net10.0/SSSKLv2.AppHost.dll",
+            "program": "${workspaceFolder}/Backend/SSSKL.AppHost/bin/Debug/net11.0/SSSKL.AppHost.dll",
             "args": [],
-            "cwd": "${workspaceFolder}/SSSKLv2.AppHost",
+            "cwd": "${workspaceFolder}/Backend/SSSKL.AppHost",
             // For more information about the 'console' field, see https://aka.ms/VSCode-CS-LaunchJson-Console
             "console": "internalConsole",
             "stopAtEntry": false

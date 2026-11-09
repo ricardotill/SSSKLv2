@@ -2,7 +2,8 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject, signal } from '@angular/core';
 import { Observable, catchError, of, tap } from 'rxjs';
 
-export const CURRENT_APP_VERSION = '3.8.5';
+// Version of this build: the release tag (v1.2.3 → 1.2.3), injected by ng-env.js from APP_VERSION.
+export const CURRENT_APP_VERSION = typeof APP_VERSION !== 'undefined' ? APP_VERSION : '0.0.0';
 
 export interface AppVersionResponse {
   version: string;

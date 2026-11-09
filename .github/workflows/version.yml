@@ -1,0 +1,58 @@
+# The app version of a CI run, shared by every workflow that builds or deploys (like DU_Review's "App version").
+# The release tag is the only place the version is set: Directory.Build.props and Frontend/package.json stay 0.0.0.
+#
+#   tag v1.4.0 on master   version=1.4.0             stable=true   → Azure deploys, Docker `latest`
+#   tag v1.4.0-rc.1        version=1.4.0-rc.1        stable=false  → Docker image 1.4.0-rc.1 only
+#   tag not on master      the job fails, so nothing is built or deployed
+#   anything else          version=0.0.0-ci.<commit> stable=false
+#
+# Release: git tag v1.4.0 && git push origin v1.4.0
+name: Version
+
+on:
+  workflow_call:
+    outputs:
+      version:
+        description: "App version: 1.4.0 for tag v1.4.0, otherwise 0.0.0-ci.<short commit>"
+        value: ${{ jobs.version.outputs.version }}
+      stable:
+        description: "'true' only for a vX.Y.Z tag on master"
+        value: ${{ jobs.version.outputs.stable }}
+
+permissions:
+  contents: read
+
+jobs:
+  version:
+    name: App version
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      version: ${{ steps.version.outputs.value }}
+      stable: ${{ steps.version.outputs.stable }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          # Full history, to check that a release tag points at a commit on master
+          fetch-depth: 0
+
+      - name: App version
+        id: version
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/master; then
+              echo "::error::Tag $GITHUB_REF_NAME points at a commit that is not on master"
+              exit 1
+            fi
+            echo "value=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+            if [[ "$GITHUB_REF_NAME" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+              echo "stable=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "stable=false" >> "$GITHUB_OUTPUT"
+            fi
+          else
+            echo "value=0.0.0-ci.${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+            echo "stable=false" >> "$GITHUB_OUTPUT"
+          fi
+          echo "App version: $(grep '^value=' "$GITHUB_OUTPUT" | cut -d= -f2)"

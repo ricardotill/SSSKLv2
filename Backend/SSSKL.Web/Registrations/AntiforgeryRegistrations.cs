@@ -51,7 +51,7 @@ public static class AntiforgeryRegistrations
                     new CookieOptions // NOSONAR (S3330)
                     {
                         HttpOnly = false,
-                        Secure = secureCookie,
+                        Secure = secureCookie || context.Request.IsHttps,
                         SameSite = SameSiteMode.Lax
                     });
             }

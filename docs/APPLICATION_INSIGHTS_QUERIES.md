@@ -4,7 +4,7 @@ Useful KQL queries for the SSSKL backend in Application Insights. Run them in th
 
 ## Where the data comes from
 
-The backend sends telemetry through OpenTelemetry and the Azure Monitor exporter (`UseAzureMonitor()` in `SSSKL.ServiceDefaults/Extensions.cs`). This only happens when `APPLICATIONINSIGHTS_CONNECTION_STRING` is set.
+The backend sends telemetry through OpenTelemetry and the Azure Monitor exporter (`UseAzureMonitor()` in `Backend/SSSKL.ServiceDefaults/Extensions.cs`). This only happens when `APPLICATIONINSIGHTS_CONNECTION_STRING` is set.
 
 | Table | Contents |
 |---|---|
@@ -12,7 +12,7 @@ The backend sends telemetry through OpenTelemetry and the Azure Monitor exporter
 | `dependencies` | SQL, blob storage and outgoing HTTP calls (web push, Turnstile), plus the internal spans `OrderCsvExportJob` and `StatsRecalculationJob`. |
 | `exceptions` | Exceptions recorded on requests and logs. |
 | `traces` | `ILogger` logs. Structured log parameters (e.g. `{JobId}`) are in `customDimensions`. |
-| `customMetrics` | Runtime metrics and the business metrics from `SSSKL.Contracts/Telemetry/SssklTelemetry.cs`. |
+| `customMetrics` | Runtime metrics and the business metrics from `Backend/SSSKL.Contracts/Telemetry/SssklTelemetry.cs`. |
 
 Business metrics (meter `SSSKL`):
 

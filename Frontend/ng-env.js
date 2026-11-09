@@ -16,8 +16,10 @@ if (licenseKey) {
   console.warn('PRIMEUI_LICENSE_KEY not set; PrimeUI will show its license banner.');
 }
 
-// Sentry release name; must match the release the source maps are uploaded for (sentry-sourcemaps.js).
-const { sentryRelease } = require('./sentry-release');
+// App version (the release tag, see sentry-release.js) and the Sentry release name; the release must match
+// the one the source maps are uploaded for (sentry-sourcemaps.js).
+const { appVersion, sentryRelease } = require('./sentry-release');
+args.push(`--define=APP_VERSION=${JSON.stringify(appVersion)}`);
 args.push(`--define=SENTRY_RELEASE=${JSON.stringify(sentryRelease)}`);
 
 const ng = spawn(process.execPath, [require.resolve('@angular/cli/bin/ng.js'), ...args], { stdio: 'inherit' });

@@ -27,3 +27,16 @@ updates:
     directory: /
     schedule:
       interval: monthly
+  # Base images of Backend/Dockerfile and Frontend/Dockerfile
+  - package-ecosystem: docker
+    directories: ["/Backend", "/Frontend"]
+    schedule:
+      interval: weekly
+    groups:
+      docker:
+        patterns: ["*"]
+  # Images in docker-compose.yml and docker-compose.external.yml
+  - package-ecosystem: docker-compose
+    directory: /
+    schedule:
+      interval: monthly

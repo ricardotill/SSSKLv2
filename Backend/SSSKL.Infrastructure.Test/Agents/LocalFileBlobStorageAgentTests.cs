@@ -31,7 +31,7 @@ public class LocalFileBlobStorageAgentTests
     private LocalFileBlobStorageAgent CreateAgent(string? blobRoot)
     {
         var settings = new Dictionary<string, string?>();
-        if (blobRoot != null) settings["E2E:BlobRoot"] = blobRoot;
+        if (blobRoot != null) settings["Storage:LocalRoot"] = blobRoot;
         var configuration = new ConfigurationBuilder().AddInMemoryCollection(settings).Build();
         var environment = Substitute.For<IHostEnvironment>();
         environment.ContentRootPath.Returns(_contentRoot);
@@ -51,7 +51,7 @@ public class LocalFileBlobStorageAgentTests
     {
         CreateAgent(blobRoot: null);
 
-        Directory.Exists(Path.Combine(_contentRoot, "e2e-blobs")).Should().BeTrue();
+        Directory.Exists(Path.Combine(_contentRoot, "blobs")).Should().BeTrue();
     }
 
     [TestMethod]

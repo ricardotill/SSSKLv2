@@ -1,16 +1,72 @@
-version: '3'
+# SSSKL with Docker: the whole stack on one machine (SQL Server, the API and the web app; uploads in a volume).
+# Fill in .env first (copy .env.example), then: docker compose pull && docker compose up -d
+# The app is on http://localhost:${PORT:-8080}. See docs/docker.md.
+# Database and blob storage elsewhere (Azure SQL, Azure Storage)? Use docker-compose.external.yml instead.
+# This file mounts nothing from the repository, so it also works as a Portainer stack.
 
 services:
-  sql_server:
+  sqlserver:
     image: mcr.microsoft.com/mssql/server:2022-latest
-    user: root
+    restart: unless-stopped
     environment:
-      - ACCEPT_EULA=Y
-      - SA_PASSWORD=Password123
-    ports:
-      - "1433:1433"
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: ${SQL_SA_PASSWORD:?Set SQL_SA_PASSWORD in .env}
+      MSSQL_PID: Express
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -C -Q 'SELECT 1' -b -o /dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
     volumes:
-      - sql-server:/var/opt/mssql/data
+      - sql-data:/var/opt/mssql
+
+  api:
+    # The image CI builds and pushes (see .github/workflows/dotnet.yml); APP_VERSION in .env pins a release.
+    image: ghcr.io/ricardotill/ssskl-api:${APP_VERSION:-latest}
+    restart: unless-stopped
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    environment:
+      # The database is created and migrated on startup
+      ConnectionStrings__db: Server=sqlserver;Database=ssskl;User Id=sa;Password=${SQL_SA_PASSWORD};TrustServerCertificate=True
+      # Uploaded images as plain files in the api-data volume (/data/blobs); the API streams them to the browser
+      Storage__Provider: LocalFile
+      # The host name visitors use (passkeys, CORS), e.g. ssskl.example.nl
+      WEBSITE_DOMAIN: ${WEBSITE_DOMAIN:-localhost}
+      # Only to try it out on plain http://localhost; behind HTTPS leave it off (Secure-only cookies)
+      Hosting__AllowHttp: ${ALLOW_HTTP:-false}
+      Turnstile__AllowedHostnames__0: ${WEBSITE_DOMAIN:-localhost}
+      VapidDetails__PublicKey: ${VAPID_PUBLIC_KEY:-}
+      VapidDetails__PrivateKey: ${VAPID_PRIVATE_KEY:-}
+      MediatR__LicenseKey: ${MEDIATR_LICENSE_KEY:-}
+      Sentry__Environment: ${SENTRY_ENVIRONMENT:-production}
+    # Data protection keys (logins survive a restart) and the uploaded files: back this volume up
+    volumes:
+      - api-data:/data
+
+  # The entrance: serves the web app and passes /api and /hubs on to the API
+  frontend:
+    image: ghcr.io/ricardotill/ssskl-frontend:${APP_VERSION:-latest}
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "${PORT:-8080}:8080"
+
+  # Optional HTTPS address via a Cloudflare Tunnel: set CLOUDFLARE_TUNNEL_TOKEN in .env, then
+  # docker compose --profile tunnel up -d. In Cloudflare the public hostname points to http://frontend:8080.
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    profiles: ["tunnel"]
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:-}
+    depends_on:
+      - frontend
 
 volumes:
-  sql-server:
+  sql-data:
+  api-data:

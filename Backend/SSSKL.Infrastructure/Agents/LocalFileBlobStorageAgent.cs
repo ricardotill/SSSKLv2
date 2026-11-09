@@ -5,16 +5,21 @@ using SSSKL.Domain.Entities;
 namespace SSSKL.Infrastructure.Agents;
 
 /// <summary>
-/// Stores blobs on the local disk. Only registered in the E2E environment, which has no Azure Storage.
-/// The root folder comes from <c>E2E:BlobRoot</c> (relative paths resolve against the content root).
+/// Stores blobs on the local disk, for <c>Storage:Provider=LocalFile</c> (see <see cref="BlobStorageProvider"/>):
+/// the Docker image (a volume at /data/blobs) and the E2E environment.
+/// The root folder comes from <c>Storage:LocalRoot</c> (relative paths resolve against the content root).
 /// </summary>
 public sealed class LocalFileBlobStorageAgent : IBlobStorageAgent
 {
+    public const string LocalRootConfigurationKey = "Storage:LocalRoot";
+    public const string DefaultLocalRoot = "blobs";
+
     private readonly string _root;
 
     public LocalFileBlobStorageAgent(IConfiguration configuration, IHostEnvironment environment)
     {
-        var configured = configuration["E2E:BlobRoot"] ?? "e2e-blobs";
+        var configured = configuration[LocalRootConfigurationKey];
+        if (string.IsNullOrWhiteSpace(configured)) configured = DefaultLocalRoot;
         _root = Path.GetFullPath(Path.Combine(environment.ContentRootPath, configured));
         Directory.CreateDirectory(_root);
     }

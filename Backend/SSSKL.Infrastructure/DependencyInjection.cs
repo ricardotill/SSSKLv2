@@ -20,12 +20,18 @@ public static class InfrastructureServiceCollectionExtensions
     public static IHostApplicationBuilder AddInfrastructure(this IHostApplicationBuilder builder)
     {
         builder.AddPersistence();
-        builder.AddBlobStorage();
 
-        if (builder.Environment.IsE2E())
+        // Storage:Provider picks the store for uploaded files (see BlobStorageProvider). Local files need no
+        // Azure client, so the Azure settings in appsettings.json (Storage:ServiceUri) are then ignored.
+        if (BlobStorageProvider.UsesLocalFiles(builder.Configuration, builder.Environment))
+        {
             builder.Services.AddSingleton<IBlobStorageAgent, LocalFileBlobStorageAgent>();
+        }
         else
+        {
+            builder.AddBlobStorage();
             builder.Services.AddSingleton<IBlobStorageAgent, BlobStorageAgent>();
+        }
 
         builder.Services
             .AddRepositories()

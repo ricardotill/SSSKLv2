@@ -1,4 +1,5 @@
 using System.Globalization;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Azure.SignalR;
 using Microsoft.OpenApi;
@@ -35,7 +36,10 @@ if (!builder.Environment.IsTestLike())
 // Treat the test environments (IntegrationTest, E2E) like Development for dev-friendly behaviors such as
 // SameAsRequest cookies, so antiforgery and cookie code paths don't require SSL under TestServer or plain HTTP.
 var isIntegrationLikeEnvironment = builder.Environment.IsDevelopment() || builder.Environment.IsTestLike();
-var cookieSecurePolicy = isIntegrationLikeEnvironment ? CookieSecurePolicy.SameAsRequest : CookieSecurePolicy.Always;
+// Hosting:AllowHttp (opt-in, the Docker compose files' ALLOW_HTTP) lets a container be tried on plain http://localhost:
+// cookies are then Secure only when the request is HTTPS (directly or via X-Forwarded-Proto from the proxy).
+var allowHttpCookies = isIntegrationLikeEnvironment || builder.Configuration.GetValue("Hosting:AllowHttp", false);
+var cookieSecurePolicy = allowHttpCookies ? CookieSecurePolicy.SameAsRequest : CookieSecurePolicy.Always;
 var websiteDomain = builder.Configuration["WEBSITE_DOMAIN"] ?? (builder.Environment.IsDevelopment() ? "localhost" : "ssskl.scoutingwilo.nl");
 
 if (builder.Environment.IsDevelopment())
@@ -80,7 +84,10 @@ builder.AddInfrastructure();
 builder.Services.AddMemoryCache();
 builder.Services.AddApplication(builder.Configuration);
 
-if (builder.Environment.IsProduction())
+// App Service uses Azure SignalR (Azure:SignalR:Enabled is true in appsettings.json); the Docker image sets
+// Azure__SignalR__Enabled=false and serves the hub itself.
+var useAzureSignalR = builder.Environment.IsProduction() && builder.Configuration.GetValue("Azure:SignalR:Enabled", true);
+if (useAzureSignalR)
 {
     // Registration doesn't connect; the Azure SignalR SDK reconnects to the service on its own.
     builder.Services.AddSignalR().AddAzureSignalR(options =>
@@ -88,9 +95,19 @@ if (builder.Environment.IsProduction())
         options.ServerStickyMode = ServerStickyMode.Required;
     });
 }
-else if (isIntegrationLikeEnvironment)
+else if (builder.Environment.IsProduction() || isIntegrationLikeEnvironment)
 {
     builder.Services.AddSignalR();
+}
+
+// Containers lose ~/.aspnet/DataProtection-Keys on every restart, which signs everyone out. The Docker image
+// keeps the keys in a volume (DataProtection__KeysPath=/data/keys); App Service persists them by itself.
+var dataProtectionKeysPath = builder.Configuration["DataProtection:KeysPath"];
+if (!string.IsNullOrWhiteSpace(dataProtectionKeysPath))
+{
+    builder.Services.AddDataProtection()
+        .SetApplicationName("SSSKL")
+        .PersistKeysToFileSystem(new DirectoryInfo(dataProtectionKeysPath));
 }
 
 builder.Services
@@ -122,7 +139,7 @@ else
 app.UseHttpsRedirection();
 // Apply cookie policy before authentication so cookie flags are enforced.
 app.UseCookiePolicy();
-app.UseXsrfTokenCookie(secureCookie: !isIntegrationLikeEnvironment);
+app.UseXsrfTokenCookie(secureCookie: !allowHttpCookies);
 app.UseCors(CorsRegistrations.FrontendPolicy);
 app.UseRateLimiter();
 app.UseAuthentication();

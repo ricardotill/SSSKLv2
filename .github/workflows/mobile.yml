@@ -1,12 +1,10 @@
 name: Mobile CI
 
+# The mobile app is still in development, so this workflow doesn't run on pushes or pull requests yet:
+# start it by hand (Actions → Mobile CI → Run workflow). To turn it on, restore the triggers:
+#   push: { branches: [ "master" ], paths: [ "Mobile/**", "Directory.Packages.props", "Directory.Build.props", ".github/workflows/mobile.yml" ] }
+#   pull_request: { types: [opened, synchronize, reopened], paths: (same) }
 on:
-  push:
-    branches: [ "master" ]
-    paths: [ "Mobile/**", "Directory.Packages.props", "Directory.Build.props", ".github/workflows/mobile.yml" ]
-  pull_request:
-    types: [opened, synchronize, reopened]
-    paths: [ "Mobile/**", "Directory.Packages.props", "Directory.Build.props", ".github/workflows/mobile.yml" ]
   workflow_dispatch:
 
 env:

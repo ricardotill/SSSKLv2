@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-SSSKL is a POS / club management system for Scouting Wilo: a .NET 11 ASP.NET Core API in `Backend/` (onion architecture across `SSSKL.Domain`, `SSSKL.Contracts`, `SSSKL.Application`, `SSSKL.Infrastructure` and `SSSKL.Web`) plus an Angular 22 SPA (`Frontend/`) and a .NET MAUI mobile app (`Mobile/`, see below), orchestrated locally with .NET Aspire (`Backend/SSSKL.AppHost/`). Backend project paths below are relative to `Backend/` unless they start with `Backend/`. Docs live in `docs/` (Docker and releases in `docs/docker.md`). The solution file `SSSKL.slnx`, `Directory.Build.props`, `Directory.Packages.props` and `.config/` stay at the repo root because Backend and Mobile share them. Package versions are centrally managed in `Directory.Packages.props` (add `<PackageReference>` without a version in csproj files); shared MSBuild properties (version, SixLabors license path) live in `Directory.Build.props`.
+SSSKL is a POS / club management system for Scouting Wilo: a .NET 11 ASP.NET Core API in `Backend/` (onion architecture across `SSSKL.Domain`, `SSSKL.Contracts`, `SSSKL.Application`, `SSSKL.Infrastructure` and `SSSKL.Web`) plus an Angular 22 SPA (`Frontend/`) and a .NET MAUI mobile app (`Mobile/`, see below), orchestrated locally with .NET Aspire (`Backend/SSSKL.AppHost/`). Backend project paths below are relative to `Backend/` unless they start with `Backend/`. Docs live in `docs/` (Docker and releases in `docs/docker.md`). The backend solution `SSSKL.slnx` sits at the repo root (Mobile isn't in it), next to `Directory.Build.props`, `Directory.Packages.props` and `.config/`, which Backend and Mobile share. Package versions are centrally managed in `Directory.Packages.props` (add `<PackageReference>` without a version in csproj files); shared MSBuild properties (version, SixLabors license path) live in `Directory.Build.props`.
 
 ## Commands
 
@@ -79,7 +79,7 @@ Follow `Frontend/AGENTS.md` for Angular code. Key rules: standalone components (
 
 .NET MAUI app for iOS and Android. It talks to the same API.
 
-It is in `SSSKL.slnx` (folder `/mobile/`), and also has its own solution `Mobile/SSSKL.Mobile.slnx`. Core and Test build and test with the rest of the solution. The MAUI app project is marked `<Build Project="false" />` in `SSSKL.slnx`, so `dotnet restore/build SSSKL.slnx` and backend CI skip it and don't need the MAUI workload. Build it explicitly with `-f net11.0-android|net11.0-ios`.
+It is still in development, so it is kept out of CI and deploys: it is not in `SSSKL.slnx` (backend CI, Sonar and the App Service deploy don't build or test it) and has its own solution `Mobile/SSSKL.Mobile.slnx`. Build the MAUI app explicitly with `-f net11.0-android|net11.0-ios`.
 
 **Projects**
 - **`SSSKL.Mobile.Core`** (net11.0, no MAUI): the API client (`Api/SssklApiClient`, client-side DTO copies in `Models/`), auth, popup coordinators, view models (CommunityToolkit.Mvvm), Dutch strings (`Localization/Texts`) and the WebView rules (`Web/`).
@@ -126,7 +126,7 @@ Release builds default to `https://ssskl.scoutingwilo.nl`.
   - compiled bindings with `x:DataType`
   - JSON only through the source-generated `ApiJsonContext` in Core; add new DTO types there
 - `SSSKL.Mobile.Core` has `IsAotCompatible` set, so the analyzers flag reflection use.
-- The only expected trim warning is IL2104 from CommunityToolkit.Maui. CI is `.github/workflows/mobile.yml`: Core tests and an Android build, plus an unsigned iOS simulator build.
+- The only expected trim warning is IL2104 from CommunityToolkit.Maui. CI is `.github/workflows/mobile.yml` (Core tests and an Android build, plus an unsigned iOS simulator build). For now it only runs by hand (`workflow_dispatch`); the comment in the file shows the push/PR triggers to restore once the app is ready.
 
 ## Error monitoring (Sentry)
 

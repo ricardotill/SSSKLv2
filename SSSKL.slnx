@@ -1,4 +1,6 @@
 <Solution>
+  <!-- Backend only. The mobile app (still in development) has its own solution, Mobile/SSSKL.Mobile.slnx,
+       so `dotnet build/test SSSKL.slnx` and the backend CI and deploys don't build or test it. -->
   <Configurations>
     <BuildType Name="Debug" />
     <BuildType Name="Release" />
@@ -12,7 +14,6 @@
     <File Path=".github/workflows/dotnet.yml" />
     <File Path=".github/workflows/frontend-ci.yml" />
     <File Path=".github/workflows/master_sssklv2-app.yml" />
-    <File Path=".github/workflows/mobile.yml" />
     <File Path=".github/workflows/version.yml" />
     <File Path=".gitignore" />
     <File Path="Backend/Dockerfile" />
@@ -56,16 +57,6 @@
       <BuildType Solution="DebugProduction|*" Project="Debug" />
     </Project>
   </Folder>
-  <Folder Name="/mobile/">
-    <Project Path="Mobile/SSSKL.Mobile.Core/SSSKL.Mobile.Core.csproj">
-      <BuildType Solution="DebugProduction|*" Project="Debug" />
-    </Project>
-    <!-- Needs the MAUI workload: shown in the IDE, but `dotnet build SSSKL.slnx` (and backend CI) skip it.
-         Build it with `dotnet build Mobile/SSSKL.Mobile -f net11.0-android|net11.0-ios`. -->
-    <Project Path="Mobile/SSSKL.Mobile/SSSKL.Mobile.csproj">
-      <Build Project="false" />
-    </Project>
-  </Folder>
   <Folder Name="/tests/">
     <Project Path="Backend/SSSKL.Application.Test/SSSKL.Application.Test.csproj">
       <BuildType Solution="DebugProduction|*" Project="Debug" />
@@ -74,9 +65,6 @@
       <BuildType Solution="DebugProduction|*" Project="Debug" />
     </Project>
     <Project Path="Backend/SSSKL.Web.Test/SSSKL.Web.Test.csproj">
-      <BuildType Solution="DebugProduction|*" Project="Debug" />
-    </Project>
-    <Project Path="Mobile/SSSKL.Mobile.Test/SSSKL.Mobile.Test.csproj">
       <BuildType Solution="DebugProduction|*" Project="Debug" />
     </Project>
   </Folder>

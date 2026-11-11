@@ -12,7 +12,7 @@ import { NgOptimizedImage } from '@angular/common';
       <p-card class="max-w-2xl w-full bg-surface-50 border border-surface-200 dark:bg-surface-900 dark:border-surface-800">
         <div class="flex flex-col items-center gap-6">
           <img
-            ngSrc="/logo.png"
+            ngSrc="/logo.svg"
             alt="SSSKL Logo"
             width="144"
             height="144"

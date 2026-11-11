@@ -108,7 +108,7 @@ import { AutoScrollDirective } from '../../../shared/directives/auto-scroll.dire
       <div
         class="absolute top-8 left-8 z-30 flex items-center gap-4 glass-panel px-6 py-4 rounded-3xl border-white/10 bg-black/40 shadow-2xl backdrop-blur-md"
       >
-        <img src="/logo.png" alt="Logo" class="w-16 h-16 object-contain drop-shadow-lg" />
+        <img src="/logo.svg" alt="Logo" class="w-16 h-16 object-contain drop-shadow-lg" />
         <div class="flex flex-col">
           <span class="text-3xl font-black tracking-tighter text-white uppercase italic"
             >Stam stam stam...</span

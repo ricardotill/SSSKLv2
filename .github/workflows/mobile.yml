@@ -23,7 +23,6 @@ jobs:
       uses: actions/setup-dotnet@v6
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
-        dotnet-quality: 'preview'
 
     - name: Test (Core, no workload needed)
       run: dotnet test Mobile/SSSKL.Mobile.Test --verbosity normal
@@ -52,7 +51,6 @@ jobs:
       uses: actions/setup-dotnet@v6
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
-        dotnet-quality: 'preview'
 
     - name: Install MAUI iOS workload
       run: dotnet workload install maui-ios

@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+             xmlns:vm="clr-namespace:SSSKL.Mobile.Core.ViewModels;assembly=SSSKL.Mobile.Core"
+             xmlns:loc="clr-namespace:SSSKL.Mobile.Core.Localization;assembly=SSSKL.Mobile.Core"
+             x:Class="SSSKL.Mobile.Views.ProfilePage"
+             x:DataType="vm:ProfileViewModel"
+             Title="{x:Static loc:Texts.TabProfile}">
+    <ContentPage.Resources>
+        <toolkit:IsNotNullConverter x:Key="NotNull" />
+    </ContentPage.Resources>
+
+    <RefreshView IsRefreshing="{Binding IsRefreshing}" Command="{Binding LoadCommand}">
+        <ScrollView>
+            <VerticalStackLayout Padding="16" Spacing="16">
+                <!-- Header -->
+                <VerticalStackLayout Spacing="8" HorizontalOptions="Center">
+                    <Grid WidthRequest="112" HeightRequest="112" HorizontalOptions="Center">
+                        <Border Style="{StaticResource AvatarLarge}">
+                            <Label Text="{Binding Initials}" FontSize="36" FontAttributes="Bold"
+                                   HorizontalOptions="Center" VerticalOptions="Center" />
+                        </Border>
+                        <Border Style="{StaticResource AvatarLarge}" IsVisible="{Binding HasPicture}">
+                            <Image Source="{Binding PictureUrl}" Aspect="AspectFill"
+                                   SemanticProperties.Description="{x:Static loc:Texts.ProfilePicture}" />
+                        </Border>
+                        <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
+                    </Grid>
+                    <Label Text="{Binding DisplayName}" Style="{StaticResource Headline}" HorizontalTextAlignment="Center"
+                           SemanticProperties.HeadingLevel="Level1" />
+                    <Label Text="{Binding UserName}" Style="{StaticResource Muted}" HorizontalTextAlignment="Center" />
+                    <HorizontalStackLayout Spacing="8" HorizontalOptions="Center">
+                        <Button Text="{x:Static loc:Texts.ChangeProfilePicture}" Command="{Binding ChangePictureCommand}"
+                                Style="{StaticResource SecondaryButton}" />
+                        <Button Text="{x:Static loc:Texts.RemoveProfilePicture}" Command="{Binding RemovePictureCommand}"
+                                IsVisible="{Binding HasPicture}" Style="{StaticResource SecondaryButton}" />
+                    </HorizontalStackLayout>
+                </VerticalStackLayout>
+
+                <!-- Saldo + stats -->
+                <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">
+                    <Border Style="{StaticResource Card}">
+                        <VerticalStackLayout>
+                            <Label Text="{x:Static loc:Texts.MySaldo}" Style="{StaticResource Muted}" />
+                            <Label Text="{Binding Saldo}" Style="{StaticResource Stat}">
+                                <Label.Triggers>
+                                    <DataTrigger TargetType="Label" Binding="{Binding IsSaldoNegative}" Value="True">
+                                        <Setter Property="TextColor" Value="{StaticResource Danger}" />
+                                    </DataTrigger>
+                                </Label.Triggers>
+                            </Label>
+                        </VerticalStackLayout>
+                    </Border>
+                    <Border Grid.Column="1" Style="{StaticResource Card}">
+                        <VerticalStackLayout>
+                            <Label Text="{x:Static loc:Texts.TotalOrders}" Style="{StaticResource Muted}" />
+                            <Label Text="{Binding TotalOrders}" Style="{StaticResource Stat}" />
+                        </VerticalStackLayout>
+                    </Border>
+                    <Border Grid.Column="2" Style="{StaticResource Card}">
+                        <VerticalStackLayout>
+                            <Label Text="{x:Static loc:Texts.CurrentStreak}" Style="{StaticResource Muted}" />
+                            <Label Text="{Binding CurrentStreak}" Style="{StaticResource Stat}" />
+                        </VerticalStackLayout>
+                    </Border>
+                </Grid>
+
+                <Border Style="{StaticResource Card}" IsVisible="{Binding DescriptionHtml, Converter={StaticResource NotNull}}">
+                    <Label Text="{Binding DescriptionHtml}" TextType="Html" />
+                </Border>
+
+                <!-- Achievements -->
+                <Label Text="{x:Static loc:Texts.Achievements}" Style="{StaticResource SectionHeader}" SemanticProperties.HeadingLevel="Level2" />
+                <Label Text="{x:Static loc:Texts.NoAchievements}" IsVisible="{Binding HasNoAchievements}" Style="{StaticResource Muted}" />
+                <FlexLayout Wrap="Wrap" BindableLayout.ItemsSource="{Binding Achievements}">
+                    <BindableLayout.ItemTemplate>
+                        <DataTemplate x:DataType="vm:AchievementItem">
+                            <VerticalStackLayout FlexLayout.Basis="33.3%" Padding="4" Spacing="4"
+                                                 SemanticProperties.Description="{Binding Name}">
+                                <Image Source="{Binding ImageUrl}" HeightRequest="64" WidthRequest="64" Aspect="AspectFit" />
+                                <Label Text="{Binding Name}" FontSize="12" HorizontalTextAlignment="Center"
+                                       LineBreakMode="TailTruncation" MaxLines="2" />
+                            </VerticalStackLayout>
+                        </DataTemplate>
+                    </BindableLayout.ItemTemplate>
+                </FlexLayout>
+
+                <!-- More in the web app -->
+                <VerticalStackLayout Spacing="8">
+                    <Button Text="{x:Static loc:Texts.Achievements}" Command="{Binding OpenWebCommand}" CommandParameter="achievements" Style="{StaticResource LinkButton}" />
+                    <Button Text="{x:Static loc:Texts.MyOrders}" Command="{Binding OpenWebCommand}" CommandParameter="orders/personal" Style="{StaticResource LinkButton}" />
+                    <Button Text="{x:Static loc:Texts.Stats}" Command="{Binding OpenWebCommand}" CommandParameter="stats" Style="{StaticResource LinkButton}" />
+                    <Button Text="{x:Static loc:Texts.Settings}" Command="{Binding OpenWebCommand}" CommandParameter="settings" Style="{StaticResource LinkButton}" />
+                    <Button Text="{x:Static loc:Texts.Logout}" Command="{Binding LogoutCommand}" Style="{StaticResource DangerButton}" />
+                </VerticalStackLayout>
+            </VerticalStackLayout>
+        </ScrollView>
+    </RefreshView>
+</ContentPage>

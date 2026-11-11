@@ -1,4 +1,4 @@
-// Users seeded by SSSKL.Web/Registrations/E2ESeeder.cs; keep both files in sync.
+// Users seeded by Backend/SSSKL.Web/Registrations/E2ESeeder.cs; keep both files in sync.
 // playwright.config.ts passes PASSWORD to the API as E2E__UserPassword, which the seeder uses for every user.
 export const PASSWORD = 'E2e-Passw0rd!';
 

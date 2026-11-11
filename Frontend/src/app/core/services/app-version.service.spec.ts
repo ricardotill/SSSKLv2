@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { AppVersionService } from './app-version.service';
+import { AppVersionService, CURRENT_APP_VERSION } from './app-version.service';
 
 describe('AppVersionService', () => {
   let httpMock: HttpTestingController;
@@ -37,6 +37,6 @@ describe('AppVersionService', () => {
     const req = httpMock.expectOne('/api/v1/public/version');
     req.flush('Nope', { status: 500, statusText: 'Server Error' });
 
-    expect(service.version()).toBe('3.8.5');
+    expect(service.version()).toBe(CURRENT_APP_VERSION);
   });
 });

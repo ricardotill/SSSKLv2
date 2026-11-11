@@ -1,4 +1,4 @@
-import { ApplicationConfig, provideAppInitializer, provideBrowserGlobalErrorListeners, inject, LOCALE_ID, isDevMode } from '@angular/core';
+import { ApplicationConfig, ErrorHandler, provideAppInitializer, provideBrowserGlobalErrorListeners, inject, LOCALE_ID, isDevMode } from '@angular/core';
 import { provideServiceWorker } from '@angular/service-worker';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { registerLocaleData } from '@angular/common';
@@ -18,6 +18,8 @@ import { authInterceptor } from './core/auth/auth.interceptor';
 import { apiBaseInterceptor } from './core/interceptors/api-base.interceptor';
 import { environment } from '../environments/environment';
 import { PwaZoomLockService } from './core/services/pwa-zoom-lock.service';
+import { isEmbedded } from './core/services/embedded.service';
+import * as Sentry from '@sentry/angular';
 
 const MyPreset = definePreset(Aura, {
   semantic: {
@@ -41,6 +43,9 @@ export const appConfig: ApplicationConfig = {
   providers: [
     provideAnimationsAsync(),
     provideBrowserGlobalErrorListeners(),
+    // Report uncaught errors to Sentry (still logged to the console), and trace route changes.
+    { provide: ErrorHandler, useValue: Sentry.createErrorHandler() },
+    provideAppInitializer(() => { inject(Sentry.TraceService); }),
     provideRouter(routes),
     provideHttpClient(
       withFetch(),
@@ -64,8 +69,9 @@ export const appConfig: ApplicationConfig = {
     { provide: LOCALE_ID, useValue: 'nl-NL' },
     // Installed app only: no pinch/double-tap/keyboard zoom, like a native app
     provideAppInitializer(() => inject(PwaZoomLockService).init()),
+    // Not in the mobile app's WebView: no offline caching or update reloads there.
     provideServiceWorker('ngsw-worker.js', {
-      enabled: true,
+      enabled: !isEmbedded(),
       registrationStrategy: 'registerImmediately'
     })
   ]

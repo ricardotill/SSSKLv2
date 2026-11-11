@@ -20,6 +20,7 @@ import { BrandingComponent } from '../../shared/components/branding/branding.com
 import { catchError, of } from 'rxjs';
 import { ResolveApiUrlPipe } from '../../shared/pipes/resolve-api-url.pipe';
 import { UserProfileDrawerService } from '../../core/services/user-profile-drawer.service';
+import { EmbeddedService } from '../../core/services/embedded.service';
 
 @Component({
   selector: 'app-sidebar',
@@ -214,6 +215,7 @@ export class SidebarComponent {
   private readonly drawerService = inject(UserProfileDrawerService);
   private readonly http = inject(HttpClient);
   public router = inject(Router);
+  private readonly embedded = inject(EmbeddedService).isEmbedded;
   isOpen = input<boolean>(false);
   close = output<void>();
 
@@ -283,7 +285,8 @@ export class SidebarComponent {
       baseItems.push({
         label: t.general,
         items: [
-          { label: t.order, icon: 'pi pi-shopping-cart', routerLink: '/pos' },
+          // The mobile app has a native POS tab.
+          ...(this.embedded ? [] : [{ label: t.order, icon: 'pi pi-shopping-cart', routerLink: '/pos' }]),
           { label: t.my_orders, icon: 'pi pi-history', routerLink: '/orders/personal' },
           { label: t.my_saldo, icon: 'pi pi-wallet', routerLink: '/orders/saldo' },
           { label: t.events, icon: 'pi pi-calendar', routerLink: '/events' },

@@ -1,5 +1,5 @@
 {
   "appHost": {
-    "path": "SSSKL.AppHost/SSSKL.AppHost.csproj"
+    "path": "Backend/SSSKL.AppHost/SSSKL.AppHost.csproj"
   }
 }

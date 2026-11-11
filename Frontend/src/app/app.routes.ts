@@ -1,4 +1,5 @@
 import { isDevMode } from '@angular/core';
+import { nativeRouteGuard } from './core/auth/native-route.guard';
 import { Routes } from '@angular/router';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { authGuard } from './core/auth/auth.guard';
@@ -89,7 +90,7 @@ export const routes: Routes = [
       {
         path: 'pos',
         loadComponent: () => import('./features/pos/pos.component'),
-        canActivate: [authGuard],
+        canActivate: [authGuard, nativeRouteGuard('pos')],
         title: 'Bestellen - SSSKL'
       },
       {

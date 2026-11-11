@@ -34,7 +34,7 @@ export default defineConfig({
   ],
   webServer: [
     {
-      command: `dotnet run --project ../SSSKL.Web/SSSKL.Web.csproj --launch-profile e2e${CI ? ' --no-build -c Release' : ''}`,
+      command: `dotnet run --project ../Backend/SSSKL.Web/SSSKL.Web.csproj --launch-profile e2e${CI ? ' --no-build -c Release' : ''}`,
       url: `${API_URL}/healthz/live`,
       reuseExistingServer: !CI,
       timeout: 240_000,

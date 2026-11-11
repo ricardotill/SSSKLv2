@@ -1,0 +1,18 @@
+<Solution>
+  <Configurations>
+    <BuildType Name="Debug" />
+    <BuildType Name="Release" />
+    <BuildType Name="DebugProduction" />
+  </Configurations>
+  <Folder Name="/src/">
+    <Project Path="SSSKL.Mobile.Core/SSSKL.Mobile.Core.csproj">
+      <BuildType Solution="DebugProduction|*" Project="Debug" />
+    </Project>
+    <Project Path="SSSKL.Mobile/SSSKL.Mobile.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="SSSKL.Mobile.Test/SSSKL.Mobile.Test.csproj">
+      <BuildType Solution="DebugProduction|*" Project="Debug" />
+    </Project>
+  </Folder>
+</Solution>

@@ -1,5 +1,18 @@
 import { vi, expect } from 'vitest';
 
+// Node 25+ ships its own Web Storage globals; without --localstorage-file they are
+// undefined and shadow jsdom's, so tests get `localStorage === undefined`.
+// Point them back at jsdom's implementations.
+const jsdomWindow = (globalThis as { jsdom?: { window: Window } }).jsdom?.window;
+if (jsdomWindow) {
+  for (const key of ['localStorage', 'sessionStorage'] as const) {
+    Object.defineProperty(globalThis, key, {
+      configurable: true,
+      get: () => jsdomWindow[key],
+    });
+  }
+}
+
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
   value: vi.fn().mockImplementation((query) => ({

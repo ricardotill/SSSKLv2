@@ -1,0 +1,62 @@
+# SSSKL with Docker, on an existing database and blob storage (Azure SQL / SQL Server, Azure Storage):
+# only the API and the web app run here.
+# Fill in .env first (copy .env.example), then:
+#   docker compose -f docker-compose.external.yml pull && docker compose -f docker-compose.external.yml up -d
+# The app is on http://localhost:${PORT:-8080}. See docs/docker.md.
+# Everything on one machine instead? Use docker-compose.yml.
+# This file mounts nothing from the repository, so it also works as a Portainer stack.
+
+services:
+  api:
+    # The image CI builds and pushes (see .github/workflows/dotnet.yml); APP_VERSION in .env pins a release.
+    image: ghcr.io/ricardotill/ssskl-api:${APP_VERSION:-latest}
+    restart: unless-stopped
+    # A SQL Server on this machine is reachable as host.docker.internal
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      # The database is created and migrated on startup
+      ConnectionStrings__db: ${DATABASE_CONNECTION_STRING:?Set DATABASE_CONNECTION_STRING in .env}
+      Storage__Provider: Azure
+      ConnectionStrings__blobs: ${BLOB_CONNECTION_STRING:?Set BLOB_CONNECTION_STRING in .env}
+      Storage__ContainerName: ${BLOB_CONTAINER_NAME:-ssskl}
+      # Optional: Azure SignalR Service instead of the API's own hub (needed for more than one API instance)
+      Azure__SignalR__Enabled: ${AZURE_SIGNALR_ENABLED:-false}
+      Azure__SignalR__ConnectionString: ${AZURE_SIGNALR_CONNECTION_STRING:-}
+      # The host name visitors use (passkeys, CORS), e.g. ssskl.example.nl
+      WEBSITE_DOMAIN: ${WEBSITE_DOMAIN:-localhost}
+      # Only to try it out on plain http://localhost; behind HTTPS leave it off (Secure-only cookies)
+      Hosting__AllowHttp: ${ALLOW_HTTP:-false}
+      Turnstile__AllowedHostnames__0: ${WEBSITE_DOMAIN:-localhost}
+      VapidDetails__PublicKey: ${VAPID_PUBLIC_KEY:-}
+      VapidDetails__PrivateKey: ${VAPID_PRIVATE_KEY:-}
+      MediatR__LicenseKey: ${MEDIATR_LICENSE_KEY:-}
+      Sentry__Environment: ${SENTRY_ENVIRONMENT:-production}
+    # Data protection keys (logins survive a restart)
+    volumes:
+      - api-data:/data
+
+  # The entrance: serves the web app and passes /api and /hubs on to the API
+  frontend:
+    image: ghcr.io/ricardotill/ssskl-frontend:${APP_VERSION:-latest}
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "${PORT:-8080}:8080"
+
+  # Optional HTTPS address via a Cloudflare Tunnel: set CLOUDFLARE_TUNNEL_TOKEN in .env, then
+  # docker compose -f docker-compose.external.yml --profile tunnel up -d.
+  # In Cloudflare the public hostname points to http://frontend:8080.
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    profiles: ["tunnel"]
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:-}
+    depends_on:
+      - frontend
+
+volumes:
+  api-data:

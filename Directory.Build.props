@@ -1,11 +1,15 @@
 <Project>
   <!-- Shared by every .NET project in the repository. -->
   <PropertyGroup>
-    <Version>3.12.3</Version>
-    <InformationalVersion>3.12.3</InformationalVersion>
+    <!-- The release version comes from the git tag: CI builds tag v1.2.3 with -p:Version=1.2.3
+         (.github/workflows/version.yml). A local build without it is 0.0.0. -->
+    <Version Condition="'$(Version)' == ''">0.0.0</Version>
+    <InformationalVersion>$(Version)</InformationalVersion>
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
-    <AssemblyVersion>3.12.3.0</AssemblyVersion>
-    <FileVersion>3.12.3.0</FileVersion>
+    <!-- Assembly and file versions only take numbers: 1.2.3-ci.abc1234 becomes 1.2.3.0 -->
+    <_SssklNumericVersion>$([System.Text.RegularExpressions.Regex]::Match('$(Version)', '^\d+(\.\d+){0,2}'))</_SssklNumericVersion>
+    <AssemblyVersion>$(_SssklNumericVersion).0</AssemblyVersion>
+    <FileVersion>$(_SssklNumericVersion).0</FileVersion>
     <SixLaborsLicenseFile>$(MSBuildThisFileDirectory)sixlabors.lic</SixLaborsLicenseFile>
   </PropertyGroup>
 </Project>

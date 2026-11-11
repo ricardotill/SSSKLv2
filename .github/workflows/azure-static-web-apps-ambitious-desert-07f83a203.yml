@@ -1,19 +1,35 @@
+# Deploys the SPA to Azure Static Web Apps. Production gets a release: a tag vX.Y.Z on master
+# (git tag v1.4.0 && git push origin v1.4.0), built with that version (.github/workflows/version.yml);
+# a pre-release tag or a tag that is not on master deploys nothing. Pull requests get a preview environment.
 name: Azure Static Web Apps CI/CD
 
 on:
   push:
-    branches:
-      - master
+    tags:
+      - "v*"
   pull_request:
     types: [opened, synchronize, reopened, closed]
     branches:
       - master
 
+permissions:
+  contents: read
+
 jobs:
+  version:
+    name: Version
+    if: github.event_name == 'push' || github.event.action != 'closed'
+    uses: ./.github/workflows/version.yml
+
   build_and_deploy_job:
-    # Dependabot PRs get no deploy token, so they skip the preview environment (Frontend CI still builds them).
-    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed' && github.event.pull_request.user.login != 'dependabot[bot]')
+    needs: version
+    # Production only for a stable release tag. Dependabot PRs get no deploy token, so they skip the preview
+    # environment (Frontend CI still builds them).
+    if: (github.event_name == 'push' && needs.version.outputs.stable == 'true') || (github.event_name == 'pull_request' && github.event.action != 'closed' && github.event.pull_request.user.login != 'dependabot[bot]')
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write # PR comment with the preview URL
     name: Build and Deploy Job
     steps:
       - uses: actions/checkout@v7
@@ -25,6 +41,10 @@ jobs:
         id: builddeploy
         env:
           PRIMEUI_LICENSE_KEY: ${{ secrets.PRIMEUI_LICENSE_KEY }}
+          # The release version from the tag (0.0.0-ci.<commit> for a preview); see Frontend/sentry-release.js
+          APP_VERSION: ${{ needs.version.outputs.version }}
+          # Uploads source maps to Sentry (ssskl-frontend) after the build; see Frontend/sentry-sourcemaps.js.
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         uses: Azure/static-web-apps-deploy@1a947af9992250f3bc2e68ad0754c0b0c11566c9 # v1
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_AMBITIOUS_DESERT_07F83A203 }}

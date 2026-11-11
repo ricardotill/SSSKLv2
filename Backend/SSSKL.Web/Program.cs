@@ -1,0 +1,176 @@
+using System.Globalization;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.Azure.SignalR;
+using Microsoft.OpenApi;
+using Scalar.AspNetCore;
+using SSSKL.Application;
+using SSSKL.Contracts.Services;
+using SSSKL.Domain.Exceptions;
+using SSSKL.Infrastructure;
+using SSSKL.Infrastructure.Hosting;
+using SSSKL.Web.Hubs;
+using SSSKL.Web.Registrations;
+using SSSKL.Web.Services;
+
+var builder = WebApplication.CreateBuilder(args);
+
+// OpenTelemetry, service discovery, resilience and the "self" health check.
+builder.AddServiceDefaults();
+
+// Errors and traces to Sentry (project ssskl-api), configured from the "Sentry" section of appsettings.
+// Not in the test environments, so integration and E2E runs never report.
+if (!builder.Environment.IsTestLike())
+{
+    builder.WebHost.UseSentry(options =>
+    {
+        // GlobalExceptionHandler turns these into 4xx responses: expected outcomes, not bugs.
+        options.AddExceptionFilterForType<NotFoundException>();
+        options.AddExceptionFilterForType<ConflictException>();
+        options.AddExceptionFilterForType<UnauthorizedAccessException>();
+        options.AddExceptionFilterForType<ArgumentException>();
+        options.AddExceptionFilterForType<BadHttpRequestException>();
+    });
+}
+
+// Treat the test environments (IntegrationTest, E2E) like Development for dev-friendly behaviors such as
+// SameAsRequest cookies, so antiforgery and cookie code paths don't require SSL under TestServer or plain HTTP.
+var isIntegrationLikeEnvironment = builder.Environment.IsDevelopment() || builder.Environment.IsTestLike();
+// Hosting:AllowHttp (opt-in, the Docker compose files' ALLOW_HTTP) lets a container be tried on plain http://localhost:
+// cookies are then Secure only when the request is HTTPS (directly or via X-Forwarded-Proto from the proxy).
+var allowHttpCookies = isIntegrationLikeEnvironment || builder.Configuration.GetValue("Hosting:AllowHttp", false);
+var cookieSecurePolicy = allowHttpCookies ? CookieSecurePolicy.SameAsRequest : CookieSecurePolicy.Always;
+var websiteDomain = builder.Configuration["WEBSITE_DOMAIN"] ?? (builder.Environment.IsDevelopment() ? "localhost" : "ssskl.scoutingwilo.nl");
+
+if (builder.Environment.IsDevelopment())
+{
+    builder.Services.AddDatabaseDeveloperPageExceptionFilter();
+    builder.Configuration.AddEnvironmentVariables().AddJsonFile("appsettings.Development.json");
+}
+
+builder.Services.AddControllers();
+
+// Uniform RFC 7807 error responses; unhandled exceptions are mapped in GlobalExceptionHandler.
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+
+// Per-IP limits on login and email-sending identity endpoints
+builder.Services.AddRateLimitingRegistrations();
+builder.Services.AddFluentValidationsRegistrations();
+
+builder.Services.AddOpenApi(opt =>
+{
+    opt.AddDocumentTransformer<BearerSecuritySchemeTransformer>();
+    opt.AddDocumentTransformer((document, _, _) =>
+    {
+        document.Info.Contact = new OpenApiContact
+        {
+            Name = "Scouting Wilo",
+            Email = "webmaster@scoutingwilo.nl"
+        };
+        return Task.CompletedTask;
+    });
+});
+
+builder.Services.AddAuthenticationRegistrations(cookieSecurePolicy, websiteDomain);
+builder.Services.AddAntiforgeryRegistrations(cookieSecurePolicy);
+builder.Services.AddCorsRegistrations(websiteDomain);
+
+// Persistence, blob storage, repositories, email, web push and Turnstile.
+// The SQL health check comes from EnrichSqlServerDbContext and the blob storage check from
+// AddInfrastructure once a BlobServiceClient is registered.
+builder.AddInfrastructure();
+
+builder.Services.AddMemoryCache();
+builder.Services.AddApplication(builder.Configuration);
+
+// App Service uses Azure SignalR (Azure:SignalR:Enabled is true in appsettings.json); the Docker image sets
+// Azure__SignalR__Enabled=false and serves the hub itself.
+var useAzureSignalR = builder.Environment.IsProduction() && builder.Configuration.GetValue("Azure:SignalR:Enabled", true);
+if (useAzureSignalR)
+{
+    // Registration doesn't connect; the Azure SignalR SDK reconnects to the service on its own.
+    builder.Services.AddSignalR().AddAzureSignalR(options =>
+    {
+        options.ServerStickyMode = ServerStickyMode.Required;
+    });
+}
+else if (builder.Environment.IsProduction() || isIntegrationLikeEnvironment)
+{
+    builder.Services.AddSignalR();
+}
+
+// Containers lose ~/.aspnet/DataProtection-Keys on every restart, which signs everyone out. The Docker image
+// keeps the keys in a volume (DataProtection__KeysPath=/data/keys); App Service persists them by itself.
+var dataProtectionKeysPath = builder.Configuration["DataProtection:KeysPath"];
+if (!string.IsNullOrWhiteSpace(dataProtectionKeysPath))
+{
+    builder.Services.AddDataProtection()
+        .SetApplicationName("SSSKL")
+        .PersistKeysToFileSystem(new DirectoryInfo(dataProtectionKeysPath));
+}
+
+builder.Services
+    .AddSingleton<IPurchaseNotifier, PurchaseNotifier>()
+    .AddSingleton<IEventNotifier, EventNotifier>();
+
+var app = builder.Build();
+
+await app.InitializeDatabaseAsync();
+
+app.MapDefaultEndpoints();
+
+app.UseForwardedHeaders();
+app.UsePathBase("/");
+
+// Registered in every environment: GlobalExceptionHandler maps domain exceptions (e.g. NotFoundException → 404),
+// which the developer exception page would otherwise turn into a 500.
+app.UseExceptionHandler();
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseMigrationsEndPoint();
+}
+else
+{
+    app.UseHsts();
+}
+
+app.UseHttpsRedirection();
+// Apply cookie policy before authentication so cookie flags are enforced.
+app.UseCookiePolicy();
+app.UseXsrfTokenCookie(secureCookie: !allowHttpCookies);
+app.UseCors(CorsRegistrations.FrontendPolicy);
+app.UseRateLimiter();
+app.UseAuthentication();
+app.UseAuthorization();
+app.UseAntiforgery();
+
+app.MapGroup("/api")
+    .MapControllers();
+app.MapGroup("/api/v1/identity")
+    .MapSssklIdentityApi();
+
+if (app.Environment.IsDevelopment())
+{
+    app.MapOpenApi();
+    app.MapScalarApiReference();
+}
+
+app.MapHub<LiveMetricsHub>("/hubs/livemetrics");
+
+// /healthz: everything (database, blob storage). /healthz/live: process only, for restart decisions,
+// so a database outage doesn't make the platform recycle otherwise healthy instances.
+app.MapHealthChecks("/healthz");
+app.MapHealthChecks("/healthz/live", new HealthCheckOptions
+{
+    Predicate = r => r.Tags.Contains("live")
+});
+
+CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.InvariantCulture;
+CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
+
+await app.RunAsync();
+
+// Expose the Program type for WebApplicationFactory in tests
+public partial class Program { }

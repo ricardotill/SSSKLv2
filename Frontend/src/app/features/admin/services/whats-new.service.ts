@@ -1,7 +1,7 @@
 import { inject, Injectable, signal, effect } from '@angular/core';
 import { GlobalSettingsService } from './global-settings.service';
 import { AuthService } from '../../../core/auth/auth.service';
-import { take } from 'rxjs';
+import { EmbeddedService } from '../../../core/services/embedded.service';
 
 @Injectable({
   providedIn: 'root'
@@ -9,6 +9,7 @@ import { take } from 'rxjs';
 export class WhatsNewService {
   private readonly settingsService = inject(GlobalSettingsService);
   private readonly authService = inject(AuthService);
+  private readonly embedded = inject(EmbeddedService).isEmbedded;
 
   private readonly STORAGE_KEY = 'ssskl_whats_new_seen_version';
   
@@ -22,7 +23,8 @@ export class WhatsNewService {
       const user = this.authService.currentUser();
       const isInit = this.authService.isInitialized();
 
-      if (isInit && user) {
+      // The mobile app shows this natively.
+      if (isInit && user && !this.embedded) {
         this.checkWhatsNew();
       }
     });

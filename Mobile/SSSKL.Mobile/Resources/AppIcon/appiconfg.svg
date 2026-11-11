@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="456" height="456" viewBox="0 0 456 456">
+  <!-- Beer mug -->
+  <path fill="#FFFFFF" d="M150 150h130v170a24 24 0 0 1-24 24h-82a24 24 0 0 1-24-24z"/>
+  <path fill="#065F46" d="M170 190h20v120h-20zM210 190h20v120h-20zM250 190h20v120h-20z"/>
+  <path fill="#FFFFFF" d="M280 180h22a38 38 0 0 1 0 76h-22v-22h22a16 16 0 0 0 0-32h-22z"/>
+  <path fill="#FFFFFF" d="M140 150a30 30 0 0 1 40-36a34 34 0 0 1 60-6a30 30 0 0 1 50 26v16z"/>
+</svg>

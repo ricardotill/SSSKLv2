@@ -1,30 +1,71 @@
 <Solution>
+  <!-- Backend only. The mobile app (still in development) has its own solution, Mobile/SSSKL.Mobile.slnx,
+       so `dotnet build/test SSSKL.slnx` and the backend CI and deploys don't build or test it. -->
+  <Configurations>
+    <BuildType Name="Debug" />
+    <BuildType Name="Release" />
+    <BuildType Name="DebugProduction" />
+  </Configurations>
   <Folder Name="/Bestanden/">
-    <File Path=".github/workflows/deploy-acceptation.yml" />
-    <File Path=".github/workflows/deploy-production.yml" />
+    <File Path=".dockerignore" />
+    <File Path=".env.example" />
+    <File Path=".github/dependabot.yml" />
+    <File Path=".github/workflows/azure-static-web-apps-ambitious-desert-07f83a203.yml" />
     <File Path=".github/workflows/dotnet.yml" />
+    <File Path=".github/workflows/frontend-ci.yml" />
+    <File Path=".github/workflows/master_sssklv2-app.yml" />
+    <File Path=".github/workflows/version.yml" />
     <File Path=".gitignore" />
+    <File Path="Backend/Dockerfile" />
+    <File Path="CLAUDE.md" />
     <File Path="Directory.Build.props" />
     <File Path="Directory.Packages.props" />
+    <File Path="docker-compose.external.yml" />
     <File Path="docker-compose.yml" />
     <File Path="LICENSE.txt" />
     <File Path="README.md" />
-    <File Path="SIXLABORS_LICENSE_SETUP.md" />
+  </Folder>
+  <Folder Name="/Bestanden/docs/">
+    <File Path="docs/APPLICATION_INSIGHTS_QUERIES.md" />
+    <File Path="docs/CHANGELOG.md" />
+    <File Path="docs/docker.md" />
+    <File Path="docs/MEDIATR_LICENSE_SETUP.md" />
+    <File Path="docs/SIXLABORS_LICENSE_SETUP.md" />
   </Folder>
   <Folder Name="/src/">
-    <Project Path="SSSKL.Domain/SSSKL.Domain.csproj" />
-    <Project Path="SSSKL.Contracts/SSSKL.Contracts.csproj" />
-    <Project Path="SSSKL.Application/SSSKL.Application.csproj" />
-    <Project Path="SSSKL.Infrastructure/SSSKL.Infrastructure.csproj" />
-    <Project Path="SSSKL.Web/SSSKL.Web.csproj" />
+    <Project Path="Backend/SSSKL.Domain/SSSKL.Domain.csproj">
+      <BuildType Solution="DebugProduction|*" Project="Debug" />
+    </Project>
+    <Project Path="Backend/SSSKL.Contracts/SSSKL.Contracts.csproj">
+      <BuildType Solution="DebugProduction|*" Project="Debug" />
+    </Project>
+    <Project Path="Backend/SSSKL.Application/SSSKL.Application.csproj">
+      <BuildType Solution="DebugProduction|*" Project="Debug" />
+    </Project>
+    <Project Path="Backend/SSSKL.Infrastructure/SSSKL.Infrastructure.csproj">
+      <BuildType Solution="DebugProduction|*" Project="Debug" />
+    </Project>
+    <Project Path="Backend/SSSKL.Web/SSSKL.Web.csproj">
+      <BuildType Solution="DebugProduction|*" Project="Debug" />
+    </Project>
   </Folder>
   <Folder Name="/hosting/">
-    <Project Path="SSSKL.AppHost/SSSKL.AppHost.csproj" />
-    <Project Path="SSSKL.ServiceDefaults/SSSKL.ServiceDefaults.csproj" />
+    <Project Path="Backend/SSSKL.AppHost/SSSKL.AppHost.csproj">
+      <BuildType Solution="DebugProduction|*" Project="Debug" />
+    </Project>
+    <Project Path="Backend/SSSKL.ServiceDefaults/SSSKL.ServiceDefaults.csproj">
+      <BuildType Solution="DebugProduction|*" Project="Debug" />
+    </Project>
   </Folder>
   <Folder Name="/tests/">
-    <Project Path="SSSKL.Application.Test/SSSKL.Application.Test.csproj" />
-    <Project Path="SSSKL.Infrastructure.Test/SSSKL.Infrastructure.Test.csproj" />
-    <Project Path="SSSKL.Web.Test/SSSKL.Web.Test.csproj" />
+    <Project Path="Backend/SSSKL.Application.Test/SSSKL.Application.Test.csproj">
+      <BuildType Solution="DebugProduction|*" Project="Debug" />
+    </Project>
+    <Project Path="Backend/SSSKL.Infrastructure.Test/SSSKL.Infrastructure.Test.csproj">
+      <BuildType Solution="DebugProduction|*" Project="Debug" />
+    </Project>
+    <Project Path="Backend/SSSKL.Web.Test/SSSKL.Web.Test.csproj">
+      <BuildType Solution="DebugProduction|*" Project="Debug" />
+    </Project>
   </Folder>
 </Solution>

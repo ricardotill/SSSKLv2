@@ -1,16 +1,32 @@
+# Deploys the API to Azure App Service (sssklv2-app) for a release: a tag vX.Y.Z on master
+# (git tag v1.4.0 && git push origin v1.4.0). The version comes from the tag (.github/workflows/version.yml);
+# a pre-release tag (v1.4.0-rc.1) or a tag that is not on master deploys nothing.
+# To redeploy a release by hand: Actions → this workflow → Run workflow, and pick the tag (not a branch).
 # Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
-# More GitHub Actions for Azure: https://github.com/Azure/actions
 
 name: Build and deploy ASP.Net Core app to Azure Web App - sssklv2-app
 
 on:
   push:
-    branches:
-      - master
+    tags: [ "v*" ]
   workflow_dispatch:
 
+# One deploy at a time; a newer release waits instead of cancelling one that is running
+concurrency:
+  group: deploy-sssklv2-app
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
 jobs:
+  version:
+    name: Version
+    uses: ./.github/workflows/version.yml
+
   build:
+    needs: version
+    if: needs.version.outputs.stable == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read #This is required for actions/checkout
@@ -25,8 +41,7 @@ jobs:
         uses: actions/setup-dotnet@v6
         with:
           dotnet-version: '11.0.x'
-          dotnet-quality: 'preview'
-          
+
       - name: Decode and save SixLabors license
         run: |
           if [ -z "${{ secrets.SixLaborsLicense }}" ]; then
@@ -38,15 +53,21 @@ jobs:
 
       - name: Restore dependencies
         run: dotnet restore
-        
+
       - name: Build
-        run: dotnet build --no-restore
-        
+        run: dotnet build --no-restore -p:Version=${{ needs.version.outputs.version }}
+
       - name: Test
         run: dotnet test --no-build --verbosity normal
 
       - name: Publish
-        run: dotnet publish SSSKL.Web/SSSKL.Web.csproj -c Release -o ${{env.DOTNET_ROOT}}/myapp --no-restore
+        env:
+          # Uploads debug symbols to Sentry (ssskl-api) during the Release publish; see Backend/SSSKL.Web/SSSKL.Web.csproj.
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          APP_VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          [ -n "$SENTRY_AUTH_TOKEN" ] && echo "SENTRY_AUTH_TOKEN=set" || echo "::warning::SENTRY_AUTH_TOKEN not set; no Sentry symbol upload"
+          dotnet publish Backend/SSSKL.Web/SSSKL.Web.csproj -c Release -o ${{env.DOTNET_ROOT}}/myapp --no-restore -p:Version="$APP_VERSION"
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v7
@@ -57,6 +78,9 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     needs: build
+    # The Azure login federates on this environment (subject repo:ricardotill/SSSKLv2:environment:production),
+    # since a tag run has a different ref for every release. See docs/docker.md, "Releases".
+    environment: production
     permissions:
       id-token: write #This is required for requesting the JWT
       contents: read #This is required for actions/checkout
@@ -66,7 +90,7 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           name: .net-app
-      
+
       - name: Login to Azure
         uses: azure/login@a641126d1b8aa4d1fa005f4f92df94a3a4c4c906 # v3.1.0
         with:

@@ -31,15 +31,20 @@ function handle401Error(request: HttpRequest<any>, next: HttpHandlerFn, authServ
         authService.refreshTokenSubject.next(null);
 
         return authService.refreshTokens().pipe(
+            // Only the refresh itself decides about the session; errors of the retried request just propagate.
+            catchError((err) => {
+                authService.isRefreshing = false;
+                // In the mobile app the native app owns the session (and re-injects tokens), so a network blip
+                // or server error during refresh must not sign out the whole app: only a rejected refresh does.
+                if (isSessionRejected(err) || !authService.isEmbedded) {
+                    authService.logout();
+                }
+                return throwError(() => err);
+            }),
             switchMap((tokenResponse) => {
                 authService.isRefreshing = false;
                 authService.refreshTokenSubject.next(tokenResponse.accessToken);
                 return next(addTokenHeader(request, tokenResponse.accessToken));
-            }),
-            catchError((err) => {
-                authService.isRefreshing = false;
-                authService.logout();
-                return throwError(() => err);
             })
         );
     } else {
@@ -49,6 +54,14 @@ function handle401Error(request: HttpRequest<any>, next: HttpHandlerFn, authServ
             switchMap((token) => next(addTokenHeader(request, token!)))
         );
     }
+}
+
+/** The refresh token is missing or the server rejected it (400/401): the session is really over. */
+function isSessionRejected(err: unknown): boolean {
+    if (!(err instanceof HttpErrorResponse)) {
+        return true; // no refresh token available
+    }
+    return err.status === 400 || err.status === 401;
 }
 
 function addTokenHeader(request: HttpRequest<any>, token: string) {

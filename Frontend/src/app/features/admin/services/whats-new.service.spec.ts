@@ -7,6 +7,7 @@ import { AuthService } from '../../../core/auth/auth.service';
 import { of, throwError } from 'rxjs';
 import { signal } from '@angular/core';
 import { vi } from 'vitest';
+import { EmbeddedService } from '../../../core/services/embedded.service';
 
 describe('WhatsNewService', () => {
   let service: WhatsNewService;
@@ -84,5 +85,25 @@ describe('WhatsNewService', () => {
     expect(consoleSpy).toHaveBeenCalledWith('Failed to fetch Whats New content', expect.any(Error));
     expect(service.isVisible()).toBe(false);
     consoleSpy.mockRestore();
+  });
+});
+
+describe('WhatsNewService in the mobile app', () => {
+  it('does not fetch or show anything (the app shows it natively)', () => {
+    const getSetting = vi.fn().mockReturnValue(of({ value: 'Test', updatedOn: '1.0' }));
+    TestBed.configureTestingModule({
+      providers: [
+        WhatsNewService,
+        { provide: GlobalSettingsService, useValue: { getSetting } },
+        { provide: AuthService, useValue: { currentUser: signal({ id: '1' } as any), isInitialized: signal(true) } },
+        { provide: EmbeddedService, useValue: { isEmbedded: true, notifyNative: vi.fn() } },
+      ],
+    });
+    const service = TestBed.inject(WhatsNewService);
+
+    TestBed.tick();
+
+    expect(getSetting).not.toHaveBeenCalled();
+    expect(service.isVisible()).toBe(false);
   });
 });

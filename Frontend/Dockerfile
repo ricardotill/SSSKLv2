@@ -24,7 +24,7 @@ RUN --mount=type=secret,id=primeui_license_key,env=PRIMEUI_LICENSE_KEY \
     --mount=type=secret,id=sentry_auth_token,env=SENTRY_AUTH_TOKEN \
     APP_VERSION=$VERSION npm run build
 
-FROM caddy:2.10 AS final
+FROM caddy:2.11 AS final
 ARG VERSION=0.0.0-local
 LABEL org.opencontainers.image.title="SSSKL web app" \
       org.opencontainers.image.source="https://github.com/ricardotill/SSSKLv2" \

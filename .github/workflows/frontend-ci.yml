@@ -2,6 +2,9 @@
 # suite against the real API. On master and on version tags it then pushes the web app's Docker image
 # (the SPA served by Caddy, linux/amd64 and linux/arm64) to ghcr.io/ricardotill/ssskl-frontend; a pull request
 # only checks that the image builds. Image tags: see dotnet.yml. See docs/docker.md.
+#
+# Dependabot PRs (rebased on every master push) get a lean run: no E2E, test & build only for npm, Docker and
+# GitHub Actions updates (not NuGet), and the Docker image check only for Docker base-image updates.
 name: Frontend CI
 
 on:
@@ -25,6 +28,11 @@ env:
 
 jobs:
   build-and-test:
+    if: >-
+      github.event.pull_request.user.login != 'dependabot[bot]' ||
+      startsWith(github.head_ref, 'dependabot/npm_and_yarn/') ||
+      startsWith(github.head_ref, 'dependabot/docker/') ||
+      startsWith(github.head_ref, 'dependabot/github_actions/')
     runs-on: ubuntu-latest
 
     defaults:
@@ -65,6 +73,8 @@ jobs:
 
   e2e:
     # Playwright against the real API (ASPNETCORE_ENVIRONMENT=E2E, seeded SQLite) and the dev server.
+    # Not for Dependabot PRs; master runs it after the merge.
+    if: github.event.pull_request.user.login != 'dependabot[bot]'
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -140,11 +150,19 @@ jobs:
 
   version:
     name: Version
+    # Skipping it for Dependabot also skips the image job, except for Docker base-image updates.
+    if: github.event.pull_request.user.login != 'dependabot[bot]' || startsWith(github.head_ref, 'dependabot/docker/')
     uses: ./.github/workflows/version.yml
 
   image:
     name: Docker image
     needs: [build-and-test, e2e, version]
+    # e2e is skipped for Dependabot PRs; everything else must have passed
+    if: >-
+      !cancelled() &&
+      needs.build-and-test.result == 'success' &&
+      needs.version.result == 'success' &&
+      (needs.e2e.result == 'success' || needs.e2e.result == 'skipped')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -157,7 +175,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051 # v5.10.0
+      - uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
         id: meta
         with:
           images: ${{ env.IMAGE }}
@@ -171,17 +189,17 @@ jobs:
             org.opencontainers.image.title=SSSKL web app
 
       # The Angular build runs once on the runner's platform; only the Caddy stage is per architecture
-      - uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3.7.0
+      - uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
       - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
 
-      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
+      - uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
         if: github.event_name != 'pull_request'
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
+      - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         id: build
         with:
           context: .
@@ -201,7 +219,7 @@ jobs:
           provenance: true
           sbom: true
 
-      - uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be # v2.4.0
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         if: github.event_name != 'pull_request'
         with:
           subject-name: ${{ env.IMAGE }}

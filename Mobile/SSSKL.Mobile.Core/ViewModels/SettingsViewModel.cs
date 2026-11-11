@@ -138,7 +138,7 @@ public sealed partial class SettingsViewModel(
     }
 
     [RelayCommand]
-    private Task OpenWebAsync(string path) => navigator.OpenWebAsync(path);
+    private Task OpenAsync(string path) => navigator.OpenAsync(path);
 
     [RelayCommand]
     private async Task LogoutAsync()

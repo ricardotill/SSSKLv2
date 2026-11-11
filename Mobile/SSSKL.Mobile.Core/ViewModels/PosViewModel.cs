@@ -68,15 +68,6 @@ public sealed partial class PosViewModel(
     [NotifyPropertyChangedFor(nameof(Summary), nameof(SummaryText), nameof(CanSubmit))]
     public partial int SelectedProductCount { get; set; }
 
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(SaldoDescription))]
-    public partial string Saldo { get; set; } = "";
-
-    [ObservableProperty]
-    public partial bool IsSaldoNegative { get; set; }
-
-    public string SaldoDescription => $"{Texts.MySaldo}: {Saldo}";
-
     public bool IsGuest => currentUser.IsGuest;
 
     public bool CanSplit => SelectedUserCount > 1;
@@ -110,7 +101,6 @@ public sealed partial class PosViewModel(
             Task userTask = currentUser.User is null ? currentUser.RefreshAsync() : RefreshUserQuietlyAsync();
             var data = await api.GetOrderInitializeAsync();
             await userTask;
-            ApplySaldo();
             var me = currentUser.User?.Id;
 
             Products.Clear();
@@ -125,6 +115,7 @@ public sealed partial class PosViewModel(
                 .OrderByDescending(u => u.IsSelf)
                 .ToList();
             ShowUserSearch = _allUsers.Count > UserSearchThreshold;
+            ApplySaldo();
             ResetSelection();
             OnPropertyChanged(nameof(IsGuest));
         }
@@ -245,18 +236,23 @@ public sealed partial class PosViewModel(
         ApplyUserFilter();
     }
 
+    /// <summary>Your saldo, in your own row (refreshed on load and after every order).</summary>
     private void ApplySaldo()
     {
-        var saldo = currentUser.User?.Saldo ?? 0m;
-        Saldo = saldo.ToString("C", Dutch);
-        IsSaldoNegative = saldo < 0;
+        if (_allUsers.FirstOrDefault(u => u.IsSelf) is not { } self || currentUser.User is not { } user)
+        {
+            return;
+        }
+        self.SaldoText = user.Saldo.ToString("C", Dutch);
+        self.IsSaldoNegative = user.Saldo < 0;
     }
 
+    /// <summary>Your own row always stays on top, whatever is searched; the others are filtered on their name.</summary>
     private void ApplyUserFilter()
     {
         var query = UserQuery.Trim();
         VisibleUsers.Clear();
-        foreach (var user in _allUsers.Where(u => query.Length == 0 || u.DisplayName.Contains(query, StringComparison.CurrentCultureIgnoreCase)))
+        foreach (var user in _allUsers.Where(u => u.IsSelf || query.Length == 0 || u.DisplayName.Contains(query, StringComparison.CurrentCultureIgnoreCase)))
         {
             VisibleUsers.Add(user);
         }

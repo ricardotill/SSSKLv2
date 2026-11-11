@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:SSSKL.Mobile.Controls"
+             xmlns:vm="clr-namespace:SSSKL.Mobile.Core.ViewModels;assembly=SSSKL.Mobile.Core"
+             xmlns:loc="clr-namespace:SSSKL.Mobile.Core.Localization;assembly=SSSKL.Mobile.Core"
+             x:Class="SSSKL.Mobile.Views.OrdersPage"
+             x:DataType="vm:OrdersViewModel"
+             Title="{x:Static loc:Texts.MyOrders}">
+    <Grid>
+        <RefreshView IsRefreshing="{Binding IsRefreshing}" Command="{Binding LoadCommand}">
+            <CollectionView ItemsSource="{Binding Items}" SelectionMode="None"
+                            RemainingItemsThreshold="5" RemainingItemsThresholdReachedCommand="{Binding LoadMoreCommand}">
+                <CollectionView.ItemsLayout>
+                    <LinearItemsLayout Orientation="Vertical" ItemSpacing="8" />
+                </CollectionView.ItemsLayout>
+                <CollectionView.Header>
+                    <BoxView HeightRequest="8" Color="Transparent" />
+                </CollectionView.Header>
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="vm:OrderRow">
+                        <Border Style="{StaticResource Card}" Margin="16,0" Padding="14,10"
+                                SemanticProperties.Description="{Binding Description}">
+                            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
+                                <VerticalStackLayout Spacing="2" VerticalOptions="Center">
+                                    <Label Text="{Binding ProductName}" FontAttributes="Bold" FontSize="16" LineBreakMode="TailTruncation"
+                                           TextColor="{AppThemeBinding Light={StaticResource HeadingLight}, Dark={StaticResource HeadingDark}}" />
+                                    <Label Text="{Binding DateText}" Style="{StaticResource Muted}" FontSize="13" />
+                                </VerticalStackLayout>
+                                <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
+                                    <Label Text="{Binding PaidText}" FontAttributes="Bold" HorizontalTextAlignment="End"
+                                           TextColor="{AppThemeBinding Light={StaticResource Primary700}, Dark={StaticResource Primary400}}" />
+                                    <Label Text="{Binding AmountText}" Style="{StaticResource Muted}" FontSize="13" HorizontalTextAlignment="End" />
+                                </VerticalStackLayout>
+                                <controls:Pressable Grid.Column="2" VerticalOptions="Center"
+                                                    SemanticProperties.Description="{x:Static loc:Texts.Delete}"
+                                                    Command="{Binding DeleteCommand, Source={RelativeSource AncestorType={x:Type vm:OrdersViewModel}}, x:DataType=vm:OrdersViewModel}"
+                                                    CommandParameter="{Binding .}">
+                                    <Border WidthRequest="40" HeightRequest="40" StrokeThickness="0" StrokeShape="RoundRectangle 20"
+                                            BackgroundColor="{AppThemeBinding Light=#FEF2F2, Dark=#2A1215}">
+                                        <controls:IconView Icon="{x:Static loc:Icons.Trash}" Size="20"
+                                                           Color="{AppThemeBinding Light={StaticResource Danger}, Dark={StaticResource DangerDark}}" />
+                                    </Border>
+                                </controls:Pressable>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+                <CollectionView.EmptyView>
+                    <Label Text="{x:Static loc:Texts.NoOrders}" IsVisible="{Binding IsEmpty}" Style="{StaticResource Muted}"
+                           HorizontalTextAlignment="Center" Margin="32,64" />
+                </CollectionView.EmptyView>
+                <CollectionView.Footer>
+                    <Grid Padding="16" MinimumHeightRequest="24">
+                        <ActivityIndicator IsRunning="{Binding IsLoadingMore}" IsVisible="{Binding IsLoadingMore}" HorizontalOptions="Center" />
+                    </Grid>
+                </CollectionView.Footer>
+            </CollectionView>
+        </RefreshView>
+        <ActivityIndicator IsRunning="{Binding IsLoading}" IsVisible="{Binding IsLoading}" HorizontalOptions="Center" VerticalOptions="Center" />
+    </Grid>
+</ContentPage>

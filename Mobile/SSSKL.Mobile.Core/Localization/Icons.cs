@@ -9,6 +9,7 @@ public static class Icons
 {
     public const string AdjustmentsHorizontal = "ti_adjustments_horizontal.png";
     public const string Bell = "ti_bell.png";
+    public const string BrandGithub = "ti_brand_github.png";
     public const string BellOff = "ti_bell_off.png";
     public const string Box = "ti_box.png";
     public const string Calendar = "ti_calendar.png";
@@ -17,6 +18,7 @@ public static class Icons
     public const string ChevronRight = "ti_chevron_right.png";
     public const string DeviceDesktop = "ti_device_desktop.png";
     public const string Download = "ti_download.png";
+    public const string Flame = "ti_flame.png";
     public const string History = "ti_history.png";
     public const string Id = "ti_id.png";
     public const string InfoCircle = "ti_info_circle.png";
@@ -31,6 +33,8 @@ public static class Icons
     public const string Shield = "ti_shield.png";
     public const string Speakerphone = "ti_speakerphone.png";
     public const string Sun = "ti_sun.png";
+    public const string Trash = "ti_trash.png";
+    public const string Trophy = "ti_trophy.png";
     public const string Users = "ti_users.png";
     public const string Wallet = "ti_wallet.png";
 }

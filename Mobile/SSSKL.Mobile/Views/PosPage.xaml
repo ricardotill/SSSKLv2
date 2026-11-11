@@ -10,46 +10,12 @@
              Title="{x:Static loc:Texts.TabPos}">
     <ContentPage.Resources>
         <toolkit:InvertedBoolConverter x:Key="Not" />
-        <!-- Saldo card. The darker shades keep white text at WCAG AA contrast (5.5:1 and up). -->
-        <LinearGradientBrush x:Key="SaldoBrush" StartPoint="0,0" EndPoint="1,1">
-            <GradientStop Color="{StaticResource Primary700}" Offset="0" />
-            <GradientStop Color="{StaticResource Primary900}" Offset="1" />
-        </LinearGradientBrush>
-        <LinearGradientBrush x:Key="SaldoNegativeBrush" StartPoint="0,0" EndPoint="1,1">
-            <GradientStop Color="#B91C1C" Offset="0" />
-            <GradientStop Color="#7F1D1D" Offset="1" />
-        </LinearGradientBrush>
     </ContentPage.Resources>
 
     <Grid RowDefinitions="*,Auto">
         <RefreshView IsRefreshing="{Binding IsRefreshing}" Command="{Binding LoadCommand}">
             <ScrollView>
                 <VerticalStackLayout Padding="16" Spacing="12">
-                    <!-- Your saldo as a wallet card (red when negative), refreshed on load and after every order -->
-                    <Border StrokeThickness="0" StrokeShape="RoundRectangle 18" Padding="18,16"
-                            Background="{StaticResource SaldoBrush}"
-                            SemanticProperties.Description="{Binding SaldoDescription}">
-                        <Border.Shadow>
-                            <Shadow Brush="Black" Opacity="0.18" Radius="14" Offset="0,4" />
-                        </Border.Shadow>
-                        <Border.Triggers>
-                            <DataTrigger TargetType="Border" Binding="{Binding IsSaldoNegative}" Value="True">
-                                <Setter Property="Background" Value="{StaticResource SaldoNegativeBrush}" />
-                            </DataTrigger>
-                        </Border.Triggers>
-                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-                            <VerticalStackLayout Spacing="2" VerticalOptions="Center">
-                                <Label Text="{x:Static loc:Texts.MySaldo}" FontSize="14" TextColor="White" Opacity="0.85" />
-                                <Label Text="{Binding Saldo}" FontSize="30" FontAttributes="Bold" TextColor="White"
-                                       LineBreakMode="NoWrap" />
-                            </VerticalStackLayout>
-                            <Border Grid.Column="1" WidthRequest="48" HeightRequest="48" StrokeThickness="0"
-                                    StrokeShape="RoundRectangle 24" BackgroundColor="#33FFFFFF" VerticalOptions="Center">
-                                <controls:IconView Icon="{x:Static loc:Icons.Wallet}" Size="24" Color="White" />
-                            </Border>
-                        </Grid>
-                    </Border>
-
                     <Label Text="{x:Static loc:Texts.GuestCannotOrder}" IsVisible="{Binding IsGuest}" Style="{StaticResource Notice}" />
 
                     <Label Text="{x:Static loc:Texts.Products}" Style="{StaticResource SectionHeader}" SemanticProperties.HeadingLevel="Level2" />
@@ -84,7 +50,7 @@
                     <VerticalStackLayout Spacing="6" BindableLayout.ItemsSource="{Binding VisibleUsers}">
                         <BindableLayout.ItemTemplate>
                             <DataTemplate x:DataType="vm:UserItemViewModel">
-                                <controls:Pressable SemanticProperties.Description="{Binding DisplayName}"
+                                <controls:Pressable SemanticProperties.Description="{Binding Description}"
                                                     Command="{Binding ToggleUserCommand, Source={RelativeSource AncestorType={x:Type vm:PosViewModel}}, x:DataType=vm:PosViewModel}"
                                                     CommandParameter="{Binding .}">
                                     <Border Style="{StaticResource Tile}">
@@ -96,7 +62,7 @@
                                                 <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Primary50}, Dark={StaticResource Primary950}}" />
                                             </DataTrigger>
                                         </Border.Triggers>
-                                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                                        <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="12">
                                             <Grid WidthRequest="40" HeightRequest="40">
                                                 <Border Style="{StaticResource Avatar}">
                                                     <Label Text="{Binding Initials}" HorizontalOptions="Center" VerticalOptions="Center" FontAttributes="Bold" />
@@ -105,12 +71,25 @@
                                                     <Image Source="{Binding PictureUrl}" Aspect="AspectFill" />
                                                 </Border>
                                             </Grid>
-                                            <HorizontalStackLayout Grid.Column="1" Spacing="6" VerticalOptions="Center">
-                                                <Label Text="{Binding DisplayName}" />
-                                                <Label Text="{x:Static loc:Texts.You}" IsVisible="{Binding IsSelf}" Style="{StaticResource Muted}" />
-                                            </HorizontalStackLayout>
+                                            <Label Grid.Column="1" Text="{Binding Title}" VerticalOptions="Center" LineBreakMode="TailTruncation">
+                                                <Label.Triggers>
+                                                    <DataTrigger TargetType="Label" Binding="{Binding IsSelf}" Value="True">
+                                                        <Setter Property="FontAttributes" Value="Bold" />
+                                                    </DataTrigger>
+                                                </Label.Triggers>
+                                            </Label>
+                                            <!-- Your saldo (your own row only) -->
+                                            <Label Grid.Column="2" Text="{Binding SaldoText}" IsVisible="{Binding HasSaldo}" FontAttributes="Bold"
+                                                   VerticalOptions="Center"
+                                                   TextColor="{AppThemeBinding Light={StaticResource Primary700}, Dark={StaticResource Primary400}}">
+                                                <Label.Triggers>
+                                                    <DataTrigger TargetType="Label" Binding="{Binding IsSaldoNegative}" Value="True">
+                                                        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Danger}, Dark={StaticResource DangerDark}}" />
+                                                    </DataTrigger>
+                                                </Label.Triggers>
+                                            </Label>
                                             <!-- Opacity, not IsVisible: the check never changes the layout -->
-                                            <Label Grid.Column="2" Text="✓" FontAttributes="Bold" VerticalOptions="Center"
+                                            <Label Grid.Column="3" Text="✓" FontAttributes="Bold" VerticalOptions="Center"
                                                    Opacity="0" TextColor="{StaticResource Primary700}">
                                                 <Label.Triggers>
                                                     <DataTrigger TargetType="Label" Binding="{Binding IsSelected}" Value="True">
@@ -150,9 +129,13 @@
                         </Button.Behaviors>
                     </Button>
                 </HorizontalStackLayout>
-                <HorizontalStackLayout Grid.Column="1" Spacing="6" IsVisible="{Binding CanSplit}" VerticalOptions="Center">
+                <!-- Always in the layout, so the bar keeps its height; the code-behind fades it in and out
+                     (Opacity, input and screen readers follow CanSplit). -->
+                <HorizontalStackLayout x:Name="SplitPanel" Grid.Column="1" Spacing="6" VerticalOptions="Center" Opacity="0"
+                                       InputTransparent="True" AutomationProperties.IsInAccessibleTree="False">
                     <Label Text="{x:Static loc:Texts.Split}" VerticalOptions="Center" />
-                    <Switch IsToggled="{Binding Split}" OnColor="{StaticResource Primary500}" />
+                    <Switch IsToggled="{Binding Split}" IsEnabled="{Binding CanSplit}" OnColor="{StaticResource Primary500}"
+                            SemanticProperties.Description="{x:Static loc:Texts.Split}" />
                 </HorizontalStackLayout>
 
                 <Label Grid.Row="1" Grid.ColumnSpan="2" Text="{Binding SummaryText}" FontAttributes="Bold"

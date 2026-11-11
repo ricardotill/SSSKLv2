@@ -93,11 +93,28 @@ public static class MauiProgram
         services.AddTransient<MoreViewModel>();
         services.AddTransient<SettingsViewModel>();
         services.AddTransient<NotificationsViewModel>();
+        services.AddTransient<OrdersViewModel>();
+        services.AddTransient<TopUpsViewModel>();
+        services.AddTransient<SaldoListViewModel>();
+        services.AddTransient<LeaderboardViewModel>();
+        services.AddTransient<StatsViewModel>();
+        services.AddTransient<AchievementsViewModel>();
+        services.AddTransient<AchievementDetailViewModel>();
+        services.AddTransient<UserProfileViewModel>();
         services.AddTransient<PosPage>();
         services.AddTransient<ProfilePage>();
         services.AddTransient<MorePage>();
         services.AddTransient<SettingsPage>();
         services.AddTransient<NotificationsPage>();
+        services.AddTransient<OrdersPage>();
+        services.AddTransient<TopUpsPage>();
+        services.AddTransient<SaldoListPage>();
+        services.AddTransient<LeaderboardPage>();
+        services.AddTransient<StatsPage>();
+        services.AddTransient<AchievementsPage>();
+        services.AddTransient<AchievementDetailPage>();
+        services.AddTransient<UserProfilePage>();
+        services.AddTransient<AboutPage>();
         // Transient: AppNavigator creates one per AppShell (one per sign-in) and releases it on sign-out, so
         // no SPA state of a previous user survives.
         services.AddTransient<WebPage>();

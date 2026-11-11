@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:SSSKL.Mobile.Controls"
+             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+             xmlns:vm="clr-namespace:SSSKL.Mobile.Core.ViewModels;assembly=SSSKL.Mobile.Core"
+             xmlns:loc="clr-namespace:SSSKL.Mobile.Core.Localization;assembly=SSSKL.Mobile.Core"
+             x:Class="SSSKL.Mobile.Views.UserProfilePage"
+             x:DataType="vm:UserProfileViewModel"
+             Title="{Binding DisplayName}">
+    <ContentPage.Resources>
+        <toolkit:InvertedBoolConverter x:Key="Not" />
+    </ContentPage.Resources>
+    <Grid>
+        <RefreshView IsRefreshing="{Binding IsRefreshing}" Command="{Binding LoadCommand}">
+            <ScrollView>
+                <VerticalStackLayout Padding="16,16,16,32" Spacing="16" IsVisible="{Binding HasLoaded}">
+                    <!-- Who -->
+                    <VerticalStackLayout Spacing="6" HorizontalOptions="Center">
+                        <controls:AvatarView Size="112" Initials="{Binding Initials}" PictureUrl="{Binding PictureUrl}" HorizontalOptions="Center" />
+                        <Label Text="{Binding DisplayName}" Style="{StaticResource Headline}" HorizontalTextAlignment="Center"
+                               SemanticProperties.HeadingLevel="Level1" />
+                        <Label Text="{Binding UserName}" Style="{StaticResource Muted}" HorizontalTextAlignment="Center" />
+                    </VerticalStackLayout>
+
+                    <!-- Admins: orders, streak and the statistics -->
+                    <VerticalStackLayout Spacing="8" IsVisible="{Binding HasStats}">
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                            <Border Style="{StaticResource Card}">
+                                <VerticalStackLayout>
+                                    <Label Text="{x:Static loc:Texts.TotalOrders}" Style="{StaticResource Muted}" />
+                                    <Label Text="{Binding TotalOrders}" Style="{StaticResource Stat}" />
+                                </VerticalStackLayout>
+                            </Border>
+                            <Border Grid.Column="1" Style="{StaticResource Card}">
+                                <VerticalStackLayout>
+                                    <Label Text="{x:Static loc:Texts.CurrentStreak}" Style="{StaticResource Muted}" />
+                                    <Label Text="{Binding CurrentStreak}" Style="{StaticResource Stat}" />
+                                </VerticalStackLayout>
+                            </Border>
+                        </Grid>
+                        <Border Style="{StaticResource Group}">
+                            <controls:MenuRow IsFirst="True" Icon="{x:Static loc:Icons.ChartLine}" Title="{x:Static loc:Texts.ViewStats}"
+                                              Command="{Binding OpenStatsCommand}" />
+                        </Border>
+                    </VerticalStackLayout>
+
+                    <!-- About them -->
+                    <Border Style="{StaticResource Card}">
+                        <VerticalStackLayout Spacing="8">
+                            <Label Text="{x:Static loc:Texts.AboutMe}" FontAttributes="Bold" FontSize="16" SemanticProperties.HeadingLevel="Level2"
+                                   TextColor="{AppThemeBinding Light={StaticResource HeadingLight}, Dark={StaticResource HeadingDark}}" />
+                            <Label Text="{Binding DescriptionHtml}" TextType="Html" IsVisible="{Binding HasDescription}"
+                                   TextColor="{AppThemeBinding Light={StaticResource TextLight}, Dark={StaticResource TextDark}}" />
+                            <Label Text="{x:Static loc:Texts.NoDescriptionOther}" Style="{StaticResource Muted}" FontAttributes="Italic"
+                                   IsVisible="{Binding HasDescription, Converter={StaticResource Not}}" />
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <!-- Latest achievements -->
+                    <VerticalStackLayout Spacing="8">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                            <Label Text="{x:Static loc:Texts.RecentAchievements}" Style="{StaticResource SectionHeader}" Margin="0"
+                                   VerticalOptions="Center" SemanticProperties.HeadingLevel="Level2" />
+                            <Button Grid.Column="1" Text="{x:Static loc:Texts.ViewAll}" Command="{Binding OpenAchievementsCommand}"
+                                    Style="{StaticResource SecondaryButton}" />
+                        </Grid>
+                        <Label Text="{x:Static loc:Texts.NoAchievements}" IsVisible="{Binding HasNoAchievements}" Style="{StaticResource Muted}" />
+                        <FlexLayout Wrap="Wrap" BindableLayout.ItemsSource="{Binding RecentAchievements}">
+                            <BindableLayout.ItemTemplate>
+                                <DataTemplate x:DataType="vm:AchievementChip">
+                                    <controls:Pressable FlexLayout.Basis="25%" SemanticProperties.Description="{Binding Name}"
+                                                        Command="{Binding OpenAchievementCommand, Source={RelativeSource AncestorType={x:Type vm:UserProfileViewModel}}, x:DataType=vm:UserProfileViewModel}"
+                                                        CommandParameter="{Binding .}">
+                                        <VerticalStackLayout Padding="4" Spacing="4">
+                                            <Border WidthRequest="60" HeightRequest="60" StrokeThickness="0" StrokeShape="RoundRectangle 14"
+                                                    BackgroundColor="{AppThemeBinding Light={StaticResource SunkenLight}, Dark={StaticResource SunkenDark}}">
+                                                <Grid>
+                                                    <Image Source="{Binding ImageUrl}" Aspect="AspectFit" Margin="6" IsVisible="{Binding HasImage}" />
+                                                    <controls:IconView Icon="{x:Static loc:Icons.Rosette}" Size="28"
+                                                                       IsVisible="{Binding HasImage, Converter={StaticResource Not}}"
+                                                                       Color="{AppThemeBinding Light={StaticResource Primary500}, Dark={StaticResource Primary400}}" />
+                                                </Grid>
+                                            </Border>
+                                            <Label Text="{Binding Name}" FontSize="11" HorizontalTextAlignment="Center" MaxLines="2"
+                                                   LineBreakMode="TailTruncation" Style="{StaticResource Muted}" />
+                                        </VerticalStackLayout>
+                                    </controls:Pressable>
+                                </DataTemplate>
+                            </BindableLayout.ItemTemplate>
+                        </FlexLayout>
+                    </VerticalStackLayout>
+                </VerticalStackLayout>
+            </ScrollView>
+        </RefreshView>
+        <ActivityIndicator IsRunning="{Binding IsLoading}" IsVisible="{Binding IsLoading}" HorizontalOptions="Center" VerticalOptions="Center" />
+    </Grid>
+</ContentPage>

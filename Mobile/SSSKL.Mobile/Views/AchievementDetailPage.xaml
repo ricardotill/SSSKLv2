@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:SSSKL.Mobile.Controls"
+             xmlns:vm="clr-namespace:SSSKL.Mobile.Core.ViewModels;assembly=SSSKL.Mobile.Core"
+             xmlns:loc="clr-namespace:SSSKL.Mobile.Core.Localization;assembly=SSSKL.Mobile.Core"
+             x:Class="SSSKL.Mobile.Views.AchievementDetailPage"
+             x:DataType="vm:AchievementDetailViewModel"
+             Title="{Binding Name}">
+    <Grid>
+        <RefreshView IsRefreshing="{Binding IsRefreshing}" Command="{Binding LoadCommand}">
+            <CollectionView ItemsSource="{Binding Earners}" SelectionMode="None">
+                <CollectionView.ItemsLayout>
+                    <LinearItemsLayout Orientation="Vertical" ItemSpacing="8" />
+                </CollectionView.ItemsLayout>
+
+                <CollectionView.Header>
+                    <VerticalStackLayout Padding="16,8,16,8" Spacing="16">
+                        <Label Text="{x:Static loc:Texts.AchievementNotFound}" IsVisible="{Binding IsNotFound}" Style="{StaticResource Muted}"
+                               HorizontalTextAlignment="Center" Margin="16,48" />
+
+                        <!-- The achievement -->
+                        <Border Style="{StaticResource Card}" Padding="20" IsVisible="{Binding IsFound}">
+                            <VerticalStackLayout Spacing="12">
+                                <Border WidthRequest="132" HeightRequest="132" HorizontalOptions="Center" StrokeThickness="0"
+                                        StrokeShape="RoundRectangle 20"
+                                        BackgroundColor="{AppThemeBinding Light={StaticResource SunkenLight}, Dark={StaticResource SunkenDark}}">
+                                    <Border.Shadow>
+                                        <Shadow Brush="Black" Opacity="0.15" Radius="14" Offset="0,4" />
+                                    </Border.Shadow>
+                                    <Grid>
+                                        <Image Source="{Binding ImageUrl}" Aspect="AspectFit" Margin="10" IsVisible="{Binding HasImage}"
+                                               SemanticProperties.Description="{Binding Name}" />
+                                        <controls:IconView Icon="{x:Static loc:Icons.Rosette}" Size="64" IsVisible="{Binding HasNoImage}"
+                                                           Color="{AppThemeBinding Light={StaticResource Primary500}, Dark={StaticResource Primary400}}" />
+                                    </Grid>
+                                </Border>
+                                <controls:TierBadge Tier="{Binding Tier}" HorizontalOptions="Center" />
+                                <Label Text="{Binding Name}" Style="{StaticResource Headline}" HorizontalTextAlignment="Center"
+                                       SemanticProperties.HeadingLevel="Level1" />
+                                <Label Text="{Binding Description}" HorizontalTextAlignment="Center"
+                                       TextColor="{AppThemeBinding Light={StaticResource TextLight}, Dark={StaticResource TextDark}}" />
+                                <Label Text="{Binding StatusText}" HorizontalTextAlignment="Center" FontAttributes="Bold"
+                                       TextColor="{AppThemeBinding Light={StaticResource MutedLight}, Dark={StaticResource MutedDark}}">
+                                    <Label.Triggers>
+                                        <DataTrigger TargetType="Label" Binding="{Binding Completed}" Value="True">
+                                            <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Primary700}, Dark={StaticResource Primary400}}" />
+                                        </DataTrigger>
+                                    </Label.Triggers>
+                                </Label>
+                                <Button Text="{Binding ParentText}" Command="{Binding OpenParentCommand}" IsVisible="{Binding HasParent}"
+                                        Style="{StaticResource SecondaryButton}" HorizontalOptions="Center" />
+                            </VerticalStackLayout>
+                        </Border>
+
+                        <!-- Earners -->
+                        <HorizontalStackLayout Spacing="8" IsVisible="{Binding IsFound}">
+                            <controls:IconView Icon="{x:Static loc:Icons.Trophy}" Size="18"
+                                               Color="{AppThemeBinding Light={StaticResource Primary600}, Dark={StaticResource Primary400}}" />
+                            <Label Text="{Binding EarnedByText}" Style="{StaticResource SectionHeader}" Margin="0" VerticalOptions="Center"
+                                   SemanticProperties.HeadingLevel="Level2" />
+                        </HorizontalStackLayout>
+                        <Label Text="{x:Static loc:Texts.NoEarners}" IsVisible="{Binding HasNoEarners}" Style="{StaticResource Muted}" />
+                    </VerticalStackLayout>
+                </CollectionView.Header>
+
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="vm:MemberRow">
+                        <controls:MemberRowView Command="{Binding OpenEarnerCommand, Source={RelativeSource AncestorType={x:Type vm:AchievementDetailViewModel}}, x:DataType=vm:AchievementDetailViewModel}" />
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+                <CollectionView.Footer>
+                    <BoxView HeightRequest="16" Color="Transparent" />
+                </CollectionView.Footer>
+            </CollectionView>
+        </RefreshView>
+        <ActivityIndicator IsRunning="{Binding IsLoading}" IsVisible="{Binding IsLoading}" HorizontalOptions="Center" VerticalOptions="Center" />
+    </Grid>
+</ContentPage>

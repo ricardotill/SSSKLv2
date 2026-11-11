@@ -20,6 +20,98 @@ public static class Texts
     public static string MarkAllReadFailed => "Markeren als gelezen mislukt. Probeer het opnieuw.";
     public static string Unread => "Ongelezen";
 
+    // Lists
+    public static string Search => "Zoeken";
+    public static string Delete => "Verwijderen";
+
+    // Mijn bestellingen / Mijn saldo / Saldolijst
+    public static string NoOrders => "Geen bestellingen gevonden.";
+    public static string ConfirmDeleteOrderTitle => "Bestelling verwijderen";
+    public static string ConfirmDeleteOrder(string product) =>
+        $"Weet je zeker dat je deze bestelling voor {product} wilt verwijderen? Dit kan niet ongedaan worden gemaakt.";
+    public static string OrderDeleted => "Bestelling verwijderd";
+    public static string OrderDeleteFailed => "Verwijderen van de bestelling mislukt.";
+    public static string TopUps => "Opwaarderingen";
+    public static string NoTopUps => "Geen opwaarderingen gevonden.";
+    public static string SearchMembers => "Zoek een lid";
+    public static string NoUsers => "Geen gebruikers gevonden.";
+
+    // Leaderboard
+    public static string Last12Hours => "12 uur";
+    public static string ThisMonth => "Maand";
+    public static string AllTime => "Totaal";
+    public static string Product => "Product";
+    public static string NoPurchasesPeriod => "Er zijn deze periode geen aankopen gedaan. Dus ik zou zeggen, bestellen maar! ;)";
+    public static string Rank(int position) => $"Plek {position}";
+
+    // Statistieken
+    public static string MyStats => "Mijn statistieken";
+    public static string StatsOf(string name) => $"Statistieken van {name}";
+    public static string MyStatsSubtitle => "Een volledig overzicht van jouw activiteit op SSSKL.";
+    public static string StatsSubtitle => "Een volledig overzicht van de activiteit van deze gebruiker op SSSKL.";
+    public static string RecalculateStats => "Statistieken herberekenen";
+    public static string LastRecalculated(string when) => $"Laatste herberekening: {when}";
+    public static string StatsRecalculated => "Je statistieken zijn herberekend.";
+    public static string StatsRecalculateTooSoon => "Je kunt statistieken maar eenmaal per zeven dagen herberekenen.";
+    public static string StatsRecalculateFailed => "Statistieken konden niet worden herberekend.";
+    public static string Spent => "Uitgegeven";
+    public static string Streak => "Streak";
+    public static string Days(int days) => days == 1 ? "1 dag" : $"{days} dagen";
+    public static string SectionOrdersAndSaldo => "Bestellingen en saldo";
+    public static string SectionCommunity => "Community";
+    public static string SectionRecords => "Persoonlijke records";
+    public static string StatTotalOrders => "Totale bestellingen";
+    public static string StatItemsBought => "Gekochte items";
+    public static string StatTotalSpent => "Totaal besteed";
+    public static string StatTotalTopUp => "Totale opwaardering";
+    public static string StatMaxSingleTopUp => "Grootste losse opwaardering";
+    public static string StatMaxOrdersPerHour => "Meeste bestellingen per uur";
+    public static string StatQuotes => "Quotes geplaatst";
+    public static string StatQuoteVotesGiven => "Quotes gestemd";
+    public static string StatQuoteVotesReceived => "Ontvangen quote-stemmen";
+    public static string StatReactions => "Reacties geplaatst";
+    public static string StatMemberSince => "Lid sinds";
+    public static string StatMinBetweenOrders => "Kortste tijd tussen bestellingen";
+    public static string StatMinBetweenTopUps => "Kortste tijd tussen opwaarderingen";
+    public static string StatLastActivity => "Laatste activiteit";
+    public static string StatLastOrder => "Laatste bestelling";
+    public static string StatLastTopUp => "Laatste opwaardering";
+    public static string NotHappenedYet => "Nog niet gebeurd";
+    public static string NoData => "Geen gegevens";
+    public static string Minutes(int minutes) => $"{minutes} min.";
+    public static string ViewAll => "Alles bekijken";
+
+    // Achievements
+    public static string AchievementsSubtitle => "Bekijk welke achievements je hebt behaald.";
+    public static string AchievementsOf(string name) => $"Achievements van {name}";
+    public static string FilterAll => "Alle";
+    public static string FilterEarned => "Behaald";
+    public static string FilterLocked => "Nog niet";
+    public static string EarnedCount(int earned, int total) => $"{earned} van {total} behaald";
+    public static string AchievedOn(string date) => $"Behaald op {date}";
+    public static string NotAchievedYet => "Nog niet behaald";
+    public static string Locked => "Vergrendeld";
+    public static string PartOf(string name) => $"Onderdeel van {name}";
+    public static string EarnedBy => "Behaald door";
+    public static string EarnedByCount(int count) => count == 1 ? "Behaald door 1 lid" : $"Behaald door {count} leden";
+    public static string NoEarners => "Niemand heeft dit achievement nog behaald.";
+    public static string AchievementNotFound => "Dit achievement bestaat niet of is niet gevonden.";
+    public static string TierBronze => "Brons";
+    public static string TierSilver => "Zilver";
+    public static string TierGold => "Goud";
+    public static string TierPlatinum => "Platina";
+
+    // Profiel van een ander lid
+    public static string NoDescriptionOther => "Dit lid heeft nog geen beschrijving toegevoegd.";
+    public static string RecentAchievements => "Recente achievements";
+    public static string ViewStats => "Statistieken bekijken";
+
+    // Over SSSKL
+    public static string ViewOnGitHub => "Bekijk op GitHub";
+    public static string DeleteAccountInfo =>
+        "Wil je jouw account verwijderen? Ga naar Instellingen, open Persoonlijke gegevens en bevestig dat je jouw account wilt verwijderen. Kun je niet meer inloggen? Stuur dan een mail naar";
+    public static string ContactEmail => "me@ricardotill.nl";
+
     public static string Error => "Fout";
     public static string Ok => "OK";
     public static string Cancel => "Annuleren";
@@ -39,7 +131,8 @@ public static class Texts
     public static string OrderFailed => "Bestelling mislukt";
     public static string GuestCannotOrder => "Gasten kunnen geen bestellingen plaatsen.";
     public static string OutOfStock => "Op";
-    public static string You => "jij";
+    /// <summary>Your own row in Kassa's "Voor wie" list.</summary>
+    public static string Yourself => "Jezelf";
 
     public static string MySaldo => "Mijn saldo";
     public static string TotalOrders => "Bestellingen";

@@ -38,4 +38,31 @@ public interface ISssklApi
     /// only a 403 hides them.
     /// </summary>
     Task<bool> CanAccessQuotesAsync(CancellationToken cancellationToken = default);
+
+    Task<Page<OrderItem>> GetPersonalOrdersAsync(int skip, int take, CancellationToken cancellationToken = default);
+
+    /// <summary>Deletes one of your own orders (admins: any order); the saldo is refunded.</summary>
+    Task DeleteOrderAsync(Guid id, CancellationToken cancellationToken = default);
+
+    Task<Page<TopUpItem>> GetPersonalTopUpsAsync(int skip, int take, CancellationToken cancellationToken = default);
+
+    /// <summary>All members with their saldo (the saldo list).</summary>
+    Task<Page<UserSummary>> GetUsersAsync(int skip, int take, CancellationToken cancellationToken = default);
+
+    Task<UserSummary> GetUserProfileAsync(string userId, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<Product>> GetProductsAsync(CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<LeaderboardEntry>> GetLeaderboardAsync(Guid productId, LeaderboardPeriod period, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Recalculates a user's statistics. Users may do this once every seven days: a 429 <see cref="ApiException"/> otherwise.
+    /// </summary>
+    Task<UserStats> RecalculateStatsAsync(string userId, CancellationToken cancellationToken = default);
+
+    /// <summary>Every achievement with the user's progress.</summary>
+    Task<IReadOnlyList<AchievementListing>> GetAchievementListingAsync(string userId, CancellationToken cancellationToken = default);
+
+    /// <summary>Everyone who earned an achievement, with their name and picture.</summary>
+    Task<IReadOnlyList<AchievementEntry>> GetAchievementEarnersAsync(Guid achievementId, CancellationToken cancellationToken = default);
 }

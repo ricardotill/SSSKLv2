@@ -89,12 +89,32 @@ public sealed class AppNavigator(
 
     public Task OpenAsync(string path) => NativeRoutes.Resolve(path) switch
     {
+        null => OpenWebAsync(path.TrimStart('/')),
         { Page: NativePage.Pos } => SwitchTabAsync("pos"),
         { Page: NativePage.Notifications } => SwitchTabAsync("notifications"),
         { Page: NativePage.Profile } => OpenProfileAsync(),
         { Page: NativePage.Settings } => OpenSettingsAsync(),
+        // Your own profile is the Profiel tab.
+        { Page: NativePage.UserProfile, Id: var id } when id == currentUser.User?.Id => OpenProfileAsync(),
+        { Page: NativePage.Orders } route => PushAsync<OrdersPage>(route),
+        { Page: NativePage.TopUps } route => PushAsync<TopUpsPage>(route),
+        { Page: NativePage.SaldoList } route => PushAsync<SaldoListPage>(route),
+        { Page: NativePage.UserProfile } route => PushAsync<UserProfilePage>(route),
+        { Page: NativePage.Leaderboard } route => PushAsync<LeaderboardPage>(route),
+        { Page: NativePage.Stats } route => PushAsync<StatsPage>(route),
+        { Page: NativePage.Achievements } route => PushAsync<AchievementsPage>(route),
+        { Page: NativePage.AchievementDetail } route => PushAsync<AchievementDetailPage>(route),
+        { Page: NativePage.About } route => PushAsync<AboutPage>(route),
         _ => OpenWebAsync(path.TrimStart('/'))
     };
+
+    /// <summary>Pushes a native page on the current tab (back returns to where you were).</summary>
+    private Task PushAsync<TPage>(NativeRoute route) where TPage : Page => GuardedAsync(async shell =>
+    {
+        var page = services.GetRequiredService<TPage>();
+        (page as INativePage)?.Prepare(route);
+        await shell.Navigation.PushAsync(page);
+    });
 
     /// <summary>
     /// Shows an SPA route on the "Meer" tab: on top of what that tab shows (so back returns there), or in

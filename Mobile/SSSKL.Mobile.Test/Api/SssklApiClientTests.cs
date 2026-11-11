@@ -192,4 +192,104 @@ public class SssklApiClientTests
         request.Method.Should().Be(HttpMethod.Post);
         request.RequestUri.Should().Be("https://api.test/api/v1/Notifications/read-all");
     }
+
+    [TestMethod]
+    public async Task GetPersonalOrdersAsync_ReadsThePage()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        var handler = new StubHttpHandler((_, _) => StubHttpHandler.Json(
+            $$"""{"items":[{"id":"{{id}}","createdOn":"2026-11-11T09:30:00","productName":"Bier","amount":2,"paid":3.0,"userFullName":"Jan"}],"totalCount":41}"""));
+
+        // Act
+        var page = await CreateSut(handler).GetPersonalOrdersAsync(20, 20);
+
+        // Assert
+        handler.Requests.Single().Request.RequestUri.Should().Be("https://api.test/api/v1/Order/personal?skip=20&take=20");
+        page.TotalCount.Should().Be(41);
+        page.Items.Should().ContainSingle().Which.Should().BeEquivalentTo(new OrderItem
+        {
+            Id = id, CreatedOn = new DateTime(2026, 11, 11, 9, 30, 0), ProductName = "Bier", Amount = 2, Paid = 3.0m
+        });
+    }
+
+    [TestMethod]
+    public async Task DeleteOrderAsync_DeletesIt()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        var handler = new StubHttpHandler((_, _) => StubHttpHandler.Status(HttpStatusCode.NoContent));
+
+        // Act
+        await CreateSut(handler).DeleteOrderAsync(id);
+
+        // Assert
+        var request = handler.Requests.Single().Request;
+        request.Method.Should().Be(HttpMethod.Delete);
+        request.RequestUri.Should().Be($"https://api.test/api/v1/Order/{id}");
+    }
+
+    [TestMethod]
+    [DataRow(LeaderboardPeriod.Last12Hours, "12hour/")]
+    [DataRow(LeaderboardPeriod.Month, "monthly/")]
+    [DataRow(LeaderboardPeriod.AllTime, "")]
+    public async Task GetLeaderboardAsync_UsesThePeriodsRoute(LeaderboardPeriod period, string route)
+    {
+        // Arrange
+        var product = Guid.NewGuid();
+        var handler = new StubHttpHandler((_, _) => StubHttpHandler.Json(
+            """[{"position":1,"fullName":"Jan","productName":"Bier","amount":12,"userId":"u1"}]"""));
+
+        // Act
+        var entries = await CreateSut(handler).GetLeaderboardAsync(product, period);
+
+        // Assert
+        handler.Requests.Single().Request.RequestUri.Should().Be($"https://api.test/api/v1/Leaderboard/{route}{product}");
+        entries.Should().ContainSingle().Which.Amount.Should().Be(12);
+    }
+
+    [TestMethod]
+    public async Task RecalculateStatsAsync_TooSoon_ThrowsWith429()
+    {
+        // Arrange
+        var handler = new StubHttpHandler((_, _) => StubHttpHandler.Status(HttpStatusCode.TooManyRequests));
+
+        // Act
+        var act = () => CreateSut(handler).RecalculateStatsAsync("u1");
+
+        // Assert
+        (await act.Should().ThrowAsync<ApiException>()).Which.StatusCode.Should().Be(HttpStatusCode.TooManyRequests);
+        var request = handler.Requests.Single().Request;
+        request.Method.Should().Be(HttpMethod.Post);
+        request.RequestUri.Should().Be("https://api.test/api/v1/ApplicationUser/u1/stats/recalculate");
+    }
+
+    [TestMethod]
+    public async Task GetAchievementListingAsync_ReadsTheListing()
+    {
+        // Arrange
+        var handler = new StubHttpHandler((_, _) => StubHttpHandler.Json(
+            """[{"id":"6f9619ff-8b86-d011-b42d-00cf4fc964ff","name":"Dorstig","description":"10 bier","dateAdded":null,"imageUrl":null,"completed":false,"tier":"Gold","parentAchievementId":null,"parentAchievementName":null}]"""));
+
+        // Act
+        var listing = await CreateSut(handler).GetAchievementListingAsync("u 1");
+
+        // Assert
+        handler.Requests.Single().Request.RequestUri!.AbsoluteUri.Should().Be("https://api.test/api/v1/Achievement/all-for-user/u%201");
+        listing.Should().ContainSingle().Which.Tier.Should().Be("Gold");
+    }
+
+    [TestMethod]
+    public async Task GetProductsAsync_GetsAllProducts()
+    {
+        // Arrange
+        var handler = new StubHttpHandler((_, _) => StubHttpHandler.Json("""[{"id":"6f9619ff-8b86-d011-b42d-00cf4fc964ff","name":"Bier","price":1.5,"stock":3,"enableLeaderboard":true}]"""));
+
+        // Act
+        var products = await CreateSut(handler).GetProductsAsync();
+
+        // Assert
+        handler.Requests.Single().Request.RequestUri.Should().Be("https://api.test/api/v1/Product?all=true");
+        products.Should().ContainSingle().Which.EnableLeaderboard.Should().BeTrue();
+    }
 }

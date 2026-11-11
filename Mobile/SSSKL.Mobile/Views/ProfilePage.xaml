@@ -115,25 +115,28 @@
                 <FlexLayout Wrap="Wrap" BindableLayout.ItemsSource="{Binding Achievements}">
                     <BindableLayout.ItemTemplate>
                         <DataTemplate x:DataType="vm:AchievementItem">
-                            <VerticalStackLayout FlexLayout.Basis="33.3%" Padding="4" Spacing="4"
-                                                 SemanticProperties.Description="{Binding Name}">
-                                <Image Source="{Binding ImageUrl}" HeightRequest="64" WidthRequest="64" Aspect="AspectFit" />
-                                <Label Text="{Binding Name}" FontSize="12" HorizontalTextAlignment="Center"
-                                       LineBreakMode="TailTruncation" MaxLines="2" />
-                            </VerticalStackLayout>
+                            <controls:Pressable FlexLayout.Basis="33.3%" SemanticProperties.Description="{Binding Name}"
+                                                Command="{Binding OpenAchievementCommand, Source={RelativeSource AncestorType={x:Type vm:ProfileViewModel}}, x:DataType=vm:ProfileViewModel}"
+                                                CommandParameter="{Binding .}">
+                                <VerticalStackLayout Padding="4" Spacing="4">
+                                    <Image Source="{Binding ImageUrl}" HeightRequest="64" WidthRequest="64" Aspect="AspectFit" />
+                                    <Label Text="{Binding Name}" FontSize="12" HorizontalTextAlignment="Center"
+                                           LineBreakMode="TailTruncation" MaxLines="2" />
+                                </VerticalStackLayout>
+                            </controls:Pressable>
                         </DataTemplate>
                     </BindableLayout.ItemTemplate>
                 </FlexLayout>
 
-                <!-- More in the web app, and the native settings -->
+                <!-- Your orders, statistics and achievements, and the settings -->
                 <Border Style="{StaticResource Group}">
                     <VerticalStackLayout>
                         <controls:MenuRow IsFirst="True" Icon="{x:Static loc:Icons.Rosette}" Title="{x:Static loc:Texts.Achievements}"
-                                          Command="{Binding OpenWebCommand}" CommandParameter="achievements" />
+                                          Command="{Binding OpenCommand}" CommandParameter="achievements" />
                         <controls:MenuRow Icon="{x:Static loc:Icons.History}" Title="{x:Static loc:Texts.MyOrders}"
-                                          Command="{Binding OpenWebCommand}" CommandParameter="orders/personal" />
+                                          Command="{Binding OpenCommand}" CommandParameter="orders/personal" />
                         <controls:MenuRow Icon="{x:Static loc:Icons.ChartLine}" Title="{x:Static loc:Texts.Stats}"
-                                          Command="{Binding OpenWebCommand}" CommandParameter="stats" />
+                                          Command="{Binding OpenCommand}" CommandParameter="stats" />
                         <controls:MenuRow Icon="{x:Static loc:Icons.Settings}" Title="{x:Static loc:Texts.Settings}"
                                           Command="{Binding OpenSettingsCommand}" />
                     </VerticalStackLayout>

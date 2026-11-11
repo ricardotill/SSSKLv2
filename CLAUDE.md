@@ -89,9 +89,10 @@ It is still in development, so it is kept out of CI and deploys: it is not in `S
 - **`SSSKL.Mobile.Test`**: MSTest tests for Core.
 
 **Native vs. web**
-- Native screens: the welcome page (signed out), Kassa (POS), Notificaties (tab badge = unread count, `Services/NotificationCenter`), Profiel, settings, and the achievement and "what's new" popups.
-- The "Meer" tab lists the other features; the login sheet and pages without a native screen show the SPA in a WebView.
-- `Navigation/NativeRoutes` decides which SPA routes open natively (menu entries, notification `LinkUri`s); `IAppNavigator.OpenAsync(path)` goes through it and falls back to the WebView.
+- Native screens: the welcome page (signed out), the tabs Kassa (POS), Notificaties (tab badge = unread count, `Services/NotificationCenter`) and Profiel, and pushed pages: settings, Mijn bestellingen, Mijn saldo, Saldolijst, Leaderboard, Statistieken, Achievements (+ detail), other members' profiles (`users/{id}`, the app's own route) and Over SSSKL; plus the achievement and "what's new" popups.
+- The "Meer" tab lists the features without a tab; the login sheet and pages without a native screen (events, quotes, admin) show the SPA in a WebView.
+- `Navigation/NativeRoutes` decides which SPA routes open natively (menu entries, notification `LinkUri`s, `?userId=` for stats/achievements); `IAppNavigator.OpenAsync(path)` goes through it, pushes the page on the current tab (`Views/INativePage.Prepare` gets the route) and falls back to the WebView.
+- Paged lists derive from `ViewModels/PagedListViewModel`; dates and money go through `ViewModels/Display` (Dutch, UTC shown in local time).
 - Bind commands of toolkit behaviors (`TouchBehavior`) from code, or use `Controls/Pressable`: behaviors don't inherit the page's `BindingContext`.
 - Icons are Tabler Icons (MIT) SVGs in `SSSKL.Mobile/Resources/Images` (`ti_*.svg`, tab bar `tab_*.svg`), listed in `Core/Localization/Icons` and shown with `Controls/IconView` (tinted at runtime). Copy new ones from the `@tabler/icons` npm package's `icons/outline/` with `stroke` set to `#000000` and the full MIT notice in a comment at the top; a test checks every icon file for it.
 

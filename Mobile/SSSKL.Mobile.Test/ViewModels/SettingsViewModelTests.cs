@@ -172,13 +172,13 @@ public class SettingsViewModelTests
     }
 
     [TestMethod]
-    public async Task OpenWebCommand_OpensTheSettingsTab()
+    public async Task OpenCommand_OpensTheSettingsTab()
     {
         // Act
-        await CreateSut().OpenWebCommand.ExecuteAsync(SettingsViewModel.SecurityPath);
+        await CreateSut().OpenCommand.ExecuteAsync(SettingsViewModel.SecurityPath);
 
         // Assert
-        await _navigator.Received(1).OpenWebAsync("settings?tab=security");
+        await _navigator.Received(1).OpenAsync("settings?tab=security");
     }
 
     [TestMethod]

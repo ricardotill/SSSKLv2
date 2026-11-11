@@ -11,7 +11,7 @@ using SSSKL.Mobile.Core.Services;
 
 namespace SSSKL.Mobile.Core.ViewModels;
 
-public sealed record AchievementItem(string Name, string Description, string? ImageUrl, string Tier, DateTime DateAdded);
+public sealed record AchievementItem(string Name, string Description, string? ImageUrl, string Tier, DateTime DateAdded, Guid AchievementId = default);
 
 /// <summary>
 /// Your own profile: picture, saldo, stats, description and achievements. The description is edited as plain
@@ -109,7 +109,7 @@ public sealed partial class ProfileViewModel(
             foreach (var entry in achievementsTask.Result.OrderByDescending(a => a.DateAdded))
             {
                 Achievements.Add(new AchievementItem(entry.AchievementName, entry.AchievementDescription,
-                    endpoints.ResolveApiUrl(entry.ImageUrl), entry.Tier, entry.DateAdded));
+                    endpoints.ResolveApiUrl(entry.ImageUrl), entry.Tier, entry.DateAdded, entry.AchievementId));
             }
             HasNoAchievements = Achievements.Count == 0;
         }
@@ -227,7 +227,10 @@ public sealed partial class ProfileViewModel(
     }
 
     [RelayCommand]
-    private Task OpenWebAsync(string path) => navigator.OpenWebAsync(path);
+    private Task OpenAsync(string path) => navigator.OpenAsync(path);
+
+    [RelayCommand]
+    private Task OpenAchievementAsync(AchievementItem achievement) => navigator.OpenAsync($"achievements/{achievement.AchievementId}");
 
     [RelayCommand]
     private Task OpenSettingsAsync() => navigator.OpenSettingsAsync();

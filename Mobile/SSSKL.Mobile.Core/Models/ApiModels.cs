@@ -38,12 +38,31 @@ public sealed record OrderUser(string Id, string FullName, string? ProfilePictur
 
 public sealed record OrderSubmit(IReadOnlyList<Guid> Products, IReadOnlyList<Guid> Users, int Amount, bool Split);
 
+/// <summary><c>GET applicationuser/{id}/stats</c> (UserStatDto). Only for yourself, or any user for admins.</summary>
 public sealed record UserStats
 {
+    /// <summary>The API's "no data" value for the minimum-minutes records (int.MaxValue).</summary>
+    public const int NoMinutes = int.MaxValue;
+
+    public string UserId { get; init; } = "";
     public int TotalOrders { get; init; }
     public int TotalItemsBought { get; init; }
     public decimal TotalSpent { get; init; }
+    public decimal TotalTopUp { get; init; }
+    public int QuoteCount { get; init; }
+    public int QuoteVotesGiven { get; init; }
+    public int QuoteVotesReceived { get; init; }
+    public int ReactionCount { get; init; }
     public int CurrentStreak { get; init; }
+    public DateTime? LastActivityDate { get; init; }
+    public DateTime? MembershipStartDate { get; init; }
+    public int MaxOrdersPerHour { get; init; }
+    public int MinMinutesBetweenOrders { get; init; }
+    public int MinMinutesBetweenTopUp { get; init; }
+    public decimal MaxSingleTopUp { get; init; }
+    public DateTime? LastOrderDate { get; init; }
+    public DateTime? LastTopUpDate { get; init; }
+    public DateTime? LastStatsRecalculatedAt { get; init; }
 }
 
 public sealed record AchievementEntry
@@ -55,6 +74,89 @@ public sealed record AchievementEntry
     public DateTime DateAdded { get; init; }
     public string? ImageUrl { get; init; }
     public string Tier { get; init; } = "";
+    public Guid? ParentAchievementId { get; init; }
+    public string? ParentAchievementName { get; init; }
+    // Set on the earners list (achievement/{id}/earners).
+    public string? UserId { get; init; }
+    public string? UserName { get; init; }
+    public string? UserFullName { get; init; }
+    public string? UserProfilePictureUrl { get; init; }
+}
+
+/// <summary>An achievement with one user's progress (<c>achievement/all-for-user/{userId}</c>).</summary>
+public sealed record AchievementListing
+{
+    public Guid Id { get; init; }
+    public string Name { get; init; } = "";
+    public string Description { get; init; } = "";
+    public DateTime? DateAdded { get; init; }
+    public string? ImageUrl { get; init; }
+    public bool Completed { get; init; }
+    public string Tier { get; init; } = "";
+    public Guid? ParentAchievementId { get; init; }
+    public string? ParentAchievementName { get; init; }
+}
+
+/// <summary>A page of a list (PaginationObject).</summary>
+public sealed record Page<T>
+{
+    public IReadOnlyList<T> Items { get; init; } = [];
+    public int TotalCount { get; init; }
+}
+
+/// <summary>One of your orders (OrderDto). <see cref="CreatedOn"/> is UTC.</summary>
+public sealed record OrderItem
+{
+    public Guid Id { get; init; }
+    public DateTime CreatedOn { get; init; }
+    public string ProductName { get; init; } = "";
+    public int Amount { get; init; }
+    public decimal Paid { get; init; }
+}
+
+/// <summary>One of your top-ups (TopUpDto). <see cref="CreatedOn"/> is UTC.</summary>
+public sealed record TopUpItem
+{
+    public Guid Id { get; init; }
+    public decimal Saldo { get; init; }
+    public DateTime CreatedOn { get; init; }
+}
+
+/// <summary>A member as other members see them (ApplicationUserDto): saldo list and profiles.</summary>
+public sealed record UserSummary
+{
+    public string Id { get; init; } = "";
+    public string UserName { get; init; } = "";
+    public string FullName { get; init; } = "";
+    public decimal Saldo { get; init; }
+    public string? ProfilePictureUrl { get; init; }
+    public string? Description { get; init; }
+
+    public string DisplayName => string.IsNullOrWhiteSpace(FullName) ? UserName : FullName;
+}
+
+/// <summary>A product (ProductDto), for the leaderboard's product choice.</summary>
+public sealed record Product
+{
+    public Guid Id { get; init; }
+    public string Name { get; init; } = "";
+    public bool EnableLeaderboard { get; init; }
+}
+
+public enum LeaderboardPeriod
+{
+    Last12Hours,
+    Month,
+    AllTime
+}
+
+public sealed record LeaderboardEntry
+{
+    public int Position { get; init; }
+    public string FullName { get; init; } = "";
+    public int Amount { get; init; }
+    public string? ProfilePictureUrl { get; init; }
+    public string? UserId { get; init; }
 }
 
 /// <summary>A notification (<c>GET notifications</c>). <see cref="CreatedOn"/> is UTC, sent without an offset.</summary>

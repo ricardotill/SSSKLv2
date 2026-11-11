@@ -3,14 +3,26 @@ namespace SSSKL.Mobile.Core.Navigation;
 /// <summary>The app's native screens that an SPA route can lead to.</summary>
 public enum NativePage
 {
+    // Tabs
     Pos,
     Notifications,
     Profile,
-    Settings
+    // Pushed on the current tab
+    Settings,
+    Orders,
+    TopUps,
+    SaldoList,
+    UserProfile,
+    Leaderboard,
+    Stats,
+    Achievements,
+    AchievementDetail,
+    About
 }
 
-/// <param name="Id">The route's id segment (e.g. an event id), for pages that show one item.</param>
-public sealed record NativeRoute(NativePage Page, string? Id = null);
+/// <param name="Id">The route's id segment (a user or achievement id), for pages that show one item.</param>
+/// <param name="UserId">The <c>?userId=</c> of stats and achievements: another user's (null: your own).</param>
+public sealed record NativeRoute(NativePage Page, string? Id = null, string? UserId = null);
 
 /// <summary>
 /// Which SPA routes the app shows natively. Menu entries, notification links (<c>LinkUri</c>, e.g.
@@ -27,18 +39,47 @@ public static class NativeRoutes
         }
 
         var (segments, query) = Split(path);
+        var userId = QueryValue(query, "userId");
         return segments switch
         {
             ["pos"] => new NativeRoute(NativePage.Pos),
             ["notifications"] => new NativeRoute(NativePage.Notifications),
             ["profile"] => new NativeRoute(NativePage.Profile),
             // Single tabs (?tab=security, ...) are only in the SPA's settings page.
-            ["settings"] when !query.Contains("tab=", StringComparison.OrdinalIgnoreCase) => new NativeRoute(NativePage.Settings),
+            ["settings"] when QueryValue(query, "tab") is null => new NativeRoute(NativePage.Settings),
+            ["orders", "personal"] or ["personal"] => new NativeRoute(NativePage.Orders),
+            ["orders", "saldo"] => new NativeRoute(NativePage.TopUps),
+            ["users"] => new NativeRoute(NativePage.SaldoList),
+            // Not an SPA route (the SPA shows profiles in a drawer); the app's own link to a member's profile.
+            ["users", var id] => new NativeRoute(NativePage.UserProfile, id),
+            ["leaderboard"] => new NativeRoute(NativePage.Leaderboard),
+            ["stats"] => new NativeRoute(NativePage.Stats, UserId: userId),
+            ["achievements"] => new NativeRoute(NativePage.Achievements, UserId: userId),
+            ["achievements", var id] when Guid.TryParse(id, out _) => new NativeRoute(NativePage.AchievementDetail, id),
+            ["about"] => new NativeRoute(NativePage.About),
             _ => null
         };
     }
 
-    /// <summary>Lower-cased path segments and the raw query; absolute URLs and fragments are accepted.</summary>
+    /// <summary>The app's path for a member's profile (see <see cref="NativePage.UserProfile"/>).</summary>
+    public static string UserProfilePath(string userId) => $"users/{Uri.EscapeDataString(userId)}";
+
+    private static string? QueryValue(string query, string name)
+    {
+        foreach (var pair in query.Split('&', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var equals = pair.IndexOf('=');
+            var key = equals >= 0 ? pair[..equals] : pair;
+            if (string.Equals(Uri.UnescapeDataString(key), name, StringComparison.OrdinalIgnoreCase))
+            {
+                var value = equals >= 0 ? Uri.UnescapeDataString(pair[(equals + 1)..]) : "";
+                return value.Length == 0 ? null : value;
+            }
+        }
+        return null;
+    }
+
+    /// <summary>The path segments (the first lower-cased) and the raw query; absolute URLs and fragments are accepted.</summary>
     private static (string[] Segments, string Query) Split(string path)
     {
         var value = path.Trim();
@@ -54,8 +95,9 @@ public static class NativeRoutes
         var question = value.IndexOf('?');
         var query = question >= 0 ? value[(question + 1)..] : "";
         var route = question >= 0 ? value[..question] : value;
+        // Route names are case-insensitive; ids keep their case (user ids are case-sensitive strings).
         var segments = route.Split('/', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .Select(s => s.ToLowerInvariant())
+            .Select((s, i) => i == 0 ? s.ToLowerInvariant() : Uri.UnescapeDataString(s))
             .ToArray();
         return (segments, query);
     }

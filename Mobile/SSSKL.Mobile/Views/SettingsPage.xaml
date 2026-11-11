@@ -123,14 +123,14 @@
                     <VerticalStackLayout>
                         <controls:MenuRow IsFirst="True" Icon="{x:Static loc:Icons.Mail}" Title="{x:Static loc:Texts.Email}"
                                           Subtitle="{Binding Email}" Detail="{Binding EmailStatus}"
-                                          Command="{Binding OpenWebCommand}" CommandParameter="{x:Static vm:SettingsViewModel.SecurityPath}" />
+                                          Command="{Binding OpenCommand}" CommandParameter="{x:Static vm:SettingsViewModel.SecurityPath}" />
                         <controls:MenuRow Icon="{x:Static loc:Icons.Lock}" Title="{x:Static loc:Texts.PasswordAndPasskeys}"
-                                          Command="{Binding OpenWebCommand}" CommandParameter="{x:Static vm:SettingsViewModel.SecurityPath}" />
+                                          Command="{Binding OpenCommand}" CommandParameter="{x:Static vm:SettingsViewModel.SecurityPath}" />
                         <controls:MenuRow Icon="{x:Static loc:Icons.Shield}" Title="{x:Static loc:Texts.TwoFactor}"
                                           Detail="{Binding TwoFactorStatus}"
-                                          Command="{Binding OpenWebCommand}" CommandParameter="{x:Static vm:SettingsViewModel.TwoFactorPath}" />
+                                          Command="{Binding OpenCommand}" CommandParameter="{x:Static vm:SettingsViewModel.TwoFactorPath}" />
                         <controls:MenuRow Icon="{x:Static loc:Icons.Download}" Title="{x:Static loc:Texts.PersonalData}"
-                                          Command="{Binding OpenWebCommand}" CommandParameter="{x:Static vm:SettingsViewModel.PersonalDataPath}" />
+                                          Command="{Binding OpenCommand}" CommandParameter="{x:Static vm:SettingsViewModel.PersonalDataPath}" />
                     </VerticalStackLayout>
                 </Border>
 
@@ -139,7 +139,7 @@
                 <Border Style="{StaticResource Group}">
                     <VerticalStackLayout>
                         <controls:MenuRow IsFirst="True" Icon="{x:Static loc:Icons.InfoCircle}" Title="{x:Static loc:Texts.About}"
-                                          Command="{Binding OpenWebCommand}" CommandParameter="{x:Static vm:SettingsViewModel.AboutPath}" />
+                                          Command="{Binding OpenCommand}" CommandParameter="{x:Static vm:SettingsViewModel.AboutPath}" />
                         <controls:MenuRow Icon="{x:Static loc:Icons.Rosette}" Title="{x:Static loc:Texts.AppVersion}"
                                           Detail="{Binding AppVersion}" ShowChevron="False" InputTransparent="True" />
                     </VerticalStackLayout>

@@ -62,14 +62,35 @@ public class PosViewModelTests
     }
 
     [TestMethod]
-    public async Task LoadAsync_ShowsSaldo()
+    public async Task LoadAsync_YourRowSaysJezelfWithYourSaldo()
     {
         // Act
         var sut = await CreateLoadedSutAsync();
 
         // Assert
-        sut.Saldo.Should().Be((-2.50m).ToString("C", System.Globalization.CultureInfo.GetCultureInfo("nl-NL")));
-        sut.IsSaldoNegative.Should().BeTrue();
+        var self = sut.VisibleUsers[0];
+        self.IsSelf.Should().BeTrue();
+        self.Title.Should().Be(Texts.Yourself);
+        self.SaldoText.Should().Be("€ -2,50");
+        self.IsSaldoNegative.Should().BeTrue();
+        self.Initials.Should().Be("IZ", "the avatar still shows your own initials");
+        sut.VisibleUsers[1].Title.Should().Be("Ander Persoon");
+        sut.VisibleUsers[1].HasSaldo.Should().BeFalse();
+    }
+
+    [TestMethod]
+    public async Task UserQuery_KeepsYourOwnRowOnTop()
+    {
+        // Arrange
+        var sut = await CreateLoadedSutAsync();
+
+        // Act
+        sut.UserQuery = "ander";
+
+        // Assert
+        sut.VisibleUsers.Select(u => u.Id).Should().Equal(MeId, OtherId);
+        sut.UserQuery = "niemand";
+        sut.VisibleUsers.Select(u => u.Id).Should().Equal(MeId);
     }
 
     [TestMethod]
@@ -196,18 +217,5 @@ public class PosViewModelTests
         await _dialogs.Received(1).AlertAsync(Texts.OrderFailed, "Onvoldoende voorraad");
         sut.Products[0].IsSelected.Should().BeTrue();
         sut.IsSubmitting.Should().BeFalse();
-    }
-
-    [TestMethod]
-    public async Task UserQuery_FiltersByName()
-    {
-        // Arrange
-        var sut = await CreateLoadedSutAsync();
-
-        // Act
-        sut.UserQuery = "ander";
-
-        // Assert
-        sut.VisibleUsers.Should().ContainSingle().Which.Id.Should().Be(OtherId);
     }
 }

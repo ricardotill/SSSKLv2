@@ -10,25 +10,43 @@
              Title="{x:Static loc:Texts.TabPos}">
     <ContentPage.Resources>
         <toolkit:InvertedBoolConverter x:Key="Not" />
+        <!-- Saldo card. The darker shades keep white text at WCAG AA contrast (5.5:1 and up). -->
+        <LinearGradientBrush x:Key="SaldoBrush" StartPoint="0,0" EndPoint="1,1">
+            <GradientStop Color="{StaticResource Primary700}" Offset="0" />
+            <GradientStop Color="{StaticResource Primary900}" Offset="1" />
+        </LinearGradientBrush>
+        <LinearGradientBrush x:Key="SaldoNegativeBrush" StartPoint="0,0" EndPoint="1,1">
+            <GradientStop Color="#B91C1C" Offset="0" />
+            <GradientStop Color="#7F1D1D" Offset="1" />
+        </LinearGradientBrush>
     </ContentPage.Resources>
 
     <Grid RowDefinitions="*,Auto">
         <RefreshView IsRefreshing="{Binding IsRefreshing}" Command="{Binding LoadCommand}">
             <ScrollView>
                 <VerticalStackLayout Padding="16" Spacing="12">
-                    <!-- Your saldo, refreshed on load and after every order -->
-                    <Border Style="{StaticResource Group}" Padding="14,10" SemanticProperties.Description="{Binding SaldoDescription}">
-                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
-                            <controls:IconView Icon="{x:Static loc:Icons.Wallet}" Size="20"
-                                               Color="{StaticResource Primary500}" />
-                            <Label Grid.Column="1" Text="{x:Static loc:Texts.MySaldo}" Style="{StaticResource Muted}" VerticalOptions="Center" />
-                            <Label Grid.Column="2" Text="{Binding Saldo}" FontAttributes="Bold" FontSize="18" VerticalOptions="Center">
-                                <Label.Triggers>
-                                    <DataTrigger TargetType="Label" Binding="{Binding IsSaldoNegative}" Value="True">
-                                        <Setter Property="TextColor" Value="{StaticResource Danger}" />
-                                    </DataTrigger>
-                                </Label.Triggers>
-                            </Label>
+                    <!-- Your saldo as a wallet card (red when negative), refreshed on load and after every order -->
+                    <Border StrokeThickness="0" StrokeShape="RoundRectangle 18" Padding="18,16"
+                            Background="{StaticResource SaldoBrush}"
+                            SemanticProperties.Description="{Binding SaldoDescription}">
+                        <Border.Shadow>
+                            <Shadow Brush="Black" Opacity="0.18" Radius="14" Offset="0,4" />
+                        </Border.Shadow>
+                        <Border.Triggers>
+                            <DataTrigger TargetType="Border" Binding="{Binding IsSaldoNegative}" Value="True">
+                                <Setter Property="Background" Value="{StaticResource SaldoNegativeBrush}" />
+                            </DataTrigger>
+                        </Border.Triggers>
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                            <VerticalStackLayout Spacing="2" VerticalOptions="Center">
+                                <Label Text="{x:Static loc:Texts.MySaldo}" FontSize="14" TextColor="White" Opacity="0.85" />
+                                <Label Text="{Binding Saldo}" FontSize="30" FontAttributes="Bold" TextColor="White"
+                                       LineBreakMode="NoWrap" />
+                            </VerticalStackLayout>
+                            <Border Grid.Column="1" WidthRequest="48" HeightRequest="48" StrokeThickness="0"
+                                    StrokeShape="RoundRectangle 24" BackgroundColor="#33FFFFFF" VerticalOptions="Center">
+                                <controls:IconView Icon="{x:Static loc:Icons.Wallet}" Size="24" Color="White" />
+                            </Border>
                         </Grid>
                     </Border>
 

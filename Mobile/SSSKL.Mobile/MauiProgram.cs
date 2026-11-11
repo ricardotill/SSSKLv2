@@ -45,6 +45,15 @@ public static class MauiProgram
                 WebViewPlatform.Configure(handler, webView);
             }
         });
+        // Entries sit in their own rounded boxes (FieldBox style): drop the platform underline / border.
+        Microsoft.Maui.Handlers.EntryHandler.Mapper.AppendToMapping("Borderless", (handler, _) =>
+        {
+#if ANDROID
+            handler.PlatformView.Background = null;
+#elif IOS
+            handler.PlatformView.BorderStyle = UIKit.UITextBorderStyle.None;
+#endif
+        });
 
         var endpoints = CreateEndpoints();
         var services = builder.Services;
@@ -65,23 +74,60 @@ public static class MauiProgram
 
         services.AddSingleton<CurrentUserService>();
         services.AddSingleton<ISettingsStore, PreferencesSettingsStore>();
+        services.AddSingleton<IThemeApplier, ThemeApplier>();
+        services.AddSingleton<ThemePreference>();
         services.AddSingleton<IPopupPresenter, PopupPresenter>();
         services.AddSingleton<IUserDialogs, UserDialogs>();
         services.AddSingleton<IPhotoPicker, MediaPhotoPicker>();
+        services.AddSingleton<IShareService, ShareService>();
+        services.AddSingleton<IExternalLauncher, ExternalLauncher>();
         services.AddSingleton<IWebDataCleaner, WebDataCleaner>();
         services.AddSingleton<AppNavigator>();
         services.AddSingleton<IAppNavigator>(sp => sp.GetRequiredService<AppNavigator>());
         services.AddSingleton<AchievementPopupCoordinator>();
+        services.AddSingleton<NotificationCenter>();
         services.AddSingleton<WhatsNewCoordinator>();
         services.AddSingleton<WebNavigationPolicy>();
         services.AddSingleton<WebSession>();
 
         services.AddTransient<PosViewModel>();
         services.AddTransient<ProfileViewModel>();
+        services.AddTransient<MoreViewModel>();
+        services.AddTransient<SettingsViewModel>();
+        services.AddTransient<NotificationsViewModel>();
+        services.AddTransient<OrdersViewModel>();
+        services.AddTransient<TopUpsViewModel>();
+        services.AddTransient<SaldoListViewModel>();
+        services.AddTransient<LeaderboardViewModel>();
+        services.AddTransient<StatsViewModel>();
+        services.AddTransient<AchievementsViewModel>();
+        services.AddTransient<AchievementDetailViewModel>();
+        services.AddTransient<UserProfileViewModel>();
+        services.AddTransient<CommentsViewModel>();
+        services.AddTransient<EventsViewModel>();
+        services.AddTransient<EventDetailViewModel>();
+        services.AddTransient<QuotesViewModel>();
+        services.AddTransient<QuoteDetailViewModel>();
         services.AddTransient<PosPage>();
         services.AddTransient<ProfilePage>();
-        // Transient: every AppShell (one per sign-in) creates a fresh "Meer" tab that attaches itself, so no
-        // SPA state of a previous user survives.
+        services.AddTransient<MorePage>();
+        services.AddTransient<SettingsPage>();
+        services.AddTransient<NotificationsPage>();
+        services.AddTransient<OrdersPage>();
+        services.AddTransient<TopUpsPage>();
+        services.AddTransient<SaldoListPage>();
+        services.AddTransient<LeaderboardPage>();
+        services.AddTransient<StatsPage>();
+        services.AddTransient<AchievementsPage>();
+        services.AddTransient<AchievementDetailPage>();
+        services.AddTransient<UserProfilePage>();
+        services.AddTransient<AboutPage>();
+        services.AddTransient<EventsPage>();
+        services.AddTransient<EventDetailPage>();
+        services.AddTransient<QuotesPage>();
+        services.AddTransient<QuoteDetailPage>();
+        // Transient: AppNavigator creates one per AppShell (one per sign-in) and releases it on sign-out, so
+        // no SPA state of a previous user survives.
         services.AddTransient<WebPage>();
         services.AddTransient<WelcomePage>();
         services.AddTransient<LoginPage>();

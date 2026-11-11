@@ -1,15 +1,24 @@
 <?xml version="1.0" encoding="utf-8" ?>
+<!-- One instance per signed-in shell, pushed again for every web feature: its handler must survive being
+     popped (DisconnectPolicy Manual), so the SPA stays loaded and pages switch without a reload. -->
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:controls="clr-namespace:SSSKL.Mobile.Controls"
              xmlns:loc="clr-namespace:SSSKL.Mobile.Core.Localization;assembly=SSSKL.Mobile.Core"
              x:Class="SSSKL.Mobile.Views.WebPage"
-             Title="{x:Static loc:Texts.TabMore}"
-             Shell.NavBarIsVisible="False">
+             HandlerProperties.DisconnectPolicy="Manual">
     <Grid>
         <controls:SssklWebView x:Name="WebView"
+                               Opacity="0"
+                               HandlerProperties.DisconnectPolicy="Manual"
+                               BackgroundColor="{AppThemeBinding Light={StaticResource PageLight}, Dark={StaticResource PageDark}}"
                                Navigating="OnNavigating"
                                Navigated="OnNavigated" />
         <ActivityIndicator x:Name="Loading" IsRunning="True" HorizontalOptions="Center" VerticalOptions="Center" />
+        <VerticalStackLayout x:Name="ErrorPanel" IsVisible="False" Spacing="12" Padding="24"
+                             HorizontalOptions="Center" VerticalOptions="Center">
+            <Label Text="{x:Static loc:Texts.LoadFailed}" HorizontalTextAlignment="Center" />
+            <Button Text="{x:Static loc:Texts.Retry}" Clicked="OnRetry" />
+        </VerticalStackLayout>
     </Grid>
 </ContentPage>

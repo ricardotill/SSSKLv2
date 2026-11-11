@@ -1,6 +1,6 @@
 import { Component, ChangeDetectionStrategy, inject, signal, OnInit, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { DataViewModule, DataViewLazyLoadEvent } from 'primeng/dataview';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
@@ -13,6 +13,8 @@ import { AuthService } from '../../core/auth/auth.service';
 import { GlobalSettingsService } from '../admin/services/global-settings.service';
 import { QuoteCardComponent } from './components/quote-card/quote-card.component';
 import { QuoteFormDialogComponent } from './components/quote-form-dialog/quote-form-dialog.component';
+import { EmbeddedService } from '../../core/services/embedded.service';
+import { FROM_APP_STATE } from '../../core/services/native-bridge.service';
 
 @Component({
   selector: 'app-quotes',
@@ -99,6 +101,9 @@ export default class QuotesComponent implements OnInit {
   private readonly dialogService = inject(DialogService);
   private readonly messageService = inject(MessageService);
   private readonly settingsService = inject(GlobalSettingsService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly embedded = inject(EmbeddedService);
   ls = inject(LanguageService);
 
   quotes = signal<QuoteDto[]>([]);
@@ -123,6 +128,40 @@ export default class QuotesComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadSettings();
+    this.openFormFromLink();
+  }
+
+  /**
+   * `?new` opens the form for a new quote, `?edit=<id>` the form for that quote. The mobile app opens these
+   * links in its WebView (its quote pages are native) and gets the result handed back afterwards.
+   */
+  private openFormFromLink(): void {
+    const params = this.route.snapshot.queryParamMap;
+    if (params.has('new')) {
+      this.openQuoteForm(undefined, true);
+      return;
+    }
+    const editId = params.get('edit');
+    if (editId) {
+      this.quoteService.getQuote(editId).subscribe({
+        next: (quote) => this.openQuoteForm(quote, true),
+        error: () => this.finishLinkedForm('/quotes'),
+      });
+    }
+  }
+
+  /**
+   * After a form opened from a link: in the mobile app, hand back to its native page for `path`. The URL
+   * is reset first (marked as the app's own navigation, so it isn't handed over again), so the app's next
+   * `?new` or `?edit=` link opens the form again in the reused WebView.
+   */
+  private finishLinkedForm(path: string): void {
+    if (!this.embedded.isEmbedded) {
+      this.loadQuotes();
+      return;
+    }
+    void this.router.navigate(['/quotes'], { replaceUrl: true, state: { [FROM_APP_STATE]: true } });
+    this.embedded.notifyNative('open', path);
   }
 
   loadSettings(): void {
@@ -166,7 +205,8 @@ export default class QuotesComponent implements OnInit {
     return this.canEdit(quote);
   }
 
-  openQuoteForm(quote?: QuoteDto): void {
+  /** @param fromLink opened by `?new` / `?edit=`: hand the result back to the mobile app when it's done. */
+  openQuoteForm(quote?: QuoteDto, fromLink = false): void {
     const ref = this.dialogService.open(QuoteFormDialogComponent, {
       header: quote ? 'Edit Quote' : 'Add Quote',
       width: '500px',
@@ -175,20 +215,32 @@ export default class QuotesComponent implements OnInit {
 
     if (ref) {
       ref.onClose.subscribe((result: any) => {
+        const backTo = quote ? `/quotes/${quote.id}` : '/quotes';
+        if (!result && fromLink) {
+          this.finishLinkedForm(backTo);
+        }
         if (result) {
           if (quote) {
             this.quoteService.updateQuote(quote.id, result).subscribe({
               next: () => {
                 this.messageService.add({ severity: 'success', summary: this.ls.t().success, detail: this.ls.t().quote_updated_success });
-                this.loadQuotes();
+                if (fromLink) {
+                  this.finishLinkedForm(backTo);
+                } else {
+                  this.loadQuotes();
+                }
               },
               error: () => this.messageService.add({ severity: 'error', summary: this.ls.t().error, detail: this.ls.t().update_failed })
             });
           } else {
             this.quoteService.createQuote(result).subscribe({
-              next: () => {
+              next: (created) => {
                 this.messageService.add({ severity: 'success', summary: this.ls.t().success, detail: this.ls.t().quote_added_success });
-                this.loadQuotes();
+                if (fromLink) {
+                  this.finishLinkedForm(created?.id ? `/quotes/${created.id}` : '/quotes');
+                } else {
+                  this.loadQuotes();
+                }
               },
               error: () => this.messageService.add({ severity: 'error', summary: this.ls.t().error, detail: this.ls.t().update_failed })
             });

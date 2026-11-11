@@ -34,4 +34,16 @@ public class WebNavigationPolicyTests
     [TestMethod]
     public void Decide_UnknownScheme_Blocks() =>
         _sut.Decide("intent://foo#Intent;end").Kind.Should().Be(WebNavigationKind.Block);
+
+    [TestMethod]
+    public void Decide_OpenWithPath_PassesTheRoute() =>
+        _sut.Decide("ssskl-app://open?path=%2Fevents%2F1%3Fx%3D1").Should()
+            .Be(new WebNavigationDecision(WebNavigationKind.Native, "open", "/events/1?x=1"));
+
+    [TestMethod]
+    [DataRow("ssskl-app://open?path=https%3A%2F%2Fevil.test")]
+    [DataRow("ssskl-app://open?path=%2F%2Fevil.test")]
+    [DataRow("ssskl-app://open")]
+    public void Decide_OpenWithoutAnAppRoute_HasNoPath(string url) =>
+        _sut.Decide(url).NativePath.Should().BeNull();
 }

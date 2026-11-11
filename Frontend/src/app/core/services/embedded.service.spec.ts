@@ -50,6 +50,15 @@ describe('EmbeddedService', () => {
     expect(win.location.assign).toHaveBeenCalledWith('ssskl-app://pos');
   });
 
+  it('passes the route to show natively', () => {
+    const win = fakeWindow({ global: true });
+    const service = setup(win);
+
+    service.notifyNative('open', '/events/1?x=a b');
+
+    expect(win.location.assign).toHaveBeenCalledWith('ssskl-app://open?path=%2Fevents%2F1%3Fx%3Da%20b');
+  });
+
   it('does nothing in a normal browser', () => {
     const win = fakeWindow();
     const service = setup(win);

@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:SSSKL.Mobile.Controls"
+             xmlns:vm="clr-namespace:SSSKL.Mobile.Core.ViewModels;assembly=SSSKL.Mobile.Core"
+             xmlns:loc="clr-namespace:SSSKL.Mobile.Core.Localization;assembly=SSSKL.Mobile.Core"
+             x:Class="SSSKL.Mobile.Views.AchievementsPage"
+             x:DataType="vm:AchievementsViewModel"
+             Title="{Binding Title}">
+    <Grid>
+        <RefreshView IsRefreshing="{Binding IsRefreshing}" Command="{Binding LoadCommand}">
+            <CollectionView ItemsSource="{Binding Items}" SelectionMode="None" Margin="12,0">
+                <CollectionView.ItemsLayout>
+                    <GridItemsLayout Orientation="Vertical" Span="2" HorizontalItemSpacing="0" VerticalItemSpacing="0" />
+                </CollectionView.ItemsLayout>
+
+                <CollectionView.Header>
+                    <VerticalStackLayout Padding="4,8,4,8" Spacing="12">
+                        <Label Text="{Binding Subtitle}" Style="{StaticResource Muted}" />
+                        <!-- Filter: a segmented control like the colour-mode switch in the settings -->
+                        <Border Style="{StaticResource SegmentTrack}">
+                            <Grid ColumnDefinitions="*,*,*" ColumnSpacing="3">
+                                <Border Style="{StaticResource Segment}" SemanticProperties.Description="{x:Static loc:Texts.FilterAll}">
+                                    <Border.GestureRecognizers>
+                                        <TapGestureRecognizer Command="{Binding SetFilterCommand}" CommandParameter="{x:Static vm:AchievementFilter.All}" />
+                                    </Border.GestureRecognizers>
+                                    <Border.Triggers>
+                                        <DataTrigger TargetType="Border" Binding="{Binding IsAll}" Value="True">
+                                            <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource SurfaceLight}, Dark={StaticResource SurfaceDark}}" />
+                                        </DataTrigger>
+                                    </Border.Triggers>
+                                    <Label Text="{x:Static loc:Texts.FilterAll}" Style="{StaticResource SegmentText}" HorizontalOptions="Center" />
+                                </Border>
+                                <Border Grid.Column="1" Style="{StaticResource Segment}" SemanticProperties.Description="{x:Static loc:Texts.FilterEarned}">
+                                    <Border.GestureRecognizers>
+                                        <TapGestureRecognizer Command="{Binding SetFilterCommand}" CommandParameter="{x:Static vm:AchievementFilter.Earned}" />
+                                    </Border.GestureRecognizers>
+                                    <Border.Triggers>
+                                        <DataTrigger TargetType="Border" Binding="{Binding IsEarned}" Value="True">
+                                            <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource SurfaceLight}, Dark={StaticResource SurfaceDark}}" />
+                                        </DataTrigger>
+                                    </Border.Triggers>
+                                    <Label Text="{x:Static loc:Texts.FilterEarned}" Style="{StaticResource SegmentText}" HorizontalOptions="Center" />
+                                </Border>
+                                <Border Grid.Column="2" Style="{StaticResource Segment}" SemanticProperties.Description="{x:Static loc:Texts.FilterLocked}">
+                                    <Border.GestureRecognizers>
+                                        <TapGestureRecognizer Command="{Binding SetFilterCommand}" CommandParameter="{x:Static vm:AchievementFilter.Locked}" />
+                                    </Border.GestureRecognizers>
+                                    <Border.Triggers>
+                                        <DataTrigger TargetType="Border" Binding="{Binding IsLocked}" Value="True">
+                                            <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource SurfaceLight}, Dark={StaticResource SurfaceDark}}" />
+                                        </DataTrigger>
+                                    </Border.Triggers>
+                                    <Label Text="{x:Static loc:Texts.FilterLocked}" Style="{StaticResource SegmentText}" HorizontalOptions="Center" />
+                                </Border>
+                            </Grid>
+                        </Border>
+                    </VerticalStackLayout>
+                </CollectionView.Header>
+
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="vm:AchievementRow">
+                        <controls:Pressable Padding="4" SemanticProperties.Description="{Binding AccessibleText}"
+                                            Command="{Binding OpenCommand, Source={RelativeSource AncestorType={x:Type vm:AchievementsViewModel}}, x:DataType=vm:AchievementsViewModel}"
+                                            CommandParameter="{Binding .}">
+                            <Border Style="{StaticResource Card}" Padding="0">
+                                <VerticalStackLayout>
+                                    <!-- Image; locked ones are faded like the SPA's greyscale -->
+                                    <Grid HeightRequest="112"
+                                          BackgroundColor="{AppThemeBinding Light={StaticResource SunkenLight}, Dark={StaticResource SunkenDark}}">
+                                        <Image Source="{Binding ImageUrl}" Aspect="AspectFit" Margin="12" IsVisible="{Binding HasImage}">
+                                            <Image.Triggers>
+                                                <DataTrigger TargetType="Image" Binding="{Binding IsLocked}" Value="True">
+                                                    <Setter Property="Opacity" Value="0.35" />
+                                                </DataTrigger>
+                                            </Image.Triggers>
+                                        </Image>
+                                        <controls:IconView Icon="{x:Static loc:Icons.Rosette}" Size="56" IsVisible="{Binding HasNoImage}"
+                                                           Color="{AppThemeBinding Light={StaticResource Primary500}, Dark={StaticResource Primary400}}">
+                                            <controls:IconView.Triggers>
+                                                <DataTrigger TargetType="controls:IconView" Binding="{Binding IsLocked}" Value="True">
+                                                    <Setter Property="Color" Value="{AppThemeBinding Light={StaticResource MutedLight}, Dark={StaticResource MutedDark}}" />
+                                                </DataTrigger>
+                                            </controls:IconView.Triggers>
+                                        </controls:IconView>
+                                    </Grid>
+                                    <VerticalStackLayout Padding="12,10,12,12" Spacing="6">
+                                        <controls:TierBadge Tier="{Binding Tier}" />
+                                        <Label Text="{Binding Name}" FontAttributes="Bold" FontSize="15" MaxLines="2" LineBreakMode="TailTruncation"
+                                               TextColor="{AppThemeBinding Light={StaticResource HeadingLight}, Dark={StaticResource HeadingDark}}" />
+                                        <Label Text="{Binding Description}" Style="{StaticResource Muted}" FontSize="13" MaxLines="3" LineBreakMode="TailTruncation" />
+                                        <Label Text="{Binding StatusText}" FontSize="12" FontAttributes="Bold"
+                                               TextColor="{AppThemeBinding Light={StaticResource Primary700}, Dark={StaticResource Primary400}}">
+                                            <Label.Triggers>
+                                                <DataTrigger TargetType="Label" Binding="{Binding IsLocked}" Value="True">
+                                                    <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource MutedLight}, Dark={StaticResource MutedDark}}" />
+                                                    <Setter Property="FontAttributes" Value="Italic" />
+                                                </DataTrigger>
+                                            </Label.Triggers>
+                                        </Label>
+                                    </VerticalStackLayout>
+                                </VerticalStackLayout>
+                            </Border>
+                        </controls:Pressable>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+
+                <CollectionView.EmptyView>
+                    <Label Text="{x:Static loc:Texts.NoAchievements}" IsVisible="{Binding IsEmpty}" Style="{StaticResource Muted}"
+                           HorizontalTextAlignment="Center" Margin="32,48" />
+                </CollectionView.EmptyView>
+                <CollectionView.Footer>
+                    <BoxView HeightRequest="16" Color="Transparent" />
+                </CollectionView.Footer>
+            </CollectionView>
+        </RefreshView>
+        <ActivityIndicator IsRunning="{Binding IsLoading}" IsVisible="{Binding IsLoading}" HorizontalOptions="Center" VerticalOptions="Center" />
+    </Grid>
+</ContentPage>

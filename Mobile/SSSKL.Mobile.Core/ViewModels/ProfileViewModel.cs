@@ -11,9 +11,12 @@ using SSSKL.Mobile.Core.Services;
 
 namespace SSSKL.Mobile.Core.ViewModels;
 
-public sealed record AchievementItem(string Name, string Description, string? ImageUrl, string Tier, DateTime DateAdded);
+public sealed record AchievementItem(string Name, string Description, string? ImageUrl, string Tier, DateTime DateAdded, Guid AchievementId = default);
 
-/// <summary>Your own profile: picture, saldo, stats and achievements. Editing beyond the picture is in the SPA.</summary>
+/// <summary>
+/// Your own profile: picture, saldo, stats, description and achievements. The description is edited as plain
+/// text (see <see cref="DescriptionText"/>); name and phone number are in the native settings.
+/// </summary>
 public sealed partial class ProfileViewModel(
     ISssklApi api,
     CurrentUserService currentUser,
@@ -59,7 +62,21 @@ public sealed partial class ProfileViewModel(
     public partial string Initials { get; set; } = "";
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasNoDescription))]
     public partial string? DescriptionHtml { get; set; }
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasNoDescription))]
+    public partial bool IsEditingDescription { get; set; }
+
+    [ObservableProperty]
+    public partial string DescriptionDraft { get; set; } = "";
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(SaveDescriptionCommand))]
+    public partial bool IsSavingDescription { get; set; }
+
+    public bool HasNoDescription => DescriptionHtml is null && !IsEditingDescription;
 
     [ObservableProperty]
     public partial int TotalOrders { get; set; }
@@ -92,7 +109,7 @@ public sealed partial class ProfileViewModel(
             foreach (var entry in achievementsTask.Result.OrderByDescending(a => a.DateAdded))
             {
                 Achievements.Add(new AchievementItem(entry.AchievementName, entry.AchievementDescription,
-                    endpoints.ResolveApiUrl(entry.ImageUrl), entry.Tier, entry.DateAdded));
+                    endpoints.ResolveApiUrl(entry.ImageUrl), entry.Tier, entry.DateAdded, entry.AchievementId));
             }
             HasNoAchievements = Achievements.Count == 0;
         }
@@ -162,7 +179,61 @@ public sealed partial class ProfileViewModel(
     }
 
     [RelayCommand]
-    private Task OpenWebAsync(string path) => navigator.OpenWebAsync(path);
+    private void EditDescription()
+    {
+        DescriptionDraft = DescriptionText.ToPlainText(DescriptionHtml);
+        IsEditingDescription = true;
+    }
+
+    [RelayCommand]
+    private void CancelEditDescription() => IsEditingDescription = false;
+
+    private bool CanSaveDescription() => !IsSavingDescription;
+
+    [RelayCommand(CanExecute = nameof(CanSaveDescription))]
+    private async Task SaveDescriptionAsync()
+    {
+        // Nothing typed: leave the stored HTML (and any formatting in it) alone.
+        if (DescriptionDraft.Trim() == DescriptionText.ToPlainText(DescriptionHtml))
+        {
+            IsEditingDescription = false;
+            return;
+        }
+        if (DescriptionText.HasRichFormatting(DescriptionHtml) &&
+            !await dialogs.ConfirmAsync(Texts.DescriptionLosesFormattingTitle, Texts.DescriptionLosesFormatting, Texts.SaveAnyway, Texts.Cancel))
+        {
+            return;
+        }
+
+        IsSavingDescription = true;
+        try
+        {
+            var html = DescriptionText.ToHtml(DescriptionDraft);
+            await api.UpdateMeAsync(new SelfUpdate(null, null, null, html));
+            DescriptionHtml = string.IsNullOrWhiteSpace(html) ? null : html;
+            IsEditingDescription = false;
+            await dialogs.ToastAsync(Texts.DescriptionSaved);
+            await RefreshUserQuietlyAsync();
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException or TaskCanceledException)
+        {
+            logger.LogWarning(ex, "Saving the description failed");
+            await dialogs.AlertAsync(Texts.Error, Texts.DescriptionSaveFailed);
+        }
+        finally
+        {
+            IsSavingDescription = false;
+        }
+    }
+
+    [RelayCommand]
+    private Task OpenAsync(string path) => navigator.OpenAsync(path);
+
+    [RelayCommand]
+    private Task OpenAchievementAsync(AchievementItem achievement) => navigator.OpenAsync($"achievements/{achievement.AchievementId}");
+
+    [RelayCommand]
+    private Task OpenSettingsAsync() => navigator.OpenSettingsAsync();
 
     [RelayCommand]
     private async Task LogoutAsync()
@@ -185,6 +256,19 @@ public sealed partial class ProfileViewModel(
             : $"{endpoints.ResolveApiUrl(user.ProfilePictureUrl)}{(user.ProfilePictureUrl.Contains('?') ? '&' : '?')}v={DateTime.UtcNow.Ticks}";
         Initials = UserItemViewModel.InitialsOf(user.DisplayName);
         DescriptionHtml = string.IsNullOrWhiteSpace(user.Description) ? null : user.Description;
+    }
+
+    /// <summary>Keeps the shared user (Meer, POS) in step; the page already shows the saved description.</summary>
+    private async Task RefreshUserQuietlyAsync()
+    {
+        try
+        {
+            await currentUser.RefreshAsync();
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException or TaskCanceledException)
+        {
+            logger.LogWarning(ex, "Refreshing the current user failed");
+        }
     }
 
     private async Task RunBusyAsync(Func<Task> action)

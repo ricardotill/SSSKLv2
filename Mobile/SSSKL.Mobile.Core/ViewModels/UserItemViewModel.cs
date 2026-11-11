@@ -1,4 +1,5 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using SSSKL.Mobile.Core.Localization;
 
 namespace SSSKL.Mobile.Core.ViewModels;
 
@@ -11,8 +12,24 @@ public sealed partial class UserItemViewModel(string id, string displayName, str
     public bool IsSelf => isSelf;
     public string Initials { get; } = InitialsOf(displayName);
 
+    /// <summary>What the row shows: "Jezelf" for your own row, the name for everyone else.</summary>
+    public string Title => isSelf ? Texts.Yourself : displayName;
+
     [ObservableProperty]
     public partial bool IsSelected { get; set; }
+
+    /// <summary>Your saldo, shown in your own row only; null elsewhere.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasSaldo), nameof(Description))]
+    public partial string? SaldoText { get; set; }
+
+    [ObservableProperty]
+    public partial bool IsSaldoNegative { get; set; }
+
+    public bool HasSaldo => SaldoText is not null;
+
+    /// <summary>What a screen reader says for the row.</summary>
+    public string Description => SaldoText is null ? Title : $"{Title}, {Texts.MySaldo} {SaldoText}";
 
     internal static string InitialsOf(string name)
     {

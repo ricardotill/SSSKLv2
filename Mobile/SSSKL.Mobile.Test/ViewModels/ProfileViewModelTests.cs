@@ -73,4 +73,113 @@ public class ProfileViewModelTests
         await _api.Received(1).UploadProfilePictureAsync(Arg.Is<Base64FileUpload>(f => f.FileName == "foto.jpg" && f.Base64Content == "AQID"));
         await _dialogs.Received(1).ToastAsync(Texts.ProfilePictureUpdated);
     }
+
+    [TestMethod]
+    public void EditDescriptionCommand_FillsTheDraftAsPlainText()
+    {
+        // Arrange
+        var sut = CreateSut();
+        sut.DescriptionHtml = "<p>Hoi</p><p><br></p><p>Ik ben Jan</p>";
+
+        // Act
+        sut.EditDescriptionCommand.Execute(null);
+
+        // Assert
+        sut.IsEditingDescription.Should().BeTrue();
+        sut.DescriptionDraft.Should().Be("Hoi\n\nIk ben Jan");
+        sut.HasNoDescription.Should().BeFalse();
+    }
+
+    [TestMethod]
+    public async Task SaveDescriptionCommand_SendsOnlyTheDescriptionAsHtml()
+    {
+        // Arrange
+        _api.GetMeAsync().Returns(new CurrentUser { Id = "1", FullName = "Jan" });
+        var sut = CreateSut();
+        sut.EditDescriptionCommand.Execute(null);
+        sut.DescriptionDraft = "Hoi & doei";
+
+        // Act
+        await sut.SaveDescriptionCommand.ExecuteAsync(null);
+
+        // Assert
+        await _api.Received(1).UpdateMeAsync(new SelfUpdate(null, null, null, "<p>Hoi &amp; doei</p>"), Arg.Any<CancellationToken>());
+        sut.DescriptionHtml.Should().Be("<p>Hoi &amp; doei</p>");
+        sut.IsEditingDescription.Should().BeFalse();
+        await _dialogs.Received(1).ToastAsync(Texts.DescriptionSaved);
+    }
+
+    [TestMethod]
+    public async Task SaveDescriptionCommand_Cleared_SendsEmptyToRemoveIt()
+    {
+        // Arrange
+        var sut = CreateSut();
+        sut.DescriptionHtml = "<p>Oud</p>";
+        sut.EditDescriptionCommand.Execute(null);
+        sut.DescriptionDraft = "  ";
+
+        // Act
+        await sut.SaveDescriptionCommand.ExecuteAsync(null);
+
+        // Assert
+        await _api.Received(1).UpdateMeAsync(new SelfUpdate(null, null, null, ""), Arg.Any<CancellationToken>());
+        sut.DescriptionHtml.Should().BeNull();
+        sut.HasNoDescription.Should().BeTrue();
+    }
+
+    [TestMethod]
+    public async Task SaveDescriptionCommand_Unchanged_KeepsTheFormattedHtml()
+    {
+        // Arrange
+        var sut = CreateSut();
+        sut.DescriptionHtml = "<p><strong>Vet</strong></p>";
+        sut.EditDescriptionCommand.Execute(null);
+
+        // Act
+        await sut.SaveDescriptionCommand.ExecuteAsync(null);
+
+        // Assert
+        await _api.DidNotReceiveWithAnyArgs().UpdateMeAsync(default!, default);
+        await _dialogs.DidNotReceiveWithAnyArgs().ConfirmAsync(default!, default!, default!, default!);
+        sut.IsEditingDescription.Should().BeFalse();
+        sut.DescriptionHtml.Should().Be("<p><strong>Vet</strong></p>");
+    }
+
+    [TestMethod]
+    public async Task SaveDescriptionCommand_FormattingWouldBeLost_DeclinedKeepsEditing()
+    {
+        // Arrange
+        _dialogs.ConfirmAsync(default!, default!, default!, default!).ReturnsForAnyArgs(false);
+        var sut = CreateSut();
+        sut.DescriptionHtml = "<p><strong>Vet</strong></p>";
+        sut.EditDescriptionCommand.Execute(null);
+        sut.DescriptionDraft = "Niet meer vet";
+
+        // Act
+        await sut.SaveDescriptionCommand.ExecuteAsync(null);
+
+        // Assert
+        await _dialogs.Received(1).ConfirmAsync(Texts.DescriptionLosesFormattingTitle, Texts.DescriptionLosesFormatting, Texts.SaveAnyway, Texts.Cancel);
+        await _api.DidNotReceiveWithAnyArgs().UpdateMeAsync(default!, default);
+        sut.IsEditingDescription.Should().BeTrue();
+    }
+
+    [TestMethod]
+    public async Task SaveDescriptionCommand_Fails_ShowsAlertAndKeepsTheDraft()
+    {
+        // Arrange
+        _api.UpdateMeAsync(Arg.Any<SelfUpdate>(), Arg.Any<CancellationToken>()).ThrowsAsync(new HttpRequestException("offline"));
+        var sut = CreateSut();
+        sut.EditDescriptionCommand.Execute(null);
+        sut.DescriptionDraft = "Nieuw";
+
+        // Act
+        await sut.SaveDescriptionCommand.ExecuteAsync(null);
+
+        // Assert
+        await _dialogs.Received(1).AlertAsync(Texts.Error, Texts.DescriptionSaveFailed);
+        sut.IsEditingDescription.Should().BeTrue();
+        sut.DescriptionDraft.Should().Be("Nieuw");
+        sut.IsSavingDescription.Should().BeFalse();
+    }
 }

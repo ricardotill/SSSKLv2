@@ -89,8 +89,12 @@ It is still in development, so it is kept out of CI and deploys: it is not in `S
 - **`SSSKL.Mobile.Test`**: MSTest tests for Core.
 
 **Native vs. web**
-- Native screens: the welcome page (signed out), Kassa (POS), Profiel, and the achievement and "what's new" popups.
-- The "Meer" tab, and the login sheet, show the SPA in a WebView.
+- Native screens: the welcome page (signed out), the tabs Kassa (POS), Notificaties (tab badge = unread count, `Services/NotificationCenter`) and Profiel, and pushed pages: settings, Mijn bestellingen, Mijn saldo, Saldolijst, Leaderboard, Statistieken, Achievements (+ detail), other members' profiles (`users/{id}`, the app's own route), Over SSSKL, Evenementen (+ detail: RSVP, image, delete) and Quotes (+ detail: vote, delete), both with comments (`Controls/CommentsView`); plus the achievement and "what's new" popups.
+- The "Meer" tab lists the features without a tab; the login sheet, admin pages and the create/edit forms of events (`events/new`, `events/{id}/edit`) and quotes (`quotes?new`, `quotes?edit=<id>`) show the SPA in a WebView.
+- `Navigation/NativeRoutes` decides which SPA routes open natively (menu entries, notification `LinkUri`s, `?userId=` for stats/achievements); `IAppNavigator.OpenAsync(path)` goes through it, pushes the page on the current tab (`Views/INativePage.Prepare` gets the route) and falls back to the WebView.
+- Paged lists derive from `ViewModels/PagedListViewModel`; dates and money go through `ViewModels/Display` (Dutch, UTC shown in local time).
+- Bind commands of toolkit behaviors (`TouchBehavior`) from code, or use `Controls/Pressable`: behaviors don't inherit the page's `BindingContext`.
+- Icons are Tabler Icons (MIT) SVGs in `SSSKL.Mobile/Resources/Images` (`ti_*.svg`, tab bar `tab_*.svg`), listed in `Core/Localization/Icons` and shown with `Controls/IconView` (tinted at runtime). Copy new ones from the `@tabler/icons` npm package's `icons/outline/` with `stroke` set to `#000000` and the full MIT notice in a comment at the top; a test checks every icon file for it.
 
 **Login**
 - Signed out (also after sign-out, session expiry and the SPA's `ssskl-app://logout`), the window root is the native `Views/WelcomePage` (logo, version, "Inloggen").
@@ -103,6 +107,8 @@ It is still in development, so it is kept out of CI and deploys: it is not in `S
 - Detected by `window.SSSKL_APP` or the `SSSKLApp/` user-agent token.
 - In embedded mode the SPA skips its achievement and what's-new modals, the push prompt and the service worker.
 - It hands `/pos` (`core/auth/native-route.guard.ts`) and logout over to the app by navigating to `ssskl-app://<action>`. `Web/WebNavigationPolicy` intercepts these navigations.
+- `nativePageGuard` (same file) hands routes the app has natively back with `ssskl-app://open?path=<url>` when the user navigates to them inside the SPA (e.g. to the event a form just saved; `event-edit` goes to the saved event in embedded mode). Pages the app opened itself (the initial URL, or `window.ssskl.navigate`, whose navigations carry the `FROM_APP_STATE` state) render. The app then closes its WebView page and shows the native page (`AppNavigator.OpenFromWebAsync`). Keep the guarded routes in step with `Navigation/NativeRoutes`.
+- `quotes?new` / `?edit=<id>` open the quote form dialog; in embedded mode the quotes page hands the result back (`/quotes/<id>`) and resets its URL so the reused WebView can open the form again.
 - The SPA only hands logout to the app when the user signs out or the refresh token is rejected (400/401). Other refresh failures (offline, 5xx) don't sign out in embedded mode (`auth.interceptor.ts`).
 - `GET achievement/entries/unseen` marks the entries as seen. Only the app's `AchievementPopupCoordinator` may call it in embedded mode.
 

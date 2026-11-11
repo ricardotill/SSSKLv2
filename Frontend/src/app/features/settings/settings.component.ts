@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, inject, OnInit, effect, signal, ViewChild } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, OnInit, effect, signal, ViewChild, computed } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators, FormGroup } from '@angular/forms';
 import { AuthService, InfoResponse, TwoFactorResponse } from '../../core/auth/auth.service';
 import { PasskeyDto } from '../../core/models/passkey.model';
@@ -22,6 +22,11 @@ import { ToggleSwitchModule } from 'primeng/toggleswitch';
 import * as QRCode from 'qrcode';
 
 import { CardModule } from 'primeng/card';
+import { ActivatedRoute } from '@angular/router';
+import { EmbeddedService } from '../../core/services/embedded.service';
+
+const TABS = ['profile', 'security', 'twofactor', 'personaldata'] as const;
+type SettingsTab = (typeof TABS)[number];
 
 @Component({
   selector: 'app-settings',
@@ -30,16 +35,19 @@ import { CardModule } from 'primeng/card';
   providers: [ConfirmationService],
   template: `
     <div class="max-w-3xl mx-auto">
-      <h1 class="text-2xl font-bold mb-4 text-surface-900 dark:text-surface-0">{{ ls.t().user_settings }}</h1>
+      <h1 class="text-2xl font-bold mb-4 text-surface-900 dark:text-surface-0">{{ embedded ? tabTitle() : ls.t().user_settings }}</h1>
       <p-card>
 
-      <p-tabs value="profile">
-        <p-tablist>
-            <p-tab value="profile">{{ ls.t().profile }}</p-tab>
-            <p-tab value="security">{{ ls.t().security }}</p-tab>
-            <p-tab value="twofactor">{{ ls.t().tfa }}</p-tab>
-            <p-tab value="personaldata">{{ ls.t().personal_data }}</p-tab>
-        </p-tablist>
+      <p-tabs [value]="initialTab">
+        <!-- The mobile app has native settings and opens one tab at a time (?tab=...). -->
+        @if (!embedded) {
+          <p-tablist>
+              <p-tab value="profile">{{ ls.t().profile }}</p-tab>
+              <p-tab value="security">{{ ls.t().security }}</p-tab>
+              <p-tab value="twofactor">{{ ls.t().tfa }}</p-tab>
+              <p-tab value="personaldata">{{ ls.t().personal_data }}</p-tab>
+          </p-tablist>
+        }
         
         <p-tabpanels>
             <!-- Profile Tab -->
@@ -62,6 +70,8 @@ import { CardModule } from 'primeng/card';
                   </div>
                 }
                 
+                <!-- The mobile app sets the colour mode natively and has no web push. -->
+                @if (!embedded) {
                 <div class="p-4 bg-surface-50 dark:bg-surface-800/50 rounded-lg border border-surface-200 dark:border-surface-700">
                   <h3 class="text-xl font-semibold mb-4 flex items-center gap-2">
                     <i class="pi pi-palette text-primary"></i>
@@ -110,6 +120,7 @@ import { CardModule } from 'primeng/card';
                     </p-toggleswitch>
                   </div>
                 </div>
+                }
 
                 <div class="p-4 bg-surface-50 dark:bg-surface-800/50 rounded-lg border border-surface-200 dark:border-surface-700">
                   <h3 class="text-xl font-semibold mb-4 flex items-center gap-2">
@@ -427,6 +438,24 @@ export default class SettingsComponent {
   private fb = inject(FormBuilder);
   private messageService = inject(MessageService);
   private confirmationService = inject(ConfirmationService);
+  protected readonly embedded = inject(EmbeddedService).isEmbedded;
+
+  /** The tab to open, from ?tab= (the mobile app links to one tab at a time). */
+  protected readonly initialTab: SettingsTab = (() => {
+    const tab = inject(ActivatedRoute).snapshot.queryParamMap.get('tab');
+    return TABS.includes(tab as SettingsTab) ? (tab as SettingsTab) : 'profile';
+  })();
+
+  protected readonly tabTitle = computed(() => {
+    const t = this.ls.t();
+    const titles: Record<SettingsTab, string> = {
+      profile: t.profile,
+      security: t.security,
+      twofactor: t.tfa,
+      personaldata: t.personal_data,
+    };
+    return titles[this.initialTab];
+  });
 
   form: FormGroup = this.fb.group({
     name: [''],

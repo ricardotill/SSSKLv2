@@ -2,6 +2,7 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+             xmlns:controls="clr-namespace:SSSKL.Mobile.Controls"
              xmlns:vm="clr-namespace:SSSKL.Mobile.Core.ViewModels;assembly=SSSKL.Mobile.Core"
              xmlns:loc="clr-namespace:SSSKL.Mobile.Core.Localization;assembly=SSSKL.Mobile.Core"
              x:Class="SSSKL.Mobile.Views.PosPage"
@@ -21,24 +22,25 @@
                     <FlexLayout Wrap="Wrap" JustifyContent="Start" BindableLayout.ItemsSource="{Binding Products}">
                         <BindableLayout.ItemTemplate>
                             <DataTemplate x:DataType="vm:ProductItemViewModel">
-                                <Border Style="{StaticResource Tile}" FlexLayout.Basis="50%"
-                                        SemanticProperties.Description="{Binding Name}">
-                                    <Border.GestureRecognizers>
-                                        <TapGestureRecognizer Command="{Binding ToggleProductCommand, Source={RelativeSource AncestorType={x:Type vm:PosViewModel}}, x:DataType=vm:PosViewModel}"
-                                                              CommandParameter="{Binding .}" />
-                                    </Border.GestureRecognizers>
-                                    <Border.Triggers>
-                                        <DataTrigger TargetType="Border" Binding="{Binding IsSelected}" Value="True">
-                                            <Setter Property="Stroke" Value="{StaticResource Primary500}" />
-                                            <Setter Property="StrokeThickness" Value="2" />
-                                            <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Primary50}, Dark={StaticResource Primary950}}" />
-                                        </DataTrigger>
-                                    </Border.Triggers>
-                                    <VerticalStackLayout Spacing="2">
-                                        <Label Text="{Binding Name}" FontAttributes="Bold" LineBreakMode="TailTruncation" />
-                                        <Label Text="{Binding Price, StringFormat='{0:C}'}" Style="{StaticResource Muted}" />
-                                    </VerticalStackLayout>
-                                </Border>
+                                <controls:Pressable FlexLayout.Basis="50%" SemanticProperties.Description="{Binding Name}"
+                                                    Command="{Binding ToggleProductCommand, Source={RelativeSource AncestorType={x:Type vm:PosViewModel}}, x:DataType=vm:PosViewModel}"
+                                                    CommandParameter="{Binding .}">
+                                    <Border Style="{StaticResource Tile}">
+                                        <Border.Triggers>
+                                            <!-- The thicker stroke takes its extra pixel out of the padding, so the tile keeps its size -->
+                                            <DataTrigger TargetType="Border" Binding="{Binding IsSelected}" Value="True">
+                                                <Setter Property="Stroke" Value="{StaticResource Primary500}" />
+                                                <Setter Property="StrokeThickness" Value="2" />
+                                                <Setter Property="Padding" Value="11" />
+                                                <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Primary50}, Dark={StaticResource Primary950}}" />
+                                            </DataTrigger>
+                                        </Border.Triggers>
+                                        <VerticalStackLayout Spacing="2">
+                                            <Label Text="{Binding Name}" FontAttributes="Bold" LineBreakMode="TailTruncation" />
+                                            <Label Text="{Binding Price, StringFormat='{0:C}'}" Style="{StaticResource Muted}" />
+                                        </VerticalStackLayout>
+                                    </Border>
+                                </controls:Pressable>
                             </DataTemplate>
                         </BindableLayout.ItemTemplate>
                     </FlexLayout>
@@ -48,35 +50,56 @@
                     <VerticalStackLayout Spacing="6" BindableLayout.ItemsSource="{Binding VisibleUsers}">
                         <BindableLayout.ItemTemplate>
                             <DataTemplate x:DataType="vm:UserItemViewModel">
-                                <Border Style="{StaticResource Tile}" SemanticProperties.Description="{Binding DisplayName}">
-                                    <Border.GestureRecognizers>
-                                        <TapGestureRecognizer Command="{Binding ToggleUserCommand, Source={RelativeSource AncestorType={x:Type vm:PosViewModel}}, x:DataType=vm:PosViewModel}"
-                                                              CommandParameter="{Binding .}" />
-                                    </Border.GestureRecognizers>
-                                    <Border.Triggers>
-                                        <DataTrigger TargetType="Border" Binding="{Binding IsSelected}" Value="True">
-                                            <Setter Property="Stroke" Value="{StaticResource Primary500}" />
-                                            <Setter Property="StrokeThickness" Value="2" />
-                                            <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Primary50}, Dark={StaticResource Primary950}}" />
-                                        </DataTrigger>
-                                    </Border.Triggers>
-                                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
-                                        <Grid WidthRequest="40" HeightRequest="40">
-                                            <Border Style="{StaticResource Avatar}">
-                                                <Label Text="{Binding Initials}" HorizontalOptions="Center" VerticalOptions="Center" FontAttributes="Bold" />
-                                            </Border>
-                                            <Border Style="{StaticResource Avatar}" IsVisible="{Binding HasPicture}">
-                                                <Image Source="{Binding PictureUrl}" Aspect="AspectFill" />
-                                            </Border>
+                                <controls:Pressable SemanticProperties.Description="{Binding Description}"
+                                                    Command="{Binding ToggleUserCommand, Source={RelativeSource AncestorType={x:Type vm:PosViewModel}}, x:DataType=vm:PosViewModel}"
+                                                    CommandParameter="{Binding .}">
+                                    <Border Style="{StaticResource Tile}">
+                                        <Border.Triggers>
+                                            <DataTrigger TargetType="Border" Binding="{Binding IsSelected}" Value="True">
+                                                <Setter Property="Stroke" Value="{StaticResource Primary500}" />
+                                                <Setter Property="StrokeThickness" Value="2" />
+                                                <Setter Property="Padding" Value="11" />
+                                                <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Primary50}, Dark={StaticResource Primary950}}" />
+                                            </DataTrigger>
+                                        </Border.Triggers>
+                                        <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="12">
+                                            <Grid WidthRequest="40" HeightRequest="40">
+                                                <Border Style="{StaticResource Avatar}">
+                                                    <Label Text="{Binding Initials}" HorizontalOptions="Center" VerticalOptions="Center" FontAttributes="Bold" />
+                                                </Border>
+                                                <Border Style="{StaticResource Avatar}" IsVisible="{Binding HasPicture}">
+                                                    <Image Source="{Binding PictureUrl}" Aspect="AspectFill" />
+                                                </Border>
+                                            </Grid>
+                                            <Label Grid.Column="1" Text="{Binding Title}" VerticalOptions="Center" LineBreakMode="TailTruncation">
+                                                <Label.Triggers>
+                                                    <DataTrigger TargetType="Label" Binding="{Binding IsSelf}" Value="True">
+                                                        <Setter Property="FontAttributes" Value="Bold" />
+                                                    </DataTrigger>
+                                                </Label.Triggers>
+                                            </Label>
+                                            <!-- Your saldo (your own row only) -->
+                                            <Label Grid.Column="2" Text="{Binding SaldoText}" IsVisible="{Binding HasSaldo}" FontAttributes="Bold"
+                                                   VerticalOptions="Center"
+                                                   TextColor="{AppThemeBinding Light={StaticResource Primary700}, Dark={StaticResource Primary400}}">
+                                                <Label.Triggers>
+                                                    <DataTrigger TargetType="Label" Binding="{Binding IsSaldoNegative}" Value="True">
+                                                        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Danger}, Dark={StaticResource DangerDark}}" />
+                                                    </DataTrigger>
+                                                </Label.Triggers>
+                                            </Label>
+                                            <!-- Opacity, not IsVisible: the check never changes the layout -->
+                                            <Label Grid.Column="3" Text="✓" FontAttributes="Bold" VerticalOptions="Center"
+                                                   Opacity="0" TextColor="{StaticResource Primary700}">
+                                                <Label.Triggers>
+                                                    <DataTrigger TargetType="Label" Binding="{Binding IsSelected}" Value="True">
+                                                        <Setter Property="Opacity" Value="1" />
+                                                    </DataTrigger>
+                                                </Label.Triggers>
+                                            </Label>
                                         </Grid>
-                                        <HorizontalStackLayout Grid.Column="1" Spacing="6" VerticalOptions="Center">
-                                            <Label Text="{Binding DisplayName}" />
-                                            <Label Text="{x:Static loc:Texts.You}" IsVisible="{Binding IsSelf}" Style="{StaticResource Muted}" />
-                                        </HorizontalStackLayout>
-                                        <Label Grid.Column="2" Text="✓" FontAttributes="Bold" VerticalOptions="Center"
-                                               IsVisible="{Binding IsSelected}" TextColor="{StaticResource Primary700}" />
-                                    </Grid>
-                                </Border>
+                                    </Border>
+                                </controls:Pressable>
                             </DataTemplate>
                         </BindableLayout.ItemTemplate>
                     </VerticalStackLayout>
@@ -92,22 +115,38 @@
                 <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
                     <Label Text="{x:Static loc:Texts.Amount}" VerticalOptions="Center" />
                     <Button Text="−" Command="{Binding DecreaseAmountCommand}" Style="{StaticResource StepperButton}"
-                            SemanticProperties.Description="Minder" />
+                            SemanticProperties.Description="Minder">
+                        <Button.Behaviors>
+                            <controls:PressScaleBehavior PressedScale="0.88" />
+                        </Button.Behaviors>
+                    </Button>
                     <Label Text="{Binding Amount}" FontAttributes="Bold" FontSize="18" VerticalOptions="Center"
                            MinimumWidthRequest="28" HorizontalTextAlignment="Center" />
                     <Button Text="+" Command="{Binding IncreaseAmountCommand}" Style="{StaticResource StepperButton}"
-                            SemanticProperties.Description="Meer" />
+                            SemanticProperties.Description="Meer">
+                        <Button.Behaviors>
+                            <controls:PressScaleBehavior PressedScale="0.88" />
+                        </Button.Behaviors>
+                    </Button>
                 </HorizontalStackLayout>
-                <HorizontalStackLayout Grid.Column="1" Spacing="6" IsVisible="{Binding CanSplit}" VerticalOptions="Center">
+                <!-- Always in the layout, so the bar keeps its height; the code-behind fades it in and out
+                     (Opacity, input and screen readers follow CanSplit). -->
+                <HorizontalStackLayout x:Name="SplitPanel" Grid.Column="1" Spacing="6" VerticalOptions="Center" Opacity="0"
+                                       InputTransparent="True" AutomationProperties.IsInAccessibleTree="False">
                     <Label Text="{x:Static loc:Texts.Split}" VerticalOptions="Center" />
-                    <Switch IsToggled="{Binding Split}" OnColor="{StaticResource Primary500}" />
+                    <Switch IsToggled="{Binding Split}" IsEnabled="{Binding CanSplit}" OnColor="{StaticResource Primary500}"
+                            SemanticProperties.Description="{x:Static loc:Texts.Split}" />
                 </HorizontalStackLayout>
 
                 <Label Grid.Row="1" Grid.ColumnSpan="2" Text="{Binding SummaryText}" FontAttributes="Bold"
                        SemanticProperties.Description="{Binding SummaryText}" />
 
                 <Button Grid.Row="2" Grid.ColumnSpan="2" Text="{x:Static loc:Texts.Order}"
-                        Command="{Binding SubmitCommand}" IsEnabled="{Binding CanSubmit}" Style="{StaticResource PrimaryButton}" />
+                        Command="{Binding SubmitCommand}" IsEnabled="{Binding CanSubmit}" Style="{StaticResource PrimaryButton}">
+                    <Button.Behaviors>
+                        <controls:PressScaleBehavior PressedScale="0.97" />
+                    </Button.Behaviors>
+                </Button>
                 <ActivityIndicator Grid.Row="2" Grid.ColumnSpan="2" IsRunning="{Binding IsSubmitting}" IsVisible="{Binding IsSubmitting}"
                                    Color="White" HorizontalOptions="End" Margin="0,0,16,0" />
             </Grid>

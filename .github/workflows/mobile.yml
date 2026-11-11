@@ -37,7 +37,8 @@ jobs:
       run: dotnet workload install maui-android
 
     - name: Build Android
-      run: dotnet build Mobile/SSSKL.Mobile -f net11.0-android -c Release
+      # Restore evaluates every target framework; limit it to the one this runner has the workload for.
+      run: dotnet build Mobile/SSSKL.Mobile -f net11.0-android -p:SssklTargetFrameworks=net11.0-android -c Release
 
   build-ios:
     name: Build iOS (simulator, unsigned)
@@ -52,8 +53,16 @@ jobs:
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
 
+    - name: Select Xcode
+      # .NET for iOS needs the Xcode it was built against (27.x); the runner's default can be older.
+      run: |
+        xcode=$(ls -d /Applications/Xcode_27*.app 2>/dev/null | sort -V | tail -1)
+        if [ -n "$xcode" ]; then sudo xcode-select -s "$xcode"; fi
+        xcodebuild -version
+
     - name: Install MAUI iOS workload
       run: dotnet workload install maui-ios
 
     - name: Build iOS
-      run: dotnet build Mobile/SSSKL.Mobile -f net11.0-ios -c Release -p:RuntimeIdentifier=iossimulator-arm64
+      # Restore evaluates every target framework; limit it to the one this runner has the workload for.
+      run: dotnet build Mobile/SSSKL.Mobile -f net11.0-ios -p:SssklTargetFrameworks=net11.0-ios -c Release -p:RuntimeIdentifier=iossimulator-arm64

@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:SSSKL.Mobile.Controls"
+             xmlns:vm="clr-namespace:SSSKL.Mobile.Core.ViewModels;assembly=SSSKL.Mobile.Core"
+             xmlns:loc="clr-namespace:SSSKL.Mobile.Core.Localization;assembly=SSSKL.Mobile.Core"
+             x:Class="SSSKL.Mobile.Views.EventsPage"
+             x:DataType="vm:EventsViewModel"
+             Title="{x:Static loc:Texts.Events}">
+    <Grid>
+        <RefreshView IsRefreshing="{Binding IsRefreshing}" Command="{Binding LoadCommand}">
+            <CollectionView ItemsSource="{Binding Items}" SelectionMode="None"
+                            RemainingItemsThreshold="4" RemainingItemsThresholdReachedCommand="{Binding LoadMoreCommand}">
+                <CollectionView.ItemsLayout>
+                    <LinearItemsLayout Orientation="Vertical" ItemSpacing="12" />
+                </CollectionView.ItemsLayout>
+
+                <CollectionView.Header>
+                    <VerticalStackLayout Padding="16,8,16,4" Spacing="12">
+                        <Label Text="{x:Static loc:Texts.EventsSubtitle}" Style="{StaticResource Muted}" />
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                            <!-- Upcoming or all: a segmented control like the colour-mode switch in the settings -->
+                            <Border Style="{StaticResource SegmentTrack}">
+                                <Grid ColumnDefinitions="*,*" ColumnSpacing="3">
+                                    <Border Style="{StaticResource Segment}" SemanticProperties.Description="{x:Static loc:Texts.Upcoming}">
+                                        <Border.GestureRecognizers>
+                                            <TapGestureRecognizer Command="{Binding SetFutureOnlyCommand}">
+                                                <TapGestureRecognizer.CommandParameter>
+                                                    <x:Boolean>True</x:Boolean>
+                                                </TapGestureRecognizer.CommandParameter>
+                                            </TapGestureRecognizer>
+                                        </Border.GestureRecognizers>
+                                        <Border.Triggers>
+                                            <DataTrigger TargetType="Border" Binding="{Binding FutureOnly}" Value="True">
+                                                <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource SurfaceLight}, Dark={StaticResource SurfaceDark}}" />
+                                            </DataTrigger>
+                                        </Border.Triggers>
+                                        <Label Text="{x:Static loc:Texts.Upcoming}" Style="{StaticResource SegmentText}" HorizontalOptions="Center" />
+                                    </Border>
+                                    <Border Grid.Column="1" Style="{StaticResource Segment}" SemanticProperties.Description="{x:Static loc:Texts.FilterAll}">
+                                        <Border.GestureRecognizers>
+                                            <TapGestureRecognizer Command="{Binding SetFutureOnlyCommand}">
+                                                <TapGestureRecognizer.CommandParameter>
+                                                    <x:Boolean>False</x:Boolean>
+                                                </TapGestureRecognizer.CommandParameter>
+                                            </TapGestureRecognizer>
+                                        </Border.GestureRecognizers>
+                                        <Border.Triggers>
+                                            <DataTrigger TargetType="Border" Binding="{Binding ShowsAll}" Value="True">
+                                                <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource SurfaceLight}, Dark={StaticResource SurfaceDark}}" />
+                                            </DataTrigger>
+                                        </Border.Triggers>
+                                        <Label Text="{x:Static loc:Texts.FilterAll}" Style="{StaticResource SegmentText}" HorizontalOptions="Center" />
+                                    </Border>
+                                </Grid>
+                            </Border>
+                            <Button Grid.Column="1" Text="{x:Static loc:Texts.NewEvent}" Command="{Binding NewEventCommand}"
+                                    IsVisible="{Binding CanCreate}" Style="{StaticResource SecondaryButton}" VerticalOptions="Center">
+                                <Button.Behaviors>
+                                    <controls:PressScaleBehavior />
+                                </Button.Behaviors>
+                            </Button>
+                        </Grid>
+                    </VerticalStackLayout>
+                </CollectionView.Header>
+
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="vm:EventRow">
+                        <controls:Pressable Padding="16,0" SemanticProperties.Description="{Binding AccessibleText}"
+                                            Command="{Binding OpenCommand, Source={RelativeSource AncestorType={x:Type vm:EventsViewModel}}, x:DataType=vm:EventsViewModel}"
+                                            CommandParameter="{Binding .}">
+                            <Border Style="{StaticResource Card}" Padding="0">
+                                <Border.Triggers>
+                                    <!-- Past events are faded, like the SPA -->
+                                    <DataTrigger TargetType="Border" Binding="{Binding IsPast}" Value="True">
+                                        <Setter Property="Opacity" Value="0.6" />
+                                    </DataTrigger>
+                                </Border.Triggers>
+                                <VerticalStackLayout>
+                                    <!-- Image with the badges on top -->
+                                    <Grid HeightRequest="150"
+                                          BackgroundColor="{AppThemeBinding Light={StaticResource SunkenLight}, Dark={StaticResource SunkenDark}}">
+                                        <Image Source="{Binding ImageUrl}" Aspect="AspectFill" IsVisible="{Binding HasImage}" />
+                                        <controls:IconView Icon="{x:Static loc:Icons.Calendar}" Size="44" IsVisible="{Binding HasNoImage}"
+                                                           Color="{AppThemeBinding Light={StaticResource BorderLight}, Dark={StaticResource BorderDark}}" />
+                                        <Border IsVisible="{Binding IsPast}" Style="{StaticResource ImageBadge}" HorizontalOptions="Start"
+                                                BackgroundColor="#CC334155">
+                                            <Label Text="{x:Static loc:Texts.Past}" Style="{StaticResource ImageBadgeText}" />
+                                        </Border>
+                                        <Border IsVisible="{Binding IsAccepted}" Style="{StaticResource ImageBadge}" HorizontalOptions="End"
+                                                BackgroundColor="#166534">
+                                            <HorizontalStackLayout Spacing="4">
+                                                <controls:IconView Icon="{x:Static loc:Icons.Check}" Size="13" Color="White" />
+                                                <Label Text="{x:Static loc:Texts.Attending}" Style="{StaticResource ImageBadgeText}" />
+                                            </HorizontalStackLayout>
+                                        </Border>
+                                        <Border IsVisible="{Binding IsDeclined}" Style="{StaticResource ImageBadge}" HorizontalOptions="End"
+                                                BackgroundColor="#991B1B">
+                                            <HorizontalStackLayout Spacing="4">
+                                                <controls:IconView Icon="{x:Static loc:Icons.X}" Size="13" Color="White" />
+                                                <Label Text="{x:Static loc:Texts.NotAttending}" Style="{StaticResource ImageBadgeText}" />
+                                            </HorizontalStackLayout>
+                                        </Border>
+                                    </Grid>
+
+                                    <VerticalStackLayout Padding="14,12" Spacing="6">
+                                        <Label Text="{Binding Title}" FontSize="18" FontAttributes="Bold" LineBreakMode="TailTruncation"
+                                               TextColor="{AppThemeBinding Light={StaticResource HeadingLight}, Dark={StaticResource HeadingDark}}" />
+                                        <HorizontalStackLayout Spacing="6">
+                                            <controls:IconView Icon="{x:Static loc:Icons.Calendar}" Size="15"
+                                                               Color="{AppThemeBinding Light={StaticResource MutedLight}, Dark={StaticResource MutedDark}}" />
+                                            <Label Text="{Binding DateText}" Style="{StaticResource Muted}" FontSize="14" VerticalOptions="Center" />
+                                        </HorizontalStackLayout>
+                                        <HorizontalStackLayout Spacing="6" IsVisible="{Binding HasLocation}">
+                                            <controls:IconView Icon="{x:Static loc:Icons.MapPin}" Size="15"
+                                                               Color="{AppThemeBinding Light={StaticResource Primary600}, Dark={StaticResource Primary400}}" />
+                                            <Label Text="{Binding Location}" Style="{StaticResource Muted}" FontSize="14" VerticalOptions="Center"
+                                                   LineBreakMode="TailTruncation" />
+                                        </HorizontalStackLayout>
+                                        <!-- Attendees -->
+                                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8" Margin="0,4,0,0">
+                                            <HorizontalStackLayout Spacing="-8">
+                                                <HorizontalStackLayout Spacing="-8" BindableLayout.ItemsSource="{Binding Attendees}">
+                                                    <BindableLayout.ItemTemplate>
+                                                        <DataTemplate x:DataType="vm:AvatarItem">
+                                                            <Border StrokeThickness="2" StrokeShape="RoundRectangle 15" Padding="0"
+                                                                    Stroke="{AppThemeBinding Light={StaticResource SurfaceLight}, Dark={StaticResource SurfaceDark}}">
+                                                                <controls:AvatarView Size="26" Initials="{Binding Initials}" PictureUrl="{Binding PictureUrl}" />
+                                                            </Border>
+                                                        </DataTemplate>
+                                                    </BindableLayout.ItemTemplate>
+                                                </HorizontalStackLayout>
+                                                <Border IsVisible="{Binding HasMoreAttendees}" WidthRequest="30" HeightRequest="30" StrokeThickness="2"
+                                                        StrokeShape="RoundRectangle 15"
+                                                        Stroke="{AppThemeBinding Light={StaticResource SurfaceLight}, Dark={StaticResource SurfaceDark}}"
+                                                        BackgroundColor="{AppThemeBinding Light={StaticResource SunkenLight}, Dark={StaticResource SunkenDark}}">
+                                                    <Label Text="{Binding MoreAttendeesText}" FontSize="11" FontAttributes="Bold"
+                                                           HorizontalOptions="Center" VerticalOptions="Center"
+                                                           TextColor="{AppThemeBinding Light={StaticResource TextLight}, Dark={StaticResource TextDark}}" />
+                                                </Border>
+                                            </HorizontalStackLayout>
+                                            <Label Grid.Column="1" Text="{Binding AttendeesText}" Style="{StaticResource Muted}" FontSize="13"
+                                                   VerticalOptions="Center" HorizontalTextAlignment="End" />
+                                        </Grid>
+                                    </VerticalStackLayout>
+                                </VerticalStackLayout>
+                            </Border>
+                        </controls:Pressable>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+
+                <CollectionView.EmptyView>
+                    <VerticalStackLayout Padding="32,48" Spacing="10" IsVisible="{Binding IsEmpty}">
+                        <controls:IconView Icon="{x:Static loc:Icons.Calendar}" Size="48"
+                                           Color="{AppThemeBinding Light={StaticResource BorderLight}, Dark={StaticResource BorderDark}}" />
+                        <Label Text="{x:Static loc:Texts.NoEvents}" Style="{StaticResource Muted}" HorizontalTextAlignment="Center" />
+                    </VerticalStackLayout>
+                </CollectionView.EmptyView>
+                <CollectionView.Footer>
+                    <Grid Padding="16" MinimumHeightRequest="24">
+                        <ActivityIndicator IsRunning="{Binding IsLoadingMore}" IsVisible="{Binding IsLoadingMore}" HorizontalOptions="Center" />
+                    </Grid>
+                </CollectionView.Footer>
+            </CollectionView>
+        </RefreshView>
+        <ActivityIndicator IsRunning="{Binding IsLoading}" IsVisible="{Binding IsLoading}" HorizontalOptions="Center" VerticalOptions="Center" />
+    </Grid>
+</ContentPage>

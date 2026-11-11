@@ -8,6 +8,7 @@ import EventEditComponent from './event-edit.component';
 import { EventService } from '../services/event.service';
 import { AuthService } from '../../../core/auth/auth.service';
 import { RoleService } from '../../admin/services/role.service';
+import { EmbeddedService } from '../../../core/services/embedded.service';
 
 describe('EventEditComponent', () => {
   let component: EventEditComponent;
@@ -31,10 +32,11 @@ describe('EventEditComponent', () => {
     requiredRoles: ['Leiding'],
   };
 
-  function create(id: string | null = null) {
+  function create(id: string | null = null, embedded = false) {
     TestBed.configureTestingModule({
       imports: [EventEditComponent],
       providers: [
+        { provide: EmbeddedService, useValue: { isEmbedded: embedded, notifyNative: vi.fn() } },
         { provide: EventService, useValue: eventService },
         { provide: RoleService, useValue: roleService },
         { provide: AuthService, useValue: { currentUser } },
@@ -171,5 +173,40 @@ describe('EventEditComponent', () => {
     expect(eventService.updateEvent).toHaveBeenCalledWith('e1', expect.any(FormData));
     expect(component.submitting()).toBe(false);
     expect(messageService.add).toHaveBeenCalledWith(expect.objectContaining({ detail: 'Opslaan mislukt' }));
+  });
+
+  describe('in the mobile app', () => {
+    function fill() {
+      component.eventForm.patchValue({
+        title: 'Kamp',
+        description: 'Leuk',
+        startDateTime: new Date('2026-07-01T10:00:00Z'),
+        endDateTime: new Date('2026-07-01T12:00:00Z'),
+      });
+    }
+
+    it('goes to the new event after creating it, so the app shows it natively', () => {
+      vi.useFakeTimers();
+      eventService.createEvent.mockReturnValue(of({ id: 'new1' }));
+      create(null, true);
+      fill();
+
+      component.onSubmit();
+      vi.advanceTimersByTime(1000);
+
+      expect(router.navigate).toHaveBeenCalledWith(['/events', 'new1']);
+    });
+
+    it('goes back to the edited event', () => {
+      vi.useFakeTimers();
+      currentUser.set({ userName: 'jan', roles: ['Admin'] });
+      create('e1', true);
+      fill();
+
+      component.onSubmit();
+      vi.advanceTimersByTime(1000);
+
+      expect(router.navigate).toHaveBeenCalledWith(['/events', 'e1']);
+    });
   });
 });

@@ -10,6 +10,171 @@ public static class Texts
     public static string TabPos => "Kassa";
     public static string TabProfile => "Profiel";
     public static string TabMore => "Meer";
+    public static string TabNotifications => "Notificaties";
+
+    // Notificaties
+    public static string NotificationsSubtitle => "Bekijk je recente activiteit en reacties";
+    public static string MarkAllRead => "Alles gelezen";
+    public static string NoNotifications => "Nog geen notificaties";
+    public static string NoNotificationsHint => "Wanneer je notificaties krijgt, verschijnen ze hier.";
+    public static string MarkAllReadFailed => "Markeren als gelezen mislukt. Probeer het opnieuw.";
+    public static string Unread => "Ongelezen";
+
+    // Lists
+    public static string Search => "Zoeken";
+    public static string Delete => "Verwijderen";
+
+    // Mijn bestellingen / Mijn saldo / Saldolijst
+    public static string NoOrders => "Geen bestellingen gevonden.";
+    public static string ConfirmDeleteOrderTitle => "Bestelling verwijderen";
+    public static string ConfirmDeleteOrder(string product) =>
+        $"Weet je zeker dat je deze bestelling voor {product} wilt verwijderen? Dit kan niet ongedaan worden gemaakt.";
+    public static string OrderDeleted => "Bestelling verwijderd";
+    public static string OrderDeleteFailed => "Verwijderen van de bestelling mislukt.";
+    public static string TopUps => "Opwaarderingen";
+    public static string NoTopUps => "Geen opwaarderingen gevonden.";
+    public static string SearchMembers => "Zoek een lid";
+    public static string NoUsers => "Geen gebruikers gevonden.";
+
+    // Leaderboard
+    public static string Last12Hours => "12 uur";
+    public static string ThisMonth => "Maand";
+    public static string AllTime => "Totaal";
+    public static string Product => "Product";
+    public static string NoPurchasesPeriod => "Er zijn deze periode geen aankopen gedaan. Dus ik zou zeggen, bestellen maar! ;)";
+    public static string Rank(int position) => $"Plek {position}";
+
+    // Statistieken
+    public static string MyStats => "Mijn statistieken";
+    public static string StatsOf(string name) => $"Statistieken van {name}";
+    public static string MyStatsSubtitle => "Een volledig overzicht van jouw activiteit op SSSKL.";
+    public static string StatsSubtitle => "Een volledig overzicht van de activiteit van deze gebruiker op SSSKL.";
+    public static string RecalculateStats => "Statistieken herberekenen";
+    public static string LastRecalculated(string when) => $"Laatste herberekening: {when}";
+    public static string StatsRecalculated => "Je statistieken zijn herberekend.";
+    public static string StatsRecalculateTooSoon => "Je kunt statistieken maar eenmaal per zeven dagen herberekenen.";
+    public static string StatsRecalculateFailed => "Statistieken konden niet worden herberekend.";
+    public static string Spent => "Uitgegeven";
+    public static string Streak => "Streak";
+    public static string Days(int days) => days == 1 ? "1 dag" : $"{days} dagen";
+    public static string SectionOrdersAndSaldo => "Bestellingen en saldo";
+    public static string SectionCommunity => "Community";
+    public static string SectionRecords => "Persoonlijke records";
+    public static string StatTotalOrders => "Totale bestellingen";
+    public static string StatItemsBought => "Gekochte items";
+    public static string StatTotalSpent => "Totaal besteed";
+    public static string StatTotalTopUp => "Totale opwaardering";
+    public static string StatMaxSingleTopUp => "Grootste losse opwaardering";
+    public static string StatMaxOrdersPerHour => "Meeste bestellingen per uur";
+    public static string StatQuotes => "Quotes geplaatst";
+    public static string StatQuoteVotesGiven => "Quotes gestemd";
+    public static string StatQuoteVotesReceived => "Ontvangen quote-stemmen";
+    public static string StatReactions => "Reacties geplaatst";
+    public static string StatMemberSince => "Lid sinds";
+    public static string StatMinBetweenOrders => "Kortste tijd tussen bestellingen";
+    public static string StatMinBetweenTopUps => "Kortste tijd tussen opwaarderingen";
+    public static string StatLastActivity => "Laatste activiteit";
+    public static string StatLastOrder => "Laatste bestelling";
+    public static string StatLastTopUp => "Laatste opwaardering";
+    public static string NotHappenedYet => "Nog niet gebeurd";
+    public static string NoData => "Geen gegevens";
+    public static string Minutes(int minutes) => $"{minutes} min.";
+    public static string ViewAll => "Alles bekijken";
+
+    // Achievements
+    public static string AchievementsSubtitle => "Bekijk welke achievements je hebt behaald.";
+    public static string AchievementsOf(string name) => $"Achievements van {name}";
+    public static string FilterAll => "Alle";
+    public static string FilterEarned => "Behaald";
+    public static string FilterLocked => "Nog niet";
+    public static string EarnedCount(int earned, int total) => $"{earned} van {total} behaald";
+    public static string AchievedOn(string date) => $"Behaald op {date}";
+    public static string NotAchievedYet => "Nog niet behaald";
+    public static string Locked => "Vergrendeld";
+    public static string PartOf(string name) => $"Onderdeel van {name}";
+    public static string EarnedBy => "Behaald door";
+    public static string EarnedByCount(int count) => count == 1 ? "Behaald door 1 lid" : $"Behaald door {count} leden";
+    public static string NoEarners => "Niemand heeft dit achievement nog behaald.";
+    public static string AchievementNotFound => "Dit achievement bestaat niet of is niet gevonden.";
+    public static string TierBronze => "Brons";
+    public static string TierSilver => "Zilver";
+    public static string TierGold => "Goud";
+    public static string TierPlatinum => "Platina";
+
+    // Profiel van een ander lid
+    public static string NoDescriptionOther => "Dit lid heeft nog geen beschrijving toegevoegd.";
+    public static string RecentAchievements => "Recente achievements";
+    public static string ViewStats => "Statistieken bekijken";
+
+    // Evenementen
+    public static string EventsSubtitle => "Blijf op de hoogte van alle geplande activiteiten!";
+    public static string Upcoming => "Komend";
+    public static string NewEvent => "Nieuw evenement";
+    public static string NoEvents => "Geen evenementen gevonden.";
+    public static string Past => "Verstreken";
+    public static string Attending => "Aangemeld";
+    public static string NotAttending => "Afgemeld";
+    public static string AttendeeCount(int count) => count == 1 ? "1 deelnemer" : $"{count} deelnemers";
+    public static string Starts => "Begint";
+    public static string Ends => "Eindigt";
+    public static string Location => "Locatie";
+    public static string OpenInMaps => "Open in Google Maps";
+    public static string AllowedRoles => "Toegestane rollen";
+    public static string AreYouComing => "Ben je erbij?";
+    public static string AreYouComingHint => "Laat weten of je komt zodat we rekening kunnen houden met de planning.";
+    public static string Accept => "Aanwezig";
+    public static string Decline => "Afwezig";
+    public static string RsvpAccepted => "Je bent aangemeld!";
+    public static string RsvpDeclined => "Je bent afgemeld.";
+    public static string RsvpFailed => "Aan- of afmelden mislukt.";
+    public static string RsvpNoRole => "Je hebt niet de juiste rol om je aan te melden.";
+    public static string Attendees => "Deelnemers";
+    public static string NoAttendees => "Nog geen aanmeldingen.";
+    public static string Declined => "Afgemeld";
+    public static string Share => "Delen";
+    public static string ShareEventText(string title) => $"Meld je nu aan voor {title}!";
+    public static string ChangeImage => "Afbeelding wijzigen";
+    public static string ImageUpdated => "Afbeelding bijgewerkt";
+    public static string ImageUpdateFailed => "Afbeelding uploaden mislukt";
+    public static string ConfirmDeleteEvent => "Weet je zeker dat je dit evenement wilt verwijderen?";
+    public static string DeleteEvent => "Evenement verwijderen";
+    public static string EventDeleted => "Evenement verwijderd";
+    public static string DeleteFailed => "Verwijderen mislukt";
+    public static string EventNotFound => "Dit evenement bestaat niet (meer).";
+
+    // Quotes
+    public static string QuotesSubtitle => "Grappige dingen die mensen hebben gezegd.";
+    public static string NewQuote => "Nieuwe quote";
+    public static string NoQuotes => "Nog geen quotes gevonden.";
+    public static string Votes(int count) => count == 1 ? "1 stem" : $"{count} stemmen";
+    public static string CommentCount(int count) => count == 1 ? "1 reactie" : $"{count} reacties";
+    public static string Vote => "Stemmen";
+    public static string VoteFailed => "Stemmen mislukt.";
+    public static string ConfirmDeleteQuote => "Weet je zeker dat je deze quote wilt verwijderen?";
+    public static string DeleteQuote => "Quote verwijderen";
+    public static string QuoteDeleted => "Quote verwijderd";
+    public static string QuoteNotFound => "Quote niet gevonden.";
+    public static string SaidBy => "Gezegd door";
+
+    // Reacties
+    public static string Comments => "Reacties";
+    public static string NoComments => "Nog geen reacties. Wees de eerste!";
+    public static string CommentPlaceholder => "Deel je gedachten…";
+    public static string Post => "Plaatsen";
+    public static string Reply => "Reageren";
+    public static string ReplyTo(string userName) => $"Reageren op @{userName}";
+    public static string ReplyPlaceholder => "Schrijf een reactie…";
+    public static string ConfirmDeleteComment => "Weet je zeker dat je deze reactie wilt verwijderen? Alle onderliggende reacties worden ook verwijderd.";
+    public static string DeleteComment => "Reactie verwijderen";
+    public static string CommentFailed => "Reageren mislukt.";
+    public static string Likes(int count) => count == 1 ? "1 duim" : $"{count} duimen";
+    public static string Hearts(int count) => count == 1 ? "1 hartje" : $"{count} hartjes";
+
+    // Over SSSKL
+    public static string ViewOnGitHub => "Bekijk op GitHub";
+    public static string DeleteAccountInfo =>
+        "Wil je jouw account verwijderen? Ga naar Instellingen, open Persoonlijke gegevens en bevestig dat je jouw account wilt verwijderen. Kun je niet meer inloggen? Stuur dan een mail naar";
+    public static string ContactEmail => "me@ricardotill.nl";
 
     public static string Error => "Fout";
     public static string Ok => "OK";
@@ -30,7 +195,8 @@ public static class Texts
     public static string OrderFailed => "Bestelling mislukt";
     public static string GuestCannotOrder => "Gasten kunnen geen bestellingen plaatsen.";
     public static string OutOfStock => "Op";
-    public static string You => "jij";
+    /// <summary>Your own row in Kassa's "Voor wie" list.</summary>
+    public static string Yourself => "Jezelf";
 
     public static string MySaldo => "Mijn saldo";
     public static string TotalOrders => "Bestellingen";
@@ -43,6 +209,15 @@ public static class Texts
     public static string ConfirmRemoveProfilePicture => "Weet je zeker dat je je profielfoto wilt verwijderen?";
     public static string ProfilePictureUpdated => "Profielfoto bijgewerkt";
     public static string ProfilePictureRemoved => "Profielfoto verwijderd";
+    public static string AboutMe => "Over mij";
+    public static string Edit => "Bewerken";
+    public static string NoDescription => "Je hebt nog niets over jezelf geschreven.";
+    public static string DescriptionPlaceholder => "Vertel iets over jezelf…";
+    public static string DescriptionSaved => "Je omschrijving is bijgewerkt.";
+    public static string DescriptionSaveFailed => "Bijwerken van je omschrijving mislukt. Probeer het opnieuw.";
+    public static string DescriptionLosesFormattingTitle => "Opmaak gaat verloren";
+    public static string DescriptionLosesFormatting => "Je omschrijving heeft opmaak (zoals vet, lijsten of links) die de app niet kan bewaren. Bewerk hem op de website om die te houden.";
+    public static string SaveAnyway => "Toch opslaan";
     public static string ProfilePictureFailed => "Profielfoto bijwerken mislukt";
     public static string Settings => "Instellingen";
     public static string Stats => "Statistieken";
@@ -61,4 +236,54 @@ public static class Texts
     public static string NewAchievementDescription => "Je hebt zojuist nieuwe achievement(s) ontgrendeld!";
     public static string WhatsNewTitle => "Wat is er nieuw in SSSKL?";
     public static string SessionExpired => "Je sessie is verlopen. Log opnieuw in.";
+
+    // "Meer"
+    public static string SectionGeneral => "Algemeen";
+    public static string SectionAdmin => "Beheer";
+    public static string SectionApp => "App";
+    public static string MySaldoPage => "Mijn saldo";
+    public static string Notifications => "Notificaties";
+    public static string Events => "Evenementen";
+    public static string Quotes => "Quotes";
+    public static string Leaderboard => "Leaderboard";
+    public static string SaldoList => "Saldolijst";
+    public static string About => "Over SSSKL";
+    public static string AdminOrders => "Bestellingen";
+    public static string AdminProducts => "Producten";
+    public static string AdminTopUps => "Opwaarderingen";
+    public static string AdminUsers => "Gebruikers";
+    public static string AdminRoles => "Rollen";
+    public static string AdminAchievements => "Achievements";
+    public static string AdminAnnouncements => "Mededelingen";
+    public static string AdminSendNotification => "Notificatie verzenden";
+    public static string AdminGlobalSettings => "Globale instellingen";
+    public static string ViewProfile => "Bekijk je profiel";
+
+    // Settings
+    public static string SectionProfile => "Profiel";
+    public static string SectionAppearance => "Weergave";
+    public static string SectionAccount => "Account";
+    public static string SectionAbout => "Over";
+    public static string FirstName => "Voornaam";
+    public static string LastName => "Achternaam";
+    public static string PhoneNumber => "Telefoonnummer";
+    public static string Save => "Opslaan";
+    public static string SettingsSaved => "Je instellingen zijn bijgewerkt.";
+    public static string SettingsSaveFailed => "Bijwerken van instellingen mislukt. Probeer het opnieuw.";
+    public static string Roles => "Rollen";
+    public static string NoRoles => "Geen rollen";
+    public static string ColorMode => "Kleurmodus";
+    public static string ColorModeHint => "'Systeem' volgt de instelling van je telefoon.";
+    public static string ThemeAuto => "Systeem";
+    public static string ThemeLight => "Licht";
+    public static string ThemeDark => "Donker";
+    public static string Email => "E-mailadres";
+    public static string EmailConfirmed => "Bevestigd";
+    public static string EmailUnconfirmed => "Onbevestigd";
+    public static string PasswordAndPasskeys => "Wachtwoord en passkeys";
+    public static string TwoFactor => "Tweestapsverificatie";
+    public static string On => "Aan";
+    public static string Off => "Uit";
+    public static string PersonalData => "Persoonlijke gegevens";
+    public static string AppVersion => "Versie";
 }

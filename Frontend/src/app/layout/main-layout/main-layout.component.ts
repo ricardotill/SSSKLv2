@@ -1,21 +1,27 @@
-import { Component, ChangeDetectionStrategy, signal } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { SidebarComponent } from '../sidebar/sidebar.component';
 import { HeaderComponent } from '../header/header.component';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { Toast } from 'primeng/toast';
 import { ConfirmDialog } from 'primeng/confirmdialog';
+import { EmbeddedService } from '../../core/services/embedded.service';
 
 @Component({
   selector: 'app-main-layout',
   imports: [RouterOutlet, SidebarComponent, HeaderComponent, Toast, ConfirmDialog],
   template: `
-    <div class="layout-container bg-surface-50 dark:bg-surface-950">
-      <p-toast position="bottom-left" />
+    <div class="layout-container bg-surface-50 dark:bg-surface-950" [class.embedded]="embedded">
+      <p-toast [position]="embedded ? 'bottom-center' : 'bottom-left'" />
       <p-confirm-dialog />
-      <app-sidebar [isOpen]="isSidebarOpen()" (close)="isSidebarOpen.set(false)" />
+      <!-- In the mobile app the native tab bar and "Meer" page replace the header and menu. -->
+      @if (!embedded) {
+        <app-sidebar [isOpen]="isSidebarOpen()" (close)="isSidebarOpen.set(false)" />
+      }
       <div class="main-wrapper">
-        <app-header [isSidebarOpen]="isSidebarOpen()" (menuToggled)="toggleSidebar()" />
+        @if (!embedded) {
+          <app-header [isSidebarOpen]="isSidebarOpen()" (menuToggled)="toggleSidebar()" />
+        }
         <main class="content-area">
           <router-outlet />
         </main>
@@ -54,10 +60,21 @@ import { ConfirmDialog } from 'primeng/confirmdialog';
         padding: 1rem;
       }
     }
+    /* Mobile app: no browser chrome, so behave like a native scroll view. */
+    .embedded {
+      height: 100dvh;
+    }
+    .embedded .content-area {
+      padding: 0.5rem 1rem calc(1.5rem + env(safe-area-inset-bottom));
+      overscroll-behavior-y: contain;
+      -webkit-overflow-scrolling: touch;
+      -webkit-tap-highlight-color: transparent;
+    }
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MainLayoutComponent {
+  protected readonly embedded = inject(EmbeddedService).isEmbedded;
   isSidebarOpen = signal(false);
 
   toggleSidebar() {

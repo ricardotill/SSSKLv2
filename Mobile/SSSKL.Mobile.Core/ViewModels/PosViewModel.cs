@@ -97,11 +97,10 @@ public sealed partial class PosViewModel(
         IsLoading = true;
         try
         {
-            if (currentUser.User is null)
-            {
-                await currentUser.RefreshAsync();
-            }
+            // The saldo can have changed elsewhere, so refresh a cached user too (quietly: it's still usable).
+            Task userTask = currentUser.User is null ? currentUser.RefreshAsync() : RefreshUserQuietlyAsync();
             var data = await api.GetOrderInitializeAsync();
+            await userTask;
             var me = currentUser.User?.Id;
 
             Products.Clear();
@@ -116,6 +115,7 @@ public sealed partial class PosViewModel(
                 .OrderByDescending(u => u.IsSelf)
                 .ToList();
             ShowUserSearch = _allUsers.Count > UserSearchThreshold;
+            ApplySaldo();
             ResetSelection();
             OnPropertyChanged(nameof(IsGuest));
         }
@@ -211,6 +211,7 @@ public sealed partial class PosViewModel(
             ResetSelection();
 
             await Task.WhenAll(RefreshUserQuietlyAsync(), achievements.CheckAsync());
+            ApplySaldo();
         }
         catch (Exception ex) when (ex is ApiException or HttpRequestException or TaskCanceledException or FormatException)
         {
@@ -235,11 +236,23 @@ public sealed partial class PosViewModel(
         ApplyUserFilter();
     }
 
+    /// <summary>Your saldo, in your own row (refreshed on load and after every order).</summary>
+    private void ApplySaldo()
+    {
+        if (_allUsers.FirstOrDefault(u => u.IsSelf) is not { } self || currentUser.User is not { } user)
+        {
+            return;
+        }
+        self.SaldoText = user.Saldo.ToString("C", Dutch);
+        self.IsSaldoNegative = user.Saldo < 0;
+    }
+
+    /// <summary>Your own row always stays on top, whatever is searched; the others are filtered on their name.</summary>
     private void ApplyUserFilter()
     {
         var query = UserQuery.Trim();
         VisibleUsers.Clear();
-        foreach (var user in _allUsers.Where(u => query.Length == 0 || u.DisplayName.Contains(query, StringComparison.CurrentCultureIgnoreCase)))
+        foreach (var user in _allUsers.Where(u => u.IsSelf || query.Length == 0 || u.DisplayName.Contains(query, StringComparison.CurrentCultureIgnoreCase)))
         {
             VisibleUsers.Add(user);
         }

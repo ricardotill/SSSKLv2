@@ -1,6 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>net11.0-android;net11.0-ios</TargetFrameworks>
+    <!-- CI builds one platform per runner: -p:SssklTargetFrameworks=net11.0-android limits restore to it
+         (TargetFrameworks itself can't be passed: as a global property it would also retarget Core). -->
+    <TargetFrameworks Condition="'$(SssklTargetFrameworks)' != ''">$(SssklTargetFrameworks)</TargetFrameworks>
     <OutputType>Exe</OutputType>
     <RootNamespace>SSSKL.Mobile</RootNamespace>
     <!-- DebugProduction: a Debug build (debugger, DEBUG symbol, no Native AOT) against the production
@@ -68,8 +71,20 @@
   </ItemGroup>
 
   <ItemGroup>
-    <MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#34D399" />
-    <MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#34D399" BaseSize="128,128" />
+    <!-- The SPA's logo: green glasses (#00A279) on #212529. appiconfg.svg and splash.svg are a vector trace of
+         Frontend/public/icons/icon-512x512.png (so they stay sharp at every size), centred on the point where
+         the glasses touch, with padding inside Android's round icon mask. The glasses are on transparency, so
+         Android's themed (monochrome) icon shows them and not a square. -->
+    <!-- Android launchers show only the middle ~66% of the icon (round or squircle mask); iOS shows the whole
+         square, so the glasses are drawn a bit larger there.
+         Resizetizer only notices changes to the Include file, not to ForegroundFile: after changing
+         appiconfg.svg, delete obj/**/resizetizer (or touch appicon.svg) or the old icon is kept. -->
+    <MauiIcon Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) != 'ios'"
+              Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#212529" />
+    <MauiIcon Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'"
+              Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" ForegroundScale="1.15" Color="#212529" />
+    <MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#212529" BaseSize="256,256" />
+    <!-- ti_*.svg and tab_*.svg: Tabler Icons (MIT, https://tabler.io/icons); each file carries the license. -->
     <MauiImage Include="Resources\Images\*" />
   </ItemGroup>
 

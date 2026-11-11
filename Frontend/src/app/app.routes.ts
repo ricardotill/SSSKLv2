@@ -1,5 +1,5 @@
 import { isDevMode } from '@angular/core';
-import { nativeRouteGuard } from './core/auth/native-route.guard';
+import { nativePageGuard, nativeRouteGuard } from './core/auth/native-route.guard';
 import { Routes } from '@angular/router';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { authGuard } from './core/auth/auth.guard';
@@ -73,6 +73,7 @@ export const routes: Routes = [
       {
         path: 'leaderboard',
         loadComponent: () => import('./features/leaderboard/leaderboard.component'),
+        canActivate: [nativePageGuard],
         title: 'Leaderboard - SSSKL'
       },
       {
@@ -84,7 +85,7 @@ export const routes: Routes = [
       {
         path: 'about',
         loadComponent: () => import('./features/homepage/homepage.component'),
-        canActivate: [authGuard],
+        canActivate: [authGuard, nativePageGuard],
         title: 'Over SSSKL - SSSKL'
       },
       {
@@ -102,13 +103,14 @@ export const routes: Routes = [
       {
         path: 'settings',
         loadComponent: () => import('./features/settings/settings.component'),
-        canActivate: [authGuard],
+        // The mobile app has native settings; it opens single tabs here with ?tab=.
+        canActivate: [authGuard, nativeRouteGuard('settings', (route) => !route.queryParamMap.has('tab'))],
         title: 'Instellingen - SSSKL'
       },
       {
         path: 'stats',
         loadComponent: () => import('./features/stats/stats.component').then(m => m.StatsComponent),
-        canActivate: [authGuard],
+        canActivate: [authGuard, nativePageGuard],
         title: 'Mijn Statistieken - SSSKL'
       },
       {
@@ -118,11 +120,13 @@ export const routes: Routes = [
           {
             path: 'personal',
             loadComponent: () => import('./features/orders/personal-orders.component'),
+            canActivate: [nativePageGuard],
             title: 'Mijn Bestellingen - SSSKL'
           },
           {
             path: 'saldo',
             loadComponent: () => import('./features/top-ups/personal-top-ups.component'),
+            canActivate: [nativePageGuard],
             title: 'Mijn Saldo - SSSKL'
           }
         ]
@@ -130,25 +134,25 @@ export const routes: Routes = [
       {
         path: 'users',
         loadComponent: () => import('./features/users/users-overview.component'),
-        canActivate: [authGuard],
+        canActivate: [authGuard, nativePageGuard],
         title: 'Gebruikersoverzicht - SSSKL'
       },
       {
         path: 'achievements',
         loadComponent: () => import('./features/achievements/achievements.component'),
-        canActivate: [authGuard],
+        canActivate: [authGuard, nativePageGuard],
         title: 'Achievements - SSSKL'
       },
       {
         path: 'notifications',
         loadComponent: () => import('./features/notifications/notifications.component').then(m => m.NotificationsComponent),
-        canActivate: [authGuard],
+        canActivate: [authGuard, nativePageGuard],
         title: 'Notifications - SSSKL'
       },
       {
         path: 'achievements/:id',
         loadComponent: () => import('./features/achievements/achievement-detail/achievement-detail.component'),
-        canActivate: [authGuard],
+        canActivate: [authGuard, nativePageGuard],
         title: 'Achievement - SSSKL'
       },
       {
@@ -157,7 +161,7 @@ export const routes: Routes = [
           {
             path: '',
             loadComponent: () => import('./features/events/events.component'),
-            canActivate: [authGuard],
+            canActivate: [authGuard, nativePageGuard],
             title: 'Evenementen - SSSKL'
           },
           {
@@ -170,6 +174,7 @@ export const routes: Routes = [
           {
             path: ':id',
             loadComponent: () => import('./features/events/event-detail/event-detail.component'),
+            canActivate: [nativePageGuard],
             title: 'Evenement Details - SSSKL'
           },
           {
@@ -187,13 +192,14 @@ export const routes: Routes = [
           {
             path: '',
             loadComponent: () => import('./features/quotes/quotes.component'),
-            canActivate: [authGuard, quotesGuard],
+            // ?new and ?edit= open the form, which the app shows in the WebView.
+            canActivate: [authGuard, quotesGuard, nativePageGuard],
             title: 'Quotes - SSSKL'
           },
           {
             path: ':id',
             loadComponent: () => import('./features/quotes/pages/quote-detail/quote-detail.component').then(m => m.QuoteDetailComponent),
-            canActivate: [authGuard, quotesGuard],
+            canActivate: [authGuard, quotesGuard, nativePageGuard],
             title: 'Quote Details - SSSKL'
           }
         ]

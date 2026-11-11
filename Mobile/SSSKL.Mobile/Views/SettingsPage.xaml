@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:SSSKL.Mobile.Controls"
+             xmlns:vm="clr-namespace:SSSKL.Mobile.Core.ViewModels;assembly=SSSKL.Mobile.Core"
+             xmlns:core="clr-namespace:SSSKL.Mobile.Core.Services;assembly=SSSKL.Mobile.Core"
+             xmlns:loc="clr-namespace:SSSKL.Mobile.Core.Localization;assembly=SSSKL.Mobile.Core"
+             x:Class="SSSKL.Mobile.Views.SettingsPage"
+             x:DataType="vm:SettingsViewModel"
+             Title="{x:Static loc:Texts.Settings}">
+
+    <RefreshView IsRefreshing="{Binding IsRefreshing}" Command="{Binding LoadCommand}">
+        <ScrollView>
+            <VerticalStackLayout Padding="16,4,16,32" Spacing="6">
+
+                <!-- Profile -->
+                <Label Text="{x:Static loc:Texts.SectionProfile}" Style="{StaticResource GroupCaption}" SemanticProperties.HeadingLevel="Level2" />
+                <Border Style="{StaticResource Group}" Padding="16">
+                    <VerticalStackLayout Spacing="14">
+                        <VerticalStackLayout Spacing="6">
+                            <Label Text="{x:Static loc:Texts.FirstName}" Style="{StaticResource FieldLabel}" />
+                            <Border Style="{StaticResource FieldBox}">
+                                <Entry Text="{Binding Name}" Placeholder="{x:Static loc:Texts.FirstName}"
+                                       Keyboard="Text" ReturnType="Next"
+                                       SemanticProperties.Description="{x:Static loc:Texts.FirstName}" />
+                            </Border>
+                        </VerticalStackLayout>
+                        <VerticalStackLayout Spacing="6">
+                            <Label Text="{x:Static loc:Texts.LastName}" Style="{StaticResource FieldLabel}" />
+                            <Border Style="{StaticResource FieldBox}">
+                                <Entry Text="{Binding Surname}" Placeholder="{x:Static loc:Texts.LastName}"
+                                       Keyboard="Text" ReturnType="Next"
+                                       SemanticProperties.Description="{x:Static loc:Texts.LastName}" />
+                            </Border>
+                        </VerticalStackLayout>
+                        <VerticalStackLayout Spacing="6">
+                            <Label Text="{x:Static loc:Texts.PhoneNumber}" Style="{StaticResource FieldLabel}" />
+                            <Border Style="{StaticResource FieldBox}">
+                                <Entry Text="{Binding PhoneNumber}" Placeholder="{x:Static loc:Texts.PhoneNumber}"
+                                       Keyboard="Telephone" ReturnType="Done" ReturnCommand="{Binding SaveCommand}"
+                                       SemanticProperties.Description="{x:Static loc:Texts.PhoneNumber}" />
+                            </Border>
+                        </VerticalStackLayout>
+                        <Label Style="{StaticResource Muted}">
+                            <Label.FormattedText>
+                                <FormattedString>
+                                    <Span Text="{x:Static loc:Texts.Roles}" FontAttributes="Bold" />
+                                    <Span Text=": " />
+                                    <Span Text="{Binding RolesText}" />
+                                </FormattedString>
+                            </Label.FormattedText>
+                        </Label>
+                        <Grid>
+                            <Button Text="{x:Static loc:Texts.Save}" Command="{Binding SaveCommand}" />
+                            <ActivityIndicator IsRunning="{Binding IsSaving}" IsVisible="{Binding IsSaving}" Color="White"
+                                               HeightRequest="20" WidthRequest="20" HorizontalOptions="End" Margin="0,0,16,0" />
+                        </Grid>
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Appearance: a segmented control like the SPA's colour-mode switch -->
+                <Label Text="{x:Static loc:Texts.SectionAppearance}" Style="{StaticResource GroupCaption}" SemanticProperties.HeadingLevel="Level2" />
+                <Border Style="{StaticResource Group}" Padding="16">
+                    <VerticalStackLayout Spacing="10">
+                        <Label Text="{x:Static loc:Texts.ColorMode}" FontSize="16"
+                               TextColor="{AppThemeBinding Light={StaticResource HeadingLight}, Dark={StaticResource HeadingDark}}" />
+                        <Border Style="{StaticResource SegmentTrack}">
+                            <Grid ColumnDefinitions="*,*,*" ColumnSpacing="3">
+                                <Border Style="{StaticResource Segment}" SemanticProperties.Description="{x:Static loc:Texts.ThemeAuto}">
+                                    <Border.GestureRecognizers>
+                                        <TapGestureRecognizer Command="{Binding SetThemeCommand}" CommandParameter="{x:Static core:ThemeMode.Auto}" />
+                                    </Border.GestureRecognizers>
+                                    <Border.Triggers>
+                                        <DataTrigger TargetType="Border" Binding="{Binding IsAuto}" Value="True">
+                                            <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource SurfaceLight}, Dark={StaticResource SurfaceDark}}" />
+                                        </DataTrigger>
+                                    </Border.Triggers>
+                                    <HorizontalStackLayout Spacing="6" HorizontalOptions="Center">
+                                        <controls:IconView Icon="{x:Static loc:Icons.DeviceDesktop}" Size="18"
+                                                      Color="{AppThemeBinding Light={StaticResource Primary600}, Dark={StaticResource Primary400}}" />
+                                        <Label Text="{x:Static loc:Texts.ThemeAuto}" Style="{StaticResource SegmentText}" />
+                                    </HorizontalStackLayout>
+                                </Border>
+                                <Border Grid.Column="1" Style="{StaticResource Segment}" SemanticProperties.Description="{x:Static loc:Texts.ThemeLight}">
+                                    <Border.GestureRecognizers>
+                                        <TapGestureRecognizer Command="{Binding SetThemeCommand}" CommandParameter="{x:Static core:ThemeMode.Light}" />
+                                    </Border.GestureRecognizers>
+                                    <Border.Triggers>
+                                        <DataTrigger TargetType="Border" Binding="{Binding IsLight}" Value="True">
+                                            <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource SurfaceLight}, Dark={StaticResource SurfaceDark}}" />
+                                        </DataTrigger>
+                                    </Border.Triggers>
+                                    <HorizontalStackLayout Spacing="6" HorizontalOptions="Center">
+                                        <controls:IconView Icon="{x:Static loc:Icons.Sun}" Size="18"
+                                                      Color="{AppThemeBinding Light={StaticResource Primary600}, Dark={StaticResource Primary400}}" />
+                                        <Label Text="{x:Static loc:Texts.ThemeLight}" Style="{StaticResource SegmentText}" />
+                                    </HorizontalStackLayout>
+                                </Border>
+                                <Border Grid.Column="2" Style="{StaticResource Segment}" SemanticProperties.Description="{x:Static loc:Texts.ThemeDark}">
+                                    <Border.GestureRecognizers>
+                                        <TapGestureRecognizer Command="{Binding SetThemeCommand}" CommandParameter="{x:Static core:ThemeMode.Dark}" />
+                                    </Border.GestureRecognizers>
+                                    <Border.Triggers>
+                                        <DataTrigger TargetType="Border" Binding="{Binding IsDark}" Value="True">
+                                            <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource SurfaceLight}, Dark={StaticResource SurfaceDark}}" />
+                                        </DataTrigger>
+                                    </Border.Triggers>
+                                    <HorizontalStackLayout Spacing="6" HorizontalOptions="Center">
+                                        <controls:IconView Icon="{x:Static loc:Icons.Moon}" Size="18"
+                                                      Color="{AppThemeBinding Light={StaticResource Primary600}, Dark={StaticResource Primary400}}" />
+                                        <Label Text="{x:Static loc:Texts.ThemeDark}" Style="{StaticResource SegmentText}" />
+                                    </HorizontalStackLayout>
+                                </Border>
+                            </Grid>
+                        </Border>
+                        <Label Text="{x:Static loc:Texts.ColorModeHint}" Style="{StaticResource Muted}" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Account: status here, changes on the SPA's settings tabs -->
+                <Label Text="{x:Static loc:Texts.SectionAccount}" Style="{StaticResource GroupCaption}" SemanticProperties.HeadingLevel="Level2" />
+                <Border Style="{StaticResource Group}">
+                    <VerticalStackLayout>
+                        <controls:MenuRow IsFirst="True" Icon="{x:Static loc:Icons.Mail}" Title="{x:Static loc:Texts.Email}"
+                                          Subtitle="{Binding Email}" Detail="{Binding EmailStatus}"
+                                          Command="{Binding OpenCommand}" CommandParameter="{x:Static vm:SettingsViewModel.SecurityPath}" />
+                        <controls:MenuRow Icon="{x:Static loc:Icons.Lock}" Title="{x:Static loc:Texts.PasswordAndPasskeys}"
+                                          Command="{Binding OpenCommand}" CommandParameter="{x:Static vm:SettingsViewModel.SecurityPath}" />
+                        <controls:MenuRow Icon="{x:Static loc:Icons.Shield}" Title="{x:Static loc:Texts.TwoFactor}"
+                                          Detail="{Binding TwoFactorStatus}"
+                                          Command="{Binding OpenCommand}" CommandParameter="{x:Static vm:SettingsViewModel.TwoFactorPath}" />
+                        <controls:MenuRow Icon="{x:Static loc:Icons.Download}" Title="{x:Static loc:Texts.PersonalData}"
+                                          Command="{Binding OpenCommand}" CommandParameter="{x:Static vm:SettingsViewModel.PersonalDataPath}" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- About -->
+                <Label Text="{x:Static loc:Texts.SectionAbout}" Style="{StaticResource GroupCaption}" SemanticProperties.HeadingLevel="Level2" />
+                <Border Style="{StaticResource Group}">
+                    <VerticalStackLayout>
+                        <controls:MenuRow IsFirst="True" Icon="{x:Static loc:Icons.InfoCircle}" Title="{x:Static loc:Texts.About}"
+                                          Command="{Binding OpenCommand}" CommandParameter="{x:Static vm:SettingsViewModel.AboutPath}" />
+                        <controls:MenuRow Icon="{x:Static loc:Icons.Rosette}" Title="{x:Static loc:Texts.AppVersion}"
+                                          Detail="{Binding AppVersion}" ShowChevron="False" InputTransparent="True" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <Border Style="{StaticResource Group}" Margin="0,18,0,0">
+                    <controls:MenuRow IsFirst="True" Icon="{x:Static loc:Icons.Logout}" Title="{x:Static loc:Texts.Logout}"
+                                      IsDestructive="True" ShowChevron="False" Command="{Binding LogoutCommand}" />
+                </Border>
+            </VerticalStackLayout>
+        </ScrollView>
+    </RefreshView>
+</ContentPage>

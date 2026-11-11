@@ -22,6 +22,7 @@ import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { FileUploadModule } from 'primeng/fileupload';
 import { MultiSelect } from 'primeng/multiselect';
 import { ResolveApiUrlPipe } from '../../../shared/pipes/resolve-api-url.pipe';
+import { EmbeddedService } from '../../../core/services/embedded.service';
 import { RoleService } from '../../admin/services/role.service';
 import { Role } from '../../../core/models/role.model';
 import {
@@ -208,6 +209,7 @@ export default class EventEditComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly messageService = inject(MessageService);
+  private readonly embedded = inject(EmbeddedService);
   ls = inject(LanguageService);
 
   eventForm: FormGroup;
@@ -360,19 +362,28 @@ export default class EventEditComponent implements OnInit {
         : this.eventService.createEvent(formData);
 
     request.subscribe({
-      next: () => {
+      next: (saved?: { id?: string } | null) => {
         this.submitting.set(false);
         this.messageService.add({
           severity: 'success',
           summary: 'Succes',
           detail: 'Evenement opgeslagen',
         });
-        setTimeout(() => this.router.navigate(['/events']), 1000);
+        setTimeout(() => this.router.navigate(this.afterSaveRoute(saved?.id)), 1000);
       },
       error: () => {
         this.submitting.set(false);
         this.messageService.add({ severity: 'error', summary: 'Fout', detail: 'Opslaan mislukt' });
       },
     });
+  }
+
+  /**
+   * Where to go after saving: the events list, or in the mobile app the saved event, so the app (which
+   * shows events natively) lands on it when the SPA hands the route back.
+   */
+  private afterSaveRoute(createdId?: string): string[] {
+    const id = this.isEdit ? this.eventId : createdId;
+    return this.embedded.isEmbedded && id ? ['/events', id] : ['/events'];
   }
 }

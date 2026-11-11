@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Your saldo as a wallet card: green, red when negative. The darker shades keep white text at WCAG AA (5.5:1 and up). -->
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:SSSKL.Mobile.Controls"
+             xmlns:loc="clr-namespace:SSSKL.Mobile.Core.Localization;assembly=SSSKL.Mobile.Core"
+             x:Class="SSSKL.Mobile.Controls.SaldoCard"
+             x:Name="Root">
+    <ContentView.Resources>
+        <LinearGradientBrush x:Key="SaldoBrush" StartPoint="0,0" EndPoint="1,1">
+            <GradientStop Color="{StaticResource Primary700}" Offset="0" />
+            <GradientStop Color="{StaticResource Primary900}" Offset="1" />
+        </LinearGradientBrush>
+        <LinearGradientBrush x:Key="SaldoNegativeBrush" StartPoint="0,0" EndPoint="1,1">
+            <GradientStop Color="#B91C1C" Offset="0" />
+            <GradientStop Color="#7F1D1D" Offset="1" />
+        </LinearGradientBrush>
+    </ContentView.Resources>
+
+    <Border x:Name="Card" StrokeThickness="0" StrokeShape="RoundRectangle 18" Padding="18,16"
+            Background="{StaticResource SaldoBrush}">
+        <Border.Shadow>
+            <Shadow Brush="Black" Opacity="0.18" Radius="14" Offset="0,4" />
+        </Border.Shadow>
+        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+            <VerticalStackLayout Spacing="2" VerticalOptions="Center">
+                <Label Text="{x:Static loc:Texts.MySaldo}" FontSize="14" TextColor="White" Opacity="0.85" />
+                <Label x:Name="AmountLabel" FontSize="30" FontAttributes="Bold" TextColor="White" LineBreakMode="NoWrap" />
+            </VerticalStackLayout>
+            <Border Grid.Column="1" WidthRequest="48" HeightRequest="48" StrokeThickness="0"
+                    StrokeShape="RoundRectangle 24" BackgroundColor="#33FFFFFF" VerticalOptions="Center">
+                <controls:IconView Icon="{x:Static loc:Icons.Wallet}" Size="24" Color="White" />
+            </Border>
+        </Grid>
+    </Border>
+</ContentView>

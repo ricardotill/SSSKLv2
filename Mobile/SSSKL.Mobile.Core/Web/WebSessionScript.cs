@@ -1,5 +1,6 @@
 using System.Text.Json;
 using SSSKL.Mobile.Core.Auth;
+using SSSKL.Mobile.Core.Services;
 
 namespace SSSKL.Mobile.Core.Web;
 
@@ -18,7 +19,10 @@ public static class WebSessionScript
         "var r=localStorage.getItem('refresh_token')||sessionStorage.getItem('refresh_token');" +
         "return a&&r?JSON.stringify({accessToken:a,refreshToken:r}):'';})()";
 
-    public static string Build(string webOrigin, string appVersion, TokenSet? tokens)
+    /// <summary>Where the SPA's ThemeService keeps the colour mode.</summary>
+    public const string ThemeStorageKey = "sssklv2-theme-mode";
+
+    public static string Build(string webOrigin, string appVersion, TokenSet? tokens, ThemeMode theme = ThemeMode.Auto)
     {
         var origin = Js(webOrigin);
         var version = Js(appVersion);
@@ -26,13 +30,28 @@ public static class WebSessionScript
             ? ""
             : $"localStorage.setItem('access_token',{Js(tokens.AccessToken)});" +
               $"localStorage.setItem('refresh_token',{Js(tokens.RefreshToken)});";
+        var setTheme = $"localStorage.setItem('{ThemeStorageKey}',{Js(ThemePreference.ToWebValue(theme))});";
 
         return "(function(){" +
                $"if(location.origin!=={origin})return;" +
                $"window.SSSKL_APP={{version:{version}}};" +
-               $"try{{{setTokens}}}catch(e){{}}" +
+               $"try{{{setTokens}{setTheme}}}catch(e){{}}" +
                "})();";
     }
+
+    /// <summary>Opens an SPA route in a loaded page without reloading it. Evaluates to true when the SPA took it.</summary>
+    public static string NavigateScript(string path) =>
+        $"(function(){{return !!(window.ssskl&&window.ssskl.navigate({Js("/" + path.TrimStart('/'))}));}})()";
+
+    /// <summary>Goes back inside the SPA. Evaluates to false when the page the app opened is showing.</summary>
+    public const string BackScript = "(function(){return !!(window.ssskl&&window.ssskl.back());})()";
+
+    /// <summary>Evaluates to true while the SPA hasn't rendered the requested page yet (or hasn't started).</summary>
+    public const string BusyScript = "(function(){return !window.ssskl||window.ssskl.busy();})()";
+
+    /// <summary>WebViews return script results as text; Android quotes it, iOS doesn't.</summary>
+    public static bool IsTrue(string? result) =>
+        string.Equals(result?.Trim().Trim('"'), "true", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>A JavaScript string literal (JSON string escaping).</summary>
     private static string Js(string value) => JsonSerializer.Serialize(value, ApiJsonContext.Default.String);

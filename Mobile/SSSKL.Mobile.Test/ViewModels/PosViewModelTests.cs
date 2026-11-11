@@ -26,7 +26,7 @@ public class PosViewModelTests
 
     private async Task<PosViewModel> CreateLoadedSutAsync(params string[] roles)
     {
-        _api.GetMeAsync().Returns(new CurrentUser { Id = MeId, FullName = "Ik Zelf", Roles = roles.Length == 0 ? [RoleNames.User] : roles });
+        _api.GetMeAsync().Returns(new CurrentUser { Id = MeId, FullName = "Ik Zelf", Saldo = -2.50m, Roles = roles.Length == 0 ? [RoleNames.User] : roles });
         _api.GetOrderInitializeAsync().Returns(new OrderInitialize
         {
             Products = [Beer, Cola],
@@ -59,6 +59,38 @@ public class PosViewModelTests
         sut.SelectedUserCount.Should().Be(1);
         sut.CanSubmit.Should().BeFalse("no product is selected yet");
         sut.SummaryText.Should().Be(Texts.PosSelectHint);
+    }
+
+    [TestMethod]
+    public async Task LoadAsync_YourRowSaysJezelfWithYourSaldo()
+    {
+        // Act
+        var sut = await CreateLoadedSutAsync();
+
+        // Assert
+        var self = sut.VisibleUsers[0];
+        self.IsSelf.Should().BeTrue();
+        self.Title.Should().Be(Texts.Yourself);
+        self.SaldoText.Should().Be("€ -2,50");
+        self.IsSaldoNegative.Should().BeTrue();
+        self.Initials.Should().Be("IZ", "the avatar still shows your own initials");
+        sut.VisibleUsers[1].Title.Should().Be("Ander Persoon");
+        sut.VisibleUsers[1].HasSaldo.Should().BeFalse();
+    }
+
+    [TestMethod]
+    public async Task UserQuery_KeepsYourOwnRowOnTop()
+    {
+        // Arrange
+        var sut = await CreateLoadedSutAsync();
+
+        // Act
+        sut.UserQuery = "ander";
+
+        // Assert
+        sut.VisibleUsers.Select(u => u.Id).Should().Equal(MeId, OtherId);
+        sut.UserQuery = "niemand";
+        sut.VisibleUsers.Select(u => u.Id).Should().Equal(MeId);
     }
 
     [TestMethod]
@@ -185,18 +217,5 @@ public class PosViewModelTests
         await _dialogs.Received(1).AlertAsync(Texts.OrderFailed, "Onvoldoende voorraad");
         sut.Products[0].IsSelected.Should().BeTrue();
         sut.IsSubmitting.Should().BeFalse();
-    }
-
-    [TestMethod]
-    public async Task UserQuery_FiltersByName()
-    {
-        // Arrange
-        var sut = await CreateLoadedSutAsync();
-
-        // Act
-        sut.UserQuery = "ander";
-
-        // Assert
-        sut.VisibleUsers.Should().ContainSingle().Which.Id.Should().Be(OtherId);
     }
 }

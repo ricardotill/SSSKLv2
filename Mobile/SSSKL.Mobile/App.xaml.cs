@@ -31,7 +31,8 @@ public partial class App : Application
 
     protected override Window CreateWindow(IActivationState? activationState)
     {
-        var window = new Window(new ContentPage { BackgroundColor = Color.FromArgb("#34D399") }) { Title = "SSSKL" };
+        // The splash screen's colour (the logo's background), until the first real page is set.
+        var window = new Window(new ContentPage { BackgroundColor = Color.FromArgb("#212529") }) { Title = "SSSKL" };
         window.Created += async (_, _) => await _navigator.StartAsync(window);
         window.Resumed += async (_, _) =>
         {

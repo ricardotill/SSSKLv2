@@ -3,7 +3,7 @@ import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { vi } from 'vitest';
 import { EmbeddedService } from './embedded.service';
-import { NativeBridgeService } from './native-bridge.service';
+import { NativeBridgeService, FROM_APP_STATE } from './native-bridge.service';
 import { ThemeService } from './theme.service';
 
 @Component({ template: '' })
@@ -51,7 +51,7 @@ describe('NativeBridgeService', () => {
     await vi.waitFor(() => expect(router.url).toBe('/orders/personal'));
 
     expect(result).toBe(true);
-    expect(navigate).toHaveBeenCalledWith('/orders/personal', { replaceUrl: true });
+    expect(navigate).toHaveBeenCalledWith('/orders/personal', { replaceUrl: true, state: { [FROM_APP_STATE]: true } });
     expect(window.ssskl!.busy()).toBe(false);
   });
 

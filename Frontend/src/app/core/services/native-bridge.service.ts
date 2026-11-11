@@ -26,6 +26,12 @@ declare global {
 
 const THEME_MODES: readonly ThemeMode[] = ['auto', 'light', 'dark'];
 
+/**
+ * Navigation state of the routes the app opens with `navigate()`. nativePageGuard lets these through:
+ * the app asked for the SPA page (a form, or an admin page), so handing it back would loop.
+ */
+export const FROM_APP_STATE = 'ssskl.fromApp';
+
 @Injectable({ providedIn: 'root' })
 export class NativeBridgeService {
   private readonly document = inject(DOCUMENT);
@@ -94,7 +100,7 @@ export class NativeBridgeService {
       return true;
     }
     this.resetOnNextNavigation = true;
-    this.router.navigateByUrl(url, { replaceUrl: true }).then(
+    this.router.navigateByUrl(url, { replaceUrl: true, state: { [FROM_APP_STATE]: true } }).then(
       (ok) => {
         if (!ok) {
           this.resetOnNextNavigation = false;

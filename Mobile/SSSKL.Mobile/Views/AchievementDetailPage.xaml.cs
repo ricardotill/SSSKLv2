@@ -14,7 +14,13 @@ public partial class AchievementDetailPage : ContentPage, INativePage
         BindingContext = _viewModel = viewModel;
     }
 
-    public void Prepare(NativeRoute route) => _viewModel.Initialize(Guid.TryParse(route.Id, out var id) ? id : Guid.Empty);
+    public NativeRoute? Route { get; private set; }
+
+    public void Prepare(NativeRoute route)
+    {
+        Route = route;
+        _viewModel.Initialize(Guid.TryParse(route.Id, out var id) ? id : Guid.Empty);
+    }
 
     protected override async void OnAppearing()
     {

@@ -143,6 +143,90 @@ public sealed record Product
     public bool EnableLeaderboard { get; init; }
 }
 
+/// <summary>An event (EventDto). Times are UTC.</summary>
+public sealed record EventItem
+{
+    public Guid Id { get; init; }
+    public string Title { get; init; } = "";
+    /// <summary>HTML from the SPA's editor.</summary>
+    public string Description { get; init; } = "";
+    public string? ImageUrl { get; init; }
+    public DateTime StartDateTime { get; init; }
+    public DateTime EndDateTime { get; init; }
+    public string CreatorName { get; init; } = "";
+    public string CreatorId { get; init; } = "";
+    public IReadOnlyList<EventMember> AcceptedUsers { get; init; } = [];
+    public IReadOnlyList<EventMember> DeclinedUsers { get; init; } = [];
+    /// <summary><see cref="EventResponse.Accepted"/>, <see cref="EventResponse.Declined"/> or null.</summary>
+    public string? UserResponse { get; init; }
+    public string? LocationName { get; init; }
+    public double? Latitude { get; init; }
+    public double? Longitude { get; init; }
+    public IReadOnlyList<string> RequiredRoles { get; init; } = [];
+}
+
+public sealed record EventMember(string UserId, string UserName, string? ProfilePictureUrl);
+
+/// <summary>The API's EventResponseStatus values (sent as strings).</summary>
+public static class EventResponse
+{
+    public const string Accepted = "Accepted";
+    public const string Declined = "Declined";
+}
+
+public sealed record EventRsvp(string Status);
+
+/// <summary>A quote (QuoteDto).</summary>
+public sealed record QuoteItem
+{
+    public Guid Id { get; init; }
+    public string Text { get; init; } = "";
+    public DateTime DateSaid { get; init; }
+    public UserSummary? CreatedBy { get; init; }
+    public IReadOnlyList<QuoteAuthor> Authors { get; init; } = [];
+    public int VoteCount { get; init; }
+    public int CommentsCount { get; init; }
+    public bool HasVoted { get; init; }
+}
+
+/// <summary>Who said it: a member (<see cref="ApplicationUser"/>) or a free-text name.</summary>
+public sealed record QuoteAuthor
+{
+    public Guid Id { get; init; }
+    public string? ApplicationUserId { get; init; }
+    public UserSummary? ApplicationUser { get; init; }
+    public string? CustomName { get; init; }
+
+    public string DisplayName => ApplicationUser?.DisplayName ?? CustomName ?? "";
+}
+
+/// <summary>
+/// A comment or reaction (ReactionDto) on an event, quote or another reaction. Children with 👍 or ❤️ are
+/// likes; other children are replies.
+/// </summary>
+public sealed record Reaction
+{
+    public Guid Id { get; init; }
+    public string UserId { get; init; } = "";
+    public string UserName { get; init; } = "";
+    public string? ProfilePictureUrl { get; init; }
+    public string Content { get; init; } = "";
+    public string? TargetUserName { get; init; }
+    public DateTime CreatedOn { get; init; }
+    public IReadOnlyList<Reaction> Reactions { get; init; } = [];
+}
+
+/// <summary>What a reaction is on (ReactionTargetType).</summary>
+public static class ReactionTarget
+{
+    public const string Event = "Event";
+    public const string Quote = "Quote";
+    public const string Reaction = "Reaction";
+}
+
+/// <summary>Adds the reaction, or removes it when you already placed the same one (<c>reactions/toggle</c>).</summary>
+public sealed record ToggleReaction(Guid TargetId, string TargetType, string Content);
+
 public enum LeaderboardPeriod
 {
     Last12Hours,

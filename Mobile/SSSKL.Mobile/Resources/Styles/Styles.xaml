@@ -154,6 +154,21 @@
         <Setter Property="Margin" Value="4" />
         <Setter Property="MinimumHeightRequest" Value="56" />
     </Style>
+    <!-- A pill on top of an image (event cards): white text on a dark, solid colour for contrast -->
+    <Style x:Key="ImageBadge" TargetType="Border">
+        <Setter Property="StrokeShape" Value="RoundRectangle 12" />
+        <Setter Property="Stroke" Value="#E6FFFFFF" />
+        <Setter Property="StrokeThickness" Value="1" />
+        <Setter Property="Padding" Value="9,4" />
+        <Setter Property="Margin" Value="10" />
+        <Setter Property="VerticalOptions" Value="Start" />
+    </Style>
+    <Style x:Key="ImageBadgeText" TargetType="Label">
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="TextColor" Value="White" />
+        <Setter Property="VerticalOptions" Value="Center" />
+    </Style>
     <Style x:Key="BottomPanel" TargetType="Border">
         <Setter Property="StrokeShape" Value="RoundRectangle 16,16,0,0" />
         <Setter Property="StrokeThickness" Value="0" />

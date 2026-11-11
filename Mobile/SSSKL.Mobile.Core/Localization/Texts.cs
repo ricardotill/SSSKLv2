@@ -106,6 +106,70 @@ public static class Texts
     public static string RecentAchievements => "Recente achievements";
     public static string ViewStats => "Statistieken bekijken";
 
+    // Evenementen
+    public static string EventsSubtitle => "Blijf op de hoogte van alle geplande activiteiten!";
+    public static string Upcoming => "Komend";
+    public static string NewEvent => "Nieuw evenement";
+    public static string NoEvents => "Geen evenementen gevonden.";
+    public static string Past => "Verstreken";
+    public static string Attending => "Aangemeld";
+    public static string NotAttending => "Afgemeld";
+    public static string AttendeeCount(int count) => count == 1 ? "1 deelnemer" : $"{count} deelnemers";
+    public static string Starts => "Begint";
+    public static string Ends => "Eindigt";
+    public static string Location => "Locatie";
+    public static string OpenInMaps => "Open in Google Maps";
+    public static string AllowedRoles => "Toegestane rollen";
+    public static string AreYouComing => "Ben je erbij?";
+    public static string AreYouComingHint => "Laat weten of je komt zodat we rekening kunnen houden met de planning.";
+    public static string Accept => "Aanwezig";
+    public static string Decline => "Afwezig";
+    public static string RsvpAccepted => "Je bent aangemeld!";
+    public static string RsvpDeclined => "Je bent afgemeld.";
+    public static string RsvpFailed => "Aan- of afmelden mislukt.";
+    public static string RsvpNoRole => "Je hebt niet de juiste rol om je aan te melden.";
+    public static string Attendees => "Deelnemers";
+    public static string NoAttendees => "Nog geen aanmeldingen.";
+    public static string Declined => "Afgemeld";
+    public static string Share => "Delen";
+    public static string ShareEventText(string title) => $"Meld je nu aan voor {title}!";
+    public static string ChangeImage => "Afbeelding wijzigen";
+    public static string ImageUpdated => "Afbeelding bijgewerkt";
+    public static string ImageUpdateFailed => "Afbeelding uploaden mislukt";
+    public static string ConfirmDeleteEvent => "Weet je zeker dat je dit evenement wilt verwijderen?";
+    public static string DeleteEvent => "Evenement verwijderen";
+    public static string EventDeleted => "Evenement verwijderd";
+    public static string DeleteFailed => "Verwijderen mislukt";
+    public static string EventNotFound => "Dit evenement bestaat niet (meer).";
+
+    // Quotes
+    public static string QuotesSubtitle => "Grappige dingen die mensen hebben gezegd.";
+    public static string NewQuote => "Nieuwe quote";
+    public static string NoQuotes => "Nog geen quotes gevonden.";
+    public static string Votes(int count) => count == 1 ? "1 stem" : $"{count} stemmen";
+    public static string CommentCount(int count) => count == 1 ? "1 reactie" : $"{count} reacties";
+    public static string Vote => "Stemmen";
+    public static string VoteFailed => "Stemmen mislukt.";
+    public static string ConfirmDeleteQuote => "Weet je zeker dat je deze quote wilt verwijderen?";
+    public static string DeleteQuote => "Quote verwijderen";
+    public static string QuoteDeleted => "Quote verwijderd";
+    public static string QuoteNotFound => "Quote niet gevonden.";
+    public static string SaidBy => "Gezegd door";
+
+    // Reacties
+    public static string Comments => "Reacties";
+    public static string NoComments => "Nog geen reacties. Wees de eerste!";
+    public static string CommentPlaceholder => "Deel je gedachten…";
+    public static string Post => "Plaatsen";
+    public static string Reply => "Reageren";
+    public static string ReplyTo(string userName) => $"Reageren op @{userName}";
+    public static string ReplyPlaceholder => "Schrijf een reactie…";
+    public static string ConfirmDeleteComment => "Weet je zeker dat je deze reactie wilt verwijderen? Alle onderliggende reacties worden ook verwijderd.";
+    public static string DeleteComment => "Reactie verwijderen";
+    public static string CommentFailed => "Reageren mislukt.";
+    public static string Likes(int count) => count == 1 ? "1 duim" : $"{count} duimen";
+    public static string Hearts(int count) => count == 1 ? "1 hartje" : $"{count} hartjes";
+
     // Over SSSKL
     public static string ViewOnGitHub => "Bekijk op GitHub";
     public static string DeleteAccountInfo =>

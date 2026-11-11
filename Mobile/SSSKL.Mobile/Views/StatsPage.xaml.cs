@@ -14,7 +14,13 @@ public partial class StatsPage : ContentPage, INativePage
         BindingContext = _viewModel = viewModel;
     }
 
-    public void Prepare(NativeRoute route) => _viewModel.Initialize(route.UserId);
+    public NativeRoute? Route { get; private set; }
+
+    public void Prepare(NativeRoute route)
+    {
+        Route = route;
+        _viewModel.Initialize(route.UserId);
+    }
 
     protected override async void OnAppearing()
     {

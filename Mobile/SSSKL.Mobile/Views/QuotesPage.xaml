@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:SSSKL.Mobile.Controls"
+             xmlns:vm="clr-namespace:SSSKL.Mobile.Core.ViewModels;assembly=SSSKL.Mobile.Core"
+             xmlns:loc="clr-namespace:SSSKL.Mobile.Core.Localization;assembly=SSSKL.Mobile.Core"
+             x:Class="SSSKL.Mobile.Views.QuotesPage"
+             x:DataType="vm:QuotesViewModel"
+             Title="{x:Static loc:Texts.Quotes}">
+    <Grid>
+        <RefreshView IsRefreshing="{Binding IsRefreshing}" Command="{Binding LoadCommand}">
+            <CollectionView ItemsSource="{Binding Items}" SelectionMode="None"
+                            RemainingItemsThreshold="4" RemainingItemsThresholdReachedCommand="{Binding LoadMoreCommand}">
+                <CollectionView.ItemsLayout>
+                    <LinearItemsLayout Orientation="Vertical" ItemSpacing="12" />
+                </CollectionView.ItemsLayout>
+
+                <CollectionView.Header>
+                    <Grid Padding="16,8,16,4" ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                        <Label Text="{x:Static loc:Texts.QuotesSubtitle}" Style="{StaticResource Muted}" VerticalOptions="Center" />
+                        <Button Grid.Column="1" Text="{x:Static loc:Texts.NewQuote}" Command="{Binding NewQuoteCommand}"
+                                IsVisible="{Binding CanCreate}" Style="{StaticResource SecondaryButton}">
+                            <Button.Behaviors>
+                                <controls:PressScaleBehavior />
+                            </Button.Behaviors>
+                        </Button>
+                    </Grid>
+                </CollectionView.Header>
+
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="vm:QuoteRow">
+                        <controls:QuoteCard Margin="16,0" MaxTextLines="5"
+                                            OpenCommand="{Binding OpenCommand, Source={RelativeSource AncestorType={x:Type vm:QuotesViewModel}}, x:DataType=vm:QuotesViewModel}"
+                                            VoteCommand="{Binding VoteCommand, Source={RelativeSource AncestorType={x:Type vm:QuotesViewModel}}, x:DataType=vm:QuotesViewModel}" />
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+
+                <CollectionView.EmptyView>
+                    <VerticalStackLayout Padding="32,48" Spacing="10" IsVisible="{Binding IsEmpty}">
+                        <controls:IconView Icon="{x:Static loc:Icons.Message}" Size="48"
+                                           Color="{AppThemeBinding Light={StaticResource BorderLight}, Dark={StaticResource BorderDark}}" />
+                        <Label Text="{x:Static loc:Texts.NoQuotes}" Style="{StaticResource Muted}" HorizontalTextAlignment="Center" />
+                    </VerticalStackLayout>
+                </CollectionView.EmptyView>
+                <CollectionView.Footer>
+                    <Grid Padding="16" MinimumHeightRequest="24">
+                        <ActivityIndicator IsRunning="{Binding IsLoadingMore}" IsVisible="{Binding IsLoadingMore}" HorizontalOptions="Center" />
+                    </Grid>
+                </CollectionView.Footer>
+            </CollectionView>
+        </RefreshView>
+        <ActivityIndicator IsRunning="{Binding IsLoading}" IsVisible="{Binding IsLoading}" HorizontalOptions="Center" VerticalOptions="Center" />
+    </Grid>
+</ContentPage>

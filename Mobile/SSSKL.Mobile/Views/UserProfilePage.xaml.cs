@@ -14,7 +14,13 @@ public partial class UserProfilePage : ContentPage, INativePage
         BindingContext = _viewModel = viewModel;
     }
 
-    public void Prepare(NativeRoute route) => _viewModel.Initialize(route.Id ?? "");
+    public NativeRoute? Route { get; private set; }
+
+    public void Prepare(NativeRoute route)
+    {
+        Route = route;
+        _viewModel.Initialize(route.Id ?? "");
+    }
 
     protected override async void OnAppearing()
     {

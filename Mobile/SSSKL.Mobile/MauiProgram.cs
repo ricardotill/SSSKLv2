@@ -79,6 +79,8 @@ public static class MauiProgram
         services.AddSingleton<IPopupPresenter, PopupPresenter>();
         services.AddSingleton<IUserDialogs, UserDialogs>();
         services.AddSingleton<IPhotoPicker, MediaPhotoPicker>();
+        services.AddSingleton<IShareService, ShareService>();
+        services.AddSingleton<IExternalLauncher, ExternalLauncher>();
         services.AddSingleton<IWebDataCleaner, WebDataCleaner>();
         services.AddSingleton<AppNavigator>();
         services.AddSingleton<IAppNavigator>(sp => sp.GetRequiredService<AppNavigator>());
@@ -101,6 +103,11 @@ public static class MauiProgram
         services.AddTransient<AchievementsViewModel>();
         services.AddTransient<AchievementDetailViewModel>();
         services.AddTransient<UserProfileViewModel>();
+        services.AddTransient<CommentsViewModel>();
+        services.AddTransient<EventsViewModel>();
+        services.AddTransient<EventDetailViewModel>();
+        services.AddTransient<QuotesViewModel>();
+        services.AddTransient<QuoteDetailViewModel>();
         services.AddTransient<PosPage>();
         services.AddTransient<ProfilePage>();
         services.AddTransient<MorePage>();
@@ -115,6 +122,10 @@ public static class MauiProgram
         services.AddTransient<AchievementDetailPage>();
         services.AddTransient<UserProfilePage>();
         services.AddTransient<AboutPage>();
+        services.AddTransient<EventsPage>();
+        services.AddTransient<EventDetailPage>();
+        services.AddTransient<QuotesPage>();
+        services.AddTransient<QuoteDetailPage>();
         // Transient: AppNavigator creates one per AppShell (one per sign-in) and releases it on sign-out, so
         // no SPA state of a previous user survives.
         services.AddTransient<WebPage>();

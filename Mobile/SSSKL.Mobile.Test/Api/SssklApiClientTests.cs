@@ -292,4 +292,92 @@ public class SssklApiClientTests
         handler.Requests.Single().Request.RequestUri.Should().Be("https://api.test/api/v1/Product?all=true");
         products.Should().ContainSingle().Which.EnableLeaderboard.Should().BeTrue();
     }
+
+    [TestMethod]
+    public async Task GetEventAsync_ReadsTheEvent()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        var handler = new StubHttpHandler((_, _) => StubHttpHandler.Json($$"""
+            {"id":"{{id}}","title":"Kamp","description":"<p>Hoi</p>","startDateTime":"2026-07-01T10:00:00","endDateTime":"2026-07-01T12:00:00",
+             "creatorName":"jan","creatorId":"u1","acceptedUsers":[{"userId":"u2","userName":"anna","profilePictureUrl":null}],"declinedUsers":[],
+             "userResponse":"Accepted","locationName":"Clubhuis","latitude":52.1,"longitude":5.1,"requiredRoles":["Leiding"]}
+            """));
+
+        // Act
+        var item = await CreateSut(handler).GetEventAsync(id);
+
+        // Assert
+        handler.Requests.Single().Request.RequestUri.Should().Be($"https://api.test/api/v1/Events/{id}");
+        item.UserResponse.Should().Be(EventResponse.Accepted);
+        item.AcceptedUsers.Should().ContainSingle().Which.UserName.Should().Be("anna");
+        item.RequiredRoles.Should().Equal("Leiding");
+    }
+
+    [TestMethod]
+    public async Task GetEventsAsync_PassesFutureOnly()
+    {
+        // Arrange
+        var handler = new StubHttpHandler((_, _) => StubHttpHandler.Json("""{"items":[],"totalCount":0}"""));
+
+        // Act
+        await CreateSut(handler).GetEventsAsync(20, 20, futureOnly: true);
+
+        // Assert
+        handler.Requests.Single().Request.RequestUri.Should().Be("https://api.test/api/v1/Events?skip=20&take=20&futureOnly=true");
+    }
+
+    [TestMethod]
+    public async Task RespondToEventAsync_PostsTheStatusAsString()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        var handler = new StubHttpHandler((_, _) => StubHttpHandler.Status(HttpStatusCode.OK));
+
+        // Act
+        await CreateSut(handler).RespondToEventAsync(id, EventResponse.Declined);
+
+        // Assert
+        var (request, body) = handler.Requests.Single();
+        request.RequestUri.Should().Be($"https://api.test/api/v1/Events/{id}/rsvp");
+        body.Should().Be("""{"status":"Declined"}""");
+    }
+
+    [TestMethod]
+    public async Task ToggleQuoteVoteAsync_ReturnsWhetherYouVoted()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        var handler = new StubHttpHandler((_, _) => StubHttpHandler.Json("true"));
+
+        // Act
+        var voted = await CreateSut(handler).ToggleQuoteVoteAsync(id);
+
+        // Assert
+        voted.Should().BeTrue();
+        handler.Requests.Single().Request.RequestUri.Should().Be($"https://api.test/api/v1/Quote/{id}/vote");
+    }
+
+    [TestMethod]
+    public async Task Reactions_GetToggleAndDelete()
+    {
+        // Arrange
+        var target = Guid.NewGuid();
+        var handler = new StubHttpHandler((request, _) => request.Method == HttpMethod.Get
+            ? StubHttpHandler.Json("""[{"id":"6f9619ff-8b86-d011-b42d-00cf4fc964ff","userId":"u1","userName":"jan","content":"Hoi","targetId":"6f9619ff-8b86-d011-b42d-00cf4fc964ff","targetType":"Event","createdOn":"2026-07-01T10:00:00","reactions":[]}]""")
+            : StubHttpHandler.Status(HttpStatusCode.OK));
+        var sut = CreateSut(handler);
+
+        // Act
+        var reactions = await sut.GetReactionsAsync(target, ReactionTarget.Event);
+        await sut.ToggleReactionAsync(new ToggleReaction(target, ReactionTarget.Quote, "👍"));
+        await sut.DeleteReactionAsync(target);
+
+        // Assert
+        reactions.Should().ContainSingle().Which.Content.Should().Be("Hoi");
+        handler.Requests[0].Request.RequestUri.Should().Be($"https://api.test/api/v1/Reactions/{target}/Event");
+        handler.Requests[1].Request.RequestUri.Should().Be("https://api.test/api/v1/Reactions/toggle");
+        handler.Requests[1].Body.Should().Be($$"""{"targetId":"{{target}}","targetType":"Quote","content":"\uD83D\uDC4D"}""");
+        handler.Requests[2].Request.Method.Should().Be(HttpMethod.Delete);
+    }
 }

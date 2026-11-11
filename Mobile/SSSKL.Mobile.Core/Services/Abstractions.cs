@@ -35,6 +35,9 @@ public interface IAppNavigator
     /// <summary>Switches to the "Profiel" tab.</summary>
     Task OpenProfileAsync();
 
+    /// <summary>Closes the page on top of the current tab (e.g. after deleting what it showed).</summary>
+    Task CloseAsync();
+
     /// <summary>Signs out locally and shows the login page.</summary>
     Task SignOutAsync();
 }
@@ -44,6 +47,18 @@ public interface IUserDialogs
     Task ToastAsync(string message);
     Task AlertAsync(string title, string message);
     Task<bool> ConfirmAsync(string title, string message, string accept, string cancel);
+}
+
+/// <summary>The system share sheet (MAUI Share in the app).</summary>
+public interface IShareService
+{
+    Task ShareAsync(string title, string text, Uri url);
+}
+
+/// <summary>Opens a URL outside the app (browser, Google Maps, mail).</summary>
+public interface IExternalLauncher
+{
+    Task OpenAsync(Uri url);
 }
 
 public sealed record PickedPhoto(string FileName, string ContentType, byte[] Content);

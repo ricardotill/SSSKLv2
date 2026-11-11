@@ -105,6 +105,10 @@ public sealed class AppNavigator(
         { Page: NativePage.Achievements } route => PushAsync<AchievementsPage>(route),
         { Page: NativePage.AchievementDetail } route => PushAsync<AchievementDetailPage>(route),
         { Page: NativePage.About } route => PushAsync<AboutPage>(route),
+        { Page: NativePage.Events } route => PushAsync<EventsPage>(route),
+        { Page: NativePage.EventDetail } route => PushAsync<EventDetailPage>(route),
+        { Page: NativePage.Quotes } route => PushAsync<QuotesPage>(route),
+        { Page: NativePage.QuoteDetail } route => PushAsync<QuoteDetailPage>(route),
         _ => OpenWebAsync(path.TrimStart('/'))
     };
 
@@ -158,15 +162,52 @@ public sealed class AppNavigator(
     /// <summary>Switches to a tab (a route in AppShell.xaml).</summary>
     private Task SwitchTabAsync(string route) => GuardedAsync(shell => shell.GoToAsync("//" + route));
 
+    public Task CloseAsync() => GuardedAsync(async shell =>
+    {
+        if (shell.Navigation.NavigationStack.Count > 1)
+        {
+            await shell.Navigation.PopAsync();
+        }
+    });
+
     /// <summary>Handles <c>ssskl-app://&lt;action&gt;</c> navigations from the embedded SPA.</summary>
-    public Task HandleNativeActionAsync(string action) => action switch
+    /// <param name="path">For <c>open</c>: the SPA route the app shows natively.</param>
+    public Task HandleNativeActionAsync(string action, string? path = null) => action switch
     {
         "pos" => SwitchTabAsync("pos"),
         "profile" => OpenProfileAsync(),
         "settings" => OpenSettingsAsync(),
         "logout" => SignOutAsync(),
+        "open" when path is not null => OpenFromWebAsync(path),
         _ => Task.CompletedTask
     };
+
+    /// <summary>
+    /// The SPA in the WebView went to a route the app has natively (e.g. the event it just saved): close the
+    /// WebView page, and show the native page, unless the page under it already is that one (it reloads
+    /// when it reappears).
+    /// </summary>
+    private async Task OpenFromWebAsync(string path)
+    {
+        var route = NativeRoutes.Resolve(path);
+        if (route is null)
+        {
+            return;
+        }
+        var showing = false;
+        await GuardedAsync(async shell =>
+        {
+            if (shell.Navigation.NavigationStack.LastOrDefault() is WebPage)
+            {
+                await shell.Navigation.PopAsync();
+            }
+            showing = shell.Navigation.NavigationStack.LastOrDefault() is INativePage page && page.Route == route;
+        });
+        if (!showing)
+        {
+            await OpenAsync(path);
+        }
+    }
 
     private void Forget(Task task) =>
         task.ContinueWith(t => logger.LogWarning(t.Exception, "Showing a web page failed"),

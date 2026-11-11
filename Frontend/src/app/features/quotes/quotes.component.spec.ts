@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
+import { ActivatedRoute, Router, convertToParamMap } from '@angular/router';
 import { of, Subject, throwError } from 'rxjs';
 import { MessageService } from 'primeng/api';
 import { DialogService } from 'primeng/dynamicdialog';
@@ -9,6 +10,8 @@ import { QuoteService } from './services/quote.service';
 import { AuthService } from '../../core/auth/auth.service';
 import { GlobalSettingsService } from '../admin/services/global-settings.service';
 import { QuoteDto } from '../../core/models/quote.model';
+import { EmbeddedService } from '../../core/services/embedded.service';
+import { FROM_APP_STATE } from '../../core/services/native-bridge.service';
 
 describe('QuotesComponent', () => {
   let component: QuotesComponent;
@@ -18,6 +21,8 @@ describe('QuotesComponent', () => {
   let dialogService: { open: ReturnType<typeof vi.fn> };
   let dialogClose: Subject<any>;
   let currentUser: ReturnType<typeof signal<any>>;
+  let router: { navigate: ReturnType<typeof vi.fn> };
+  let embedded: { isEmbedded: boolean; notifyNative: ReturnType<typeof vi.fn> };
 
   const quote = {
     id: 'q1',
@@ -26,10 +31,13 @@ describe('QuotesComponent', () => {
     authors: [{ applicationUserId: 'author' }],
   } as unknown as QuoteDto;
 
-  function create() {
+  function create(query: Record<string, string> = {}) {
     TestBed.configureTestingModule({
       imports: [QuotesComponent],
       providers: [
+        { provide: ActivatedRoute, useValue: { snapshot: { queryParamMap: convertToParamMap(query) } } },
+        { provide: Router, useValue: router },
+        { provide: EmbeddedService, useValue: embedded },
         { provide: QuoteService, useValue: quoteService },
         { provide: AuthService, useValue: { currentUser } },
         { provide: GlobalSettingsService, useValue: settingsService },
@@ -56,6 +64,8 @@ describe('QuotesComponent', () => {
     dialogClose = new Subject();
     dialogService = { open: vi.fn(() => ({ onClose: dialogClose })) };
     currentUser = signal<any>({ id: 'u1', roles: ['User'] });
+    router = { navigate: vi.fn(() => Promise.resolve(true)) };
+    embedded = { isEmbedded: false, notifyNative: vi.fn() };
   });
 
   afterEach(() => vi.unstubAllGlobals());
@@ -178,5 +188,62 @@ describe('QuotesComponent', () => {
     quoteService.deleteQuote.mockReturnValue(throwError(() => new Error('x')));
     component.confirmDelete(quote);
     expect(messageService.add).toHaveBeenCalledWith(expect.objectContaining({ severity: 'error' }));
+  });
+
+  describe('form links (the mobile app opens these in its WebView)', () => {
+    it('opens the form for a new quote on ?new', () => {
+      create({ new: '1' });
+
+      expect(dialogService.open).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ data: { quote: undefined } }));
+    });
+
+    it('opens the form for the quote on ?edit=', () => {
+      quoteService.getQuote = vi.fn(() => of(quote));
+      create({ edit: 'q1' });
+
+      expect(quoteService.getQuote).toHaveBeenCalledWith('q1');
+      expect(dialogService.open).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ data: { quote } }));
+    });
+
+    it('in the app, hands the new quote back and resets the URL', () => {
+      embedded.isEmbedded = true;
+      quoteService.createQuote.mockReturnValue(of({ id: 'new1' }));
+      create({ new: '1' });
+
+      dialogClose.next({ text: 'Hoi' });
+
+      expect(embedded.notifyNative).toHaveBeenCalledWith('open', '/quotes/new1');
+      expect(router.navigate).toHaveBeenCalledWith(['/quotes'], { replaceUrl: true, state: { [FROM_APP_STATE]: true } });
+    });
+
+    it('in the app, hands the edited quote back, also when cancelled', () => {
+      embedded.isEmbedded = true;
+      quoteService.getQuote = vi.fn(() => of(quote));
+      create({ edit: 'q1' });
+
+      dialogClose.next(undefined);
+
+      expect(quoteService.updateQuote).not.toHaveBeenCalled();
+      expect(embedded.notifyNative).toHaveBeenCalledWith('open', '/quotes/q1');
+    });
+
+    it('in a browser, just reloads the list after a linked form', () => {
+      create({ new: '1' });
+      quoteService.getQuotes.mockClear();
+
+      dialogClose.next({ text: 'Hoi' });
+
+      expect(embedded.notifyNative).not.toHaveBeenCalled();
+      expect(quoteService.getQuotes).toHaveBeenCalled();
+    });
+
+    it('in the app, hands back to the list when the quote to edit is gone', () => {
+      embedded.isEmbedded = true;
+      quoteService.getQuote = vi.fn(() => throwError(() => new Error('404')));
+      create({ edit: 'gone' });
+
+      expect(dialogService.open).not.toHaveBeenCalled();
+      expect(embedded.notifyNative).toHaveBeenCalledWith('open', '/quotes');
+    });
   });
 });

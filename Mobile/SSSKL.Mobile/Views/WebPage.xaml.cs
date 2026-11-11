@@ -184,7 +184,7 @@ public partial class WebPage : ContentPage
         {
             case WebNavigationKind.Native:
                 e.Cancel = true;
-                await _navigator.HandleNativeActionAsync(decision.NativeAction!);
+                await _navigator.HandleNativeActionAsync(decision.NativeAction!, decision.NativePath);
                 break;
             case WebNavigationKind.External:
                 e.Cancel = true;

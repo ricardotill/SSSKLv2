@@ -67,4 +67,24 @@ public class NativeRoutesTests
 
         NativeRoutes.Resolve(path).Should().Be(new NativeRoute(NativePage.UserProfile, "Ab c/1"));
     }
+
+    [TestMethod]
+    public void Resolve_EventsAndQuotes()
+    {
+        var id = Guid.NewGuid().ToString();
+
+        NativeRoutes.Resolve("/events").Should().Be(new NativeRoute(NativePage.Events));
+        NativeRoutes.Resolve($"/events/{id}").Should().Be(new NativeRoute(NativePage.EventDetail, id));
+        NativeRoutes.Resolve("/quotes").Should().Be(new NativeRoute(NativePage.Quotes));
+        NativeRoutes.Resolve($"/quotes/{id}").Should().Be(new NativeRoute(NativePage.QuoteDetail, id));
+    }
+
+    [TestMethod]
+    [DataRow("/events/new")]
+    [DataRow("/events/6f9619ff-8b86-d011-b42d-00cf4fc964ff/edit")]
+    [DataRow("/quotes?new=1")]
+    [DataRow("/quotes?new")]
+    [DataRow("/quotes?edit=6f9619ff-8b86-d011-b42d-00cf4fc964ff")]
+    public void Resolve_Forms_StayInTheSpa(string path) =>
+        NativeRoutes.Resolve(path).Should().BeNull();
 }

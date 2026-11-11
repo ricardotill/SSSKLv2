@@ -17,7 +17,11 @@ public enum NativePage
     Stats,
     Achievements,
     AchievementDetail,
-    About
+    About,
+    Events,
+    EventDetail,
+    Quotes,
+    QuoteDetail
 }
 
 /// <param name="Id">The route's id segment (a user or achievement id), for pages that show one item.</param>
@@ -57,6 +61,11 @@ public static class NativeRoutes
             ["achievements"] => new NativeRoute(NativePage.Achievements, UserId: userId),
             ["achievements", var id] when Guid.TryParse(id, out _) => new NativeRoute(NativePage.AchievementDetail, id),
             ["about"] => new NativeRoute(NativePage.About),
+            // The create/edit forms (events/new, events/{id}/edit, quotes?new / ?edit=) stay in the SPA.
+            ["events"] => new NativeRoute(NativePage.Events),
+            ["events", var id] when Guid.TryParse(id, out _) => new NativeRoute(NativePage.EventDetail, id),
+            ["quotes"] when QueryValue(query, "new") is null && QueryValue(query, "edit") is null => new NativeRoute(NativePage.Quotes),
+            ["quotes", var id] when Guid.TryParse(id, out _) => new NativeRoute(NativePage.QuoteDetail, id),
             _ => null
         };
     }
@@ -72,12 +81,14 @@ public static class NativeRoutes
             var key = equals >= 0 ? pair[..equals] : pair;
             if (string.Equals(Uri.UnescapeDataString(key), name, StringComparison.OrdinalIgnoreCase))
             {
-                var value = equals >= 0 ? Uri.UnescapeDataString(pair[(equals + 1)..]) : "";
-                return value.Length == 0 ? null : value;
+                // A bare flag (?new) counts as set.
+                return equals >= 0 ? NullIfEmpty(Uri.UnescapeDataString(pair[(equals + 1)..])) : "";
             }
         }
         return null;
     }
+
+    private static string? NullIfEmpty(string value) => value.Length == 0 ? null : value;
 
     /// <summary>The path segments (the first lower-cased) and the raw query; absolute URLs and fragments are accepted.</summary>
     private static (string[] Segments, string Query) Split(string path)

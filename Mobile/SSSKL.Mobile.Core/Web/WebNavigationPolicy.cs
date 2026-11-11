@@ -14,12 +14,13 @@ public enum WebNavigationKind
     Block
 }
 
-public sealed record WebNavigationDecision(WebNavigationKind Kind, string? NativeAction = null);
+/// <param name="NativePath">For the <c>open</c> action: the SPA route to show natively (<c>ssskl-app://open?path=/events/1</c>).</param>
+public sealed record WebNavigationDecision(WebNavigationKind Kind, string? NativeAction = null, string? NativePath = null);
 
 /// <summary>
 /// Decides what happens when the embedded SPA navigates. The SPA's embedded mode signals the app by
-/// navigating to <c>ssskl-app://&lt;action&gt;</c> (pos, profile, logout, signed-in), because SPA route changes
-/// (pushState) don't raise WebView navigation events.
+/// navigating to <c>ssskl-app://&lt;action&gt;</c> (pos, profile, logout, signed-in, and open?path= for routes the
+/// app shows natively), because SPA route changes (pushState) don't raise WebView navigation events.
 /// </summary>
 public sealed class WebNavigationPolicy(AppEndpoints endpoints)
 {
@@ -43,7 +44,7 @@ public sealed class WebNavigationPolicy(AppEndpoints endpoints)
 
         if (uri.Scheme == AppScheme)
         {
-            return new WebNavigationDecision(WebNavigationKind.Native, uri.Host.ToLowerInvariant());
+            return new WebNavigationDecision(WebNavigationKind.Native, uri.Host.ToLowerInvariant(), PathOf(uri));
         }
 
         if (uri.Scheme is "about" or "data" or "blob")
@@ -64,6 +65,21 @@ public sealed class WebNavigationPolicy(AppEndpoints endpoints)
         return uri.Scheme is "mailto" or "tel" or "sms" or "whatsapp"
             ? new WebNavigationDecision(WebNavigationKind.External)
             : new WebNavigationDecision(WebNavigationKind.Block);
+    }
+
+    /// <summary>The <c>path</c> query value; only app-relative routes (one leading slash).</summary>
+    private static string? PathOf(Uri uri)
+    {
+        foreach (var pair in uri.Query.TrimStart('?').Split('&', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var equals = pair.IndexOf('=');
+            if (equals > 0 && pair[..equals] == "path")
+            {
+                var path = Uri.UnescapeDataString(pair[(equals + 1)..].Replace('+', ' '));
+                return path.StartsWith('/') && !path.StartsWith("//", StringComparison.Ordinal) ? path : null;
+            }
+        }
+        return null;
     }
 
     private bool IsApiOrigin(Uri uri) =>

@@ -136,6 +136,64 @@ public sealed class SssklApiClient(HttpClient httpClient) : ISssklApi
     public async Task<IReadOnlyList<AchievementEntry>> GetAchievementEarnersAsync(Guid achievementId, CancellationToken cancellationToken = default) =>
         await GetAsync($"api/v1/Achievement/{achievementId}/earners", ApiJsonContext.Default.ListAchievementEntry, cancellationToken);
 
+    public Task<Page<EventItem>> GetEventsAsync(int skip, int take, bool futureOnly, CancellationToken cancellationToken = default) =>
+        GetAsync($"api/v1/Events?skip={skip}&take={take}&futureOnly={(futureOnly ? "true" : "false")}", ApiJsonContext.Default.PageEventItem, cancellationToken);
+
+    public Task<EventItem> GetEventAsync(Guid id, CancellationToken cancellationToken = default) =>
+        GetAsync($"api/v1/Events/{id}", ApiJsonContext.Default.EventItem, cancellationToken);
+
+    public async Task RespondToEventAsync(Guid id, string status, CancellationToken cancellationToken = default)
+    {
+        using var response = await httpClient.PostAsJsonAsync($"api/v1/Events/{id}/rsvp", new EventRsvp(status), ApiJsonContext.Default.EventRsvp, cancellationToken);
+        await EnsureSuccessAsync(response, cancellationToken);
+    }
+
+    public async Task UpdateEventImageAsync(Guid id, Base64FileUpload image, CancellationToken cancellationToken = default)
+    {
+        using var response = await httpClient.PostAsJsonAsync($"api/v1/Events/{id}/image", image, ApiJsonContext.Default.Base64FileUpload, cancellationToken);
+        await EnsureSuccessAsync(response, cancellationToken);
+    }
+
+    public async Task DeleteEventAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        using var response = await httpClient.DeleteAsync($"api/v1/Events/{id}", cancellationToken);
+        await EnsureSuccessAsync(response, cancellationToken);
+    }
+
+    public Task<Page<QuoteItem>> GetQuotesAsync(int skip, int take, CancellationToken cancellationToken = default) =>
+        GetAsync($"api/v1/Quote?skip={skip}&take={take}", ApiJsonContext.Default.PageQuoteItem, cancellationToken);
+
+    public Task<QuoteItem> GetQuoteAsync(Guid id, CancellationToken cancellationToken = default) =>
+        GetAsync($"api/v1/Quote/{id}", ApiJsonContext.Default.QuoteItem, cancellationToken);
+
+    public async Task<bool> ToggleQuoteVoteAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        using var response = await httpClient.PostAsync($"api/v1/Quote/{id}/vote", content: null, cancellationToken);
+        await EnsureSuccessAsync(response, cancellationToken);
+        return await response.Content.ReadFromJsonAsync(ApiJsonContext.Default.Boolean, cancellationToken);
+    }
+
+    public async Task DeleteQuoteAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        using var response = await httpClient.DeleteAsync($"api/v1/Quote/{id}", cancellationToken);
+        await EnsureSuccessAsync(response, cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<Reaction>> GetReactionsAsync(Guid targetId, string targetType, CancellationToken cancellationToken = default) =>
+        await GetAsync($"api/v1/Reactions/{targetId}/{Uri.EscapeDataString(targetType)}", ApiJsonContext.Default.ListReaction, cancellationToken);
+
+    public async Task ToggleReactionAsync(ToggleReaction reaction, CancellationToken cancellationToken = default)
+    {
+        using var response = await httpClient.PostAsJsonAsync("api/v1/Reactions/toggle", reaction, ApiJsonContext.Default.ToggleReaction, cancellationToken);
+        await EnsureSuccessAsync(response, cancellationToken);
+    }
+
+    public async Task DeleteReactionAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        using var response = await httpClient.DeleteAsync($"api/v1/Reactions/{id}", cancellationToken);
+        await EnsureSuccessAsync(response, cancellationToken);
+    }
+
     private async Task PostEmptyAsync(string url, CancellationToken cancellationToken)
     {
         using var response = await httpClient.PostAsync(url, content: null, cancellationToken);

@@ -63,6 +63,25 @@ public interface ISssklApi
     /// <summary>Every achievement with the user's progress.</summary>
     Task<IReadOnlyList<AchievementListing>> GetAchievementListingAsync(string userId, CancellationToken cancellationToken = default);
 
+    /// <param name="futureOnly">Only events that haven't ended yet.</param>
+    Task<Page<EventItem>> GetEventsAsync(int skip, int take, bool futureOnly, CancellationToken cancellationToken = default);
+    Task<EventItem> GetEventAsync(Guid id, CancellationToken cancellationToken = default);
+    Task RespondToEventAsync(Guid id, string status, CancellationToken cancellationToken = default);
+    Task UpdateEventImageAsync(Guid id, Base64FileUpload image, CancellationToken cancellationToken = default);
+    Task DeleteEventAsync(Guid id, CancellationToken cancellationToken = default);
+
+    Task<Page<QuoteItem>> GetQuotesAsync(int skip, int take, CancellationToken cancellationToken = default);
+    Task<QuoteItem> GetQuoteAsync(Guid id, CancellationToken cancellationToken = default);
+    /// <summary>Votes, or takes your vote back. Returns whether you voted now.</summary>
+    Task<bool> ToggleQuoteVoteAsync(Guid id, CancellationToken cancellationToken = default);
+    Task DeleteQuoteAsync(Guid id, CancellationToken cancellationToken = default);
+
+    /// <summary>Comments on an event, quote or reaction, each with its replies and likes.</summary>
+    Task<IReadOnlyList<Reaction>> GetReactionsAsync(Guid targetId, string targetType, CancellationToken cancellationToken = default);
+    Task ToggleReactionAsync(ToggleReaction reaction, CancellationToken cancellationToken = default);
+    /// <summary>Deletes your own reaction (admins: any), with its replies.</summary>
+    Task DeleteReactionAsync(Guid id, CancellationToken cancellationToken = default);
+
     /// <summary>Everyone who earned an achievement, with their name and picture.</summary>
     Task<IReadOnlyList<AchievementEntry>> GetAchievementEarnersAsync(Guid achievementId, CancellationToken cancellationToken = default);
 }

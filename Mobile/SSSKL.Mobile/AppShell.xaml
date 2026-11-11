@@ -8,6 +8,11 @@
         <Tab Title="{x:Static loc:Texts.TabPos}" Route="pos" Icon="tab_pos.png">
             <ShellContent x:Name="PosContent" />
         </Tab>
+        <!-- BadgeText (the unread count) is set from code; null hides the bubble -->
+        <Tab x:Name="NotificationsTab" Title="{x:Static loc:Texts.TabNotifications}" Route="notifications" Icon="tab_notifications.png"
+             BadgeColor="{StaticResource Danger}" BadgeTextColor="White">
+            <ShellContent x:Name="NotificationsContent" />
+        </Tab>
         <Tab Title="{x:Static loc:Texts.TabProfile}" Route="profile" Icon="tab_profile.png">
             <ShellContent x:Name="ProfileContent" />
         </Tab>

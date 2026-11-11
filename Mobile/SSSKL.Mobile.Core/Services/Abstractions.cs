@@ -20,8 +20,20 @@ public interface IPopupPresenter
 /// <summary>Navigation that view models trigger.</summary>
 public interface IAppNavigator
 {
+    /// <summary>
+    /// Opens an SPA route (a menu entry, a notification link): natively when <see cref="Navigation.NativeRoutes"/>
+    /// knows it, otherwise in the WebView.
+    /// </summary>
+    Task OpenAsync(string path);
+
     /// <summary>Opens an SPA route (e.g. <c>/settings</c>) in the "Meer" WebView tab.</summary>
     Task OpenWebAsync(string path);
+
+    /// <summary>Opens the native settings page on top of the current tab.</summary>
+    Task OpenSettingsAsync();
+
+    /// <summary>Switches to the "Profiel" tab.</summary>
+    Task OpenProfileAsync();
 
     /// <summary>Signs out locally and shows the login page.</summary>
     Task SignOutAsync();

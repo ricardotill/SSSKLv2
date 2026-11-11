@@ -14,6 +14,9 @@ public sealed record CurrentUser
     public string FullName { get; init; } = "";
     public string? Name { get; init; }
     public string? Surname { get; init; }
+    public string? Email { get; init; }
+    public bool EmailConfirmed { get; init; }
+    public string? PhoneNumber { get; init; }
     public decimal Saldo { get; init; }
     public string? ProfilePictureUrl { get; init; }
     public string? Description { get; init; }
@@ -54,10 +57,32 @@ public sealed record AchievementEntry
     public string Tier { get; init; } = "";
 }
 
+/// <summary>A notification (<c>GET notifications</c>). <see cref="CreatedOn"/> is UTC, sent without an offset.</summary>
+public sealed record NotificationItem
+{
+    public Guid Id { get; init; }
+    public string Title { get; init; } = "";
+    public string Message { get; init; } = "";
+    public bool IsRead { get; init; }
+    public string? LinkUri { get; init; }
+    public DateTime CreatedOn { get; init; }
+}
+
 /// <summary><see cref="UpdatedOn"/> is kept as the raw string: it is only compared, never parsed.</summary>
 public sealed record GlobalSetting(string Key, string Value, string UpdatedOn);
 
 public sealed record Base64FileUpload(string FileName, string ContentType, string Base64Content);
+
+/// <summary><c>PUT applicationuser/me</c>: null leaves a field unchanged (ApplicationUserSelfUpdateDto).</summary>
+public sealed record SelfUpdate(string? Name, string? Surname, string? PhoneNumber, string? Description = null);
+
+/// <summary>An empty body reads the 2FA status (<c>POST identity/manage/2fa</c>).</summary>
+public sealed record TwoFactorRequest;
+
+public sealed record TwoFactorStatus
+{
+    public bool IsTwoFactorEnabled { get; init; }
+}
 
 public static class RoleNames
 {

@@ -68,6 +68,15 @@ public sealed partial class PosViewModel(
     [NotifyPropertyChangedFor(nameof(Summary), nameof(SummaryText), nameof(CanSubmit))]
     public partial int SelectedProductCount { get; set; }
 
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SaldoDescription))]
+    public partial string Saldo { get; set; } = "";
+
+    [ObservableProperty]
+    public partial bool IsSaldoNegative { get; set; }
+
+    public string SaldoDescription => $"{Texts.MySaldo}: {Saldo}";
+
     public bool IsGuest => currentUser.IsGuest;
 
     public bool CanSplit => SelectedUserCount > 1;
@@ -97,11 +106,11 @@ public sealed partial class PosViewModel(
         IsLoading = true;
         try
         {
-            if (currentUser.User is null)
-            {
-                await currentUser.RefreshAsync();
-            }
+            // The saldo can have changed elsewhere, so refresh a cached user too (quietly: it's still usable).
+            Task userTask = currentUser.User is null ? currentUser.RefreshAsync() : RefreshUserQuietlyAsync();
             var data = await api.GetOrderInitializeAsync();
+            await userTask;
+            ApplySaldo();
             var me = currentUser.User?.Id;
 
             Products.Clear();
@@ -211,6 +220,7 @@ public sealed partial class PosViewModel(
             ResetSelection();
 
             await Task.WhenAll(RefreshUserQuietlyAsync(), achievements.CheckAsync());
+            ApplySaldo();
         }
         catch (Exception ex) when (ex is ApiException or HttpRequestException or TaskCanceledException or FormatException)
         {
@@ -233,6 +243,13 @@ public sealed partial class PosViewModel(
         }
         SelectedUserCount = _allUsers.Count(u => u.IsSelected);
         ApplyUserFilter();
+    }
+
+    private void ApplySaldo()
+    {
+        var saldo = currentUser.User?.Saldo ?? 0m;
+        Saldo = saldo.ToString("C", Dutch);
+        IsSaldoNegative = saldo < 0;
     }
 
     private void ApplyUserFilter()

@@ -12,6 +12,7 @@ import { PushNotificationService } from './core/services/push-notification.servi
 import { CommonModule } from '@angular/common';
 import { AppUpdateService } from './core/services/app-update.service';
 import { EmbeddedService } from './core/services/embedded.service';
+import { NativeBridgeService } from './core/services/native-bridge.service';
 
 @Component({
   selector: 'app-root',
@@ -42,6 +43,8 @@ export class App {
     this.themeService.init();
     this.configureDutchPrimeNG();
     this.appUpdateService.start();
+    // Mobile app only: lets the app open pages and go back without reloading the WebView.
+    inject(NativeBridgeService).install();
 
     // Check for unseen achievements whenever the current user changes (login, app init if authenticated)
     // Use an effect to reactively check when user session establishes

@@ -58,6 +58,44 @@ public sealed class SssklApiClient(HttpClient httpClient) : ISssklApi
         await EnsureSuccessAsync(response, cancellationToken);
     }
 
+    public async Task UpdateMeAsync(SelfUpdate update, CancellationToken cancellationToken = default)
+    {
+        using var response = await httpClient.PutAsJsonAsync("api/v1/ApplicationUser/me", update, ApiJsonContext.Default.SelfUpdate, cancellationToken);
+        await EnsureSuccessAsync(response, cancellationToken);
+    }
+
+    public async Task<TwoFactorStatus> GetTwoFactorStatusAsync(CancellationToken cancellationToken = default)
+    {
+        using var response = await httpClient.PostAsJsonAsync("api/v1/identity/manage/2fa", new TwoFactorRequest(), ApiJsonContext.Default.TwoFactorRequest, cancellationToken);
+        await EnsureSuccessAsync(response, cancellationToken);
+        return await response.Content.ReadFromJsonAsync(ApiJsonContext.Default.TwoFactorStatus, cancellationToken)
+               ?? throw new ApiException(response.StatusCode, "Empty response");
+    }
+
+    public Task<int> GetUnreadNotificationCountAsync(CancellationToken cancellationToken = default) =>
+        GetAsync("api/v1/Notifications/unread-count", ApiJsonContext.Default.Int32, cancellationToken);
+
+    public async Task<IReadOnlyList<NotificationItem>> GetNotificationsAsync(int skip, int take, CancellationToken cancellationToken = default) =>
+        await GetAsync($"api/v1/Notifications?unreadOnly=false&skip={skip}&take={take}", ApiJsonContext.Default.ListNotificationItem, cancellationToken);
+
+    public Task MarkNotificationReadAsync(Guid id, CancellationToken cancellationToken = default) =>
+        PostEmptyAsync($"api/v1/Notifications/{id}/read", cancellationToken);
+
+    public Task MarkAllNotificationsReadAsync(CancellationToken cancellationToken = default) =>
+        PostEmptyAsync("api/v1/Notifications/read-all", cancellationToken);
+
+    public async Task<bool> CanAccessQuotesAsync(CancellationToken cancellationToken = default)
+    {
+        using var response = await httpClient.GetAsync("api/v1/Quote?skip=0&take=1", cancellationToken);
+        return response.StatusCode != HttpStatusCode.Forbidden;
+    }
+
+    private async Task PostEmptyAsync(string url, CancellationToken cancellationToken)
+    {
+        using var response = await httpClient.PostAsync(url, content: null, cancellationToken);
+        await EnsureSuccessAsync(response, cancellationToken);
+    }
+
     private async Task<T> GetAsync<T>(string url, JsonTypeInfo<T> typeInfo, CancellationToken cancellationToken)
     {
         using var response = await httpClient.GetAsync(url, cancellationToken);

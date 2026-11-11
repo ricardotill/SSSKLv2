@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:SSSKL.Mobile.Controls"
+             xmlns:vm="clr-namespace:SSSKL.Mobile.Core.ViewModels;assembly=SSSKL.Mobile.Core"
+             xmlns:loc="clr-namespace:SSSKL.Mobile.Core.Localization;assembly=SSSKL.Mobile.Core"
+             x:Class="SSSKL.Mobile.Views.NotificationsPage"
+             x:DataType="vm:NotificationsViewModel"
+             Title="{x:Static loc:Texts.TabNotifications}">
+
+    <Grid>
+        <RefreshView IsRefreshing="{Binding IsRefreshing}" Command="{Binding LoadCommand}">
+            <CollectionView ItemsSource="{Binding Items}" SelectionMode="None"
+                            RemainingItemsThreshold="5" RemainingItemsThresholdReachedCommand="{Binding LoadMoreCommand}">
+                <CollectionView.ItemsLayout>
+                    <LinearItemsLayout Orientation="Vertical" ItemSpacing="8" />
+                </CollectionView.ItemsLayout>
+
+                <CollectionView.Header>
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12" Padding="16,8,16,8">
+                        <Label Text="{x:Static loc:Texts.NotificationsSubtitle}" Style="{StaticResource Muted}" VerticalOptions="Center" />
+                        <Button Grid.Column="1" Text="{x:Static loc:Texts.MarkAllRead}" Command="{Binding MarkAllReadCommand}"
+                                IsVisible="{Binding CanMarkAll}" Style="{StaticResource SecondaryButton}">
+                            <Button.Behaviors>
+                                <controls:PressScaleBehavior />
+                            </Button.Behaviors>
+                        </Button>
+                    </Grid>
+                </CollectionView.Header>
+
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="vm:NotificationItemViewModel">
+                        <controls:Pressable Padding="16,0" SemanticProperties.Description="{Binding Description}"
+                                            Command="{Binding OpenCommand, Source={RelativeSource AncestorType={x:Type vm:NotificationsViewModel}}, x:DataType=vm:NotificationsViewModel}"
+                                            CommandParameter="{Binding .}">
+                            <Border Style="{StaticResource Card}" Padding="14">
+                                <Border.Triggers>
+                                    <!-- Unread: tinted like the SPA's bg-primary-50 / dark:bg-primary-900/10 -->
+                                    <DataTrigger TargetType="Border" Binding="{Binding IsRead}" Value="False">
+                                        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Primary50}, Dark={StaticResource Primary950}}" />
+                                        <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource Primary200}, Dark={StaticResource Primary900}}" />
+                                    </DataTrigger>
+                                </Border.Triggers>
+                                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
+                                    <Border WidthRequest="44" HeightRequest="44" StrokeThickness="0" StrokeShape="RoundRectangle 22"
+                                            VerticalOptions="Start"
+                                            BackgroundColor="{AppThemeBinding Light={StaticResource SunkenLight}, Dark={StaticResource SunkenDark}}">
+                                        <Border.Triggers>
+                                            <DataTrigger TargetType="Border" Binding="{Binding IsRead}" Value="False">
+                                                <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Primary100}, Dark={StaticResource Primary900}}" />
+                                            </DataTrigger>
+                                        </Border.Triggers>
+                                        <controls:IconView Icon="{Binding Icon}" Size="22"
+                                                           Color="{AppThemeBinding Light={StaticResource MutedLight}, Dark={StaticResource MutedDark}}">
+                                            <controls:IconView.Triggers>
+                                                <DataTrigger TargetType="controls:IconView" Binding="{Binding IsRead}" Value="False">
+                                                    <Setter Property="Color" Value="{AppThemeBinding Light={StaticResource Primary600}, Dark={StaticResource Primary400}}" />
+                                                </DataTrigger>
+                                            </controls:IconView.Triggers>
+                                        </controls:IconView>
+                                    </Border>
+                                    <VerticalStackLayout Grid.Column="1" Spacing="4">
+                                        <Label Text="{Binding Title}" FontSize="16"
+                                               TextColor="{AppThemeBinding Light={StaticResource TextLight}, Dark={StaticResource TextDark}}">
+                                            <Label.Triggers>
+                                                <DataTrigger TargetType="Label" Binding="{Binding IsRead}" Value="False">
+                                                    <Setter Property="FontAttributes" Value="Bold" />
+                                                    <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource HeadingLight}, Dark={StaticResource HeadingDark}}" />
+                                                </DataTrigger>
+                                            </Label.Triggers>
+                                        </Label>
+                                        <Label Text="{Binding Message}"
+                                               TextColor="{AppThemeBinding Light={StaticResource TextLight}, Dark={StaticResource TextDark}}" />
+                                        <Label Text="{Binding DateText}" Style="{StaticResource Muted}" FontSize="13" />
+                                    </VerticalStackLayout>
+                                </Grid>
+                            </Border>
+                        </controls:Pressable>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+
+                <CollectionView.EmptyView>
+                    <VerticalStackLayout Padding="32,64" Spacing="10" HorizontalOptions="Center" IsVisible="{Binding IsEmpty}">
+                        <controls:IconView Icon="{x:Static loc:Icons.BellOff}" Size="56"
+                                           Color="{AppThemeBinding Light={StaticResource BorderLight}, Dark={StaticResource BorderDark}}" />
+                        <Label Text="{x:Static loc:Texts.NoNotifications}" Style="{StaticResource Title}" HorizontalTextAlignment="Center" />
+                        <Label Text="{x:Static loc:Texts.NoNotificationsHint}" Style="{StaticResource Muted}" HorizontalTextAlignment="Center" />
+                    </VerticalStackLayout>
+                </CollectionView.EmptyView>
+
+                <CollectionView.Footer>
+                    <Grid Padding="16" MinimumHeightRequest="24">
+                        <ActivityIndicator IsRunning="{Binding IsLoadingMore}" IsVisible="{Binding IsLoadingMore}" HorizontalOptions="Center" />
+                    </Grid>
+                </CollectionView.Footer>
+            </CollectionView>
+        </RefreshView>
+
+        <ActivityIndicator IsRunning="{Binding IsLoading}" IsVisible="{Binding IsLoading}" HorizontalOptions="Center" VerticalOptions="Center" />
+    </Grid>
+</ContentPage>

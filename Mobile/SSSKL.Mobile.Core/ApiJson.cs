@@ -20,6 +20,11 @@ namespace SSSKL.Mobile.Core;
 [JsonSerializable(typeof(List<AchievementEntry>))]
 [JsonSerializable(typeof(GlobalSetting))]
 [JsonSerializable(typeof(Base64FileUpload))]
+[JsonSerializable(typeof(SelfUpdate))]
+[JsonSerializable(typeof(TwoFactorRequest))]
+[JsonSerializable(typeof(TwoFactorStatus))]
+[JsonSerializable(typeof(List<NotificationItem>))]
+[JsonSerializable(typeof(int))]
 [JsonSerializable(typeof(TokenSet))]
 [JsonSerializable(typeof(string))]
 public sealed partial class ApiJsonContext : JsonSerializerContext;

@@ -26,7 +26,7 @@ public class PosViewModelTests
 
     private async Task<PosViewModel> CreateLoadedSutAsync(params string[] roles)
     {
-        _api.GetMeAsync().Returns(new CurrentUser { Id = MeId, FullName = "Ik Zelf", Roles = roles.Length == 0 ? [RoleNames.User] : roles });
+        _api.GetMeAsync().Returns(new CurrentUser { Id = MeId, FullName = "Ik Zelf", Saldo = -2.50m, Roles = roles.Length == 0 ? [RoleNames.User] : roles });
         _api.GetOrderInitializeAsync().Returns(new OrderInitialize
         {
             Products = [Beer, Cola],
@@ -59,6 +59,17 @@ public class PosViewModelTests
         sut.SelectedUserCount.Should().Be(1);
         sut.CanSubmit.Should().BeFalse("no product is selected yet");
         sut.SummaryText.Should().Be(Texts.PosSelectHint);
+    }
+
+    [TestMethod]
+    public async Task LoadAsync_ShowsSaldo()
+    {
+        // Act
+        var sut = await CreateLoadedSutAsync();
+
+        // Assert
+        sut.Saldo.Should().Be((-2.50m).ToString("C", System.Globalization.CultureInfo.GetCultureInfo("nl-NL")));
+        sut.IsSaldoNegative.Should().BeTrue();
     }
 
     [TestMethod]

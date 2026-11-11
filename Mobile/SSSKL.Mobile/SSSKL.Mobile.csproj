@@ -1,6 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>net11.0-android;net11.0-ios</TargetFrameworks>
+    <!-- CI builds one platform per runner: -p:SssklTargetFrameworks=net11.0-android limits restore to it
+         (TargetFrameworks itself can't be passed: as a global property it would also retarget Core). -->
+    <TargetFrameworks Condition="'$(SssklTargetFrameworks)' != ''">$(SssklTargetFrameworks)</TargetFrameworks>
     <OutputType>Exe</OutputType>
     <RootNamespace>SSSKL.Mobile</RootNamespace>
     <!-- DebugProduction: a Debug build (debugger, DEBUG symbol, no Native AOT) against the production
@@ -70,6 +73,7 @@
   <ItemGroup>
     <MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#34D399" />
     <MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#34D399" BaseSize="128,128" />
+    <!-- ti_*.svg and tab_*.svg: Tabler Icons (MIT, https://tabler.io/icons); each file carries the license. -->
     <MauiImage Include="Resources\Images\*" />
   </ItemGroup>
 

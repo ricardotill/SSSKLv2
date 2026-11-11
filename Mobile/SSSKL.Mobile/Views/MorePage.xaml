@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:SSSKL.Mobile.Controls"
+             xmlns:vm="clr-namespace:SSSKL.Mobile.Core.ViewModels;assembly=SSSKL.Mobile.Core"
+             xmlns:nav="clr-namespace:SSSKL.Mobile.Core.Navigation;assembly=SSSKL.Mobile.Core"
+             xmlns:loc="clr-namespace:SSSKL.Mobile.Core.Localization;assembly=SSSKL.Mobile.Core"
+             x:Class="SSSKL.Mobile.Views.MorePage"
+             x:DataType="vm:MoreViewModel"
+             Title="{x:Static loc:Texts.TabMore}">
+
+    <RefreshView IsRefreshing="{Binding IsRefreshing}" Command="{Binding LoadCommand}">
+        <ScrollView>
+            <VerticalStackLayout Padding="16,4,16,32" Spacing="6">
+
+                <!-- Who is signed in; opens the profile tab. Pressable, not a TouchBehavior in XAML: toolkit
+                     behaviors don't get the page's BindingContext (so a bound Command stays null), and on the
+                     themed Border it would pin the light background after switching to dark mode. -->
+                <controls:Pressable Command="{Binding OpenProfileCommand}"
+                                    SemanticProperties.Description="{Binding DisplayName}"
+                                    SemanticProperties.Hint="{x:Static loc:Texts.ViewProfile}">
+                    <Border Style="{StaticResource Group}">
+                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12" Padding="14">
+                            <Grid WidthRequest="52" HeightRequest="52">
+                                <Border Style="{StaticResource Avatar}" WidthRequest="52" HeightRequest="52" StrokeShape="RoundRectangle 26">
+                                    <Label Text="{Binding Initials}" FontSize="18" FontAttributes="Bold"
+                                           TextColor="{AppThemeBinding Light={StaticResource Primary700}, Dark={StaticResource Primary300}}"
+                                           HorizontalOptions="Center" VerticalOptions="Center" />
+                                </Border>
+                                <Border Style="{StaticResource Avatar}" WidthRequest="52" HeightRequest="52" StrokeShape="RoundRectangle 26"
+                                        IsVisible="{Binding HasPicture}">
+                                    <Image Source="{Binding PictureUrl}" Aspect="AspectFill" />
+                                </Border>
+                            </Grid>
+                            <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
+                                <Label Text="{Binding DisplayName}" Style="{StaticResource Title}" LineBreakMode="TailTruncation" />
+                                <Label Text="{x:Static loc:Texts.ViewProfile}" Style="{StaticResource Muted}" />
+                            </VerticalStackLayout>
+                            <!-- Saldo, like the SPA header -->
+                            <Border Grid.Column="2" VerticalOptions="Center" Padding="10,6" StrokeThickness="1"
+                                    StrokeShape="RoundRectangle 16"
+                                    Stroke="{AppThemeBinding Light={StaticResource BorderLight}, Dark={StaticResource BorderDark}}"
+                                    BackgroundColor="{AppThemeBinding Light={StaticResource SunkenLight}, Dark={StaticResource SunkenDark}}">
+                                <HorizontalStackLayout Spacing="6">
+                                    <controls:IconView Icon="{x:Static loc:Icons.Wallet}" Size="18"
+                                                       Color="{StaticResource Primary500}" />
+                                    <Label Text="{Binding Saldo}" FontAttributes="Bold" FontSize="14" VerticalOptions="Center">
+                                        <Label.Triggers>
+                                            <DataTrigger TargetType="Label" Binding="{Binding IsSaldoNegative}" Value="True">
+                                                <Setter Property="TextColor" Value="{StaticResource Danger}" />
+                                            </DataTrigger>
+                                        </Label.Triggers>
+                                    </Label>
+                                </HorizontalStackLayout>
+                            </Border>
+                        </Grid>
+                    </Border>
+                </controls:Pressable>
+
+                <!-- Every SPA feature, grouped like its side menu -->
+                <VerticalStackLayout Spacing="6" BindableLayout.ItemsSource="{Binding Sections}">
+                    <BindableLayout.ItemTemplate>
+                        <DataTemplate x:DataType="nav:MenuSection">
+                            <VerticalStackLayout Spacing="6">
+                                <Label Text="{Binding Title}" Style="{StaticResource GroupCaption}" SemanticProperties.HeadingLevel="Level2" />
+                                <Border Style="{StaticResource Group}">
+                                    <VerticalStackLayout BindableLayout.ItemsSource="{Binding Entries}">
+                                        <BindableLayout.ItemTemplate>
+                                            <DataTemplate x:DataType="nav:MenuEntry">
+                                                <controls:MenuRow Icon="{Binding Icon}"
+                                                                  Title="{Binding Title}"
+                                                                  Badge="{Binding Badge}"
+                                                                  IsFirst="{Binding IsFirst}"
+                                                                  CommandParameter="{Binding .}"
+                                                                  Command="{Binding OpenCommand, Source={RelativeSource AncestorType={x:Type vm:MoreViewModel}}, x:DataType=vm:MoreViewModel}" />
+                                            </DataTemplate>
+                                        </BindableLayout.ItemTemplate>
+                                    </VerticalStackLayout>
+                                </Border>
+                            </VerticalStackLayout>
+                        </DataTemplate>
+                    </BindableLayout.ItemTemplate>
+                </VerticalStackLayout>
+
+                <Border Style="{StaticResource Group}" Margin="0,18,0,0">
+                    <controls:MenuRow Icon="{x:Static loc:Icons.Logout}" Title="{x:Static loc:Texts.Logout}"
+                                      IsDestructive="True" ShowChevron="False" IsFirst="True"
+                                      Command="{Binding LogoutCommand}" />
+                </Border>
+            </VerticalStackLayout>
+        </ScrollView>
+    </RefreshView>
+</ContentPage>

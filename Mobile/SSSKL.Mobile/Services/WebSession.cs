@@ -1,25 +1,30 @@
 using Microsoft.Extensions.Logging;
 using SSSKL.Mobile.Core.Auth;
 using SSSKL.Mobile.Core.Configuration;
+using SSSKL.Mobile.Core.Services;
 using SSSKL.Mobile.Core.Web;
 
 namespace SSSKL.Mobile.Services;
 
 /// <summary>
 /// The document-start script for the app's WebViews (see <see cref="WebSessionScript"/>), kept up to
-/// date with the native tokens.
+/// date with the native tokens and colour mode.
 /// </summary>
 public sealed class WebSession
 {
     private readonly AppEndpoints _endpoints;
+    private readonly ThemePreference _theme;
     private readonly ILogger<WebSession> _logger;
+    private TokenSet? _tokens;
 
-    public WebSession(AppEndpoints endpoints, AuthSession session, ILogger<WebSession> logger)
+    public WebSession(AppEndpoints endpoints, AuthSession session, ThemePreference theme, ILogger<WebSession> logger)
     {
         _endpoints = endpoints;
+        _theme = theme;
         _logger = logger;
         Script = Build(null);
         session.TokensChanged += (_, tokens) => Update(tokens);
+        theme.Changed += (_, _) => Update(_tokens);
     }
 
     public static string AppVersion => AppInfo.Current.VersionString;
@@ -35,6 +40,7 @@ public sealed class WebSession
 
     public void Update(TokenSet? tokens)
     {
+        _tokens = tokens;
         Script = Build(tokens);
         var handler = ScriptChanged;
         if (handler is null)
@@ -56,5 +62,5 @@ public sealed class WebSession
         }
     }
 
-    private string Build(TokenSet? tokens) => WebSessionScript.Build(_endpoints.WebOrigin, AppVersion, tokens);
+    private string Build(TokenSet? tokens) => WebSessionScript.Build(_endpoints.WebOrigin, AppVersion, tokens, _theme.Mode);
 }

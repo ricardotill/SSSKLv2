@@ -1,5 +1,6 @@
 using FluentAssertions;
 using SSSKL.Mobile.Core.Auth;
+using SSSKL.Mobile.Core.Services;
 using SSSKL.Mobile.Core.Web;
 
 namespace SSSKL.Mobile.Test.Web;
@@ -21,8 +22,35 @@ public class WebSessionScriptTests
     }
 
     [TestMethod]
-    public void Build_WithoutTokens_OnlyMarksEmbedded() =>
-        WebSessionScript.Build("https://web.test", "1", null).Should().NotContain("localStorage");
+    public void Build_WithoutTokens_WritesNoTokens() =>
+        WebSessionScript.Build("https://web.test", "1", null).Should().NotContain("_token");
+
+    [TestMethod]
+    [DataRow(ThemeMode.Auto, "auto")]
+    [DataRow(ThemeMode.Light, "light")]
+    [DataRow(ThemeMode.Dark, "dark")]
+    public void Build_SharesTheColourModeWithTheSpa(ThemeMode mode, string value) =>
+        WebSessionScript.Build("https://web.test", "1", null, mode)
+            .Should().Contain($"localStorage.setItem('sssklv2-theme-mode',\"{value}\")");
+
+    [TestMethod]
+    public void NavigateScript_PassesAnAppRelativeRoute() =>
+        WebSessionScript.NavigateScript("orders/personal")
+            .Should().Be("(function(){return !!(window.ssskl&&window.ssskl.navigate(\"/orders/personal\"));})()");
+
+    [TestMethod]
+    public void NavigateScript_EscapesTheRoute() =>
+        WebSessionScript.NavigateScript("/x\");alert(1)//").Should().Contain("navigate(\"/x\\u0022);alert(1)//\")");
+
+    [TestMethod]
+    [DataRow("true", true)]
+    [DataRow("\"true\"", true)]
+    [DataRow("True", true)]
+    [DataRow("false", false)]
+    [DataRow(null, false)]
+    [DataRow("", false)]
+    public void IsTrue_ReadsScriptResultsOfBothPlatforms(string? result, bool expected) =>
+        WebSessionScript.IsTrue(result).Should().Be(expected);
 
     [TestMethod]
     [DataRow("{\"accessToken\":\"a\",\"refreshToken\":\"r\"}")]

@@ -102,7 +102,8 @@ export const routes: Routes = [
       {
         path: 'settings',
         loadComponent: () => import('./features/settings/settings.component'),
-        canActivate: [authGuard],
+        // The mobile app has native settings; it opens single tabs here with ?tab=.
+        canActivate: [authGuard, nativeRouteGuard('settings', (route) => !route.queryParamMap.has('tab'))],
         title: 'Instellingen - SSSKL'
       },
       {

@@ -1,6 +1,7 @@
 using System.Globalization;
 using SSSKL.Mobile.Core.Auth;
 using SSSKL.Mobile.Core.Popups;
+using SSSKL.Mobile.Core.Services;
 using SSSKL.Mobile.Services;
 
 namespace SSSKL.Mobile;
@@ -10,8 +11,9 @@ public partial class App : Application
     private readonly AppNavigator _navigator;
     private readonly AuthSession _session;
     private readonly AchievementPopupCoordinator _achievements;
+    private readonly NotificationCenter _notifications;
 
-    public App(AppNavigator navigator, AuthSession session, AchievementPopupCoordinator achievements)
+    public App(AppNavigator navigator, AuthSession session, AchievementPopupCoordinator achievements, NotificationCenter notifications, ThemePreference theme)
     {
         // Dutch UI: prices as "€ 1,50" in bindings with StringFormat.
         var dutch = CultureInfo.GetCultureInfo("nl-NL");
@@ -19,9 +21,12 @@ public partial class App : Application
         CultureInfo.CurrentCulture = CultureInfo.CurrentUICulture = dutch;
 
         InitializeComponent();
+        // The colour mode picked in the settings, before the first page is created.
+        UserAppTheme = ThemeApplier.ToAppTheme(theme.Mode);
         _navigator = navigator;
         _session = session;
         _achievements = achievements;
+        _notifications = notifications;
     }
 
     protected override Window CreateWindow(IActivationState? activationState)
@@ -32,7 +37,8 @@ public partial class App : Application
         {
             if (await _session.IsSignedInAsync())
             {
-                await _achievements.CheckOnResumeAsync();
+                // Notifications may have arrived (as push messages) while the app was in the background.
+                await Task.WhenAll(_achievements.CheckOnResumeAsync(), _notifications.RefreshAsync());
             }
         };
         return window;

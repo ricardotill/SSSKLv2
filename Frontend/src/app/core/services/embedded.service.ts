@@ -1,7 +1,7 @@
 import { DOCUMENT, Injectable, inject } from '@angular/core';
 
 /** What the SSSKL mobile app does natively; the SPA hands these over via a ssskl-app:// navigation. */
-export type NativeAction = 'pos' | 'profile' | 'logout';
+export type NativeAction = 'pos' | 'profile' | 'settings' | 'logout';
 
 /** Set by the mobile app's document-start script. */
 const APP_GLOBAL = 'SSSKL_APP';
@@ -10,7 +10,7 @@ const USER_AGENT_TOKEN = 'SSSKLApp/';
 
 /**
  * True when the SPA runs inside the SSSKL mobile app's WebView ("embedded mode"). The app then shows
- * POS, profile and the achievement / what's-new popups natively, so the SPA must not.
+ * POS, profile, settings and the achievement / what's-new popups natively, so the SPA must not.
  * Plain function so it can be used in `app.config.ts` before DI exists.
  */
 export function isEmbedded(win: Window | null | undefined = typeof window === 'undefined' ? undefined : window): boolean {

@@ -19,4 +19,23 @@ public interface ISssklApi
 
     Task UploadProfilePictureAsync(Base64FileUpload file, CancellationToken cancellationToken = default);
     Task DeleteProfilePictureAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>Changes the signed-in user's name and phone number; null fields stay as they are.</summary>
+    Task UpdateMeAsync(SelfUpdate update, CancellationToken cancellationToken = default);
+
+    Task<TwoFactorStatus> GetTwoFactorStatusAsync(CancellationToken cancellationToken = default);
+
+    Task<int> GetUnreadNotificationCountAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>Read and unread notifications, newest first.</summary>
+    Task<IReadOnlyList<NotificationItem>> GetNotificationsAsync(int skip, int take, CancellationToken cancellationToken = default);
+
+    Task MarkNotificationReadAsync(Guid id, CancellationToken cancellationToken = default);
+    Task MarkAllNotificationsReadAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Whether the user may see quotes (they are limited to some roles), probed like the SPA menu does:
+    /// only a 403 hides them.
+    /// </summary>
+    Task<bool> CanAccessQuotesAsync(CancellationToken cancellationToken = default);
 }

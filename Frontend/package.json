@@ -37,7 +37,7 @@
     "@primeuix/themes": "^3.1.0",
     "@sentry/angular": "^11.11.0",
     "canvas-confetti": "^1.9.4",
-    "primeicons": "^7.0.0",
+    "primeicons": "^8.0.2",
     "primeng": "^22.1.4",
     "qrcode": "^1.5.4",
     "quill": "^2.0.3",

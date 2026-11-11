@@ -1,3 +1,4 @@
+using MailKit;
 using MailKit.Net.Smtp;
 using MailKit.Security;
 using Microsoft.AspNetCore.Identity;
@@ -133,10 +134,10 @@ public class SmtpEmailSender : IEmailSender<ApplicationUser>
 
             await client.ConnectAsync(smtpServer, smtpPort, security);
             await client.AuthenticateAsync(username, password);
-            await client.SendAsync(message);
+            var result = await client.SendAsync(message);
             await client.DisconnectAsync(true);
 
-            _logger.LogInformation("Email sent successfully to {Email}", email);
+            _logger.LogInformation("Email sent successfully to {Email}. SMTP response: {SmtpResponse}", email, result.ResponseText);
         }
         catch (System.Net.Sockets.SocketException socketEx)
         {

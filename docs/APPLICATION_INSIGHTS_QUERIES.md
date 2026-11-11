@@ -358,6 +358,20 @@ traces
 | order by timestamp desc
 ```
 
+### Sent emails with the SMTP server's response
+
+The response text usually carries the provider's queue ID (e.g. `250 2.0.0 OK queued as …`), so you can trace a message in the provider's logs.
+
+```kusto
+traces
+| where timestamp > ago(7d)
+| where message startswith "Email sent successfully"
+| project timestamp,
+    Email = tostring(customDimensions.Email),
+    SmtpResponse = tostring(customDimensions.SmtpResponse)
+| order by timestamp desc
+```
+
 ---
 
 ## Dependencies

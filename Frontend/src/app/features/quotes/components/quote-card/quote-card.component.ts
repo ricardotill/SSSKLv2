@@ -30,9 +30,10 @@ import { TooltipModule } from 'primeng/tooltip';
       <div class="flex flex-col gap-4 h-full">
         <!-- Quote Text -->
         <div class="relative">
-          <i
-            class="pi pi-quote-left text-4xl text-primary-200 dark:text-primary-900/30 absolute -top-2 -left-2 z-0"
-          ></i>
+          <span
+            aria-hidden="true"
+            class="font-serif text-6xl leading-none select-none text-primary-200 dark:text-primary-900/30 absolute -top-3 -left-2 z-0"
+          >&ldquo;</span>
           <p
             class="text-xl font-medium m-0 relative z-10 italic leading-relaxed text-surface-900 dark:text-surface-0 line-clamp-4"
           >

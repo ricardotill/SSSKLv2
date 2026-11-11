@@ -44,9 +44,10 @@ import { UserProfileDrawerService } from '../../../../core/services/user-profile
           <div
             class="bg-surface-0 dark:bg-surface-900 p-8 md:p-12 rounded-3xl shadow-xl border border-surface-200 dark:border-surface-800 relative overflow-hidden"
           >
-            <i
-              class="pi pi-quote-left text-8xl text-primary-500/10 absolute -top-4 -left-4 z-0"
-            ></i>
+            <span
+              aria-hidden="true"
+              class="font-serif text-9xl leading-none select-none text-primary-500/10 absolute -top-4 -left-2 z-0"
+            >&ldquo;</span>
 
             <div class="relative z-10 flex flex-col gap-8">
               <p

@@ -225,6 +225,6 @@ Priority: **H** = noticeable on every use, **M** = clearly better, **L** = nice 
 
 1. **Batch 1 (H items):** P1, P2, P3, P4, P8, P17. Done in PR #124; still needs a check on a device.
 2. **Batch 2:** P6, P7, P9, P11, P12, P18. Done in PR #124 (P11: a larger price and the SPA's small check in the top-right corner, without product images, which the API doesn't have, and without the sticky switch; P18 only for the signed-out path: the splash colour is one colour, so a signed-in start still goes from the brand colour to the page colour). Still needs a check on a device.
-3. **Batch 3:** P13, P16, P19, P20, P21, then P5, P10, P14, P15.
+3. **Batch 3:** P13, P16, P19, P20, P21, then P5, P10, P14, P15. Done in PR #124: P13, P16, P19, P10 (the selected tab icon is swapped from `AppShell`), P14 and P20 (a check; descriptions and section headings were already there). Left: P5 (CollectionView recycles rows, so a fade-in would replay while scrolling), P15 (iPhone only for now) and P21 (screenshots need a simulator build).
 
 None of this can be checked in the cloud environment (no MAUI workloads or emulators), so each batch needs a check on a device or simulator before merging; the TestFlight / internal track from Part 1 is the natural place for that.

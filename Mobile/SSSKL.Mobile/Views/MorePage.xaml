@@ -5,7 +5,9 @@
              xmlns:vm="clr-namespace:SSSKL.Mobile.Core.ViewModels;assembly=SSSKL.Mobile.Core"
              xmlns:nav="clr-namespace:SSSKL.Mobile.Core.Navigation;assembly=SSSKL.Mobile.Core"
              xmlns:loc="clr-namespace:SSSKL.Mobile.Core.Localization;assembly=SSSKL.Mobile.Core"
+             xmlns:ios="clr-namespace:Microsoft.Maui.Controls.PlatformConfiguration.iOSSpecific;assembly=Microsoft.Maui.Controls"
              x:Class="SSSKL.Mobile.Views.MorePage"
+             ios:Page.LargeTitleDisplay="Always"
              x:DataType="vm:MoreViewModel"
              Title="{x:Static loc:Texts.TabMore}">
 

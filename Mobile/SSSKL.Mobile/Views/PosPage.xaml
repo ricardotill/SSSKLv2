@@ -5,7 +5,9 @@
              xmlns:controls="clr-namespace:SSSKL.Mobile.Controls"
              xmlns:vm="clr-namespace:SSSKL.Mobile.Core.ViewModels;assembly=SSSKL.Mobile.Core"
              xmlns:loc="clr-namespace:SSSKL.Mobile.Core.Localization;assembly=SSSKL.Mobile.Core"
+             xmlns:ios="clr-namespace:Microsoft.Maui.Controls.PlatformConfiguration.iOSSpecific;assembly=Microsoft.Maui.Controls"
              x:Class="SSSKL.Mobile.Views.PosPage"
+             ios:Page.LargeTitleDisplay="Always"
              x:DataType="vm:PosViewModel"
              Title="{x:Static loc:Texts.TabPos}">
     <ContentPage.Resources>

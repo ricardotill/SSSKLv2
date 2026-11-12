@@ -27,7 +27,7 @@ public sealed class Haptics : IHaptics
         using var generator = new UINotificationFeedbackGenerator();
         generator.NotificationOccurred(UINotificationFeedbackType.Success);
 #elif ANDROID
-        PerformAndroid(Android.Views.FeedbackConstants.Confirm);
+        PerformAndroid(success: true);
 #endif
     });
 
@@ -37,13 +37,13 @@ public sealed class Haptics : IHaptics
         using var generator = new UINotificationFeedbackGenerator();
         generator.NotificationOccurred(UINotificationFeedbackType.Error);
 #elif ANDROID
-        PerformAndroid(Android.Views.FeedbackConstants.Reject);
+        PerformAndroid(success: false);
 #endif
     });
 
 #if ANDROID
     /// <summary>CONFIRM/REJECT exist from Android 11 (API 30); older versions get a long press.</summary>
-    private static void PerformAndroid(Android.Views.FeedbackConstants constant)
+    private static void PerformAndroid(bool success)
     {
         if (!OperatingSystem.IsAndroidVersionAtLeast(30))
         {
@@ -51,7 +51,7 @@ public sealed class Haptics : IHaptics
             return;
         }
         var view = Platform.CurrentActivity?.Window?.DecorView;
-        view?.PerformHapticFeedback(constant);
+        view?.PerformHapticFeedback(success ? Android.Views.FeedbackConstants.Confirm : Android.Views.FeedbackConstants.Reject);
     }
 #endif
 

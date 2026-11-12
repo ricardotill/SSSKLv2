@@ -33,9 +33,11 @@ internal static class SystemBars
 #pragma warning restore CA1422
         }
 
-        var insets = WindowCompat.GetInsetsController(window, window.DecorView);
-        insets.AppearanceLightStatusBars = !dark;
-        insets.AppearanceLightNavigationBars = !dark;
+        if (WindowCompat.GetInsetsController(window, window.DecorView) is { } insets)
+        {
+            insets.AppearanceLightStatusBars = !dark;
+            insets.AppearanceLightNavigationBars = !dark;
+        }
     }
 
     private static Android.Graphics.Color Resource(Microsoft.Maui.Controls.Application app, string key) =>

@@ -25,7 +25,7 @@ public sealed class MemberRowView : ContentView
 
     public MemberRowView()
     {
-        _rankText = new Label { FontAttributes = FontAttributes.Bold, FontSize = TypeScale.Subhead, HorizontalOptions = LayoutOptions.Center, VerticalOptions = LayoutOptions.Center };
+        _rankText = new Label { FontAutoScalingEnabled = false, FontAttributes = FontAttributes.Bold, FontSize = TypeScale.Subhead, HorizontalOptions = LayoutOptions.Center, VerticalOptions = LayoutOptions.Center };
         _rank = new Border
         {
             WidthRequest = 32, HeightRequest = 32, StrokeThickness = 0, VerticalOptions = LayoutOptions.Center,

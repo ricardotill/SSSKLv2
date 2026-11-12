@@ -14,7 +14,7 @@
             <controls:Pressable x:Name="OpenArea">
                 <VerticalStackLayout Spacing="12">
                     <Grid>
-                        <Label Text="“" FontSize="64" FontFamily="serif" Margin="-6,-22,0,0" VerticalOptions="Start"
+                        <Label Text="“" FontSize="64" FontAutoScalingEnabled="False" FontFamily="serif" Margin="-6,-22,0,0" VerticalOptions="Start"
                                AutomationProperties.IsInAccessibleTree="False"
                                TextColor="{AppThemeBinding Light={StaticResource Primary200}, Dark={StaticResource Primary900}}" />
                         <Label x:Name="TextLabel" Text="{Binding Text}" FontSize="{StaticResource FontSizeTitle}" FontAttributes="Italic" Margin="0,6,0,0"

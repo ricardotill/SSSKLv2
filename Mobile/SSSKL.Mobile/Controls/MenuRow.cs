@@ -77,7 +77,7 @@ public sealed class MenuRow : Grid
         var texts = new VerticalStackLayout { Spacing = 1, VerticalOptions = LayoutOptions.Center, Children = { _title, _subtitle } };
 
         _detail = new Label { Style = Resource<Style>("Muted"), FontSize = TypeScale.Body, VerticalOptions = LayoutOptions.Center, IsVisible = false };
-        _badgeText = new Label { FontSize = TypeScale.Caption, FontAttributes = FontAttributes.Bold, TextColor = Colors.White, HorizontalOptions = LayoutOptions.Center, VerticalOptions = LayoutOptions.Center };
+        _badgeText = new Label { FontAutoScalingEnabled = false, FontSize = TypeScale.Caption, FontAttributes = FontAttributes.Bold, TextColor = Colors.White, HorizontalOptions = LayoutOptions.Center, VerticalOptions = LayoutOptions.Center };
         _badge = new Border
         {
             StrokeThickness = 0,

@@ -60,6 +60,8 @@ public interface IUserDialogs
     Task ToastAsync(string message);
     Task AlertAsync(string title, string message);
     Task<bool> ConfirmAsync(string title, string message, string accept, string cancel);
+    /// <summary>An action sheet; returns the chosen button's text, or null when cancelled.</summary>
+    Task<string?> ActionSheetAsync(string? title, string cancel, string? destruction, params string[] buttons);
 }
 
 /// <summary>The system share sheet (MAUI Share in the app).</summary>

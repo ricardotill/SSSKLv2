@@ -181,6 +181,27 @@ public sealed partial class ProfileViewModel(
         });
     }
 
+    /// <summary>A tap on the avatar: pick a photo straight away, or (with a photo) choose to change or remove it.</summary>
+    [RelayCommand]
+    private async Task PictureActionsAsync()
+    {
+        if (!HasPicture)
+        {
+            await ChangePictureAsync();
+            return;
+        }
+        var choice = await dialogs.ActionSheetAsync(Texts.ProfilePicture, Texts.Cancel, Texts.RemoveProfilePicture, Texts.ChangeProfilePicture);
+        if (choice == Texts.ChangeProfilePicture)
+        {
+            await ChangePictureAsync();
+        }
+        else if (choice == Texts.RemoveProfilePicture)
+        {
+            // The sheet's destructive button is the confirmation.
+            await DeletePictureAsync();
+        }
+    }
+
     [RelayCommand]
     private async Task RemovePictureAsync()
     {
@@ -188,6 +209,11 @@ public sealed partial class ProfileViewModel(
         {
             return;
         }
+        await DeletePictureAsync();
+    }
+
+    private async Task DeletePictureAsync()
+    {
         await RunBusyAsync(async () =>
         {
             await api.DeleteProfilePictureAsync();

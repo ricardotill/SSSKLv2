@@ -26,6 +26,7 @@
                                 <controls:Pressable FlexLayout.Basis="50%" SemanticProperties.Description="{Binding Description}"
                                                     Command="{Binding ToggleProductCommand, Source={RelativeSource AncestorType={x:Type vm:PosViewModel}}, x:DataType=vm:PosViewModel}"
                                                     CommandParameter="{Binding .}">
+                                    <Grid>
                                     <Border Style="{StaticResource Tile}">
                                         <Border.Triggers>
                                             <!-- The thicker stroke takes its extra pixel out of the padding, so the tile keeps its size -->
@@ -37,20 +38,22 @@
                                             </DataTrigger>
                                         </Border.Triggers>
                                         <Grid>
-                                            <VerticalStackLayout Spacing="1" Margin="0,0,20,0" VerticalOptions="Center">
+                                            <VerticalStackLayout Spacing="1" Margin="0,0,24,0" VerticalOptions="Center">
                                                 <Label Text="{Binding Name}" FontAttributes="Bold" MaxLines="2" LineBreakMode="TailTruncation"
                                                        TextColor="{AppThemeBinding Light={StaticResource HeadingLight}, Dark={StaticResource HeadingDark}}" />
                                                 <Label Text="{Binding PriceText}" FontSize="{StaticResource FontSizeCallout}" FontAttributes="Bold"
                                                        TextColor="{AppThemeBinding Light={StaticResource Primary700}, Dark={StaticResource Primary400}}" />
                                             </VerticalStackLayout>
-                                            <!-- A small check in the top-right corner when selected, like the SPA's Kassa -->
-                                            <Border WidthRequest="22" HeightRequest="22" StrokeShape="RoundRectangle 11" StrokeThickness="0"
-                                                    HorizontalOptions="End" VerticalOptions="Start" Margin="0,-4,-4,0"
-                                                    BackgroundColor="{StaticResource Primary500}" IsVisible="{Binding IsSelected}">
-                                                <controls:IconView Icon="{x:Static loc:Icons.Check}" Size="13" Color="White" />
-                                            </Border>
                                         </Grid>
                                     </Border>
+                                    <!-- A small check in the tile's top-right corner when selected, like the SPA's Kassa
+                                         (on top of the tile, 8 from its edge; the tile has a 4 margin) -->
+                                    <Border WidthRequest="22" HeightRequest="22" StrokeShape="RoundRectangle 11" StrokeThickness="0"
+                                            HorizontalOptions="End" VerticalOptions="Start" Margin="0,12,12,0" InputTransparent="True"
+                                            BackgroundColor="{StaticResource Primary500}" IsVisible="{Binding IsSelected}">
+                                        <controls:IconView Icon="{x:Static loc:Icons.Check}" Size="13" Color="White" />
+                                    </Border>
+                                    </Grid>
                                 </controls:Pressable>
                             </DataTemplate>
                         </BindableLayout.ItemTemplate>
@@ -76,10 +79,10 @@
                                         <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="12">
                                             <Grid WidthRequest="40" HeightRequest="40">
                                                 <Border Style="{StaticResource Avatar}">
-                                                    <Label Text="{Binding Initials}" HorizontalOptions="Center" VerticalOptions="Center" FontAttributes="Bold" />
+                                                    <Label Text="{Binding Initials}" HorizontalOptions="Center" VerticalOptions="Center" FontAttributes="Bold" FontAutoScalingEnabled="False" />
                                                 </Border>
                                                 <Border Style="{StaticResource Avatar}" IsVisible="{Binding HasPicture}">
-                                                    <Image Source="{Binding PictureUrl}" Aspect="AspectFill" />
+                                                    <controls:FadeImage Source="{Binding PictureUrl}" Aspect="AspectFill" />
                                                 </Border>
                                             </Grid>
                                             <Label Grid.Column="1" Text="{Binding Title}" VerticalOptions="Center" LineBreakMode="TailTruncation">

@@ -17,57 +17,60 @@
     <RefreshView IsRefreshing="{Binding IsRefreshing}" Command="{Binding LoadCommand}">
         <ScrollView>
             <VerticalStackLayout Padding="16" Spacing="16">
-                <!-- Header -->
+                <!-- Header: tap the avatar to change or remove the photo -->
                 <VerticalStackLayout Spacing="8" HorizontalOptions="Center">
-                    <Grid WidthRequest="112" HeightRequest="112" HorizontalOptions="Center">
-                        <Border Style="{StaticResource AvatarLarge}">
-                            <Label Text="{Binding Initials}" FontSize="36" FontAttributes="Bold"
-                                   HorizontalOptions="Center" VerticalOptions="Center" />
-                        </Border>
-                        <Border Style="{StaticResource AvatarLarge}" IsVisible="{Binding HasPicture}">
-                            <Image Source="{Binding PictureUrl}" Aspect="AspectFill"
-                                   SemanticProperties.Description="{x:Static loc:Texts.ProfilePicture}" />
-                        </Border>
-                        <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
-                    </Grid>
+                    <controls:Pressable Command="{Binding PictureActionsCommand}" HorizontalOptions="Center"
+                                        SemanticProperties.Description="{x:Static loc:Texts.ChangeProfilePicture}">
+                        <Grid WidthRequest="112" HeightRequest="112">
+                            <Border Style="{StaticResource AvatarLarge}">
+                                <Label Text="{Binding Initials}" FontSize="36" FontAttributes="Bold" FontAutoScalingEnabled="False"
+                                       HorizontalOptions="Center" VerticalOptions="Center" />
+                            </Border>
+                            <Border Style="{StaticResource AvatarLarge}" IsVisible="{Binding HasPicture}">
+                                <controls:FadeImage Source="{Binding PictureUrl}" Aspect="AspectFill" />
+                            </Border>
+                            <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
+                            <!-- Edit badge -->
+                            <Border WidthRequest="32" HeightRequest="32" StrokeShape="RoundRectangle 16" StrokeThickness="2"
+                                    Stroke="{AppThemeBinding Light={StaticResource PageLight}, Dark={StaticResource PageDark}}"
+                                    BackgroundColor="{AppThemeBinding Light={StaticResource Primary700}, Dark={StaticResource Primary400}}"
+                                    HorizontalOptions="End" VerticalOptions="End">
+                                <controls:IconView Icon="{x:Static loc:Icons.Pencil}" Size="16"
+                                                   Color="{AppThemeBinding Light=White, Dark={StaticResource PageDark}}" />
+                            </Border>
+                        </Grid>
+                    </controls:Pressable>
                     <Label Text="{Binding DisplayName}" Style="{StaticResource Headline}" HorizontalTextAlignment="Center"
                            SemanticProperties.HeadingLevel="Level1" />
                     <Label Text="{Binding UserName}" Style="{StaticResource Muted}" HorizontalTextAlignment="Center" />
-                    <HorizontalStackLayout Spacing="8" HorizontalOptions="Center">
-                        <Button Text="{x:Static loc:Texts.ChangeProfilePicture}" Command="{Binding ChangePictureCommand}"
-                                Style="{StaticResource SecondaryButton}" />
-                        <Button Text="{x:Static loc:Texts.RemoveProfilePicture}" Command="{Binding RemovePictureCommand}"
-                                IsVisible="{Binding HasPicture}" Style="{StaticResource SecondaryButton}" />
-                    </HorizontalStackLayout>
                 </VerticalStackLayout>
 
-                <!-- Saldo + stats -->
-                <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">
-                    <Border Style="{StaticResource Card}">
-                        <VerticalStackLayout>
-                            <Label Text="{x:Static loc:Texts.MySaldo}" Style="{StaticResource Muted}" />
-                            <Label Text="{Binding Saldo}" Style="{StaticResource Stat}">
+                <!-- Saldo + stats: one card, three columns with dividers -->
+                <Border Style="{StaticResource Card}" Padding="0">
+                    <Grid ColumnDefinitions="*,1,*,1,*" Padding="0,14">
+                        <VerticalStackLayout Spacing="2" Padding="8,0">
+                            <Label Text="{Binding Saldo}" Style="{StaticResource Stat}" HorizontalTextAlignment="Center"
+                                   LineBreakMode="NoWrap" MaxLines="1">
                                 <Label.Triggers>
                                     <DataTrigger TargetType="Label" Binding="{Binding IsSaldoNegative}" Value="True">
                                         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Danger}, Dark={StaticResource DangerDark}}" />
                                     </DataTrigger>
                                 </Label.Triggers>
                             </Label>
+                            <Label Text="{x:Static loc:Texts.MySaldo}" Style="{StaticResource Muted}" HorizontalTextAlignment="Center" />
                         </VerticalStackLayout>
-                    </Border>
-                    <Border Grid.Column="1" Style="{StaticResource Card}">
-                        <VerticalStackLayout>
-                            <Label Text="{x:Static loc:Texts.TotalOrders}" Style="{StaticResource Muted}" />
-                            <Label Text="{Binding TotalOrders}" Style="{StaticResource Stat}" />
+                        <BoxView Grid.Column="1" Color="{AppThemeBinding Light={StaticResource BorderLight}, Dark={StaticResource BorderDark}}" />
+                        <VerticalStackLayout Grid.Column="2" Spacing="2" Padding="8,0">
+                            <Label Text="{Binding TotalOrders}" Style="{StaticResource Stat}" HorizontalTextAlignment="Center" MaxLines="1" />
+                            <Label Text="{x:Static loc:Texts.TotalOrders}" Style="{StaticResource Muted}" HorizontalTextAlignment="Center" />
                         </VerticalStackLayout>
-                    </Border>
-                    <Border Grid.Column="2" Style="{StaticResource Card}">
-                        <VerticalStackLayout>
-                            <Label Text="{x:Static loc:Texts.CurrentStreak}" Style="{StaticResource Muted}" />
-                            <Label Text="{Binding CurrentStreak}" Style="{StaticResource Stat}" />
+                        <BoxView Grid.Column="3" Color="{AppThemeBinding Light={StaticResource BorderLight}, Dark={StaticResource BorderDark}}" />
+                        <VerticalStackLayout Grid.Column="4" Spacing="2" Padding="8,0">
+                            <Label Text="{Binding CurrentStreak}" Style="{StaticResource Stat}" HorizontalTextAlignment="Center" MaxLines="1" />
+                            <Label Text="{x:Static loc:Texts.CurrentStreak}" Style="{StaticResource Muted}" HorizontalTextAlignment="Center" />
                         </VerticalStackLayout>
-                    </Border>
-                </Grid>
+                    </Grid>
+                </Border>
 
                 <!-- About me: shown as HTML, edited as plain text -->
                 <Border Style="{StaticResource Card}">

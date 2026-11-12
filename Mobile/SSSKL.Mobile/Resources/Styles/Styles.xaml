@@ -228,6 +228,8 @@
         <Setter Property="HeightRequest" Value="44" />
         <Setter Property="Padding" Value="0" />
         <Setter Property="FontSize" Value="{StaticResource FontSizeTitle2}" />
+        <!-- A fixed 44 pt circle: its glyph must not outgrow it at large text sizes -->
+        <Setter Property="FontAutoScalingEnabled" Value="False" />
         <Setter Property="CornerRadius" Value="22" />
     </Style>
     <Style x:Key="LinkButton" TargetType="Button">

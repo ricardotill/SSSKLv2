@@ -54,7 +54,7 @@
                                     <!-- Image with the badges on top -->
                                     <Grid HeightRequest="150"
                                           BackgroundColor="{AppThemeBinding Light={StaticResource SunkenLight}, Dark={StaticResource SunkenDark}}">
-                                        <Image Source="{Binding ImageUrl}" Aspect="AspectFill" IsVisible="{Binding HasImage}" />
+                                        <controls:FadeImage Source="{Binding ImageUrl}" Aspect="AspectFill" IsVisible="{Binding HasImage}" />
                                         <controls:IconView Icon="{x:Static loc:Icons.Calendar}" Size="44" IsVisible="{Binding HasNoImage}"
                                                            Color="{AppThemeBinding Light={StaticResource BorderLight}, Dark={StaticResource BorderDark}}" />
                                         <Border IsVisible="{Binding IsPast}" Style="{StaticResource ImageBadge}" HorizontalOptions="Start"

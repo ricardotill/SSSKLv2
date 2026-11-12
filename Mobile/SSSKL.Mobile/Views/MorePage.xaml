@@ -23,13 +23,13 @@
                         <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12" Padding="14">
                             <Grid WidthRequest="52" HeightRequest="52">
                                 <Border Style="{StaticResource Avatar}" WidthRequest="52" HeightRequest="52" StrokeShape="RoundRectangle 26">
-                                    <Label Text="{Binding Initials}" FontSize="{StaticResource FontSizeTitle}" FontAttributes="Bold"
+                                    <Label Text="{Binding Initials}" FontSize="{StaticResource FontSizeTitle}" FontAttributes="Bold" FontAutoScalingEnabled="False"
                                            TextColor="{AppThemeBinding Light={StaticResource Primary700}, Dark={StaticResource Primary300}}"
                                            HorizontalOptions="Center" VerticalOptions="Center" />
                                 </Border>
                                 <Border Style="{StaticResource Avatar}" WidthRequest="52" HeightRequest="52" StrokeShape="RoundRectangle 26"
                                         IsVisible="{Binding HasPicture}">
-                                    <Image Source="{Binding PictureUrl}" Aspect="AspectFill" />
+                                    <controls:FadeImage Source="{Binding PictureUrl}" Aspect="AspectFill" />
                                 </Border>
                             </Grid>
                             <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">

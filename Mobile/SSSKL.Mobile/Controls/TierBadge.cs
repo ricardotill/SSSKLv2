@@ -22,7 +22,7 @@ public sealed class TierBadge : Border
         Padding = new Thickness(9, 3);
         HorizontalOptions = LayoutOptions.Start;
         VerticalOptions = LayoutOptions.Center;
-        _label = new Label { FontSize = TypeScale.Caption, FontAttributes = FontAttributes.Bold, CharacterSpacing = 0.5 };
+        _label = new Label { FontAutoScalingEnabled = false, FontSize = TypeScale.Caption, FontAttributes = FontAttributes.Bold, CharacterSpacing = 0.5 };
         Content = _label;
         Apply("");
     }

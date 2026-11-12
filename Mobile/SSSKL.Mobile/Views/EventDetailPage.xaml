@@ -24,7 +24,10 @@
                         <!-- The event -->
                         <Border Style="{StaticResource Card}" Padding="0">
                             <VerticalStackLayout>
-                                <Image Source="{Binding ImageUrl}" Aspect="AspectFill" HeightRequest="200" IsVisible="{Binding HasImage}" />
+                                <Grid HeightRequest="200" IsVisible="{Binding HasImage}"
+                                      BackgroundColor="{AppThemeBinding Light={StaticResource SunkenLight}, Dark={StaticResource SunkenDark}}">
+                                    <controls:FadeImage Source="{Binding ImageUrl}" Aspect="AspectFill" />
+                                </Grid>
                                 <VerticalStackLayout Padding="16" Spacing="14">
                                     <Label Text="{Binding Title}" Style="{StaticResource Headline}" SemanticProperties.HeadingLevel="Level1" />
                                     <Border IsVisible="{Binding IsPast}" StrokeThickness="0" StrokeShape="RoundRectangle 10" Padding="9,3"

@@ -51,20 +51,6 @@
                                             </Border>
                                         </Grid>
                                     </Border>
-                                                <Border StrokeShape="RoundRectangle 20" StrokeThickness="0" IsVisible="{Binding IsSelected}"
-                                                        BackgroundColor="{AppThemeBinding Light={StaticResource Primary700}, Dark={StaticResource Primary400}}">
-                                                    <controls:IconView Icon="{x:Static loc:Icons.Check}" Size="22"
-                                                                       Color="{AppThemeBinding Light=White, Dark={StaticResource PageDark}}" />
-                                                </Border>
-                                            </Grid>
-                                            <VerticalStackLayout Grid.Column="1" Spacing="1" VerticalOptions="Center">
-                                                <Label Text="{Binding Name}" FontAttributes="Bold" MaxLines="2" LineBreakMode="TailTruncation"
-                                                       TextColor="{AppThemeBinding Light={StaticResource HeadingLight}, Dark={StaticResource HeadingDark}}" />
-                                                <Label Text="{Binding PriceText}" FontSize="{StaticResource FontSizeCallout}" FontAttributes="Bold"
-                                                       TextColor="{AppThemeBinding Light={StaticResource Primary700}, Dark={StaticResource Primary400}}" />
-                                            </VerticalStackLayout>
-                                        </Grid>
-                                    </Border>
                                 </controls:Pressable>
                             </DataTemplate>
                         </BindableLayout.ItemTemplate>

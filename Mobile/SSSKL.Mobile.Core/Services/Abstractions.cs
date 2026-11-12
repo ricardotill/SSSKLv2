@@ -42,6 +42,19 @@ public interface IAppNavigator
     Task SignOutAsync();
 }
 
+/// <summary>Haptic feedback; does nothing where the device has none.</summary>
+public interface IHaptics
+{
+    /// <summary>A light tick: something was selected or toggled.</summary>
+    void Selection();
+
+    /// <summary>An action succeeded (an order was placed).</summary>
+    void Success();
+
+    /// <summary>An action failed.</summary>
+    void Error();
+}
+
 public interface IUserDialogs
 {
     Task ToastAsync(string message);

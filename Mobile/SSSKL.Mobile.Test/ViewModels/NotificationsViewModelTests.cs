@@ -72,7 +72,7 @@ public class NotificationsViewModelTests
     }
 
     [TestMethod]
-    public async Task LoadAsync_Fails_ShowsAnAlert()
+    public async Task LoadAsync_FirstLoadFails_ShowsTheErrorState()
     {
         // Arrange
         _api.GetNotificationsAsync(Arg.Any<int>(), Arg.Any<int>(), Arg.Any<CancellationToken>()).ThrowsAsync(new HttpRequestException("offline"));
@@ -83,7 +83,8 @@ public class NotificationsViewModelTests
         await sut.LoadCommand.ExecuteAsync(null);
 
         // Assert
-        await _dialogs.Received(1).AlertAsync(Texts.Error, Texts.LoadFailed);
+        sut.HasLoadError.Should().BeTrue();
+        await _dialogs.DidNotReceive().AlertAsync(Arg.Any<string>(), Arg.Any<string>());
         sut.IsRefreshing.Should().BeFalse();
         sut.IsLoading.Should().BeFalse();
     }

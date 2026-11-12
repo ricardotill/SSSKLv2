@@ -2,6 +2,7 @@ using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Time.Testing;
 using NSubstitute;
+using NSubstitute.ExceptionExtensions;
 using SSSKL.Mobile.Core.Api;
 using SSSKL.Mobile.Core.Configuration;
 using SSSKL.Mobile.Core.Localization;
@@ -23,6 +24,7 @@ public class PosViewModelTests
     private readonly ISssklApi _api = Substitute.For<ISssklApi>();
     private readonly IUserDialogs _dialogs = Substitute.For<IUserDialogs>();
     private readonly IPopupPresenter _presenter = Substitute.For<IPopupPresenter>();
+    private readonly IHaptics _haptics = Substitute.For<IHaptics>();
 
     private async Task<PosViewModel> CreateLoadedSutAsync(params string[] roles)
     {
@@ -39,6 +41,7 @@ public class PosViewModelTests
             new CurrentUserService(_api),
             new AchievementPopupCoordinator(_api, _presenter, new FakeTimeProvider(), NullLogger<AchievementPopupCoordinator>.Instance),
             _dialogs,
+            _haptics,
             new AppEndpoints(new Uri("https://api.test"), new Uri("https://web.test")),
             NullLogger<PosViewModel>.Instance);
         await sut.LoadAsync();
@@ -183,7 +186,10 @@ public class PosViewModelTests
             o.Products.SequenceEqual(new[] { Cola.Id }) &&
             o.Users.SequenceEqual(new[] { Guid.Parse(MeId) }) &&
             o.Amount == 2 && !o.Split));
-        await _dialogs.Received(1).ToastAsync(Texts.OrderPlaced);
+        _haptics.Received(1).Success();
+        sut.ShowOrderPlaced.Should().BeTrue();
+        sut.OrderPlacedDetail.Should().Be("2× Cola · € 1,60");
+        sut.OrderPlacedSaldo.Should().Be(Texts.NewSaldo("€ -2,50"));
         await _api.Received(1).GetUnseenAchievementsAsync();
         sut.Products.Should().OnlyContain(p => !p.IsSelected);
         sut.Amount.Should().Be(1);
@@ -221,5 +227,74 @@ public class PosViewModelTests
         await _dialogs.Received(1).AlertAsync(Texts.OrderFailed, "Onvoldoende voorraad");
         sut.Products[0].IsSelected.Should().BeTrue();
         sut.IsSubmitting.Should().BeFalse();
+    }
+
+    [TestMethod]
+    public async Task OrderPlaced_IsDismissedByANewSelection()
+    {
+        // Arrange
+        var sut = await CreateLoadedSutAsync();
+        sut.ToggleProductCommand.Execute(sut.Products[0]);
+        await sut.SubmitCommand.ExecuteAsync(null);
+
+        // Act
+        sut.ToggleProductCommand.Execute(sut.Products[0]);
+
+        // Assert
+        sut.ShowOrderPlaced.Should().BeFalse();
+        _haptics.Received(2).Selection();
+    }
+
+    [TestMethod]
+    public async Task OrderPlaced_ForSomeoneElse_ShowsNoSaldo()
+    {
+        // Arrange
+        var sut = await CreateLoadedSutAsync();
+        sut.ToggleProductCommand.Execute(sut.Products[0]);
+        sut.ToggleUserCommand.Execute(sut.VisibleUsers.Single(u => !u.IsSelf));
+        sut.ToggleUserCommand.Execute(sut.VisibleUsers.Single(u => u.IsSelf));
+
+        // Act
+        await sut.SubmitCommand.ExecuteAsync(null);
+
+        // Assert
+        sut.ShowOrderPlaced.Should().BeTrue();
+        sut.OrderPlacedSaldo.Should().BeNull();
+    }
+
+    [TestMethod]
+    public async Task LoadAsync_FirstLoadFails_ShowsTheErrorState()
+    {
+        // Arrange
+        _api.GetMeAsync().Returns(new CurrentUser { Id = MeId, FullName = "Ik Zelf", Roles = [RoleNames.User] });
+        _api.GetOrderInitializeAsync().ThrowsAsync(new HttpRequestException("offline"));
+        var sut = new PosViewModel(_api, new CurrentUserService(_api),
+            new AchievementPopupCoordinator(_api, _presenter, new FakeTimeProvider(), NullLogger<AchievementPopupCoordinator>.Instance),
+            _dialogs, _haptics, new AppEndpoints(new Uri("https://api.test"), new Uri("https://web.test")), NullLogger<PosViewModel>.Instance);
+
+        // Act
+        await sut.LoadAsync();
+
+        // Assert
+        sut.HasLoadError.Should().BeTrue();
+        sut.ShowSkeleton.Should().BeFalse();
+        await _dialogs.DidNotReceive().AlertAsync(Arg.Any<string>(), Arg.Any<string>());
+        _haptics.Received(1).Error();
+    }
+
+    [TestMethod]
+    public async Task LoadAsync_RefreshFails_KeepsTheDataAndToasts()
+    {
+        // Arrange
+        var sut = await CreateLoadedSutAsync();
+        _api.GetOrderInitializeAsync().ThrowsAsync(new HttpRequestException("offline"));
+
+        // Act
+        await sut.LoadAsync();
+
+        // Assert
+        sut.HasLoadError.Should().BeFalse();
+        sut.Products.Should().HaveCount(2);
+        await _dialogs.Received(1).ToastAsync(Texts.RefreshFailed);
     }
 }

@@ -41,15 +41,23 @@ public sealed partial class LeaderboardViewModel(
     public bool IsAllTime => Period == LeaderboardPeriod.AllTime;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsEmpty))]
+    [NotifyPropertyChangedFor(nameof(IsEmpty), nameof(ShowSkeleton))]
     public partial bool IsLoading { get; set; }
 
     [ObservableProperty]
     public partial bool IsRefreshing { get; set; }
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsEmpty))]
+    [NotifyPropertyChangedFor(nameof(IsEmpty), nameof(ShowSkeleton))]
     public partial bool HasLoaded { get; set; }
+
+    /// <summary>The first load failed: the page shows its error state with a retry button.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowSkeleton))]
+    public partial bool HasLoadError { get; set; }
+
+    /// <summary>Placeholders while the first load runs (not while refreshing loaded data).</summary>
+    public bool ShowSkeleton => IsLoading && !HasLoaded && !HasLoadError;
 
     public bool IsEmpty => HasLoaded && !IsLoading && Entries.Count == 0;
 
@@ -57,9 +65,14 @@ public sealed partial class LeaderboardViewModel(
     [RelayCommand]
     public async Task LoadAsync()
     {
+        HasLoadError = false;
         try
         {
             _loadingProducts = true;
+            if (!HasLoaded)
+            {
+                IsLoading = true; // the skeleton covers loading the products too
+            }
             var products = await api.GetProductsAsync();
             var withLeaderboard = products.Where(p => p.EnableLeaderboard).ToList();
             var previous = SelectedProduct?.Id;
@@ -74,7 +87,8 @@ public sealed partial class LeaderboardViewModel(
         {
             logger.LogWarning(ex, "Loading products failed");
             IsRefreshing = false;
-            await dialogs.AlertAsync(Texts.Error, Texts.LoadFailed);
+            IsLoading = false;
+            HasLoadError = await LoadFailure.ReportAsync(dialogs, null, HasLoaded);
             return;
         }
         finally
@@ -111,6 +125,7 @@ public sealed partial class LeaderboardViewModel(
     {
         if (SelectedProduct is not { } product)
         {
+            IsLoading = false;
             IsRefreshing = false;
             HasLoaded = true;
             Entries.Clear();
@@ -139,7 +154,7 @@ public sealed partial class LeaderboardViewModel(
         catch (Exception ex) when (IsExpected(ex))
         {
             logger.LogWarning(ex, "Loading the leaderboard failed");
-            await dialogs.AlertAsync(Texts.Error, Texts.LoadFailed);
+            HasLoadError = await LoadFailure.ReportAsync(dialogs, null, HasLoaded);
         }
         finally
         {

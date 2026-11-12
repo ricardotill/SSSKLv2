@@ -116,5 +116,8 @@
             </ScrollView>
         </RefreshView>
         <ActivityIndicator IsRunning="{Binding IsLoading}" IsVisible="{Binding IsLoading}" HorizontalOptions="Center" VerticalOptions="Center" />
+        <!-- First load: placeholders in the page's shape; a failed first load: error with retry -->
+        <controls:SkeletonView Kind="Profile" IsVisible="{Binding ShowSkeleton}" />
+        <controls:ErrorStateView IsVisible="{Binding HasLoadError}" RetryCommand="{Binding LoadCommand}" />
     </Grid>
 </ContentPage>

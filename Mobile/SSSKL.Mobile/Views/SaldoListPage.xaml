@@ -33,5 +33,8 @@
             </CollectionView>
         </RefreshView>
         <ActivityIndicator Grid.Row="1" IsRunning="{Binding IsLoading}" IsVisible="{Binding IsLoading}" HorizontalOptions="Center" VerticalOptions="Center" />
+        <!-- First load: placeholders in the page's shape; a failed first load: error with retry -->
+        <controls:SkeletonView Grid.Row="1" Kind="Rows" IsVisible="{Binding ShowSkeleton}" />
+        <controls:ErrorStateView Grid.Row="1" IsVisible="{Binding HasLoadError}" RetryCommand="{Binding LoadCommand}" />
     </Grid>
 </ContentPage>

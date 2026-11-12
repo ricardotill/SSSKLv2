@@ -37,7 +37,20 @@ public sealed partial class ProfileViewModel(
     public ObservableCollection<AchievementItem> Achievements { get; } = [];
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowSkeleton))]
     public partial bool IsLoading { get; set; }
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowSkeleton))]
+    public partial bool HasLoaded { get; set; }
+
+    /// <summary>The first load failed: the page shows its error state with a retry button.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowSkeleton))]
+    public partial bool HasLoadError { get; set; }
+
+    /// <summary>Placeholders while the first load runs (not while refreshing a loaded profile).</summary>
+    public bool ShowSkeleton => IsLoading && !HasLoaded && !HasLoadError;
 
     [ObservableProperty]
     public partial bool IsRefreshing { get; set; }
@@ -95,6 +108,7 @@ public sealed partial class ProfileViewModel(
     [RelayCommand]
     public async Task LoadAsync()
     {
+        HasLoadError = false;
         IsLoading = true;
         try
         {
@@ -115,11 +129,12 @@ public sealed partial class ProfileViewModel(
                     endpoints.ResolveApiUrl(entry.ImageUrl), entry.Tier, entry.DateAdded, entry.AchievementId));
             }
             HasNoAchievements = Achievements.Count == 0;
+            HasLoaded = true;
         }
         catch (Exception ex) when (ex is ApiException or HttpRequestException or TaskCanceledException)
         {
             logger.LogWarning(ex, "Loading profile failed");
-            await dialogs.AlertAsync(Texts.Error, Texts.LoadFailed);
+            HasLoadError = await LoadFailure.ReportAsync(dialogs, null, HasLoaded);
         }
         finally
         {

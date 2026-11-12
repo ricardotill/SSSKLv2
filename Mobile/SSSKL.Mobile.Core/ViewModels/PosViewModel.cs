@@ -21,22 +21,51 @@ public sealed partial class PosViewModel(
     CurrentUserService currentUser,
     AchievementPopupCoordinator achievements,
     IUserDialogs dialogs,
+    IHaptics haptics,
     AppEndpoints endpoints,
     ILogger<PosViewModel> logger) : ObservableObject
 {
+    /// <summary>How long the "order placed" confirmation stays in the pay panel.</summary>
+    public static readonly TimeSpan OrderPlacedDuration = TimeSpan.FromSeconds(3);
+
     public const int MinAmount = 1;
     public const int MaxAmount = 99;
     public const int UserSearchThreshold = 6;
 
     private static readonly CultureInfo Dutch = CultureInfo.GetCultureInfo("nl-NL");
     private List<UserItemViewModel> _allUsers = [];
+    private CancellationTokenSource? _orderPlacedTimer;
 
     public ObservableCollection<ProductItemViewModel> Products { get; } = [];
     public ObservableCollection<UserItemViewModel> VisibleUsers { get; } = [];
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(CanSubmit))]
+    [NotifyPropertyChangedFor(nameof(CanSubmit), nameof(ShowSkeleton))]
     public partial bool IsLoading { get; set; }
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowSkeleton))]
+    public partial bool HasLoaded { get; set; }
+
+    /// <summary>The first load failed: the page shows its error state with a retry button.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowSkeleton))]
+    public partial bool HasLoadError { get; set; }
+
+    /// <summary>Placeholder tiles while the first load runs (not while refreshing).</summary>
+    public bool ShowSkeleton => IsLoading && !HasLoaded && !HasLoadError;
+
+    /// <summary>The pay panel shows the confirmation of the order just placed (for a few seconds).</summary>
+    [ObservableProperty]
+    public partial bool ShowOrderPlaced { get; set; }
+
+    /// <summary>What was ordered, e.g. "2× Bier · € 5,00".</summary>
+    [ObservableProperty]
+    public partial string? OrderPlacedDetail { get; set; }
+
+    /// <summary>Your saldo after the order; null when it couldn't be refreshed or you didn't order for yourself.</summary>
+    [ObservableProperty]
+    public partial string? OrderPlacedSaldo { get; set; }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanSubmit))]
@@ -94,6 +123,7 @@ public sealed partial class PosViewModel(
     [RelayCommand]
     public async Task LoadAsync()
     {
+        HasLoadError = false;
         IsLoading = true;
         try
         {
@@ -118,11 +148,12 @@ public sealed partial class PosViewModel(
             ApplySaldo();
             ResetSelection();
             OnPropertyChanged(nameof(IsGuest));
+            HasLoaded = true;
         }
         catch (Exception ex) when (ex is ApiException or HttpRequestException or TaskCanceledException)
         {
             logger.LogWarning(ex, "Loading POS data failed");
-            await dialogs.AlertAsync(Texts.Error, Texts.LoadFailed);
+            HasLoadError = await LoadFailure.ReportAsync(dialogs, haptics, HasLoaded);
         }
         finally
         {
@@ -134,6 +165,8 @@ public sealed partial class PosViewModel(
     [RelayCommand]
     private void ToggleProduct(ProductItemViewModel product)
     {
+        haptics.Selection();
+        DismissOrderPlaced();
         product.IsSelected = !product.IsSelected;
         SelectedProductCount = Products.Count(p => p.IsSelected);
     }
@@ -141,6 +174,8 @@ public sealed partial class PosViewModel(
     [RelayCommand]
     private void ToggleUser(UserItemViewModel user)
     {
+        haptics.Selection();
+        DismissOrderPlaced();
         user.IsSelected = !user.IsSelected;
         SelectedUserCount = _allUsers.Count(u => u.IsSelected);
         if (SelectedUserCount < 2)
@@ -198,7 +233,11 @@ public sealed partial class PosViewModel(
                 Amount,
                 Split && SelectedUserCount > 1);
             await api.SubmitOrderAsync(order);
-            await dialogs.ToastAsync(Texts.OrderPlaced);
+            haptics.Success();
+            var forYourself = _allUsers.Any(u => u.IsSelf && u.IsSelected);
+            var detail = Texts.OrderPlacedDetail(
+                string.Join(", ", Products.Where(p => p.IsSelected).Select(p => p.Name)), Amount,
+                Summary?.Total.ToString("C", Dutch) ?? "");
 
             foreach (var product in Products)
             {
@@ -212,15 +251,50 @@ public sealed partial class PosViewModel(
 
             await Task.WhenAll(RefreshUserQuietlyAsync(), achievements.CheckAsync());
             ApplySaldo();
+            ShowOrderPlacedFor(detail, forYourself ? currentUser.User?.Saldo.ToString("C", Dutch) : null);
         }
         catch (Exception ex) when (ex is ApiException or HttpRequestException or TaskCanceledException or FormatException)
         {
+            haptics.Error();
             logger.LogWarning(ex, "Submitting order failed");
             await dialogs.AlertAsync(Texts.OrderFailed, ex is ApiException api ? api.Message : Texts.OrderFailed);
         }
         finally
         {
             IsSubmitting = false;
+        }
+    }
+
+    /// <summary>Hides the order confirmation (a tap on it, or a new selection).</summary>
+    [RelayCommand]
+    private void DismissOrderPlaced()
+    {
+        _orderPlacedTimer?.Cancel();
+        _orderPlacedTimer = null;
+        ShowOrderPlaced = false;
+    }
+
+    private void ShowOrderPlacedFor(string detail, string? saldo)
+    {
+        OrderPlacedDetail = detail;
+        OrderPlacedSaldo = saldo is null ? null : Texts.NewSaldo(saldo);
+        ShowOrderPlaced = true;
+
+        _orderPlacedTimer?.Cancel();
+        var timer = _orderPlacedTimer = new CancellationTokenSource();
+        _ = HideOrderPlacedLaterAsync(timer.Token);
+    }
+
+    private async Task HideOrderPlacedLaterAsync(CancellationToken cancellation)
+    {
+        try
+        {
+            await Task.Delay(OrderPlacedDuration, cancellation);
+            ShowOrderPlaced = false;
+        }
+        catch (OperationCanceledException)
+        {
+            // Dismissed or replaced by a newer order.
         }
     }
 

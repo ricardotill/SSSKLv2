@@ -10,6 +10,7 @@
              Title="{x:Static loc:Texts.TabPos}">
     <ContentPage.Resources>
         <toolkit:InvertedBoolConverter x:Key="Not" />
+        <toolkit:IsNotNullConverter x:Key="NotNull" />
     </ContentPage.Resources>
 
     <Grid RowDefinitions="*,Auto">
@@ -89,14 +90,14 @@
                                                 </Label.Triggers>
                                             </Label>
                                             <!-- Opacity, not IsVisible: the check never changes the layout -->
-                                            <Label Grid.Column="3" Text="✓" FontAttributes="Bold" VerticalOptions="Center"
-                                                   Opacity="0" TextColor="{StaticResource Primary700}">
-                                                <Label.Triggers>
-                                                    <DataTrigger TargetType="Label" Binding="{Binding IsSelected}" Value="True">
+                                            <controls:IconView Grid.Column="3" Icon="{x:Static loc:Icons.CircleCheck}" Size="22" Opacity="0"
+                                                               Color="{AppThemeBinding Light={StaticResource Primary700}, Dark={StaticResource Primary400}}">
+                                                <controls:IconView.Triggers>
+                                                    <DataTrigger TargetType="controls:IconView" Binding="{Binding IsSelected}" Value="True">
                                                         <Setter Property="Opacity" Value="1" />
                                                     </DataTrigger>
-                                                </Label.Triggers>
-                                            </Label>
+                                                </controls:IconView.Triggers>
+                                            </controls:IconView>
                                         </Grid>
                                     </Border>
                                 </controls:Pressable>
@@ -108,6 +109,9 @@
         </RefreshView>
 
         <ActivityIndicator IsRunning="{Binding IsLoading}" IsVisible="{Binding IsLoading}" HorizontalOptions="Center" VerticalOptions="Center" />
+        <!-- First load: placeholders in the page's shape; a failed first load: error with retry -->
+        <controls:SkeletonView Kind="Tiles" IsVisible="{Binding ShowSkeleton}" />
+        <controls:ErrorStateView IsVisible="{Binding HasLoadError}" RetryCommand="{Binding LoadCommand}" />
 
         <!-- Pay panel -->
         <Border Grid.Row="1" Style="{StaticResource BottomPanel}">
@@ -149,6 +153,31 @@
                 </Button>
                 <ActivityIndicator Grid.Row="2" Grid.ColumnSpan="2" IsRunning="{Binding IsSubmitting}" IsVisible="{Binding IsSubmitting}"
                                    Color="White" HorizontalOptions="End" Margin="0,0,16,0" />
+
+                <!-- Confirmation of the order just placed: covers the panel for a few seconds (tap to close). Faded in
+                     and out from code; always in the layout, so the panel keeps its height. -->
+                <Grid x:Name="OrderPlacedPanel" Grid.RowSpan="3" Grid.ColumnSpan="2" Opacity="0" InputTransparent="True"
+                      AutomationProperties.IsInAccessibleTree="False"
+                      BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceLight}, Dark={StaticResource SurfaceDark}}">
+                    <Grid.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding DismissOrderPlacedCommand}" />
+                    </Grid.GestureRecognizers>
+                    <HorizontalStackLayout Spacing="14" HorizontalOptions="Center" VerticalOptions="Center">
+                        <Border x:Name="OrderPlacedBadge" WidthRequest="52" HeightRequest="52" StrokeThickness="0" StrokeShape="RoundRectangle 26"
+                                VerticalOptions="Center"
+                                BackgroundColor="{AppThemeBinding Light={StaticResource Primary100}, Dark={StaticResource Primary900}}">
+                            <controls:IconView Icon="{x:Static loc:Icons.Check}" Size="28"
+                                               Color="{AppThemeBinding Light={StaticResource Primary700}, Dark={StaticResource Primary300}}" />
+                        </Border>
+                        <VerticalStackLayout Spacing="2" VerticalOptions="Center">
+                            <Label Text="{x:Static loc:Texts.OrderPlaced}" FontSize="18" FontAttributes="Bold"
+                                   TextColor="{AppThemeBinding Light={StaticResource HeadingLight}, Dark={StaticResource HeadingDark}}" />
+                            <Label Text="{Binding OrderPlacedDetail}" LineBreakMode="TailTruncation" MaximumWidthRequest="260" />
+                            <Label Text="{Binding OrderPlacedSaldo}" Style="{StaticResource Muted}"
+                                   IsVisible="{Binding OrderPlacedSaldo, Converter={StaticResource NotNull}}" />
+                        </VerticalStackLayout>
+                    </HorizontalStackLayout>
+                </Grid>
             </Grid>
         </Border>
     </Grid>

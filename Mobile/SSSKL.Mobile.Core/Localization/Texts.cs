@@ -181,6 +181,9 @@ public static class Texts
     public static string Cancel => "Annuleren";
     public static string Close => "Sluiten";
     public static string LoadFailed => "Laden van gegevens mislukt";
+    public static string LoadFailedHint => "Controleer je internetverbinding en probeer het opnieuw.";
+    public static string Retry => "Opnieuw proberen";
+    public static string RefreshFailed => "Verversen mislukt";
 
     public static string Products => "Producten";
     public static string People => "Voor wie";
@@ -192,6 +195,9 @@ public static class Texts
     public static string PosSelectHint => "Kies wat en voor wie";
     public static string Order => "Bestellen";
     public static string OrderPlaced => "Order geplaatst!";
+    /// <summary>Kassa's confirmation, e.g. "2× Bier, Cola · € 5,00".</summary>
+    public static string OrderPlacedDetail(string products, int amount, string total) => $"{amount}× {products} · {total}";
+    public static string NewSaldo(string saldo) => $"Je saldo is nu {saldo}";
     public static string OrderFailed => "Bestelling mislukt";
     public static string GuestCannotOrder => "Gasten kunnen geen bestellingen plaatsen.";
     public static string OutOfStock => "Op";
@@ -223,7 +229,6 @@ public static class Texts
     public static string Stats => "Statistieken";
     public static string MyOrders => "Mijn bestellingen";
     public static string Login => "Inloggen";
-    public static string Retry => "Opnieuw proberen";
     public static string Logo => "SSSKL-logo";
     public static string MadeWithLoveBy => "Made with ❤️ by";
     public static string Author => "Ricardo Tillemans";

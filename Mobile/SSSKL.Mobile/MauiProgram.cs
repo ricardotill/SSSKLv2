@@ -80,6 +80,7 @@ public static class MauiProgram
         services.AddSingleton<ThemePreference>();
         services.AddSingleton<IPopupPresenter, PopupPresenter>();
         services.AddSingleton<IUserDialogs, UserDialogs>();
+        services.AddSingleton<IHaptics, Haptics>();
         services.AddSingleton<IPhotoPicker, MediaPhotoPicker>();
         services.AddSingleton<IShareService, ShareService>();
         services.AddSingleton<IExternalLauncher, ExternalLauncher>();

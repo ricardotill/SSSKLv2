@@ -3,7 +3,6 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
 using SSSKL.Mobile.Core.Api;
-using SSSKL.Mobile.Core.Localization;
 using SSSKL.Mobile.Core.Services;
 
 namespace SSSKL.Mobile.Core.ViewModels;
@@ -19,8 +18,13 @@ public abstract partial class PagedListViewModel<TItem>(IUserDialogs dialogs, IL
     public ObservableCollection<TItem> Items { get; } = [];
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsEmpty))]
+    [NotifyPropertyChangedFor(nameof(IsEmpty), nameof(ShowSkeleton))]
     public partial bool IsLoading { get; set; }
+
+    /// <summary>The first load failed: the page shows its error state with a retry button.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowSkeleton))]
+    public partial bool HasLoadError { get; set; }
 
     [ObservableProperty]
     public partial bool IsRefreshing { get; set; }
@@ -32,8 +36,11 @@ public abstract partial class PagedListViewModel<TItem>(IUserDialogs dialogs, IL
     public partial bool HasMore { get; set; }
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsEmpty))]
+    [NotifyPropertyChangedFor(nameof(IsEmpty), nameof(ShowSkeleton))]
     public partial bool HasLoaded { get; set; }
+
+    /// <summary>Placeholder rows while the first page loads (not while refreshing a loaded list).</summary>
+    public bool ShowSkeleton => IsLoading && !HasLoaded && !HasLoadError;
 
     /// <summary>Shows the empty state; not before the first load finished.</summary>
     public bool IsEmpty => HasLoaded && !IsLoading && Items.Count == 0;
@@ -50,6 +57,7 @@ public abstract partial class PagedListViewModel<TItem>(IUserDialogs dialogs, IL
     [RelayCommand]
     public async Task LoadAsync()
     {
+        HasLoadError = false;
         IsLoading = true;
         try
         {
@@ -66,7 +74,7 @@ public abstract partial class PagedListViewModel<TItem>(IUserDialogs dialogs, IL
         catch (Exception ex) when (IsExpected(ex))
         {
             logger.LogWarning(ex, "Loading {List} failed", GetType().Name);
-            await dialogs.AlertAsync(Texts.Error, Texts.LoadFailed);
+            HasLoadError = await LoadFailure.ReportAsync(dialogs, null, HasLoaded);
         }
         finally
         {

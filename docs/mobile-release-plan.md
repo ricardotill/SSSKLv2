@@ -215,7 +215,7 @@ Priority: **H** = noticeable on every use, **M** = clearly better, **L** = nice 
 
 | # | Item | Where | Pri |
 |---|------|-------|-----|
-| P17 | **Android edge-to-edge and system bars.** Apps targeting API 35+ are drawn edge-to-edge. Check the status and navigation bars on Android 15/16 (icon contrast in light and dark mode, content under the gesture bar), and set `colors.xml` to the Aura colours instead of the old Material greens. | `Platforms/Android`, `MainActivity` | H |
+| P17 | **Android edge-to-edge and system bars.** Apps targeting API 35+ are drawn edge-to-edge. Check the status and navigation bars on Android 15/16 (icon contrast in light and dark mode, content under the gesture bar), and make the bar colours and icons follow the in-app colour mode. | `Platforms/Android`, `MainActivity` | H |
 | P18 | **Splash → first screen**: the splash is `#212529`, the first page is slate-50 or zinc-950. Match the splash background to the page colour per theme, or fade from the brand colour (pairs with P12). | `SSSKL.Mobile.csproj`, `App.xaml.cs` | M |
 | P19 | **Dynamic Type / font scaling**: check every page at the largest accessibility size; cap scaling on fixed-size elements (tab badges, stepper, avatar initials) with `FontAutoScalingEnabled="False"` and let cards wrap. | All pages | M |
 | P20 | **Accessibility pass**: `SemanticProperties` are present but uneven (one on Notifications, eight on POS). Give every tappable `Pressable` a description and every page a level-1 heading; test with VoiceOver and TalkBack. | All pages | M |
@@ -223,7 +223,7 @@ Priority: **H** = noticeable on every use, **M** = clearly better, **L** = nice 
 
 ### Suggested polish batches
 
-1. **Batch 1 (H items, one PR):** P1, P2, P3, P4, P8, P17.
+1. **Batch 1 (H items):** P1, P2, P3, P4, P8, P17. Done in PR #124; still needs a check on a device.
 2. **Batch 2:** P6, P7, P9, P11, P12, P18.
 3. **Batch 3:** P13, P16, P19, P20, P21, then P5, P10, P14, P15.
 

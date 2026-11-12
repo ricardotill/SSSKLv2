@@ -169,13 +169,13 @@ jobs:
         run: dotnet workload install maui-ios
 
       - name: Import distribution certificate
-        uses: apple-actions/import-codesign-certs@v7
+        uses: apple-actions/import-codesign-certs@288b8ec97b82c66b6f2a6baaf7acc8dfbcbe331c # v7.2.0
         with:
           p12-file-base64: ${{ secrets.IOS_DIST_CERT_P12_BASE64 }}
           p12-password: ${{ secrets.IOS_DIST_CERT_PASSWORD }}
 
       - name: Download App Store provisioning profile
-        uses: apple-actions/download-provisioning-profiles@v7
+        uses: apple-actions/download-provisioning-profiles@233aa54e59082c0e8a8cf8b0b02c72dea2422ef9 # v7.1.0
         with:
           bundle-id: nl.scoutingwilo.ssskl
           profile-type: IOS_APP_STORE
@@ -235,7 +235,7 @@ jobs:
           name: android-aab
           path: ${{ runner.temp }}/aab
 
-      - uses: ruby/setup-ruby@v1
+      - uses: ruby/setup-ruby@b3aaceaef7e0ee231b499e7b5f49c03fc1d32199 # v1.338.0
         with:
           ruby-version: '3.4'
           bundler-cache: true
@@ -264,7 +264,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: ruby/setup-ruby@v1
+      - uses: ruby/setup-ruby@b3aaceaef7e0ee231b499e7b5f49c03fc1d32199 # v1.338.0
         with:
           ruby-version: '3.4'
           bundler-cache: true
@@ -298,7 +298,7 @@ jobs:
           name: ios-ipa
           path: ${{ runner.temp }}/ipa
 
-      - uses: ruby/setup-ruby@v1
+      - uses: ruby/setup-ruby@b3aaceaef7e0ee231b499e7b5f49c03fc1d32199 # v1.338.0
         with:
           ruby-version: '3.4'
           bundler-cache: true
@@ -328,7 +328,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: ruby/setup-ruby@v1
+      - uses: ruby/setup-ruby@b3aaceaef7e0ee231b499e7b5f49c03fc1d32199 # v1.338.0
         with:
           ruby-version: '3.4'
           bundler-cache: true

@@ -1,68 +1,60 @@
 <?xml version="1.0" encoding="utf-8" ?>
+<!-- On the brand colour in both colour modes, continuing from the splash screen: the logo in the middle (where the
+     splash had it), the name and version below it and "Inloggen" at the bottom of the safe area. -->
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:loc="clr-namespace:SSSKL.Mobile.Core.Localization;assembly=SSSKL.Mobile.Core"
              x:Class="SSSKL.Mobile.Views.WelcomePage"
              Title="{x:Static loc:Texts.AppName}"
+             BackgroundColor="{StaticResource Brand}"
              Shell.NavBarIsVisible="False">
-    <ScrollView>
-        <Grid Padding="16" MinimumHeightRequest="480">
-            <Border Style="{StaticResource Card}"
-                    Padding="24,32"
-                    MaximumWidthRequest="480"
-                    VerticalOptions="Center">
-                <VerticalStackLayout Spacing="24">
-                    <!-- Logo: 144x144, rounded, with a shadow (like the SPA's about page) -->
-                    <Border WidthRequest="144"
-                            HeightRequest="144"
-                            HorizontalOptions="Center"
-                            StrokeThickness="0"
-                            StrokeShape="RoundRectangle 12"
-                            BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceLight}, Dark={StaticResource SurfaceDark}}">
-                        <Border.Shadow>
-                            <Shadow Brush="Black" Opacity="0.25" Radius="16" Offset="0,6" />
-                        </Border.Shadow>
-                        <Image Source="logo.png"
-                               Aspect="AspectFill"
-                               SemanticProperties.Description="{x:Static loc:Texts.Logo}" />
-                    </Border>
+    <Grid RowDefinitions="*,Auto" Padding="24,16,24,24">
+        <ScrollView>
+            <VerticalStackLayout Spacing="12" VerticalOptions="Center" MaximumWidthRequest="480">
+                <Image Source="logo.png"
+                       WidthRequest="176"
+                       HeightRequest="176"
+                       HorizontalOptions="Center"
+                       Aspect="AspectFit"
+                       SemanticProperties.Description="{x:Static loc:Texts.Logo}" />
 
-                    <VerticalStackLayout Spacing="6" HorizontalOptions="Center">
-                        <HorizontalStackLayout Spacing="8" HorizontalOptions="Center">
-                            <Label Text="{x:Static loc:Texts.AppName}"
-                                   Style="{StaticResource Headline}"
-                                   FontSize="30"
-                                   SemanticProperties.HeadingLevel="Level1"
-                                   VerticalOptions="Center" />
-                            <Label x:Name="VersionLabel"
-                                   Style="{StaticResource Muted}"
-                                   VerticalOptions="Center" />
-                        </HorizontalStackLayout>
-                        <Label Style="{StaticResource Muted}"
-                               FontSize="15"
-                               HorizontalTextAlignment="Center"
-                               SemanticProperties.Hint="{x:Static loc:Texts.OpenAuthorWebsite}">
-                            <Label.GestureRecognizers>
-                                <TapGestureRecognizer Tapped="OnAuthorTapped" />
-                            </Label.GestureRecognizers>
-                            <Label.FormattedText>
-                                <FormattedString>
-                                    <Span Text="{x:Static loc:Texts.MadeWithLoveBy}" />
-                                    <Span Text=" " />
-                                    <Span Text="{x:Static loc:Texts.Author}"
-                                          FontAttributes="Bold"
-                                          TextColor="{AppThemeBinding Light={StaticResource Primary700}, Dark={StaticResource Primary400}}" />
-                                </FormattedString>
-                            </Label.FormattedText>
-                        </Label>
-                    </VerticalStackLayout>
+                <HorizontalStackLayout Spacing="8" HorizontalOptions="Center">
+                    <Label Text="{x:Static loc:Texts.AppName}"
+                           Style="{StaticResource Display}"
+                           TextColor="White"
+                           SemanticProperties.HeadingLevel="Level1"
+                           VerticalOptions="Center" />
+                    <Label x:Name="VersionLabel"
+                           FontSize="{StaticResource FontSizeFootnote}"
+                           TextColor="{StaticResource BrandMuted}"
+                           VerticalOptions="Center" />
+                </HorizontalStackLayout>
+                <Label FontSize="{StaticResource FontSizeBody}"
+                       TextColor="{StaticResource BrandMuted}"
+                       HorizontalTextAlignment="Center"
+                       SemanticProperties.Hint="{x:Static loc:Texts.OpenAuthorWebsite}">
+                    <Label.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnAuthorTapped" />
+                    </Label.GestureRecognizers>
+                    <Label.FormattedText>
+                        <FormattedString>
+                            <Span Text="{x:Static loc:Texts.MadeWithLoveBy}" />
+                            <Span Text=" " />
+                            <Span Text="{x:Static loc:Texts.Author}" FontAttributes="Bold" TextColor="{StaticResource Primary400}" />
+                        </FormattedString>
+                    </Label.FormattedText>
+                </Label>
+            </VerticalStackLayout>
+        </ScrollView>
 
-                    <Button x:Name="LoginButton"
-                            Text="{x:Static loc:Texts.Login}"
-                            Style="{StaticResource PrimaryButton}"
-                            Clicked="OnLoginClicked" />
-                </VerticalStackLayout>
-            </Border>
-        </Grid>
-    </ScrollView>
+        <!-- The SPA's dark-mode button: emerald-400 with dark text -->
+        <Button x:Name="LoginButton"
+                Grid.Row="1"
+                Text="{x:Static loc:Texts.Login}"
+                Style="{StaticResource PrimaryButton}"
+                BackgroundColor="{StaticResource Primary400}"
+                TextColor="{StaticResource Brand}"
+                MaximumWidthRequest="480"
+                Clicked="OnLoginClicked" />
+    </Grid>
 </ContentPage>

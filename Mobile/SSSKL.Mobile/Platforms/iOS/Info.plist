@@ -36,6 +36,9 @@
 			</array>
 		</dict>
 	</dict>
+	<!-- The status bar style is set app-wide (Services/BrandSystemBars): light on the welcome page. -->
+	<key>UIViewControllerBasedStatusBarAppearance</key>
+	<false/>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Kies een foto om als profielfoto te gebruiken.</string>
 	<key>NSCameraUsageDescription</key>

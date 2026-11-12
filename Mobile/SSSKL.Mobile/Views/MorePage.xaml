@@ -23,7 +23,7 @@
                         <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12" Padding="14">
                             <Grid WidthRequest="52" HeightRequest="52">
                                 <Border Style="{StaticResource Avatar}" WidthRequest="52" HeightRequest="52" StrokeShape="RoundRectangle 26">
-                                    <Label Text="{Binding Initials}" FontSize="18" FontAttributes="Bold"
+                                    <Label Text="{Binding Initials}" FontSize="{StaticResource FontSizeTitle}" FontAttributes="Bold"
                                            TextColor="{AppThemeBinding Light={StaticResource Primary700}, Dark={StaticResource Primary300}}"
                                            HorizontalOptions="Center" VerticalOptions="Center" />
                                 </Border>
@@ -44,7 +44,7 @@
                                 <HorizontalStackLayout Spacing="6">
                                     <controls:IconView Icon="{x:Static loc:Icons.Wallet}" Size="18"
                                                        Color="{StaticResource Primary500}" />
-                                    <Label Text="{Binding Saldo}" FontAttributes="Bold" FontSize="14" VerticalOptions="Center">
+                                    <Label Text="{Binding Saldo}" FontAttributes="Bold" FontSize="{StaticResource FontSizeSubhead}" VerticalOptions="Center">
                                         <Label.Triggers>
                                             <DataTrigger TargetType="Label" Binding="{Binding IsSaldoNegative}" Value="True">
                                                 <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Danger}, Dark={StaticResource DangerDark}}" />

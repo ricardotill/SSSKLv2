@@ -72,12 +72,12 @@ public sealed class MenuRow : Grid
             Content = _icon
         };
 
-        _title = new Label { FontSize = 16, LineBreakMode = LineBreakMode.TailTruncation };
+        _title = new Label { FontSize = TypeScale.Callout, LineBreakMode = LineBreakMode.TailTruncation };
         _subtitle = new Label { Style = Resource<Style>("Muted"), LineBreakMode = LineBreakMode.TailTruncation, IsVisible = false };
         var texts = new VerticalStackLayout { Spacing = 1, VerticalOptions = LayoutOptions.Center, Children = { _title, _subtitle } };
 
-        _detail = new Label { Style = Resource<Style>("Muted"), FontSize = 15, VerticalOptions = LayoutOptions.Center, IsVisible = false };
-        _badgeText = new Label { FontSize = 12, FontAttributes = FontAttributes.Bold, TextColor = Colors.White, HorizontalOptions = LayoutOptions.Center, VerticalOptions = LayoutOptions.Center };
+        _detail = new Label { Style = Resource<Style>("Muted"), FontSize = TypeScale.Body, VerticalOptions = LayoutOptions.Center, IsVisible = false };
+        _badgeText = new Label { FontSize = TypeScale.Caption, FontAttributes = FontAttributes.Bold, TextColor = Colors.White, HorizontalOptions = LayoutOptions.Center, VerticalOptions = LayoutOptions.Center };
         _badge = new Border
         {
             StrokeThickness = 0,

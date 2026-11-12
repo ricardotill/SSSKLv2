@@ -24,8 +24,8 @@
                     </DataTemplate>
                 </CollectionView.ItemTemplate>
                 <CollectionView.EmptyView>
-                    <Label Text="{x:Static loc:Texts.NoUsers}" IsVisible="{Binding IsEmpty}" Style="{StaticResource Muted}"
-                           HorizontalTextAlignment="Center" Margin="32,64" />
+                    <controls:EmptyStateView IsVisible="{Binding IsEmpty}" Icon="{x:Static loc:Icons.Users}"
+                                             Title="{x:Static loc:Texts.NoUsers}" Hint="{x:Static loc:Texts.NoUsersHint}" />
                 </CollectionView.EmptyView>
                 <CollectionView.Footer>
                     <BoxView HeightRequest="16" Color="Transparent" />

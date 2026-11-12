@@ -23,7 +23,7 @@
                     <FlexLayout Wrap="Wrap" JustifyContent="Start" BindableLayout.ItemsSource="{Binding Products}">
                         <BindableLayout.ItemTemplate>
                             <DataTemplate x:DataType="vm:ProductItemViewModel">
-                                <controls:Pressable FlexLayout.Basis="50%" SemanticProperties.Description="{Binding Name}"
+                                <controls:Pressable FlexLayout.Basis="50%" SemanticProperties.Description="{Binding Description}"
                                                     Command="{Binding ToggleProductCommand, Source={RelativeSource AncestorType={x:Type vm:PosViewModel}}, x:DataType=vm:PosViewModel}"
                                                     CommandParameter="{Binding .}">
                                     <Border Style="{StaticResource Tile}">
@@ -36,10 +36,27 @@
                                                 <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Primary50}, Dark={StaticResource Primary950}}" />
                                             </DataTrigger>
                                         </Border.Triggers>
-                                        <VerticalStackLayout Spacing="2">
-                                            <Label Text="{Binding Name}" FontAttributes="Bold" LineBreakMode="TailTruncation" />
-                                            <Label Text="{Binding Price, StringFormat='{0:C}'}" Style="{StaticResource Muted}" />
-                                        </VerticalStackLayout>
+                                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                                            <!-- Monogram; it turns into a check when the product is selected -->
+                                            <Grid WidthRequest="40" HeightRequest="40" VerticalOptions="Center">
+                                                <Border Style="{StaticResource Avatar}">
+                                                    <Label Text="{Binding Initial}" FontAttributes="Bold" FontSize="{StaticResource FontSizeTitle}"
+                                                           HorizontalOptions="Center" VerticalOptions="Center" FontAutoScalingEnabled="False"
+                                                           TextColor="{AppThemeBinding Light={StaticResource Primary800}, Dark={StaticResource Primary200}}" />
+                                                </Border>
+                                                <Border StrokeShape="RoundRectangle 20" StrokeThickness="0" IsVisible="{Binding IsSelected}"
+                                                        BackgroundColor="{AppThemeBinding Light={StaticResource Primary700}, Dark={StaticResource Primary400}}">
+                                                    <controls:IconView Icon="{x:Static loc:Icons.Check}" Size="22"
+                                                                       Color="{AppThemeBinding Light=White, Dark={StaticResource PageDark}}" />
+                                                </Border>
+                                            </Grid>
+                                            <VerticalStackLayout Grid.Column="1" Spacing="1" VerticalOptions="Center">
+                                                <Label Text="{Binding Name}" FontAttributes="Bold" MaxLines="2" LineBreakMode="TailTruncation"
+                                                       TextColor="{AppThemeBinding Light={StaticResource HeadingLight}, Dark={StaticResource HeadingDark}}" />
+                                                <Label Text="{Binding PriceText}" FontSize="{StaticResource FontSizeCallout}" FontAttributes="Bold"
+                                                       TextColor="{AppThemeBinding Light={StaticResource Primary700}, Dark={StaticResource Primary400}}" />
+                                            </VerticalStackLayout>
+                                        </Grid>
                                     </Border>
                                 </controls:Pressable>
                             </DataTemplate>
@@ -124,7 +141,7 @@
                             <controls:PressScaleBehavior PressedScale="0.88" />
                         </Button.Behaviors>
                     </Button>
-                    <Label Text="{Binding Amount}" FontAttributes="Bold" FontSize="18" VerticalOptions="Center"
+                    <Label Text="{Binding Amount}" FontAttributes="Bold" FontSize="{StaticResource FontSizeTitle}" VerticalOptions="Center"
                            MinimumWidthRequest="28" HorizontalTextAlignment="Center" />
                     <Button Text="+" Command="{Binding IncreaseAmountCommand}" Style="{StaticResource StepperButton}"
                             SemanticProperties.Description="Meer">
@@ -170,7 +187,7 @@
                                                Color="{AppThemeBinding Light={StaticResource Primary700}, Dark={StaticResource Primary300}}" />
                         </Border>
                         <VerticalStackLayout Spacing="2" VerticalOptions="Center">
-                            <Label Text="{x:Static loc:Texts.OrderPlaced}" FontSize="18" FontAttributes="Bold"
+                            <Label Text="{x:Static loc:Texts.OrderPlaced}" FontSize="{StaticResource FontSizeTitle}" FontAttributes="Bold"
                                    TextColor="{AppThemeBinding Light={StaticResource HeadingLight}, Dark={StaticResource HeadingDark}}" />
                             <Label Text="{Binding OrderPlacedDetail}" LineBreakMode="TailTruncation" MaximumWidthRequest="260" />
                             <Label Text="{Binding OrderPlacedSaldo}" Style="{StaticResource Muted}"

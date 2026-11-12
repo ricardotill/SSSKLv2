@@ -73,7 +73,7 @@
                 <Border Style="{StaticResource Card}">
                     <VerticalStackLayout Spacing="10">
                         <Grid ColumnDefinitions="*,Auto">
-                            <Label Text="{x:Static loc:Texts.AboutMe}" FontAttributes="Bold" FontSize="16" VerticalOptions="Center"
+                            <Label Text="{x:Static loc:Texts.AboutMe}" FontAttributes="Bold" FontSize="{StaticResource FontSizeCallout}" VerticalOptions="Center"
                                    SemanticProperties.HeadingLevel="Level2" />
                             <Button Grid.Column="1" Text="{x:Static loc:Texts.Edit}" Command="{Binding EditDescriptionCommand}"
                                     IsVisible="{Binding IsEditingDescription, Converter={StaticResource Not}}"
@@ -90,7 +90,7 @@
                         <VerticalStackLayout Spacing="10" IsVisible="{Binding IsEditingDescription}">
                             <Border Style="{StaticResource FieldBox}" Padding="8,4">
                                 <Editor Text="{Binding DescriptionDraft}" Placeholder="{x:Static loc:Texts.DescriptionPlaceholder}"
-                                        AutoSize="TextChanges" MinimumHeightRequest="120" FontSize="16" Keyboard="Chat"
+                                        AutoSize="TextChanges" MinimumHeightRequest="120" FontSize="{StaticResource FontSizeCallout}" Keyboard="Chat"
                                         BackgroundColor="Transparent"
                                         TextColor="{AppThemeBinding Light={StaticResource HeadingLight}, Dark={StaticResource HeadingDark}}"
                                         PlaceholderColor="{AppThemeBinding Light={StaticResource MutedLight}, Dark={StaticResource MutedDark}}"
@@ -130,7 +130,7 @@
                                                                Color="{AppThemeBinding Light={StaticResource Primary500}, Dark={StaticResource Primary400}}" />
                                         </Grid>
                                     </Border>
-                                    <Label Text="{Binding Name}" FontSize="12" HorizontalTextAlignment="Center"
+                                    <Label Text="{Binding Name}" FontSize="{StaticResource FontSizeCaption}" HorizontalTextAlignment="Center"
                                            LineBreakMode="TailTruncation" MaxLines="2" />
                                 </VerticalStackLayout>
                             </controls:Pressable>

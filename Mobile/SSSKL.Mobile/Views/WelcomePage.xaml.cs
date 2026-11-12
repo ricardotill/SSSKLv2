@@ -1,7 +1,9 @@
+using SSSKL.Mobile.Services;
+
 namespace SSSKL.Mobile.Views;
 
 /// <summary>
-/// Shown while signed out: the app's about card with an "Inloggen" button that opens the SPA login
+/// Shown while signed out: the logo on the brand colour with an "Inloggen" button that opens the SPA login
 /// (<see cref="LoginPage"/>) as a closable sheet on top of this page.
 /// </summary>
 public partial class WelcomePage : ContentPage
@@ -16,6 +18,18 @@ public partial class WelcomePage : ContentPage
         InitializeComponent();
         _services = services;
         VersionLabel.Text = $"v{AppInfo.Current.VersionString}";
+    }
+
+    protected override void OnAppearing()
+    {
+        base.OnAppearing();
+        BrandSystemBars.Set(true);
+    }
+
+    protected override void OnDisappearing()
+    {
+        base.OnDisappearing();
+        BrandSystemBars.Set(false);
     }
 
     private async void OnLoginClicked(object? sender, EventArgs e)

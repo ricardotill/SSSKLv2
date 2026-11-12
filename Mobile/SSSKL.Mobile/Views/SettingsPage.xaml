@@ -62,57 +62,13 @@
                 <Label Text="{x:Static loc:Texts.SectionAppearance}" Style="{StaticResource GroupCaption}" SemanticProperties.HeadingLevel="Level2" />
                 <Border Style="{StaticResource Group}" Padding="16">
                     <VerticalStackLayout Spacing="10">
-                        <Label Text="{x:Static loc:Texts.ColorMode}" FontSize="16"
+                        <Label Text="{x:Static loc:Texts.ColorMode}" FontSize="{StaticResource FontSizeCallout}"
                                TextColor="{AppThemeBinding Light={StaticResource HeadingLight}, Dark={StaticResource HeadingDark}}" />
-                        <Border Style="{StaticResource SegmentTrack}">
-                            <Grid ColumnDefinitions="*,*,*" ColumnSpacing="3">
-                                <Border Style="{StaticResource Segment}" SemanticProperties.Description="{x:Static loc:Texts.ThemeAuto}">
-                                    <Border.GestureRecognizers>
-                                        <TapGestureRecognizer Command="{Binding SetThemeCommand}" CommandParameter="{x:Static core:ThemeMode.Auto}" />
-                                    </Border.GestureRecognizers>
-                                    <Border.Triggers>
-                                        <DataTrigger TargetType="Border" Binding="{Binding IsAuto}" Value="True">
-                                            <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource SurfaceLight}, Dark={StaticResource SurfaceDark}}" />
-                                        </DataTrigger>
-                                    </Border.Triggers>
-                                    <HorizontalStackLayout Spacing="6" HorizontalOptions="Center">
-                                        <controls:IconView Icon="{x:Static loc:Icons.DeviceDesktop}" Size="18"
-                                                      Color="{AppThemeBinding Light={StaticResource Primary600}, Dark={StaticResource Primary400}}" />
-                                        <Label Text="{x:Static loc:Texts.ThemeAuto}" Style="{StaticResource SegmentText}" />
-                                    </HorizontalStackLayout>
-                                </Border>
-                                <Border Grid.Column="1" Style="{StaticResource Segment}" SemanticProperties.Description="{x:Static loc:Texts.ThemeLight}">
-                                    <Border.GestureRecognizers>
-                                        <TapGestureRecognizer Command="{Binding SetThemeCommand}" CommandParameter="{x:Static core:ThemeMode.Light}" />
-                                    </Border.GestureRecognizers>
-                                    <Border.Triggers>
-                                        <DataTrigger TargetType="Border" Binding="{Binding IsLight}" Value="True">
-                                            <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource SurfaceLight}, Dark={StaticResource SurfaceDark}}" />
-                                        </DataTrigger>
-                                    </Border.Triggers>
-                                    <HorizontalStackLayout Spacing="6" HorizontalOptions="Center">
-                                        <controls:IconView Icon="{x:Static loc:Icons.Sun}" Size="18"
-                                                      Color="{AppThemeBinding Light={StaticResource Primary600}, Dark={StaticResource Primary400}}" />
-                                        <Label Text="{x:Static loc:Texts.ThemeLight}" Style="{StaticResource SegmentText}" />
-                                    </HorizontalStackLayout>
-                                </Border>
-                                <Border Grid.Column="2" Style="{StaticResource Segment}" SemanticProperties.Description="{x:Static loc:Texts.ThemeDark}">
-                                    <Border.GestureRecognizers>
-                                        <TapGestureRecognizer Command="{Binding SetThemeCommand}" CommandParameter="{x:Static core:ThemeMode.Dark}" />
-                                    </Border.GestureRecognizers>
-                                    <Border.Triggers>
-                                        <DataTrigger TargetType="Border" Binding="{Binding IsDark}" Value="True">
-                                            <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource SurfaceLight}, Dark={StaticResource SurfaceDark}}" />
-                                        </DataTrigger>
-                                    </Border.Triggers>
-                                    <HorizontalStackLayout Spacing="6" HorizontalOptions="Center">
-                                        <controls:IconView Icon="{x:Static loc:Icons.Moon}" Size="18"
-                                                      Color="{AppThemeBinding Light={StaticResource Primary600}, Dark={StaticResource Primary400}}" />
-                                        <Label Text="{x:Static loc:Texts.ThemeDark}" Style="{StaticResource SegmentText}" />
-                                    </HorizontalStackLayout>
-                                </Border>
-                            </Grid>
-                        </Border>
+                        <controls:SegmentedControl SelectedValue="{Binding Theme}" Command="{Binding SetThemeCommand}">
+                            <controls:SegmentItem Text="{x:Static loc:Texts.ThemeAuto}" Icon="{x:Static loc:Icons.DeviceDesktop}" Value="{x:Static core:ThemeMode.Auto}" />
+                            <controls:SegmentItem Text="{x:Static loc:Texts.ThemeLight}" Icon="{x:Static loc:Icons.Sun}" Value="{x:Static core:ThemeMode.Light}" />
+                            <controls:SegmentItem Text="{x:Static loc:Texts.ThemeDark}" Icon="{x:Static loc:Icons.Moon}" Value="{x:Static core:ThemeMode.Dark}" />
+                        </controls:SegmentedControl>
                         <Label Text="{x:Static loc:Texts.ColorModeHint}" Style="{StaticResource Muted}" />
                     </VerticalStackLayout>
                 </Border>

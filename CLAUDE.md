@@ -94,11 +94,13 @@ It is still in development, so it is kept out of CI and deploys: it is not in `S
 - `Navigation/NativeRoutes` decides which SPA routes open natively (menu entries, notification `LinkUri`s, `?userId=` for stats/achievements); `IAppNavigator.OpenAsync(path)` goes through it, pushes the page on the current tab (`Views/INativePage.Prepare` gets the route) and falls back to the WebView.
 - Tapping the open tab again pops it to its root page (`Controls/TabReselect`, hooked in by the platform `SssklShellRenderer`s); switching tabs keeps each tab's stack.
 - Paged lists derive from `ViewModels/PagedListViewModel`; dates and money go through `ViewModels/Display` (Dutch, UTC shown in local time).
+- Shared page states: `Controls/SkeletonView` while a first load runs (`ShowSkeleton`), `Controls/ErrorStateView` when it failed (`HasLoadError`, retry runs the load command; a failed refresh only toasts, see `ViewModels/LoadFailure`) and `Controls/EmptyStateView` in every `CollectionView.EmptyView`. Option switches use `Controls/SegmentedControl` (`SelectedValue` from the view model, a tap runs `Command` with the segment's value).
+- Font sizes come from the type scale in `Resources/Styles/Styles.xaml` (`FontSize*` resources; `Controls/TypeScale` in code), not literal numbers. Haptics go through Core's `IHaptics`.
 - Bind commands of toolkit behaviors (`TouchBehavior`) from code, or use `Controls/Pressable`: behaviors don't inherit the page's `BindingContext`.
 - Icons are Tabler Icons (MIT) SVGs in `SSSKL.Mobile/Resources/Images` (`ti_*.svg`, tab bar `tab_*.svg`), listed in `Core/Localization/Icons` and shown with `Controls/IconView` (tinted at runtime). Copy new ones from the `@tabler/icons` npm package's `icons/outline/` with `stroke` set to `#000000` and the full MIT notice in a comment at the top; a test checks every icon file for it.
 
 **Login**
-- Signed out (also after sign-out, session expiry and the SPA's `ssskl-app://logout`), the window root is the native `Views/WelcomePage` (logo, version, "Inloggen").
+- Signed out (also after sign-out, session expiry and the SPA's `ssskl-app://logout`), the window root is the native `Views/WelcomePage` (logo, version, "Inloggen"). It sits on the splash's brand colour (`Brand`) in both colour modes; `Services/BrandSystemBars` gives the system bars light icons while it shows.
 - "Inloggen" opens `Views/LoginPage` as a modal sheet (page sheet on iOS, swipe-down closes it; close button and Android back close it too). A new `LoginPage` is resolved per tap.
 - The sheet uses the SPA's own `/login` page, so Turnstile, 2FA and passkeys keep working. When it has the tokens it dismisses itself and `AppNavigator.CompleteSignInAsync` switches the root to the `AppShell`.
 - After login the app reads `access_token`/`refresh_token` from the WebView's storage and keeps them in SecureStorage.

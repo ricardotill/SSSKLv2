@@ -23,14 +23,14 @@
                                 SemanticProperties.Description="{Binding Description}">
                             <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
                                 <VerticalStackLayout Spacing="2" VerticalOptions="Center">
-                                    <Label Text="{Binding ProductName}" FontAttributes="Bold" FontSize="16" LineBreakMode="TailTruncation"
+                                    <Label Text="{Binding ProductName}" FontAttributes="Bold" FontSize="{StaticResource FontSizeCallout}" LineBreakMode="TailTruncation"
                                            TextColor="{AppThemeBinding Light={StaticResource HeadingLight}, Dark={StaticResource HeadingDark}}" />
-                                    <Label Text="{Binding DateText}" Style="{StaticResource Muted}" FontSize="13" />
+                                    <Label Text="{Binding DateText}" Style="{StaticResource Muted}" FontSize="{StaticResource FontSizeFootnote}" />
                                 </VerticalStackLayout>
                                 <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
                                     <Label Text="{Binding PaidText}" FontAttributes="Bold" HorizontalTextAlignment="End"
                                            TextColor="{AppThemeBinding Light={StaticResource Primary700}, Dark={StaticResource Primary400}}" />
-                                    <Label Text="{Binding AmountText}" Style="{StaticResource Muted}" FontSize="13" HorizontalTextAlignment="End" />
+                                    <Label Text="{Binding AmountText}" Style="{StaticResource Muted}" FontSize="{StaticResource FontSizeFootnote}" HorizontalTextAlignment="End" />
                                 </VerticalStackLayout>
                                 <controls:Pressable Grid.Column="2" VerticalOptions="Center"
                                                     SemanticProperties.Description="{x:Static loc:Texts.Delete}"
@@ -47,8 +47,8 @@
                     </DataTemplate>
                 </CollectionView.ItemTemplate>
                 <CollectionView.EmptyView>
-                    <Label Text="{x:Static loc:Texts.NoOrders}" IsVisible="{Binding IsEmpty}" Style="{StaticResource Muted}"
-                           HorizontalTextAlignment="Center" Margin="32,64" />
+                    <controls:EmptyStateView IsVisible="{Binding IsEmpty}" Icon="{x:Static loc:Icons.History}"
+                                             Title="{x:Static loc:Texts.NoOrders}" Hint="{x:Static loc:Texts.NoOrdersHint}" />
                 </CollectionView.EmptyView>
                 <CollectionView.Footer>
                     <Grid Padding="16" MinimumHeightRequest="24">

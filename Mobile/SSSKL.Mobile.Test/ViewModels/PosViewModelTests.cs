@@ -297,4 +297,22 @@ public class PosViewModelTests
         sut.Products.Should().HaveCount(2);
         await _dialogs.Received(1).ToastAsync(Texts.RefreshFailed);
     }
+
+    [TestMethod]
+    [DataRow("Cola", "C")]
+    [DataRow("  ijsthee", "I")]
+    [DataRow("7up", "7")]
+    [DataRow("🍺 Bier", "B")]
+    [DataRow("", "?")]
+    public void ProductItem_Initial_IsTheFirstLetterOrDigit(string name, string expected) =>
+        new ProductItemViewModel(new OrderProduct(Guid.NewGuid(), name, 1, 1m)).Initial.Should().Be(expected);
+
+    [TestMethod]
+    public void ProductItem_PriceText_IsDutchMoney()
+    {
+        var sut = new ProductItemViewModel(new OrderProduct(Guid.NewGuid(), "Cola", 1, 0.8m));
+
+        sut.PriceText.Should().Be("€ 0,80");
+        sut.Description.Should().Be("Cola, € 0,80");
+    }
 }

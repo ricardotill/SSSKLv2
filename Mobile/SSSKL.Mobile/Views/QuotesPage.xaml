@@ -36,11 +36,8 @@
                 </CollectionView.ItemTemplate>
 
                 <CollectionView.EmptyView>
-                    <VerticalStackLayout Padding="32,48" Spacing="10" IsVisible="{Binding IsEmpty}">
-                        <controls:IconView Icon="{x:Static loc:Icons.Message}" Size="48"
-                                           Color="{AppThemeBinding Light={StaticResource BorderLight}, Dark={StaticResource BorderDark}}" />
-                        <Label Text="{x:Static loc:Texts.NoQuotes}" Style="{StaticResource Muted}" HorizontalTextAlignment="Center" />
-                    </VerticalStackLayout>
+                    <controls:EmptyStateView IsVisible="{Binding IsEmpty}" Icon="{x:Static loc:Icons.Message}"
+                                             Title="{x:Static loc:Texts.NoQuotes}" Hint="{x:Static loc:Texts.NoQuotesHint}" />
                 </CollectionView.EmptyView>
                 <CollectionView.Footer>
                     <Grid Padding="16" MinimumHeightRequest="24">

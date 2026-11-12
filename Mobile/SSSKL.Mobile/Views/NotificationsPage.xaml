@@ -60,7 +60,7 @@
                                         </controls:IconView>
                                     </Border>
                                     <VerticalStackLayout Grid.Column="1" Spacing="4">
-                                        <Label Text="{Binding Title}" FontSize="16"
+                                        <Label Text="{Binding Title}" FontSize="{StaticResource FontSizeCallout}"
                                                TextColor="{AppThemeBinding Light={StaticResource TextLight}, Dark={StaticResource TextDark}}">
                                             <Label.Triggers>
                                                 <DataTrigger TargetType="Label" Binding="{Binding IsRead}" Value="False">
@@ -71,7 +71,7 @@
                                         </Label>
                                         <Label Text="{Binding Message}"
                                                TextColor="{AppThemeBinding Light={StaticResource TextLight}, Dark={StaticResource TextDark}}" />
-                                        <Label Text="{Binding DateText}" Style="{StaticResource Muted}" FontSize="13" />
+                                        <Label Text="{Binding DateText}" Style="{StaticResource Muted}" FontSize="{StaticResource FontSizeFootnote}" />
                                     </VerticalStackLayout>
                                 </Grid>
                             </Border>
@@ -80,12 +80,8 @@
                 </CollectionView.ItemTemplate>
 
                 <CollectionView.EmptyView>
-                    <VerticalStackLayout Padding="32,64" Spacing="10" HorizontalOptions="Center" IsVisible="{Binding IsEmpty}">
-                        <controls:IconView Icon="{x:Static loc:Icons.BellOff}" Size="56"
-                                           Color="{AppThemeBinding Light={StaticResource BorderLight}, Dark={StaticResource BorderDark}}" />
-                        <Label Text="{x:Static loc:Texts.NoNotifications}" Style="{StaticResource Title}" HorizontalTextAlignment="Center" />
-                        <Label Text="{x:Static loc:Texts.NoNotificationsHint}" Style="{StaticResource Muted}" HorizontalTextAlignment="Center" />
-                    </VerticalStackLayout>
+                    <controls:EmptyStateView IsVisible="{Binding IsEmpty}" Icon="{x:Static loc:Icons.BellOff}"
+                                             Title="{x:Static loc:Texts.NoNotifications}" Hint="{x:Static loc:Texts.NoNotificationsHint}" />
                 </CollectionView.EmptyView>
 
                 <CollectionView.Footer>

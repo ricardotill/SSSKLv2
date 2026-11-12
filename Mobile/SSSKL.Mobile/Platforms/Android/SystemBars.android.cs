@@ -19,9 +19,11 @@ internal static class SystemBars
         {
             return;
         }
-        var dark = app.RequestedTheme == AppTheme.Dark;
-        var page = Resource(app, dark ? "PageDark" : "PageLight");
-        var surface = Resource(app, dark ? "SurfaceDark" : "SurfaceLight");
+        // The welcome page sits on the brand colour in both modes: light icons on brand-coloured bars.
+        var brand = Services.BrandSystemBars.Active;
+        var dark = brand || app.RequestedTheme == AppTheme.Dark;
+        var page = Resource(app, brand ? "Brand" : dark ? "PageDark" : "PageLight");
+        var surface = Resource(app, brand ? "Brand" : dark ? "SurfaceDark" : "SurfaceLight");
 
         if (!OperatingSystem.IsAndroidVersionAtLeast(35))
         {

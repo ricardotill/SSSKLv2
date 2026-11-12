@@ -15,6 +15,10 @@
     <Color x:Key="Primary900">#064E3B</Color>
     <Color x:Key="Primary950">#022C22</Color>
 
+    <!-- The logo's background: the splash screen, the app icon and the welcome page. -->
+    <Color x:Key="Brand">#212529</Color>
+    <Color x:Key="BrandMuted">#ADB5BD</Color>
+
     <!-- Page = the SPA's bg-surface-50 / dark:bg-surface-950, Surface = its cards. -->
     <Color x:Key="PageLight">#F8FAFC</Color>
     <Color x:Key="PageDark">#09090B</Color>

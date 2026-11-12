@@ -25,16 +25,16 @@ public sealed class MemberRowView : ContentView
 
     public MemberRowView()
     {
-        _rankText = new Label { FontAttributes = FontAttributes.Bold, FontSize = 14, HorizontalOptions = LayoutOptions.Center, VerticalOptions = LayoutOptions.Center };
+        _rankText = new Label { FontAttributes = FontAttributes.Bold, FontSize = TypeScale.Subhead, HorizontalOptions = LayoutOptions.Center, VerticalOptions = LayoutOptions.Center };
         _rank = new Border
         {
             WidthRequest = 32, HeightRequest = 32, StrokeThickness = 0, VerticalOptions = LayoutOptions.Center,
             StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 16 }, Content = _rankText
         };
         _avatar = new AvatarView { Size = 40, VerticalOptions = LayoutOptions.Center };
-        _name = new Label { FontSize = 16, LineBreakMode = LineBreakMode.TailTruncation };
+        _name = new Label { FontSize = TypeScale.Callout, LineBreakMode = LineBreakMode.TailTruncation };
         _name.SetAppThemeColor(Label.TextColorProperty, Resource("HeadingLight"), Resource("HeadingDark"));
-        _subtitle = new Label { Style = (Style)Application.Current!.Resources["Muted"], FontSize = 13, LineBreakMode = LineBreakMode.TailTruncation };
+        _subtitle = new Label { Style = (Style)Application.Current!.Resources["Muted"], FontSize = TypeScale.Footnote, LineBreakMode = LineBreakMode.TailTruncation };
         _detail = new Label { FontAttributes = FontAttributes.Bold, VerticalOptions = LayoutOptions.Center, HorizontalTextAlignment = TextAlignment.End };
 
         var texts = new VerticalStackLayout { Spacing = 1, VerticalOptions = LayoutOptions.Center, Children = { _name, _subtitle } };

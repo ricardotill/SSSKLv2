@@ -24,8 +24,8 @@
         </Border.Shadow>
         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
             <VerticalStackLayout Spacing="2" VerticalOptions="Center">
-                <Label Text="{x:Static loc:Texts.MySaldo}" FontSize="14" TextColor="White" Opacity="0.85" />
-                <Label x:Name="AmountLabel" FontSize="30" FontAttributes="Bold" TextColor="White" LineBreakMode="NoWrap" />
+                <Label Text="{x:Static loc:Texts.MySaldo}" FontSize="{StaticResource FontSizeSubhead}" TextColor="White" Opacity="0.85" />
+                <Label x:Name="AmountLabel" FontSize="{StaticResource FontSizeDisplay}" FontAttributes="Bold" TextColor="White" LineBreakMode="NoWrap" />
             </VerticalStackLayout>
             <Border Grid.Column="1" WidthRequest="48" HeightRequest="48" StrokeThickness="0"
                     StrokeShape="RoundRectangle 24" BackgroundColor="#33FFFFFF" VerticalOptions="Center">

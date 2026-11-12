@@ -17,17 +17,22 @@
 
     <!-- Release: Native AOT (fully trimmed, no JIT/interpreter fallback). Needs reflection-free code:
          compiled bindings (x:DataType) and source-generated JSON (SSSKL.Mobile.Core ApiJsonContext).
-         Treat any IL2xxx/IL3xxx warning from `dotnet publish` as a bug. -->
+         Treat any IL2xxx/IL3xxx warning from `dotnet publish` as a bug.
+         Android AOT is still experimental (XA1040): -p:SssklAndroidAot=false builds a Release without it. -->
     <PublishAot Condition="'$(Configuration)' == 'Release'">true</PublishAot>
+    <PublishAot Condition="'$(SssklAndroidAot)' == 'false' and $([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">false</PublishAot>
 
     <!-- Compiled bindings everywhere (x:DataType), also for bindings with a Source. -->
     <MauiEnableXamlCBindingWithSourceCompilation>true</MauiEnableXamlCBindingWithSourceCompilation>
 
     <ApplicationTitle>SSSKL</ApplicationTitle>
     <ApplicationId>nl.scoutingwilo.ssskl</ApplicationId>
-    <!-- Display version follows the backend/frontend version (Directory.Build.props). -->
-    <ApplicationDisplayVersion>$(Version)</ApplicationDisplayVersion>
-    <ApplicationVersion>1</ApplicationVersion>
+    <!-- Display version (CFBundleShortVersionString / versionName) follows the release tag (Directory.Build.props),
+         numbers only: iOS rejects 1.4.0-rc.1, so a pre-release tag ships as 1.4.0.
+         Build number (CFBundleVersion / versionCode) must grow with every store upload: the release workflow
+         passes -p:ApplicationVersion=<run number + 1000>; local builds are 1. -->
+    <ApplicationDisplayVersion>$(_SssklNumericVersion)</ApplicationDisplayVersion>
+    <ApplicationVersion Condition="'$(ApplicationVersion)' == ''">1</ApplicationVersion>
 
     <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">15.0</SupportedOSPlatformVersion>
     <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">24.0</SupportedOSPlatformVersion>
@@ -86,6 +91,11 @@
     <MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#212529" BaseSize="256,256" />
     <!-- ti_*.svg and tab_*.svg: Tabler Icons (MIT, https://tabler.io/icons); each file carries the license. -->
     <MauiImage Include="Resources\Images\*" />
+  </ItemGroup>
+
+  <!-- Apple's privacy manifest: required-reason APIs the .NET runtime uses and the data the app collects. -->
+  <ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">
+    <BundleResource Include="Platforms\iOS\PrivacyInfo.xcprivacy" LogicalName="PrivacyInfo.xcprivacy" />
   </ItemGroup>
 
   <ItemGroup>

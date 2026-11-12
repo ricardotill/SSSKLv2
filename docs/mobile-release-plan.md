@@ -1,6 +1,6 @@
 # Mobile app: release pipeline and polish plan
 
-Status: plan, nothing below is implemented yet. Written 2026-11-12 against `master` at `e2ced7e`.
+Status: Ricardo approved every recommendation in 1.2 on 2026-11-12, including organisation accounts for Scouting Wilo. Neither store account exists yet. The repo side (1.6 and the workflow in 1.5) is implemented; [mobile-release.md](mobile-release.md) is the runbook for the setup and releases. Written 2026-11-12 against `master` at `e2ced7e`.
 
 This plan covers two things:
 
@@ -16,7 +16,7 @@ This plan covers two things:
 - `.github/workflows/mobile.yml` runs by hand only: Core tests plus an unsigned Android build and an unsigned iOS simulator build. Nothing is signed or uploaded.
 - `SSSKL.Mobile.csproj`: `ApplicationId` `nl.scoutingwilo.ssskl`, `ApplicationDisplayVersion = $(Version)`, `ApplicationVersion = 1` (hard-coded), Native AOT in Release, Sentry symbol upload when `SENTRY_AUTH_TOKEN` is set.
 - Versioning: the git tag `vX.Y.Z` on master is the single source (`version.yml`), shared by API, SPA and Docker images.
-- The iOS CI build was still blocked on the hosted runner's Xcode (MAUI for iOS 27.2 needs Xcode 27.2; the macOS image had 26.6). **The iOS release jobs need that image, or a self-hosted Mac, before they can run.**
+- The iOS CI build failed on `macos-latest` (macOS 26, no Xcode 27.2). The `xcode-27` runner image has Xcode 27.2 but no .NET 11, so the iOS jobs run there and install .NET 11 with `setup-dotnet`.
 - The repo is public, so GitHub environments with required reviewers are available on the free plan.
 
 ### 1.2 Decisions (recommendation first)
@@ -58,8 +58,8 @@ Each stage is a job bound to its own environment. Secrets live in the environmen
 
 | Environment | Protection | Secrets / variables |
 |---|---|---|
-| `mobile-signing` | Deployment tags: `v*` only. No reviewers, so builds start straight away. | `IOS_DIST_CERT_P12_BASE64`, `IOS_DIST_CERT_PASSWORD`, `ASC_KEY_ID`, `ASC_ISSUER_ID`, `ASC_KEY_P8_BASE64` (to download the provisioning profile), `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD` |
-| `ios-testflight` | Required reviewer: Ricardo. Tags `v*`. | `ASC_KEY_ID`, `ASC_ISSUER_ID`, `ASC_KEY_P8_BASE64` |
+| `mobile-signing` | Deployment tags: `v*` only. No reviewers, so builds start straight away. | `IOS_DIST_CERT_P12_BASE64`, `IOS_DIST_CERT_PASSWORD`, `ASC_KEY_ID`, `ASC_ISSUER_ID`, `ASC_KEY_P8` (to download the provisioning profile), `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD` |
+| `ios-testflight` | Required reviewer: Ricardo. Tags `v*`. | `ASC_KEY_ID`, `ASC_ISSUER_ID`, `ASC_KEY_P8` |
 | `ios-app-store` | Required reviewer: Ricardo. Tags `v*`. | same ASC key |
 | `android-internal` | Required reviewer: Ricardo. Tags `v*`. | `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` |
 | `android-production` | Required reviewer: Ricardo. Tags `v*`. | same service account |

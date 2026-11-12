@@ -134,6 +134,13 @@ Release builds default to `https://ssskl.scoutingwilo.nl`.
 - `SSSKL.Mobile.Core` has `IsAotCompatible` set, so the analyzers flag reflection use.
 - The only expected trim warning is IL2104 from CommunityToolkit.Maui. CI is `.github/workflows/mobile.yml` (Core tests and an Android build, plus an unsigned iOS simulator build). For now it only runs by hand (`workflow_dispatch`); the comment in the file shows the push/PR triggers to restore once the app is ready.
 
+**Store releases**
+- `.github/workflows/mobile-release.yml` runs on the same `vX.Y.Z` tag as the API. It builds and signs each app once, then moves that build through approval-gated environments: TestFlight → App Store and Play internal testing → production. Pre-release tags stop after testing.
+- The uploads use fastlane (`Mobile/Gemfile`, `Mobile/fastlane/Fastfile`).
+- The display version is the tag's numbers (`ApplicationDisplayVersion` = `_SssklNumericVersion`). The build number is run number + 1000 (`-p:ApplicationVersion`).
+- iOS jobs run on the `xcode-27` runner image with Xcode 27.2; it has no .NET 11, so `setup-dotnet` installs it.
+- Setup, secrets and maintenance are in `docs/mobile-release.md`.
+
 ## Error monitoring (Sentry)
 
 Sentry org `ricardo-tillemans` (EU region). One project per app: `ssskl-api`, `ssskl-frontend`, `ssskl-mobile`. The DSNs are public client keys and are committed.
@@ -154,7 +161,7 @@ Sentry org `ricardo-tillemans` (EU region). One project per app: `ssskl-api`, `s
 - Uploads only run when `SENTRY_AUTH_TOKEN` is set. It's a repository secret holding a Sentry organization auth token.
 - **API:** the Release `dotnet publish` in `master_sssklv2-app.yml` uploads PDBs and sources. The settings are in `Backend/SSSKL.Web/SSSKL.Web.csproj`.
 - **SPA:** production builds emit hidden source maps. `postbuild` (`Frontend/sentry-sourcemaps.js`) injects Debug IDs, uploads the maps, then deletes all `.map` files so they're never deployed. Injecting changes JS files, so it rehashes `ngsw.json` afterwards (otherwise service-worker updates never install). A Sentry failure only prints a `::warning::`; the build still succeeds.
-- **Mobile app:** `SSSKL.Mobile.csproj` uploads symbols in Release builds that have the token set. CI doesn't pass the token, because CI builds aren't shipped.
+- **Mobile app:** `SSSKL.Mobile.csproj` uploads symbols in Release builds that have the token set. `mobile.yml` doesn't pass the token, because those builds aren't shipped; `mobile-release.yml` does.
 
 ## Versioning & deployment
 

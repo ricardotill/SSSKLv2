@@ -1,0 +1,7 @@
+# fastlane output
+report.xml
+README.md
+Preview.html
+/test_output
+# release notes the internal lane writes per build (default.txt is kept)
+metadata/android/*/changelogs/[0-9]*.txt

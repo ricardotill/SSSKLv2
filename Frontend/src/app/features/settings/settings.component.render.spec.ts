@@ -3,7 +3,7 @@ import { signal } from '@angular/core';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { MessageService } from 'primeng/api';
-import { of } from 'rxjs';
+import { BehaviorSubject, of } from 'rxjs';
 import SettingsComponent from './settings.component';
 import { AuthService } from '../../core/auth/auth.service';
 import { WebAuthnService } from '../auth/services/webauthn.service';
@@ -21,7 +21,11 @@ describe('SettingsComponent (render)', () => {
     } as unknown as typeof ResizeObserver;
   });
 
-  function render(options: { embedded: boolean; tab?: string }) {
+  const queryParams = (tab?: string) => convertToParamMap(tab ? { tab } : {});
+  let query: BehaviorSubject<ReturnType<typeof convertToParamMap>>;
+
+  function setup(options: { embedded: boolean; tab?: string }) {
+    query = new BehaviorSubject(queryParams(options.tab));
     TestBed.configureTestingModule({
       imports: [SettingsComponent, NoopAnimationsModule],
       providers: [
@@ -29,7 +33,7 @@ describe('SettingsComponent (render)', () => {
         MessageService,
         {
           provide: ActivatedRoute,
-          useValue: { snapshot: { queryParamMap: convertToParamMap(options.tab ? { tab: options.tab } : {}) } },
+          useValue: { queryParamMap: query.asObservable() },
         },
         {
           provide: AuthService,
@@ -51,14 +55,18 @@ describe('SettingsComponent (render)', () => {
     });
     const fixture = TestBed.createComponent(SettingsComponent);
     fixture.detectChanges();
-    return fixture.nativeElement as HTMLElement;
+    return fixture;
+  }
+
+  function render(options: { embedded: boolean; tab?: string }) {
+    return setup(options).nativeElement as HTMLElement;
   }
 
   it('shows all tabs and the colour mode in a browser', () => {
     const root = render({ embedded: false });
 
     expect(root.querySelector('h1')?.textContent).toContain('Gebruikersinstellingen');
-    expect(root.querySelectorAll('p-tab').length).toBe(4);
+    expect(root.querySelectorAll('p-tab')).toHaveLength(4);
     expect(root.querySelector('p-selectbutton')).not.toBeNull();
   });
 
@@ -76,5 +84,16 @@ describe('SettingsComponent (render)', () => {
     expect(root.querySelector('h1')?.textContent).toContain('Profiel');
     expect(root.querySelector('p-selectbutton')).toBeNull();
     expect(root.querySelector('p-toggleswitch')).toBeNull();
+  });
+
+  it('switches tab when the mobile app reuses the page for another tab', () => {
+    const fixture = setup({ embedded: true, tab: 'security' });
+
+    query.next(queryParams('personaldata'));
+    fixture.detectChanges();
+
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('h1')?.textContent).toContain('Persoonlijke Gegevens');
+    expect(root.querySelector('p-tabpanel[data-p-active="true"]')?.getAttribute('value')).toBe('personaldata');
   });
 });

@@ -33,13 +33,13 @@
         <Border Style="{StaticResource Card}" Padding="12">
             <VerticalStackLayout Spacing="8">
                 <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding IsReplying}">
-                    <Label Text="{Binding ReplyText}" FontSize="13" FontAttributes="Bold" VerticalOptions="Center"
+                    <Label Text="{Binding ReplyText}" FontSize="{StaticResource FontSizeFootnote}" FontAttributes="Bold" VerticalOptions="Center"
                            TextColor="{AppThemeBinding Light={StaticResource Primary700}, Dark={StaticResource Primary400}}" />
                     <Button Grid.Column="1" Text="{x:Static loc:Texts.Cancel}" Command="{Binding CancelReplyCommand}" Style="{StaticResource Chip}" />
                 </Grid>
                 <Border Style="{StaticResource FieldBox}" Padding="8,2">
                     <Editor Text="{Binding NewText}" Placeholder="{x:Static loc:Texts.CommentPlaceholder}" AutoSize="TextChanges"
-                            MinimumHeightRequest="44" FontSize="15" Keyboard="Chat" BackgroundColor="Transparent"
+                            MinimumHeightRequest="44" FontSize="{StaticResource FontSizeBody}" Keyboard="Chat" BackgroundColor="Transparent"
                             TextColor="{AppThemeBinding Light={StaticResource HeadingLight}, Dark={StaticResource HeadingDark}}"
                             PlaceholderColor="{AppThemeBinding Light={StaticResource MutedLight}, Dark={StaticResource MutedDark}}"
                             SemanticProperties.Description="{x:Static loc:Texts.CommentPlaceholder}" />
@@ -48,7 +48,7 @@
                     <HorizontalStackLayout Spacing="4" BindableLayout.ItemsSource="{Binding QuickReactions}">
                         <BindableLayout.ItemTemplate>
                             <DataTemplate x:DataType="x:String">
-                                <Button Text="{Binding .}" Style="{StaticResource Chip}" FontSize="16" Padding="6,2"
+                                <Button Text="{Binding .}" Style="{StaticResource Chip}" FontSize="{StaticResource FontSizeCallout}" Padding="6,2"
                                         SemanticProperties.Description="{Binding .}"
                                         Command="{Binding QuickCommand, Source={RelativeSource AncestorType={x:Type vm:CommentsViewModel}}, x:DataType=vm:CommentsViewModel}"
                                         CommandParameter="{Binding .}" />
@@ -56,7 +56,7 @@
                         </BindableLayout.ItemTemplate>
                     </HorizontalStackLayout>
                     <Button Grid.Column="1" Text="{x:Static loc:Texts.Post}" Command="{Binding PostCommand}" Padding="16,6"
-                            MinimumHeightRequest="36" CornerRadius="18" FontSize="14">
+                            MinimumHeightRequest="36" CornerRadius="18" FontSize="{StaticResource FontSizeSubhead}">
                         <Button.Behaviors>
                             <controls:PressScaleBehavior />
                         </Button.Behaviors>
@@ -80,11 +80,11 @@
                         </controls:Pressable>
                         <VerticalStackLayout Grid.Column="1" Spacing="4">
                             <HorizontalStackLayout Spacing="8">
-                                <Label Text="{Binding Handle}" FontAttributes="Bold" FontSize="14"
+                                <Label Text="{Binding Handle}" FontAttributes="Bold" FontSize="{StaticResource FontSizeSubhead}"
                                        TextColor="{AppThemeBinding Light={StaticResource HeadingLight}, Dark={StaticResource HeadingDark}}" />
-                                <Label Text="{Binding DateText}" Style="{StaticResource Muted}" FontSize="12" VerticalOptions="Center" />
+                                <Label Text="{Binding DateText}" Style="{StaticResource Muted}" FontSize="{StaticResource FontSizeCaption}" VerticalOptions="Center" />
                             </HorizontalStackLayout>
-                            <Label Text="{Binding Content}" FontSize="15"
+                            <Label Text="{Binding Content}" FontSize="{StaticResource FontSizeBody}"
                                    TextColor="{AppThemeBinding Light={StaticResource TextLight}, Dark={StaticResource TextDark}}" />
                             <HorizontalStackLayout Spacing="6">
                                 <Button Text="{Binding LikeText, StringFormat='👍 {0}'}" Style="{StaticResource Chip}"
@@ -132,7 +132,7 @@
                                                         <controls:AvatarView Size="26" Initials="{Binding Initials}" PictureUrl="{Binding PictureUrl}" />
                                                     </controls:Pressable>
                                                     <VerticalStackLayout Grid.Column="1" Spacing="2">
-                                                        <Label FontSize="13">
+                                                        <Label FontSize="{StaticResource FontSizeFootnote}">
                                                             <Label.FormattedText>
                                                                 <FormattedString>
                                                                     <Span Text="{Binding Handle}" FontAttributes="Bold"
@@ -144,10 +144,10 @@
                                                                 </FormattedString>
                                                             </Label.FormattedText>
                                                         </Label>
-                                                        <Label Text="{Binding Content}" FontSize="14"
+                                                        <Label Text="{Binding Content}" FontSize="{StaticResource FontSizeSubhead}"
                                                                TextColor="{AppThemeBinding Light={StaticResource TextLight}, Dark={StaticResource TextDark}}" />
                                                         <HorizontalStackLayout Spacing="6">
-                                                            <Button Text="{x:Static loc:Texts.Reply}" Style="{StaticResource Chip}" FontSize="12"
+                                                            <Button Text="{x:Static loc:Texts.Reply}" Style="{StaticResource Chip}" FontSize="{StaticResource FontSizeCaption}"
                                                                     Command="{Binding StartReplyCommand, Source={RelativeSource AncestorType={x:Type vm:CommentsViewModel}}, x:DataType=vm:CommentsViewModel}"
                                                                     CommandParameter="{Binding .}" />
                                                             <controls:Pressable IsVisible="{Binding CanDelete}" VerticalOptions="Center"

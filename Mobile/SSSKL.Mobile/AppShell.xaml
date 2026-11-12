@@ -4,8 +4,9 @@
        xmlns:loc="clr-namespace:SSSKL.Mobile.Core.Localization;assembly=SSSKL.Mobile.Core"
        x:Class="SSSKL.Mobile.AppShell"
        Shell.FlyoutBehavior="Disabled">
+    <!-- Icons: outline; the selected tab gets the filled variant (tab_*_selected, set from code) -->
     <TabBar>
-        <Tab Title="{x:Static loc:Texts.TabPos}" Route="pos" Icon="tab_pos.png">
+        <Tab x:Name="PosTab" Title="{x:Static loc:Texts.TabPos}" Route="pos" Icon="tab_pos.png">
             <ShellContent x:Name="PosContent" />
         </Tab>
         <!-- BadgeText (the unread count) is set from code; null hides the bubble -->
@@ -13,10 +14,10 @@
              BadgeColor="{StaticResource Danger}" BadgeTextColor="White">
             <ShellContent x:Name="NotificationsContent" />
         </Tab>
-        <Tab Title="{x:Static loc:Texts.TabProfile}" Route="profile" Icon="tab_profile.png">
+        <Tab x:Name="ProfileTab" Title="{x:Static loc:Texts.TabProfile}" Route="profile" Icon="tab_profile.png">
             <ShellContent x:Name="ProfileContent" />
         </Tab>
-        <Tab Title="{x:Static loc:Texts.TabMore}" Route="more" Icon="tab_more.png">
+        <Tab x:Name="MoreTab" Title="{x:Static loc:Texts.TabMore}" Route="more" Icon="tab_more.png">
             <ShellContent x:Name="MoreContent" />
         </Tab>
     </TabBar>

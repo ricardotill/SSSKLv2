@@ -1,0 +1,5 @@
+# fastlane uploads the signed builds to TestFlight / the App Store and Google Play
+# (.github/workflows/mobile-release.yml). Run from Mobile/: bundle exec fastlane <lane>.
+source "https://rubygems.org"
+
+gem "fastlane", "~> 2.230"

@@ -18,18 +18,18 @@ public sealed class AvatarView : Grid
             propertyChanged: (b, _, n) => ((AvatarView)b).ApplySize((double)n));
 
     private readonly Label _initials;
-    private readonly Image _picture;
+    private readonly FadeImage _picture;
     private readonly Border _circle;
     private readonly Border _pictureCircle;
 
     public AvatarView()
     {
-        _initials = new Label { FontAttributes = FontAttributes.Bold, HorizontalOptions = LayoutOptions.Center, VerticalOptions = LayoutOptions.Center };
+        _initials = new Label { FontAutoScalingEnabled = false, FontAttributes = FontAttributes.Bold, HorizontalOptions = LayoutOptions.Center, VerticalOptions = LayoutOptions.Center };
         _initials.SetAppThemeColor(Label.TextColorProperty, Resource("Primary700"), Resource("Primary300"));
         _circle = new Border { StrokeThickness = 0, Content = _initials };
         _circle.SetAppThemeColor(BackgroundColorProperty, Resource("Primary100"), Resource("Primary900"));
 
-        _picture = new Image { Aspect = Aspect.AspectFill };
+        _picture = new FadeImage { Aspect = Aspect.AspectFill };
         _pictureCircle = new Border { StrokeThickness = 0, Content = _picture, IsVisible = false };
 
         Children.Add(_circle);

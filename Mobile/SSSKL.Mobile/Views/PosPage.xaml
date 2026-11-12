@@ -5,11 +5,14 @@
              xmlns:controls="clr-namespace:SSSKL.Mobile.Controls"
              xmlns:vm="clr-namespace:SSSKL.Mobile.Core.ViewModels;assembly=SSSKL.Mobile.Core"
              xmlns:loc="clr-namespace:SSSKL.Mobile.Core.Localization;assembly=SSSKL.Mobile.Core"
+             xmlns:ios="clr-namespace:Microsoft.Maui.Controls.PlatformConfiguration.iOSSpecific;assembly=Microsoft.Maui.Controls"
              x:Class="SSSKL.Mobile.Views.PosPage"
+             ios:Page.LargeTitleDisplay="Always"
              x:DataType="vm:PosViewModel"
              Title="{x:Static loc:Texts.TabPos}">
     <ContentPage.Resources>
         <toolkit:InvertedBoolConverter x:Key="Not" />
+        <toolkit:IsNotNullConverter x:Key="NotNull" />
     </ContentPage.Resources>
 
     <Grid RowDefinitions="*,Auto">
@@ -22,9 +25,10 @@
                     <FlexLayout Wrap="Wrap" JustifyContent="Start" BindableLayout.ItemsSource="{Binding Products}">
                         <BindableLayout.ItemTemplate>
                             <DataTemplate x:DataType="vm:ProductItemViewModel">
-                                <controls:Pressable FlexLayout.Basis="50%" SemanticProperties.Description="{Binding Name}"
+                                <controls:Pressable FlexLayout.Basis="50%" SemanticProperties.Description="{Binding Description}"
                                                     Command="{Binding ToggleProductCommand, Source={RelativeSource AncestorType={x:Type vm:PosViewModel}}, x:DataType=vm:PosViewModel}"
                                                     CommandParameter="{Binding .}">
+                                    <Grid>
                                     <Border Style="{StaticResource Tile}">
                                         <Border.Triggers>
                                             <!-- The thicker stroke takes its extra pixel out of the padding, so the tile keeps its size -->
@@ -35,11 +39,23 @@
                                                 <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Primary50}, Dark={StaticResource Primary950}}" />
                                             </DataTrigger>
                                         </Border.Triggers>
-                                        <VerticalStackLayout Spacing="2">
-                                            <Label Text="{Binding Name}" FontAttributes="Bold" LineBreakMode="TailTruncation" />
-                                            <Label Text="{Binding Price, StringFormat='{0:C}'}" Style="{StaticResource Muted}" />
-                                        </VerticalStackLayout>
+                                        <Grid>
+                                            <VerticalStackLayout Spacing="1" Margin="0,0,24,0" VerticalOptions="Center">
+                                                <Label Text="{Binding Name}" FontAttributes="Bold" MaxLines="2" LineBreakMode="TailTruncation"
+                                                       TextColor="{AppThemeBinding Light={StaticResource HeadingLight}, Dark={StaticResource HeadingDark}}" />
+                                                <Label Text="{Binding PriceText}" FontSize="{StaticResource FontSizeCallout}" FontAttributes="Bold"
+                                                       TextColor="{AppThemeBinding Light={StaticResource Primary700}, Dark={StaticResource Primary400}}" />
+                                            </VerticalStackLayout>
+                                        </Grid>
                                     </Border>
+                                    <!-- A small check in the tile's top-right corner when selected, like the SPA's Kassa
+                                         (on top of the tile, 8 from its edge; the tile has a 4 margin) -->
+                                    <Border WidthRequest="22" HeightRequest="22" StrokeShape="RoundRectangle 11" StrokeThickness="0"
+                                            HorizontalOptions="End" VerticalOptions="Start" Margin="0,12,12,0" InputTransparent="True"
+                                            BackgroundColor="{StaticResource Primary500}" IsVisible="{Binding IsSelected}">
+                                        <controls:IconView Icon="{x:Static loc:Icons.Check}" Size="13" Color="White" />
+                                    </Border>
+                                    </Grid>
                                 </controls:Pressable>
                             </DataTemplate>
                         </BindableLayout.ItemTemplate>
@@ -65,10 +81,10 @@
                                         <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="12">
                                             <Grid WidthRequest="40" HeightRequest="40">
                                                 <Border Style="{StaticResource Avatar}">
-                                                    <Label Text="{Binding Initials}" HorizontalOptions="Center" VerticalOptions="Center" FontAttributes="Bold" />
+                                                    <Label Text="{Binding Initials}" HorizontalOptions="Center" VerticalOptions="Center" FontAttributes="Bold" FontAutoScalingEnabled="False" />
                                                 </Border>
                                                 <Border Style="{StaticResource Avatar}" IsVisible="{Binding HasPicture}">
-                                                    <Image Source="{Binding PictureUrl}" Aspect="AspectFill" />
+                                                    <controls:FadeImage Source="{Binding PictureUrl}" Aspect="AspectFill" />
                                                 </Border>
                                             </Grid>
                                             <Label Grid.Column="1" Text="{Binding Title}" VerticalOptions="Center" LineBreakMode="TailTruncation">
@@ -89,14 +105,14 @@
                                                 </Label.Triggers>
                                             </Label>
                                             <!-- Opacity, not IsVisible: the check never changes the layout -->
-                                            <Label Grid.Column="3" Text="✓" FontAttributes="Bold" VerticalOptions="Center"
-                                                   Opacity="0" TextColor="{StaticResource Primary700}">
-                                                <Label.Triggers>
-                                                    <DataTrigger TargetType="Label" Binding="{Binding IsSelected}" Value="True">
+                                            <controls:IconView Grid.Column="3" Icon="{x:Static loc:Icons.CircleCheck}" Size="22" Opacity="0"
+                                                               Color="{AppThemeBinding Light={StaticResource Primary700}, Dark={StaticResource Primary400}}">
+                                                <controls:IconView.Triggers>
+                                                    <DataTrigger TargetType="controls:IconView" Binding="{Binding IsSelected}" Value="True">
                                                         <Setter Property="Opacity" Value="1" />
                                                     </DataTrigger>
-                                                </Label.Triggers>
-                                            </Label>
+                                                </controls:IconView.Triggers>
+                                            </controls:IconView>
                                         </Grid>
                                     </Border>
                                 </controls:Pressable>
@@ -108,6 +124,9 @@
         </RefreshView>
 
         <ActivityIndicator IsRunning="{Binding IsLoading}" IsVisible="{Binding IsLoading}" HorizontalOptions="Center" VerticalOptions="Center" />
+        <!-- First load: placeholders in the page's shape; a failed first load: error with retry -->
+        <controls:SkeletonView Kind="Tiles" IsVisible="{Binding ShowSkeleton}" />
+        <controls:ErrorStateView IsVisible="{Binding HasLoadError}" RetryCommand="{Binding LoadCommand}" />
 
         <!-- Pay panel -->
         <Border Grid.Row="1" Style="{StaticResource BottomPanel}">
@@ -120,7 +139,7 @@
                             <controls:PressScaleBehavior PressedScale="0.88" />
                         </Button.Behaviors>
                     </Button>
-                    <Label Text="{Binding Amount}" FontAttributes="Bold" FontSize="18" VerticalOptions="Center"
+                    <Label Text="{Binding Amount}" FontAttributes="Bold" FontSize="{StaticResource FontSizeTitle}" VerticalOptions="Center"
                            MinimumWidthRequest="28" HorizontalTextAlignment="Center" />
                     <Button Text="+" Command="{Binding IncreaseAmountCommand}" Style="{StaticResource StepperButton}"
                             SemanticProperties.Description="Meer">
@@ -149,6 +168,31 @@
                 </Button>
                 <ActivityIndicator Grid.Row="2" Grid.ColumnSpan="2" IsRunning="{Binding IsSubmitting}" IsVisible="{Binding IsSubmitting}"
                                    Color="White" HorizontalOptions="End" Margin="0,0,16,0" />
+
+                <!-- Confirmation of the order just placed: covers the panel for a few seconds (tap to close). Faded in
+                     and out from code; always in the layout, so the panel keeps its height. -->
+                <Grid x:Name="OrderPlacedPanel" Grid.RowSpan="3" Grid.ColumnSpan="2" Opacity="0" InputTransparent="True"
+                      AutomationProperties.IsInAccessibleTree="False"
+                      BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceLight}, Dark={StaticResource SurfaceDark}}">
+                    <Grid.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding DismissOrderPlacedCommand}" />
+                    </Grid.GestureRecognizers>
+                    <HorizontalStackLayout Spacing="14" HorizontalOptions="Center" VerticalOptions="Center">
+                        <Border x:Name="OrderPlacedBadge" WidthRequest="52" HeightRequest="52" StrokeThickness="0" StrokeShape="RoundRectangle 26"
+                                VerticalOptions="Center"
+                                BackgroundColor="{AppThemeBinding Light={StaticResource Primary100}, Dark={StaticResource Primary900}}">
+                            <controls:IconView Icon="{x:Static loc:Icons.Check}" Size="28"
+                                               Color="{AppThemeBinding Light={StaticResource Primary700}, Dark={StaticResource Primary300}}" />
+                        </Border>
+                        <VerticalStackLayout Spacing="2" VerticalOptions="Center">
+                            <Label Text="{x:Static loc:Texts.OrderPlaced}" FontSize="{StaticResource FontSizeTitle}" FontAttributes="Bold"
+                                   TextColor="{AppThemeBinding Light={StaticResource HeadingLight}, Dark={StaticResource HeadingDark}}" />
+                            <Label Text="{Binding OrderPlacedDetail}" LineBreakMode="TailTruncation" MaximumWidthRequest="260" />
+                            <Label Text="{Binding OrderPlacedSaldo}" Style="{StaticResource Muted}"
+                                   IsVisible="{Binding OrderPlacedSaldo, Converter={StaticResource NotNull}}" />
+                        </VerticalStackLayout>
+                    </HorizontalStackLayout>
+                </Grid>
             </Grid>
         </Border>
     </Grid>

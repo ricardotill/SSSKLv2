@@ -17,44 +17,12 @@
                 <CollectionView.Header>
                     <VerticalStackLayout Padding="4,8,4,8" Spacing="12">
                         <Label Text="{Binding Subtitle}" Style="{StaticResource Muted}" />
-                        <!-- Filter: a segmented control like the colour-mode switch in the settings -->
-                        <Border Style="{StaticResource SegmentTrack}">
-                            <Grid ColumnDefinitions="*,*,*" ColumnSpacing="3">
-                                <Border Style="{StaticResource Segment}" SemanticProperties.Description="{x:Static loc:Texts.FilterAll}">
-                                    <Border.GestureRecognizers>
-                                        <TapGestureRecognizer Command="{Binding SetFilterCommand}" CommandParameter="{x:Static vm:AchievementFilter.All}" />
-                                    </Border.GestureRecognizers>
-                                    <Border.Triggers>
-                                        <DataTrigger TargetType="Border" Binding="{Binding IsAll}" Value="True">
-                                            <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource SurfaceLight}, Dark={StaticResource SurfaceDark}}" />
-                                        </DataTrigger>
-                                    </Border.Triggers>
-                                    <Label Text="{x:Static loc:Texts.FilterAll}" Style="{StaticResource SegmentText}" HorizontalOptions="Center" />
-                                </Border>
-                                <Border Grid.Column="1" Style="{StaticResource Segment}" SemanticProperties.Description="{x:Static loc:Texts.FilterEarned}">
-                                    <Border.GestureRecognizers>
-                                        <TapGestureRecognizer Command="{Binding SetFilterCommand}" CommandParameter="{x:Static vm:AchievementFilter.Earned}" />
-                                    </Border.GestureRecognizers>
-                                    <Border.Triggers>
-                                        <DataTrigger TargetType="Border" Binding="{Binding IsEarned}" Value="True">
-                                            <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource SurfaceLight}, Dark={StaticResource SurfaceDark}}" />
-                                        </DataTrigger>
-                                    </Border.Triggers>
-                                    <Label Text="{x:Static loc:Texts.FilterEarned}" Style="{StaticResource SegmentText}" HorizontalOptions="Center" />
-                                </Border>
-                                <Border Grid.Column="2" Style="{StaticResource Segment}" SemanticProperties.Description="{x:Static loc:Texts.FilterLocked}">
-                                    <Border.GestureRecognizers>
-                                        <TapGestureRecognizer Command="{Binding SetFilterCommand}" CommandParameter="{x:Static vm:AchievementFilter.Locked}" />
-                                    </Border.GestureRecognizers>
-                                    <Border.Triggers>
-                                        <DataTrigger TargetType="Border" Binding="{Binding IsLocked}" Value="True">
-                                            <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource SurfaceLight}, Dark={StaticResource SurfaceDark}}" />
-                                        </DataTrigger>
-                                    </Border.Triggers>
-                                    <Label Text="{x:Static loc:Texts.FilterLocked}" Style="{StaticResource SegmentText}" HorizontalOptions="Center" />
-                                </Border>
-                            </Grid>
-                        </Border>
+                        <!-- Filter -->
+                        <controls:SegmentedControl SelectedValue="{Binding Filter}" Command="{Binding SetFilterCommand}">
+                            <controls:SegmentItem Text="{x:Static loc:Texts.FilterAll}" Value="{x:Static vm:AchievementFilter.All}" />
+                            <controls:SegmentItem Text="{x:Static loc:Texts.FilterEarned}" Value="{x:Static vm:AchievementFilter.Earned}" />
+                            <controls:SegmentItem Text="{x:Static loc:Texts.FilterLocked}" Value="{x:Static vm:AchievementFilter.Locked}" />
+                        </controls:SegmentedControl>
                     </VerticalStackLayout>
                 </CollectionView.Header>
 
@@ -86,10 +54,10 @@
                                     </Grid>
                                     <VerticalStackLayout Padding="12,10,12,12" Spacing="6">
                                         <controls:TierBadge Tier="{Binding Tier}" />
-                                        <Label Text="{Binding Name}" FontAttributes="Bold" FontSize="15" MaxLines="2" LineBreakMode="TailTruncation"
+                                        <Label Text="{Binding Name}" FontAttributes="Bold" FontSize="{StaticResource FontSizeBody}" MaxLines="2" LineBreakMode="TailTruncation"
                                                TextColor="{AppThemeBinding Light={StaticResource HeadingLight}, Dark={StaticResource HeadingDark}}" />
-                                        <Label Text="{Binding Description}" Style="{StaticResource Muted}" FontSize="13" MaxLines="3" LineBreakMode="TailTruncation" />
-                                        <Label Text="{Binding StatusText}" FontSize="12" FontAttributes="Bold"
+                                        <Label Text="{Binding Description}" Style="{StaticResource Muted}" FontSize="{StaticResource FontSizeFootnote}" MaxLines="3" LineBreakMode="TailTruncation" />
+                                        <Label Text="{Binding StatusText}" FontSize="{StaticResource FontSizeCaption}" FontAttributes="Bold"
                                                TextColor="{AppThemeBinding Light={StaticResource Primary700}, Dark={StaticResource Primary400}}">
                                             <Label.Triggers>
                                                 <DataTrigger TargetType="Label" Binding="{Binding IsLocked}" Value="True">
@@ -106,8 +74,8 @@
                 </CollectionView.ItemTemplate>
 
                 <CollectionView.EmptyView>
-                    <Label Text="{x:Static loc:Texts.NoAchievements}" IsVisible="{Binding IsEmpty}" Style="{StaticResource Muted}"
-                           HorizontalTextAlignment="Center" Margin="32,48" />
+                    <controls:EmptyStateView IsVisible="{Binding IsEmpty}" Icon="{x:Static loc:Icons.Rosette}"
+                                             Title="{x:Static loc:Texts.NoAchievementsTitle}" Hint="{x:Static loc:Texts.NoAchievementsHint}" />
                 </CollectionView.EmptyView>
                 <CollectionView.Footer>
                     <BoxView HeightRequest="16" Color="Transparent" />

@@ -76,8 +76,9 @@ describe('WhatsNewModalComponent', () => {
 
 /**
  * A copy without PrimeNG's enter/leave animation state (`*-enter-*` / `*-leave-*` classes, `data-enter-*` /
- * `data-leave-*` attributes). Whether those are set depends on whether an animation frame ran before the
- * snapshot, which varies under load (the full suite in parallel), so they made this snapshot flaky.
+ * `data-leave-*` attributes) and the measured `--width` / `--height` style variables. Whether those are set
+ * depends on whether an animation frame ran before the snapshot, which varies under load (the full suite in
+ * parallel), so they made this snapshot flaky.
  */
 function withoutAnimationState(element: HTMLElement): HTMLElement {
   const copy = element.cloneNode(true) as HTMLElement;
@@ -91,6 +92,10 @@ function withoutAnimationState(element: HTMLElement): HTMLElement {
       if (/^data-(enter|leave)-/.test(attr.name)) {
         el.removeAttribute(attr.name);
       }
+    }
+    if (el instanceof HTMLElement) {
+      el.style.removeProperty('--width');
+      el.style.removeProperty('--height');
     }
   }
   return copy;

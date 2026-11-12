@@ -1,0 +1,2 @@
+app_identifier("nl.scoutingwilo.ssskl") # iOS bundle ID
+package_name("nl.scoutingwilo.ssskl")   # Android application ID

@@ -42,7 +42,9 @@ jobs:
 
   build-ios:
     name: Build iOS (simulator, unsigned)
-    runs-on: macos-latest
+    # The Xcode 27 image: .NET for iOS 27.2 needs Xcode 27.2, which macos-latest (macOS 26) doesn't have.
+    # The image has no .NET 11 SDK; setup-dotnet below installs it.
+    runs-on: xcode-27
     steps:
     - uses: actions/checkout@v7
       with:
@@ -54,10 +56,9 @@ jobs:
         dotnet-version: ${{ env.DOTNET_VERSION }}
 
     - name: Select Xcode
-      # .NET for iOS needs the Xcode it was built against (27.x); the runner's default can be older.
+      # .NET for iOS needs the Xcode it was built against (27.2); the image's default is 27.1.
       run: |
-        xcode=$(ls -d /Applications/Xcode_27*.app 2>/dev/null | sort -V | tail -1)
-        if [ -n "$xcode" ]; then sudo xcode-select -s "$xcode"; fi
+        sudo xcode-select -s /Applications/Xcode_27.2.app
         xcodebuild -version
 
     - name: Install MAUI iOS workload

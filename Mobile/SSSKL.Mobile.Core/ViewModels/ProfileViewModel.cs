@@ -11,7 +11,10 @@ using SSSKL.Mobile.Core.Services;
 
 namespace SSSKL.Mobile.Core.ViewModels;
 
-public sealed record AchievementItem(string Name, string Description, string? ImageUrl, string Tier, DateTime DateAdded, Guid AchievementId = default);
+public sealed record AchievementItem(string Name, string Description, string? ImageUrl, string Tier, DateTime DateAdded, Guid AchievementId = default)
+{
+    public bool HasImage => ImageUrl is not null;
+}
 
 /// <summary>
 /// Your own profile: picture, saldo, stats, description and achievements. The description is edited as plain
@@ -34,7 +37,20 @@ public sealed partial class ProfileViewModel(
     public ObservableCollection<AchievementItem> Achievements { get; } = [];
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowSkeleton))]
     public partial bool IsLoading { get; set; }
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowSkeleton))]
+    public partial bool HasLoaded { get; set; }
+
+    /// <summary>The first load failed: the page shows its error state with a retry button.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowSkeleton))]
+    public partial bool HasLoadError { get; set; }
+
+    /// <summary>Placeholders while the first load runs (not while refreshing a loaded profile).</summary>
+    public bool ShowSkeleton => IsLoading && !HasLoaded && !HasLoadError;
 
     [ObservableProperty]
     public partial bool IsRefreshing { get; set; }
@@ -92,6 +108,7 @@ public sealed partial class ProfileViewModel(
     [RelayCommand]
     public async Task LoadAsync()
     {
+        HasLoadError = false;
         IsLoading = true;
         try
         {
@@ -112,11 +129,12 @@ public sealed partial class ProfileViewModel(
                     endpoints.ResolveApiUrl(entry.ImageUrl), entry.Tier, entry.DateAdded, entry.AchievementId));
             }
             HasNoAchievements = Achievements.Count == 0;
+            HasLoaded = true;
         }
         catch (Exception ex) when (ex is ApiException or HttpRequestException or TaskCanceledException)
         {
             logger.LogWarning(ex, "Loading profile failed");
-            await dialogs.AlertAsync(Texts.Error, Texts.LoadFailed);
+            HasLoadError = await LoadFailure.ReportAsync(dialogs, null, HasLoaded);
         }
         finally
         {
@@ -163,6 +181,27 @@ public sealed partial class ProfileViewModel(
         });
     }
 
+    /// <summary>A tap on the avatar: pick a photo straight away, or (with a photo) choose to change or remove it.</summary>
+    [RelayCommand]
+    private async Task PictureActionsAsync()
+    {
+        if (!HasPicture)
+        {
+            await ChangePictureAsync();
+            return;
+        }
+        var choice = await dialogs.ActionSheetAsync(Texts.ProfilePicture, Texts.Cancel, Texts.RemoveProfilePicture, Texts.ChangeProfilePicture);
+        if (choice == Texts.ChangeProfilePicture)
+        {
+            await ChangePictureAsync();
+        }
+        else if (choice == Texts.RemoveProfilePicture)
+        {
+            // The sheet's destructive button is the confirmation.
+            await DeletePictureAsync();
+        }
+    }
+
     [RelayCommand]
     private async Task RemovePictureAsync()
     {
@@ -170,6 +209,11 @@ public sealed partial class ProfileViewModel(
         {
             return;
         }
+        await DeletePictureAsync();
+    }
+
+    private async Task DeletePictureAsync()
+    {
         await RunBusyAsync(async () =>
         {
             await api.DeleteProfilePictureAsync();

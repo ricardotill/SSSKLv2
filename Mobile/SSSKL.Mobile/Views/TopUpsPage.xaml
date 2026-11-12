@@ -40,8 +40,8 @@
                     </DataTemplate>
                 </CollectionView.ItemTemplate>
                 <CollectionView.EmptyView>
-                    <Label Text="{x:Static loc:Texts.NoTopUps}" IsVisible="{Binding IsEmpty}" Style="{StaticResource Muted}"
-                           HorizontalTextAlignment="Center" Margin="32,32" />
+                    <controls:EmptyStateView IsVisible="{Binding IsEmpty}" Icon="{x:Static loc:Icons.Wallet}"
+                                             Title="{x:Static loc:Texts.NoTopUps}" Hint="{x:Static loc:Texts.NoTopUpsHint}" />
                 </CollectionView.EmptyView>
                 <CollectionView.Footer>
                     <Grid Padding="16" MinimumHeightRequest="24">
@@ -51,5 +51,8 @@
             </CollectionView>
         </RefreshView>
         <ActivityIndicator IsRunning="{Binding IsLoading}" IsVisible="{Binding IsLoading}" HorizontalOptions="Center" VerticalOptions="Center" />
+        <!-- First load: placeholders in the page's shape; a failed first load: error with retry -->
+        <controls:SkeletonView Kind="Rows" IsVisible="{Binding ShowSkeleton}" />
+        <controls:ErrorStateView IsVisible="{Binding HasLoadError}" RetryCommand="{Binding LoadCommand}" />
     </Grid>
 </ContentPage>

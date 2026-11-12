@@ -25,7 +25,7 @@
                                 <ActivityIndicator IsRunning="{Binding IsRecalculating}" IsVisible="{Binding IsRecalculating}"
                                                    HeightRequest="18" WidthRequest="18" HorizontalOptions="End" Margin="0,0,8,0" />
                             </Grid>
-                            <Label Grid.Column="1" Text="{Binding LastRecalculatedText}" Style="{StaticResource Muted}" FontSize="13"
+                            <Label Grid.Column="1" Text="{Binding LastRecalculatedText}" Style="{StaticResource Muted}" FontSize="{StaticResource FontSizeFootnote}"
                                    VerticalOptions="Center" />
                         </Grid>
                     </VerticalStackLayout>
@@ -37,11 +37,11 @@
                                 <Border Style="{StaticResource Card}" FlexLayout.Basis="50%" Margin="4" Padding="14,12">
                                     <VerticalStackLayout Spacing="6">
                                         <Grid ColumnDefinitions="*,Auto">
-                                            <Label Text="{Binding Label}" Style="{StaticResource Muted}" FontSize="13" VerticalOptions="Center" />
+                                            <Label Text="{Binding Label}" Style="{StaticResource Muted}" FontSize="{StaticResource FontSizeFootnote}" VerticalOptions="Center" />
                                             <controls:IconView Grid.Column="1" Icon="{Binding Icon}" Size="18"
                                                                Color="{AppThemeBinding Light={StaticResource Primary600}, Dark={StaticResource Primary400}}" />
                                         </Grid>
-                                        <Label Text="{Binding Value}" FontSize="22" FontAttributes="Bold" LineBreakMode="TailTruncation"
+                                        <Label Text="{Binding Value}" FontSize="{StaticResource FontSizeLargeTitle}" FontAttributes="Bold" LineBreakMode="TailTruncation"
                                                TextColor="{AppThemeBinding Light={StaticResource HeadingLight}, Dark={StaticResource HeadingDark}}" />
                                     </VerticalStackLayout>
                                 </Border>
@@ -102,7 +102,7 @@
                                             <HorizontalStackLayout Spacing="8">
                                                 <Image Source="{Binding ImageUrl}" WidthRequest="32" HeightRequest="32" Aspect="AspectFit"
                                                        IsVisible="{Binding HasImage}" />
-                                                <Label Text="{Binding Name}" FontSize="13" VerticalOptions="Center" MaximumWidthRequest="180"
+                                                <Label Text="{Binding Name}" FontSize="{StaticResource FontSizeFootnote}" VerticalOptions="Center" MaximumWidthRequest="180"
                                                        LineBreakMode="TailTruncation"
                                                        TextColor="{AppThemeBinding Light={StaticResource TextLight}, Dark={StaticResource TextDark}}" />
                                             </HorizontalStackLayout>
@@ -116,5 +116,8 @@
             </ScrollView>
         </RefreshView>
         <ActivityIndicator IsRunning="{Binding IsLoading}" IsVisible="{Binding IsLoading}" HorizontalOptions="Center" VerticalOptions="Center" />
+        <!-- First load: placeholders in the page's shape; a failed first load: error with retry -->
+        <controls:SkeletonView Kind="Profile" IsVisible="{Binding ShowSkeleton}" />
+        <controls:ErrorStateView IsVisible="{Binding HasLoadError}" RetryCommand="{Binding LoadCommand}" />
     </Grid>
 </ContentPage>

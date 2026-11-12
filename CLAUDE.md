@@ -89,15 +89,19 @@ It is still in development, so it is kept out of CI and deploys: it is not in `S
 - **`SSSKL.Mobile.Test`**: MSTest tests for Core.
 
 **Native vs. web**
-- Native screens: the welcome page (signed out), the tabs Kassa (POS), Notificaties (tab badge = unread count, `Services/NotificationCenter`) and Profiel, and pushed pages: settings, Mijn bestellingen, Mijn saldo, Saldolijst, Leaderboard, Statistieken, Achievements (+ detail), other members' profiles (`users/{id}`, the app's own route), Over SSSKL, Evenementen (+ detail: RSVP, image, delete) and Quotes (+ detail: vote, delete), both with comments (`Controls/CommentsView`); plus the achievement and "what's new" popups.
+- Native screens: the welcome page (signed out), the tabs Kassa (POS), Notificaties (tab badge = unread count, `Services/NotificationInbox`) and Profiel, and pushed pages: settings, Mijn bestellingen, Mijn saldo, Saldolijst, Leaderboard, Statistieken, Achievements (+ detail), other members' profiles (`users/{id}`, the app's own route), Over SSSKL, Evenementen (+ detail: RSVP, image, delete) and Quotes (+ detail: vote, delete), both with comments (`Controls/CommentsView`); plus the achievement and "what's new" popups.
 - The "Meer" tab lists the features without a tab; the login sheet, admin pages and the create/edit forms of events (`events/new`, `events/{id}/edit`) and quotes (`quotes?new`, `quotes?edit=<id>`) show the SPA in a WebView.
 - `Navigation/NativeRoutes` decides which SPA routes open natively (menu entries, notification `LinkUri`s, `?userId=` for stats/achievements); `IAppNavigator.OpenAsync(path)` goes through it, pushes the page on the current tab (`Views/INativePage.Prepare` gets the route) and falls back to the WebView.
+- Tapping the open tab again pops it to its root page (`Controls/TabReselect`, hooked in by the platform `SssklShellRenderer`s); switching tabs keeps each tab's stack.
 - Paged lists derive from `ViewModels/PagedListViewModel`; dates and money go through `ViewModels/Display` (Dutch, UTC shown in local time).
+- Shared page states: `Controls/SkeletonView` while a first load runs (`ShowSkeleton`), `Controls/ErrorStateView` when it failed (`HasLoadError`, retry runs the load command; a failed refresh only toasts, see `ViewModels/LoadFailure`) and `Controls/EmptyStateView` in every `CollectionView.EmptyView`. Option switches use `Controls/SegmentedControl` (`SelectedValue` from the view model, a tap runs `Command` with the segment's value).
+- Remote images fade in with `Controls/FadeImage`. The selected tab shows a filled icon (`tab_*_selected.svg`), swapped in `AppShell.UpdateTabIcons`. On iOS only the tab roots use large titles (`ios:Page.LargeTitleDisplay`; the implicit page style sets Never).
+- Font sizes come from the type scale in `Resources/Styles/Styles.xaml` (`FontSize*` resources; `Controls/TypeScale` in code), not literal numbers. Haptics go through Core's `IHaptics`.
 - Bind commands of toolkit behaviors (`TouchBehavior`) from code, or use `Controls/Pressable`: behaviors don't inherit the page's `BindingContext`.
 - Icons are Tabler Icons (MIT) SVGs in `SSSKL.Mobile/Resources/Images` (`ti_*.svg`, tab bar `tab_*.svg`), listed in `Core/Localization/Icons` and shown with `Controls/IconView` (tinted at runtime). Copy new ones from the `@tabler/icons` npm package's `icons/outline/` with `stroke` set to `#000000` and the full MIT notice in a comment at the top; a test checks every icon file for it.
 
 **Login**
-- Signed out (also after sign-out, session expiry and the SPA's `ssskl-app://logout`), the window root is the native `Views/WelcomePage` (logo, version, "Inloggen").
+- Signed out (also after sign-out, session expiry and the SPA's `ssskl-app://logout`), the window root is the native `Views/WelcomePage` (logo, version, "Inloggen"). It sits on the splash's brand colour (`Brand`) in both colour modes; `Services/BrandSystemBars` gives the system bars light icons while it shows.
 - "Inloggen" opens `Views/LoginPage` as a modal sheet (page sheet on iOS, swipe-down closes it; close button and Android back close it too). A new `LoginPage` is resolved per tap.
 - The sheet uses the SPA's own `/login` page, so Turnstile, 2FA and passkeys keep working. When it has the tokens it dismisses itself and `AppNavigator.CompleteSignInAsync` switches the root to the `AppShell`.
 - After login the app reads `access_token`/`refresh_token` from the WebView's storage and keeps them in SecureStorage.
@@ -134,6 +138,13 @@ Release builds default to `https://ssskl.scoutingwilo.nl`.
 - `SSSKL.Mobile.Core` has `IsAotCompatible` set, so the analyzers flag reflection use.
 - The only expected trim warning is IL2104 from CommunityToolkit.Maui. CI is `.github/workflows/mobile.yml` (Core tests and an Android build, plus an unsigned iOS simulator build). For now it only runs by hand (`workflow_dispatch`); the comment in the file shows the push/PR triggers to restore once the app is ready.
 
+**Store releases**
+- `.github/workflows/mobile-release.yml` runs on the same `vX.Y.Z` tag as the API. It builds and signs each app once, then moves that build through approval-gated environments: TestFlight → App Store and Play internal testing → production. Pre-release tags stop after testing.
+- The uploads use fastlane (`Mobile/Gemfile`, `Mobile/fastlane/Fastfile`).
+- The display version is the tag's numbers (`ApplicationDisplayVersion` = `_SssklNumericVersion`). The build number is run number + 1000 (`-p:ApplicationVersion`).
+- iOS jobs run on the `xcode-27` runner image with Xcode 27.2; it has no .NET 11, so `setup-dotnet` installs it.
+- Setup, secrets and maintenance are in `docs/mobile-release.md`.
+
 ## Error monitoring (Sentry)
 
 Sentry org `ricardo-tillemans` (EU region). One project per app: `ssskl-api`, `ssskl-frontend`, `ssskl-mobile`. The DSNs are public client keys and are committed.
@@ -154,7 +165,7 @@ Sentry org `ricardo-tillemans` (EU region). One project per app: `ssskl-api`, `s
 - Uploads only run when `SENTRY_AUTH_TOKEN` is set. It's a repository secret holding a Sentry organization auth token.
 - **API:** the Release `dotnet publish` in `master_sssklv2-app.yml` uploads PDBs and sources. The settings are in `Backend/SSSKL.Web/SSSKL.Web.csproj`.
 - **SPA:** production builds emit hidden source maps. `postbuild` (`Frontend/sentry-sourcemaps.js`) injects Debug IDs, uploads the maps, then deletes all `.map` files so they're never deployed. Injecting changes JS files, so it rehashes `ngsw.json` afterwards (otherwise service-worker updates never install). A Sentry failure only prints a `::warning::`; the build still succeeds.
-- **Mobile app:** `SSSKL.Mobile.csproj` uploads symbols in Release builds that have the token set. CI doesn't pass the token, because CI builds aren't shipped.
+- **Mobile app:** `SSSKL.Mobile.csproj` uploads symbols in Release builds that have the token set. `mobile.yml` doesn't pass the token, because those builds aren't shipped; `mobile-release.yml` does.
 
 ## Versioning & deployment
 

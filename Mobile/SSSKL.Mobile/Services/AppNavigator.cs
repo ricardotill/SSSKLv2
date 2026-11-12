@@ -21,7 +21,7 @@ public sealed class AppNavigator(
     WebSession webSession,
     AchievementPopupCoordinator achievements,
     WhatsNewCoordinator whatsNew,
-    NotificationCenter notifications,
+    NotificationInbox notifications,
     IUserDialogs dialogs,
     ILogger<AppNavigator> logger) : IAppNavigator
 {

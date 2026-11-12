@@ -29,44 +29,12 @@
                             </Border>
                         </VerticalStackLayout>
 
-                        <!-- Period: a segmented control like the colour-mode switch in the settings -->
-                        <Border Style="{StaticResource SegmentTrack}">
-                            <Grid ColumnDefinitions="*,*,*" ColumnSpacing="3">
-                                <Border Style="{StaticResource Segment}" SemanticProperties.Description="{x:Static loc:Texts.Last12Hours}">
-                                    <Border.GestureRecognizers>
-                                        <TapGestureRecognizer Command="{Binding SetPeriodCommand}" CommandParameter="{x:Static models:LeaderboardPeriod.Last12Hours}" />
-                                    </Border.GestureRecognizers>
-                                    <Border.Triggers>
-                                        <DataTrigger TargetType="Border" Binding="{Binding Is12Hours}" Value="True">
-                                            <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource SurfaceLight}, Dark={StaticResource SurfaceDark}}" />
-                                        </DataTrigger>
-                                    </Border.Triggers>
-                                    <Label Text="{x:Static loc:Texts.Last12Hours}" Style="{StaticResource SegmentText}" HorizontalOptions="Center" />
-                                </Border>
-                                <Border Grid.Column="1" Style="{StaticResource Segment}" SemanticProperties.Description="{x:Static loc:Texts.ThisMonth}">
-                                    <Border.GestureRecognizers>
-                                        <TapGestureRecognizer Command="{Binding SetPeriodCommand}" CommandParameter="{x:Static models:LeaderboardPeriod.Month}" />
-                                    </Border.GestureRecognizers>
-                                    <Border.Triggers>
-                                        <DataTrigger TargetType="Border" Binding="{Binding IsMonth}" Value="True">
-                                            <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource SurfaceLight}, Dark={StaticResource SurfaceDark}}" />
-                                        </DataTrigger>
-                                    </Border.Triggers>
-                                    <Label Text="{x:Static loc:Texts.ThisMonth}" Style="{StaticResource SegmentText}" HorizontalOptions="Center" />
-                                </Border>
-                                <Border Grid.Column="2" Style="{StaticResource Segment}" SemanticProperties.Description="{x:Static loc:Texts.AllTime}">
-                                    <Border.GestureRecognizers>
-                                        <TapGestureRecognizer Command="{Binding SetPeriodCommand}" CommandParameter="{x:Static models:LeaderboardPeriod.AllTime}" />
-                                    </Border.GestureRecognizers>
-                                    <Border.Triggers>
-                                        <DataTrigger TargetType="Border" Binding="{Binding IsAllTime}" Value="True">
-                                            <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource SurfaceLight}, Dark={StaticResource SurfaceDark}}" />
-                                        </DataTrigger>
-                                    </Border.Triggers>
-                                    <Label Text="{x:Static loc:Texts.AllTime}" Style="{StaticResource SegmentText}" HorizontalOptions="Center" />
-                                </Border>
-                            </Grid>
-                        </Border>
+                        <!-- Period -->
+                        <controls:SegmentedControl SelectedValue="{Binding Period}" Command="{Binding SetPeriodCommand}">
+                            <controls:SegmentItem Text="{x:Static loc:Texts.Last12Hours}" Value="{x:Static models:LeaderboardPeriod.Last12Hours}" />
+                            <controls:SegmentItem Text="{x:Static loc:Texts.ThisMonth}" Value="{x:Static models:LeaderboardPeriod.Month}" />
+                            <controls:SegmentItem Text="{x:Static loc:Texts.AllTime}" Value="{x:Static models:LeaderboardPeriod.AllTime}" />
+                        </controls:SegmentedControl>
                     </VerticalStackLayout>
                 </CollectionView.Header>
 
@@ -77,11 +45,8 @@
                 </CollectionView.ItemTemplate>
 
                 <CollectionView.EmptyView>
-                    <VerticalStackLayout Padding="32,48" Spacing="10" IsVisible="{Binding IsEmpty}">
-                        <controls:IconView Icon="{x:Static loc:Icons.Trophy}" Size="48"
-                                           Color="{AppThemeBinding Light={StaticResource BorderLight}, Dark={StaticResource BorderDark}}" />
-                        <Label Text="{x:Static loc:Texts.NoPurchasesPeriod}" Style="{StaticResource Muted}" HorizontalTextAlignment="Center" />
-                    </VerticalStackLayout>
+                    <controls:EmptyStateView IsVisible="{Binding IsEmpty}" Icon="{x:Static loc:Icons.Trophy}"
+                                             Title="{x:Static loc:Texts.NoPurchases}" Hint="{x:Static loc:Texts.NoPurchasesPeriod}" />
                 </CollectionView.EmptyView>
                 <CollectionView.Footer>
                     <BoxView HeightRequest="16" Color="Transparent" />
@@ -89,5 +54,8 @@
             </CollectionView>
         </RefreshView>
         <ActivityIndicator IsRunning="{Binding IsLoading}" IsVisible="{Binding IsLoading}" HorizontalOptions="Center" VerticalOptions="Center" />
+        <!-- First load: placeholders in the page's shape; a failed first load: error with retry -->
+        <controls:SkeletonView Kind="Rows" IsVisible="{Binding ShowSkeleton}" />
+        <controls:ErrorStateView IsVisible="{Binding HasLoadError}" RetryCommand="{Binding LoadCommand}" />
     </Grid>
 </ContentPage>

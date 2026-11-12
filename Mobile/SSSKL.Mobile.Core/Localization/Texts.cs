@@ -22,25 +22,30 @@ public static class Texts
 
     // Lists
     public static string Search => "Zoeken";
+    public static string Selected => "Geselecteerd";
     public static string Delete => "Verwijderen";
 
     // Mijn bestellingen / Mijn saldo / Saldolijst
-    public static string NoOrders => "Geen bestellingen gevonden.";
+    public static string NoOrders => "Nog geen bestellingen";
+    public static string NoOrdersHint => "Wat je op de Kassa bestelt, zie je hier terug.";
     public static string ConfirmDeleteOrderTitle => "Bestelling verwijderen";
     public static string ConfirmDeleteOrder(string product) =>
         $"Weet je zeker dat je deze bestelling voor {product} wilt verwijderen? Dit kan niet ongedaan worden gemaakt.";
     public static string OrderDeleted => "Bestelling verwijderd";
     public static string OrderDeleteFailed => "Verwijderen van de bestelling mislukt.";
     public static string TopUps => "Opwaarderingen";
-    public static string NoTopUps => "Geen opwaarderingen gevonden.";
+    public static string NoTopUps => "Nog geen opwaarderingen";
+    public static string NoTopUpsHint => "Opwaarderingen van je saldo verschijnen hier.";
     public static string SearchMembers => "Zoek een lid";
-    public static string NoUsers => "Geen gebruikers gevonden.";
+    public static string NoUsers => "Geen leden gevonden";
+    public static string NoUsersHint => "Probeer een andere naam.";
 
     // Leaderboard
     public static string Last12Hours => "12 uur";
     public static string ThisMonth => "Maand";
     public static string AllTime => "Totaal";
     public static string Product => "Product";
+    public static string NoPurchases => "Nog geen aankopen";
     public static string NoPurchasesPeriod => "Er zijn deze periode geen aankopen gedaan. Dus ik zou zeggen, bestellen maar! ;)";
     public static string Rank(int position) => $"Plek {position}";
 
@@ -110,7 +115,8 @@ public static class Texts
     public static string EventsSubtitle => "Blijf op de hoogte van alle geplande activiteiten!";
     public static string Upcoming => "Komend";
     public static string NewEvent => "Nieuw evenement";
-    public static string NoEvents => "Geen evenementen gevonden.";
+    public static string NoEvents => "Geen evenementen";
+    public static string NoEventsHint => "Nieuwe activiteiten verschijnen hier zodra ze gepland zijn.";
     public static string Past => "Verstreken";
     public static string Attending => "Aangemeld";
     public static string NotAttending => "Afgemeld";
@@ -145,7 +151,8 @@ public static class Texts
     // Quotes
     public static string QuotesSubtitle => "Grappige dingen die mensen hebben gezegd.";
     public static string NewQuote => "Nieuwe quote";
-    public static string NoQuotes => "Nog geen quotes gevonden.";
+    public static string NoQuotes => "Nog geen quotes";
+    public static string NoQuotesHint => "Heeft iemand iets grappigs gezegd? Zet het erin!";
     public static string Votes(int count) => count == 1 ? "1 stem" : $"{count} stemmen";
     public static string CommentCount(int count) => count == 1 ? "1 reactie" : $"{count} reacties";
     public static string Vote => "Stemmen";
@@ -181,6 +188,9 @@ public static class Texts
     public static string Cancel => "Annuleren";
     public static string Close => "Sluiten";
     public static string LoadFailed => "Laden van gegevens mislukt";
+    public static string LoadFailedHint => "Controleer je internetverbinding en probeer het opnieuw.";
+    public static string Retry => "Opnieuw proberen";
+    public static string RefreshFailed => "Verversen mislukt";
 
     public static string Products => "Producten";
     public static string People => "Voor wie";
@@ -192,6 +202,9 @@ public static class Texts
     public static string PosSelectHint => "Kies wat en voor wie";
     public static string Order => "Bestellen";
     public static string OrderPlaced => "Order geplaatst!";
+    /// <summary>Kassa's confirmation, e.g. "2× Bier, Cola · € 5,00".</summary>
+    public static string OrderPlacedDetail(string products, int amount, string total) => $"{amount}× {products} · {total}";
+    public static string NewSaldo(string saldo) => $"Je saldo is nu {saldo}";
     public static string OrderFailed => "Bestelling mislukt";
     public static string GuestCannotOrder => "Gasten kunnen geen bestellingen plaatsen.";
     public static string OutOfStock => "Op";
@@ -203,6 +216,8 @@ public static class Texts
     public static string CurrentStreak => "Huidige streak";
     public static string Achievements => "Achievements";
     public static string NoAchievements => "Nog geen achievements behaald.";
+    public static string NoAchievementsTitle => "Nog geen achievements";
+    public static string NoAchievementsHint => "Behaalde achievements verschijnen hier.";
     public static string ProfilePicture => "Profielfoto";
     public static string ChangeProfilePicture => "Profielfoto wijzigen";
     public static string RemoveProfilePicture => "Profielfoto verwijderen";
@@ -223,7 +238,6 @@ public static class Texts
     public static string Stats => "Statistieken";
     public static string MyOrders => "Mijn bestellingen";
     public static string Login => "Inloggen";
-    public static string Retry => "Opnieuw proberen";
     public static string Logo => "SSSKL-logo";
     public static string MadeWithLoveBy => "Made with ❤️ by";
     public static string Author => "Ricardo Tillemans";

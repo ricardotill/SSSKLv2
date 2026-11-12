@@ -42,11 +42,26 @@ public interface IAppNavigator
     Task SignOutAsync();
 }
 
+/// <summary>Haptic feedback; does nothing where the device has none.</summary>
+public interface IHaptics
+{
+    /// <summary>A light tick: something was selected or toggled.</summary>
+    void Selection();
+
+    /// <summary>An action succeeded (an order was placed).</summary>
+    void Success();
+
+    /// <summary>An action failed.</summary>
+    void Error();
+}
+
 public interface IUserDialogs
 {
     Task ToastAsync(string message);
     Task AlertAsync(string title, string message);
     Task<bool> ConfirmAsync(string title, string message, string accept, string cancel);
+    /// <summary>An action sheet; returns the chosen button's text, or null when cancelled.</summary>
+    Task<string?> ActionSheetAsync(string? title, string cancel, string? destruction, params string[] buttons);
 }
 
 /// <summary>The system share sheet (MAUI Share in the app).</summary>

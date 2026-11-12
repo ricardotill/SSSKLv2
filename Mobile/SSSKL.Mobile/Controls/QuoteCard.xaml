@@ -14,19 +14,19 @@
             <controls:Pressable x:Name="OpenArea">
                 <VerticalStackLayout Spacing="12">
                     <Grid>
-                        <Label Text="“" FontSize="64" FontFamily="serif" Margin="-6,-22,0,0" VerticalOptions="Start"
+                        <Label Text="“" FontSize="64" FontAutoScalingEnabled="False" FontFamily="serif" Margin="-6,-22,0,0" VerticalOptions="Start"
                                AutomationProperties.IsInAccessibleTree="False"
                                TextColor="{AppThemeBinding Light={StaticResource Primary200}, Dark={StaticResource Primary900}}" />
-                        <Label x:Name="TextLabel" Text="{Binding Text}" FontSize="18" FontAttributes="Italic" Margin="0,6,0,0"
+                        <Label x:Name="TextLabel" Text="{Binding Text}" FontSize="{StaticResource FontSizeTitle}" FontAttributes="Italic" Margin="0,6,0,0"
                                LineBreakMode="TailTruncation"
                                TextColor="{AppThemeBinding Light={StaticResource HeadingLight}, Dark={StaticResource HeadingDark}}" />
                     </Grid>
-                    <Label Text="{Binding AuthorsText}" FontAttributes="Bold" FontSize="14"
+                    <Label Text="{Binding AuthorsText}" FontAttributes="Bold" FontSize="{StaticResource FontSizeSubhead}"
                            TextColor="{AppThemeBinding Light={StaticResource TextLight}, Dark={StaticResource TextDark}}" />
                     <HorizontalStackLayout Spacing="6">
                         <controls:IconView Icon="{x:Static loc:Icons.Calendar}" Size="14"
                                            Color="{AppThemeBinding Light={StaticResource MutedLight}, Dark={StaticResource MutedDark}}" />
-                        <Label Text="{Binding DateText}" Style="{StaticResource Muted}" FontSize="13" VerticalOptions="Center" />
+                        <Label Text="{Binding DateText}" Style="{StaticResource Muted}" FontSize="{StaticResource FontSizeFootnote}" VerticalOptions="Center" />
                     </HorizontalStackLayout>
                 </VerticalStackLayout>
             </controls:Pressable>
@@ -40,7 +40,7 @@
                                                Color="{AppThemeBinding Light={StaticResource MutedLight}, Dark={StaticResource MutedDark}}" />
                             <controls:IconView Icon="{x:Static loc:Icons.HeartFilled}" Size="20" IsVisible="{Binding HasVoted}" Color="#EF4444" />
                         </Grid>
-                        <Label Text="{Binding VoteText}" FontAttributes="Bold" FontSize="14" VerticalOptions="Center"
+                        <Label Text="{Binding VoteText}" FontAttributes="Bold" FontSize="{StaticResource FontSizeSubhead}" VerticalOptions="Center"
                                TextColor="{AppThemeBinding Light={StaticResource TextLight}, Dark={StaticResource TextDark}}" />
                     </HorizontalStackLayout>
                 </controls:Pressable>
@@ -48,7 +48,7 @@
                 <HorizontalStackLayout Spacing="6" Padding="0,4">
                     <controls:IconView Icon="{x:Static loc:Icons.Message}" Size="20"
                                        Color="{AppThemeBinding Light={StaticResource Primary600}, Dark={StaticResource Primary400}}" />
-                    <Label Text="{Binding CommentsCount}" FontAttributes="Bold" FontSize="14" VerticalOptions="Center"
+                    <Label Text="{Binding CommentsCount}" FontAttributes="Bold" FontSize="{StaticResource FontSizeSubhead}" VerticalOptions="Center"
                            TextColor="{AppThemeBinding Light={StaticResource TextLight}, Dark={StaticResource TextDark}}" />
                 </HorizontalStackLayout>
             </HorizontalStackLayout>

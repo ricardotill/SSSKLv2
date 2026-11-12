@@ -25,28 +25,30 @@ public sealed class MemberRowView : ContentView
 
     public MemberRowView()
     {
-        _rankText = new Label { FontAttributes = FontAttributes.Bold, FontSize = 14, HorizontalOptions = LayoutOptions.Center, VerticalOptions = LayoutOptions.Center };
+        _rankText = new Label { FontAutoScalingEnabled = false, FontAttributes = FontAttributes.Bold, FontSize = TypeScale.Subhead, HorizontalOptions = LayoutOptions.Center, VerticalOptions = LayoutOptions.Center };
         _rank = new Border
         {
             WidthRequest = 32, HeightRequest = 32, StrokeThickness = 0, VerticalOptions = LayoutOptions.Center,
             StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 16 }, Content = _rankText
         };
         _avatar = new AvatarView { Size = 40, VerticalOptions = LayoutOptions.Center };
-        _name = new Label { FontSize = 16, LineBreakMode = LineBreakMode.TailTruncation };
+        _name = new Label { FontSize = TypeScale.Callout, LineBreakMode = LineBreakMode.TailTruncation };
         _name.SetAppThemeColor(Label.TextColorProperty, Resource("HeadingLight"), Resource("HeadingDark"));
-        _subtitle = new Label { Style = (Style)Application.Current!.Resources["Muted"], FontSize = 13, LineBreakMode = LineBreakMode.TailTruncation };
+        _subtitle = new Label { Style = (Style)Application.Current!.Resources["Muted"], FontSize = TypeScale.Footnote, LineBreakMode = LineBreakMode.TailTruncation };
         _detail = new Label { FontAttributes = FontAttributes.Bold, VerticalOptions = LayoutOptions.Center, HorizontalTextAlignment = TextAlignment.End };
 
         var texts = new VerticalStackLayout { Spacing = 1, VerticalOptions = LayoutOptions.Center, Children = { _name, _subtitle } };
+        // Rank and avatar share a stack: a hidden rank then takes no space at all. As separate grid columns the
+        // empty rank column still added the column spacing, so the avatar sat further in than the value on the right.
+        var leading = new HorizontalStackLayout { Spacing = 12, VerticalOptions = LayoutOptions.Center, Children = { _rank, _avatar } };
         var grid = new Grid
         {
-            ColumnDefinitions = [new(GridLength.Auto), new(GridLength.Auto), new(GridLength.Star), new(GridLength.Auto)],
+            ColumnDefinitions = [new(GridLength.Auto), new(GridLength.Star), new(GridLength.Auto)],
             ColumnSpacing = 12
         };
-        grid.Add(_rank, 0);
-        grid.Add(_avatar, 1);
-        grid.Add(texts, 2);
-        grid.Add(_detail, 3);
+        grid.Add(leading, 0);
+        grid.Add(texts, 1);
+        grid.Add(_detail, 2);
 
         _card = new Border { Style = (Style)Application.Current.Resources["Card"], Padding = new Thickness(12, 10), Content = grid };
         _pressable = new Pressable { Padding = new Thickness(16, 0), Content = _card };

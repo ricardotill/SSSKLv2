@@ -30,15 +30,23 @@ public sealed partial class SaldoListViewModel(
     public ObservableCollection<MemberRow> Members { get; } = [];
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsEmpty))]
+    [NotifyPropertyChangedFor(nameof(IsEmpty), nameof(ShowSkeleton))]
     public partial bool IsLoading { get; set; }
 
     [ObservableProperty]
     public partial bool IsRefreshing { get; set; }
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsEmpty))]
+    [NotifyPropertyChangedFor(nameof(IsEmpty), nameof(ShowSkeleton))]
     public partial bool HasLoaded { get; set; }
+
+    /// <summary>The first load failed: the page shows its error state with a retry button.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowSkeleton))]
+    public partial bool HasLoadError { get; set; }
+
+    /// <summary>Placeholders while the first load runs (not while refreshing loaded data).</summary>
+    public bool ShowSkeleton => IsLoading && !HasLoaded && !HasLoadError;
 
     [ObservableProperty]
     public partial string Query { get; set; } = "";
@@ -48,6 +56,7 @@ public sealed partial class SaldoListViewModel(
     [RelayCommand]
     public async Task LoadAsync()
     {
+        HasLoadError = false;
         IsLoading = true;
         try
         {
@@ -65,7 +74,7 @@ public sealed partial class SaldoListViewModel(
         catch (Exception ex) when (ex is ApiException or HttpRequestException or TaskCanceledException or System.Text.Json.JsonException)
         {
             logger.LogWarning(ex, "Loading the saldo list failed");
-            await dialogs.AlertAsync(Texts.Error, Texts.LoadFailed);
+            HasLoadError = await LoadFailure.ReportAsync(dialogs, null, HasLoaded);
         }
         finally
         {

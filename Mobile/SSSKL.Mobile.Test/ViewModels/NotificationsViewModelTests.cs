@@ -16,12 +16,12 @@ public class NotificationsViewModelTests
     private readonly ISssklApi _api = Substitute.For<ISssklApi>();
     private readonly IAppNavigator _navigator = Substitute.For<IAppNavigator>();
     private readonly IUserDialogs _dialogs = Substitute.For<IUserDialogs>();
-    private NotificationCenter _center = null!;
+    private NotificationInbox _center = null!;
 
     [TestInitialize]
     public void Setup()
     {
-        _center = new NotificationCenter(_api, NullLogger<NotificationCenter>.Instance);
+        _center = new NotificationInbox(_api, NullLogger<NotificationInbox>.Instance);
         _api.GetUnreadNotificationCountAsync(Arg.Any<CancellationToken>()).Returns(1);
     }
 
@@ -72,7 +72,7 @@ public class NotificationsViewModelTests
     }
 
     [TestMethod]
-    public async Task LoadAsync_Fails_ShowsAnAlert()
+    public async Task LoadAsync_FirstLoadFails_ShowsTheErrorState()
     {
         // Arrange
         _api.GetNotificationsAsync(Arg.Any<int>(), Arg.Any<int>(), Arg.Any<CancellationToken>()).ThrowsAsync(new HttpRequestException("offline"));
@@ -83,7 +83,8 @@ public class NotificationsViewModelTests
         await sut.LoadCommand.ExecuteAsync(null);
 
         // Assert
-        await _dialogs.Received(1).AlertAsync(Texts.Error, Texts.LoadFailed);
+        sut.HasLoadError.Should().BeTrue();
+        await _dialogs.DidNotReceive().AlertAsync(Arg.Any<string>(), Arg.Any<string>());
         sut.IsRefreshing.Should().BeFalse();
         sut.IsLoading.Should().BeFalse();
     }

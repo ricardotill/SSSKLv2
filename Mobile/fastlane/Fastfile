@@ -1,0 +1,91 @@
+# Store uploads for the MAUI app, called by .github/workflows/mobile-release.yml (one lane per approval stage).
+# The builds themselves come from `dotnet publish`; these lanes only upload, submit and promote.
+#
+# Credentials come from the environment (GitHub environment secrets):
+#   iOS:     ASC_KEY_ID, ASC_ISSUER_ID, ASC_KEY_P8 (App Store Connect API key, role App Manager; the .p8 file contents)
+#   Android: GOOGLE_PLAY_SERVICE_ACCOUNT_JSON (service account with release permissions in Play Console)
+# Release notes for testers come from CHANGELOG (the tag message), so they don't have to survive CLI parsing.
+#
+# Run locally from Mobile/: bundle exec fastlane ios beta ipa:path/to/SSSKL.ipa
+default_platform(:ios)
+
+platform :ios do
+  private_lane :asc_key do
+    app_store_connect_api_key(
+      key_id: ENV.fetch("ASC_KEY_ID"),
+      issuer_id: ENV.fetch("ASC_ISSUER_ID"),
+      key_content: ENV.fetch("ASC_KEY_P8")
+    )
+  end
+
+  desc "Stage 1: upload the signed .ipa to TestFlight (internal testers)"
+  lane :beta do |options|
+    asc_key
+    upload_to_testflight(
+      ipa: options.fetch(:ipa),
+      changelog: options[:changelog] || ENV["CHANGELOG"],
+      distribute_external: false,
+      # Wait for processing, so the job only goes green once testers can install the build
+      skip_waiting_for_build_processing: false
+    )
+  end
+
+  desc "Stage 2: attach the TestFlight build to a new App Store version and submit it for review"
+  lane :submit do |options|
+    asc_key
+    upload_to_app_store(
+      app_version: options.fetch(:version),
+      build_number: options.fetch(:build_number).to_s,
+      skip_binary_upload: true,      # the exact build testers had, already in App Store Connect
+      skip_metadata: true,           # the listing is maintained in App Store Connect
+      skip_screenshots: true,
+      submit_for_review: true,
+      automatic_release: false,      # release by hand in App Store Connect once approved
+      force: true,                   # no HTML preview / confirmation on CI
+      run_precheck_before_submit: false,
+      submission_information: { add_id_info_uses_idfa: false }
+    )
+  end
+end
+
+platform :android do
+  desc "Stage 1: upload the signed .aab to the internal testing track"
+  lane :internal do |options|
+    version_code = options.fetch(:version_code).to_s
+    changelog = (options[:changelog] || ENV["CHANGELOG"]).to_s.strip
+    unless changelog.empty?
+      # supply reads release notes from changelogs/<versionCode>.txt (max 500 characters)
+      File.write("metadata/android/nl-NL/changelogs/#{version_code}.txt", changelog[0, 500])
+    end
+    upload_to_play_store(
+      aab: options.fetch(:aab),
+      track: "internal",
+      release_status: "completed",
+      json_key_data: ENV.fetch("GOOGLE_PLAY_SERVICE_ACCOUNT_JSON"),
+      metadata_path: "fastlane/metadata/android",
+      skip_upload_metadata: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true
+    )
+  end
+
+  desc "Stage 2: promote the tested build from internal testing to production"
+  lane :promote do |options|
+    rollout = options.fetch(:rollout, "1").to_f
+    upload_to_play_store(
+      track: "internal",
+      track_promote_to: "production",
+      version_code: options.fetch(:version_code).to_i,
+      # A staged rollout (< 1) stays "inProgress" until it is raised to 100% in Play Console
+      track_promote_release_status: rollout < 1 ? "inProgress" : "completed",
+      rollout: rollout < 1 ? rollout.to_s : nil,
+      json_key_data: ENV.fetch("GOOGLE_PLAY_SERVICE_ACCOUNT_JSON"),
+      skip_upload_aab: true,
+      skip_upload_apk: true,
+      skip_upload_metadata: true,
+      skip_upload_changelogs: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true
+    )
+  end
+end

@@ -5,7 +5,9 @@
              xmlns:vm="clr-namespace:SSSKL.Mobile.Core.ViewModels;assembly=SSSKL.Mobile.Core"
              xmlns:nav="clr-namespace:SSSKL.Mobile.Core.Navigation;assembly=SSSKL.Mobile.Core"
              xmlns:loc="clr-namespace:SSSKL.Mobile.Core.Localization;assembly=SSSKL.Mobile.Core"
+             xmlns:ios="clr-namespace:Microsoft.Maui.Controls.PlatformConfiguration.iOSSpecific;assembly=Microsoft.Maui.Controls"
              x:Class="SSSKL.Mobile.Views.MorePage"
+             ios:Page.LargeTitleDisplay="Always"
              x:DataType="vm:MoreViewModel"
              Title="{x:Static loc:Texts.TabMore}">
 
@@ -23,13 +25,13 @@
                         <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12" Padding="14">
                             <Grid WidthRequest="52" HeightRequest="52">
                                 <Border Style="{StaticResource Avatar}" WidthRequest="52" HeightRequest="52" StrokeShape="RoundRectangle 26">
-                                    <Label Text="{Binding Initials}" FontSize="18" FontAttributes="Bold"
+                                    <Label Text="{Binding Initials}" FontSize="{StaticResource FontSizeTitle}" FontAttributes="Bold" FontAutoScalingEnabled="False"
                                            TextColor="{AppThemeBinding Light={StaticResource Primary700}, Dark={StaticResource Primary300}}"
                                            HorizontalOptions="Center" VerticalOptions="Center" />
                                 </Border>
                                 <Border Style="{StaticResource Avatar}" WidthRequest="52" HeightRequest="52" StrokeShape="RoundRectangle 26"
                                         IsVisible="{Binding HasPicture}">
-                                    <Image Source="{Binding PictureUrl}" Aspect="AspectFill" />
+                                    <controls:FadeImage Source="{Binding PictureUrl}" Aspect="AspectFill" />
                                 </Border>
                             </Grid>
                             <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
@@ -44,10 +46,10 @@
                                 <HorizontalStackLayout Spacing="6">
                                     <controls:IconView Icon="{x:Static loc:Icons.Wallet}" Size="18"
                                                        Color="{StaticResource Primary500}" />
-                                    <Label Text="{Binding Saldo}" FontAttributes="Bold" FontSize="14" VerticalOptions="Center">
+                                    <Label Text="{Binding Saldo}" FontAttributes="Bold" FontSize="{StaticResource FontSizeSubhead}" VerticalOptions="Center">
                                         <Label.Triggers>
                                             <DataTrigger TargetType="Label" Binding="{Binding IsSaldoNegative}" Value="True">
-                                                <Setter Property="TextColor" Value="{StaticResource Danger}" />
+                                                <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Danger}, Dark={StaticResource DangerDark}}" />
                                             </DataTrigger>
                                         </Label.Triggers>
                                     </Label>

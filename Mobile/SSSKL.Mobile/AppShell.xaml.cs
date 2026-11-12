@@ -6,9 +6,9 @@ namespace SSSKL.Mobile;
 
 public partial class AppShell : Shell
 {
-    private readonly NotificationCenter _notifications;
+    private readonly NotificationInbox _notifications;
 
-    public AppShell(IServiceProvider services, NotificationCenter notifications)
+    public AppShell(IServiceProvider services, NotificationInbox notifications)
     {
         InitializeComponent();
         // Pages come from DI; DataTemplates resolve them lazily on first visit.
@@ -20,15 +20,36 @@ public partial class AppShell : Shell
         _notifications = notifications;
         _notifications.PropertyChanged += OnNotificationsChanged;
         UpdateBadge();
+        UpdateTabIcons();
+    }
+
+    protected override void OnNavigated(ShellNavigatedEventArgs args)
+    {
+        base.OnNavigated(args);
+        UpdateTabIcons();
+    }
+
+    /// <summary>The selected tab shows its filled icon, the others their outline.</summary>
+    private void UpdateTabIcons()
+    {
+        var selected = CurrentItem?.CurrentItem;
+        foreach (var (tab, name) in new[] { (PosTab, "pos"), (NotificationsTab, "notifications"), (ProfileTab, "profile"), (MoreTab, "more") })
+        {
+            var file = tab == selected ? $"tab_{name}_selected.png" : $"tab_{name}.png";
+            if (tab.Icon is not FileImageSource current || current.File != file)
+            {
+                tab.Icon = file;
+            }
+        }
     }
 
     /// <summary>Called by <see cref="Services.AppNavigator"/> when this shell is replaced.</summary>
     public void Release() => _notifications.PropertyChanged -= OnNotificationsChanged;
 
-    // NotificationCenter may change on any thread; the tab bar must be touched on the main thread.
+    // NotificationInbox may change on any thread; the tab bar must be touched on the main thread.
     private void OnNotificationsChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(NotificationCenter.BadgeText))
+        if (e.PropertyName == nameof(NotificationInbox.BadgeText))
         {
             MainThread.BeginInvokeOnMainThread(UpdateBadge);
         }

@@ -1,10 +1,26 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <ResourceDictionary xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-                    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+                    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+                    xmlns:ios="clr-namespace:Microsoft.Maui.Controls.PlatformConfiguration.iOSSpecific;assembly=Microsoft.Maui.Controls">
+
+    <!-- Type scale: use these instead of a number, so every page reads the same -->
+    <x:Double x:Key="FontSizeCaption">12</x:Double>
+    <x:Double x:Key="FontSizeFootnote">13</x:Double>
+    <x:Double x:Key="FontSizeSubhead">14</x:Double>
+    <x:Double x:Key="FontSizeBody">15</x:Double>
+    <x:Double x:Key="FontSizeCallout">16</x:Double>
+    <x:Double x:Key="FontSizeHeadline">17</x:Double>
+    <x:Double x:Key="FontSizeTitle">18</x:Double>
+    <x:Double x:Key="FontSizeTitle2">20</x:Double>
+    <x:Double x:Key="FontSizeLargeTitle">22</x:Double>
+    <x:Double x:Key="FontSizeDisplay">30</x:Double>
+
 
     <!-- Implicit styles -->
     <Style TargetType="ContentPage" ApplyToDerivedTypes="True">
         <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource PageLight}, Dark={StaticResource PageDark}}" />
+        <!-- iOS: large titles only on the tab roots (they set Always), like iOS's own apps -->
+        <Setter Property="ios:Page.LargeTitleDisplay" Value="Never" />
     </Style>
 
     <Style TargetType="Shell" ApplyToDerivedTypes="True">
@@ -21,7 +37,7 @@
 
     <Style TargetType="Label">
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource TextLight}, Dark={StaticResource TextDark}}" />
-        <Setter Property="FontSize" Value="15" />
+        <Setter Property="FontSize" Value="{StaticResource FontSizeBody}" />
     </Style>
 
     <Style TargetType="Button">
@@ -54,7 +70,7 @@
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource HeadingLight}, Dark={StaticResource HeadingDark}}" />
         <Setter Property="PlaceholderColor" Value="{AppThemeBinding Light={StaticResource MutedLight}, Dark={StaticResource MutedDark}}" />
         <Setter Property="BackgroundColor" Value="Transparent" />
-        <Setter Property="FontSize" Value="16" />
+        <Setter Property="FontSize" Value="{StaticResource FontSizeCallout}" />
         <Setter Property="MinimumHeightRequest" Value="44" />
     </Style>
 
@@ -65,29 +81,43 @@
 
     <!-- Text -->
     <Style x:Key="Headline" TargetType="Label">
-        <Setter Property="FontSize" Value="22" />
+        <Setter Property="FontSize" Value="{StaticResource FontSizeLargeTitle}" />
         <Setter Property="FontAttributes" Value="Bold" />
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource TextLight}, Dark={StaticResource TextDark}}" />
     </Style>
     <Style x:Key="Title" TargetType="Label">
-        <Setter Property="FontSize" Value="18" />
+        <Setter Property="FontSize" Value="{StaticResource FontSizeTitle}" />
         <Setter Property="FontAttributes" Value="Bold" />
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource TextLight}, Dark={StaticResource TextDark}}" />
     </Style>
     <Style x:Key="SectionHeader" TargetType="Label">
-        <Setter Property="FontSize" Value="17" />
+        <Setter Property="FontSize" Value="{StaticResource FontSizeHeadline}" />
         <Setter Property="FontAttributes" Value="Bold" />
         <Setter Property="Margin" Value="0,8,0,0" />
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource TextLight}, Dark={StaticResource TextDark}}" />
     </Style>
     <Style x:Key="Muted" TargetType="Label">
-        <Setter Property="FontSize" Value="13" />
+        <Setter Property="FontSize" Value="{StaticResource FontSizeFootnote}" />
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource MutedLight}, Dark={StaticResource MutedDark}}" />
     </Style>
     <Style x:Key="Stat" TargetType="Label">
-        <Setter Property="FontSize" Value="20" />
+        <Setter Property="FontSize" Value="{StaticResource FontSizeTitle2}" />
         <Setter Property="FontAttributes" Value="Bold" />
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource TextLight}, Dark={StaticResource TextDark}}" />
+    </Style>
+    <Style x:Key="Caption" TargetType="Label">
+        <Setter Property="FontSize" Value="{StaticResource FontSizeCaption}" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource MutedLight}, Dark={StaticResource MutedDark}}" />
+    </Style>
+    <Style x:Key="BodyStrong" TargetType="Label">
+        <Setter Property="FontSize" Value="{StaticResource FontSizeCallout}" />
+        <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource HeadingLight}, Dark={StaticResource HeadingDark}}" />
+    </Style>
+    <Style x:Key="Display" TargetType="Label">
+        <Setter Property="FontSize" Value="{StaticResource FontSizeDisplay}" />
+        <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource HeadingLight}, Dark={StaticResource HeadingDark}}" />
     </Style>
     <Style x:Key="Notice" TargetType="Label">
         <Setter Property="Padding" Value="12" />
@@ -97,7 +127,7 @@
 
     <!-- Grouped lists ("Meer", settings): a caption above a rounded group of rows. -->
     <Style x:Key="GroupCaption" TargetType="Label">
-        <Setter Property="FontSize" Value="13" />
+        <Setter Property="FontSize" Value="{StaticResource FontSizeFootnote}" />
         <Setter Property="FontAttributes" Value="Bold" />
         <Setter Property="Margin" Value="4,12,4,0" />
         <Setter Property="TextTransform" Value="Uppercase" />
@@ -112,7 +142,7 @@
         <Setter Property="Padding" Value="0" />
     </Style>
     <Style x:Key="FieldLabel" TargetType="Label">
-        <Setter Property="FontSize" Value="13" />
+        <Setter Property="FontSize" Value="{StaticResource FontSizeFootnote}" />
         <Setter Property="FontAttributes" Value="Bold" />
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource MutedLight}, Dark={StaticResource MutedDark}}" />
     </Style>
@@ -123,21 +153,15 @@
         <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource PageLight}, Dark={StaticResource PageDark}}" />
         <Setter Property="Padding" Value="12,0" />
     </Style>
-    <!-- Segmented control (colour mode) -->
+    <!-- Segmented control (Controls/SegmentedControl) -->
     <Style x:Key="SegmentTrack" TargetType="Border">
         <Setter Property="StrokeShape" Value="RoundRectangle 12" />
         <Setter Property="StrokeThickness" Value="0" />
         <Setter Property="Padding" Value="3" />
         <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource SunkenLight}, Dark={StaticResource SunkenDark}}" />
     </Style>
-    <Style x:Key="Segment" TargetType="Border">
-        <Setter Property="StrokeShape" Value="RoundRectangle 9" />
-        <Setter Property="StrokeThickness" Value="0" />
-        <Setter Property="Padding" Value="8,10" />
-        <Setter Property="BackgroundColor" Value="Transparent" />
-    </Style>
     <Style x:Key="SegmentText" TargetType="Label">
-        <Setter Property="FontSize" Value="14" />
+        <Setter Property="FontSize" Value="{StaticResource FontSizeSubhead}" />
         <Setter Property="VerticalOptions" Value="Center" />
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource MutedLight}, Dark={StaticResource MutedDark}}" />
     </Style>
@@ -164,7 +188,7 @@
         <Setter Property="VerticalOptions" Value="Start" />
     </Style>
     <Style x:Key="ImageBadgeText" TargetType="Label">
-        <Setter Property="FontSize" Value="12" />
+        <Setter Property="FontSize" Value="{StaticResource FontSizeCaption}" />
         <Setter Property="FontAttributes" Value="Bold" />
         <Setter Property="TextColor" Value="White" />
         <Setter Property="VerticalOptions" Value="Center" />
@@ -193,20 +217,22 @@
 
     <!-- Buttons -->
     <Style x:Key="PrimaryButton" TargetType="Button">
-        <Setter Property="FontSize" Value="17" />
+        <Setter Property="FontSize" Value="{StaticResource FontSizeHeadline}" />
         <Setter Property="MinimumHeightRequest" Value="50" />
     </Style>
     <Style x:Key="SecondaryButton" TargetType="Button">
         <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Primary50}, Dark={StaticResource Primary950}}" />
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Primary800}, Dark={StaticResource Primary300}}" />
-        <Setter Property="FontSize" Value="13" />
+        <Setter Property="FontSize" Value="{StaticResource FontSizeFootnote}" />
         <Setter Property="Padding" Value="12,6" />
     </Style>
     <Style x:Key="StepperButton" TargetType="Button">
         <Setter Property="WidthRequest" Value="44" />
         <Setter Property="HeightRequest" Value="44" />
         <Setter Property="Padding" Value="0" />
-        <Setter Property="FontSize" Value="20" />
+        <Setter Property="FontSize" Value="{StaticResource FontSizeTitle2}" />
+        <!-- A fixed 44 pt circle: its glyph must not outgrow it at large text sizes -->
+        <Setter Property="FontAutoScalingEnabled" Value="False" />
         <Setter Property="CornerRadius" Value="22" />
     </Style>
     <Style x:Key="LinkButton" TargetType="Button">

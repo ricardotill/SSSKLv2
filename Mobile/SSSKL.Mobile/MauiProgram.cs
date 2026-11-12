@@ -22,6 +22,8 @@ public static class MauiProgram
         builder
             .UseMauiApp<App>()
             .UseMauiCommunityToolkit()
+            // Tapping the open tab again goes back to its root page (Controls/TabReselect).
+            .ConfigureMauiHandlers(handlers => handlers.AddHandler<Shell, SssklShellRenderer>())
             // Crashes, errors and traces to Sentry (project ssskl-mobile). The DSN is a public client key.
             // Also traces the API calls of IHttpClientFactory clients, continuing the trace into ssskl-api.
             .UseSentry(options =>
@@ -78,6 +80,7 @@ public static class MauiProgram
         services.AddSingleton<ThemePreference>();
         services.AddSingleton<IPopupPresenter, PopupPresenter>();
         services.AddSingleton<IUserDialogs, UserDialogs>();
+        services.AddSingleton<IHaptics, Haptics>();
         services.AddSingleton<IPhotoPicker, MediaPhotoPicker>();
         services.AddSingleton<IShareService, ShareService>();
         services.AddSingleton<IExternalLauncher, ExternalLauncher>();
@@ -85,7 +88,7 @@ public static class MauiProgram
         services.AddSingleton<AppNavigator>();
         services.AddSingleton<IAppNavigator>(sp => sp.GetRequiredService<AppNavigator>());
         services.AddSingleton<AchievementPopupCoordinator>();
-        services.AddSingleton<NotificationCenter>();
+        services.AddSingleton<NotificationInbox>();
         services.AddSingleton<WhatsNewCoordinator>();
         services.AddSingleton<WebNavigationPolicy>();
         services.AddSingleton<WebSession>();

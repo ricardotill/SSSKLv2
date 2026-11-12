@@ -15,7 +15,7 @@ namespace SSSKL.Mobile.Core.ViewModels;
 /// </summary>
 public sealed partial class NotificationsViewModel(
     ISssklApi api,
-    NotificationCenter center,
+    NotificationInbox center,
     IAppNavigator navigator,
     IUserDialogs dialogs,
     ILogger<NotificationsViewModel> logger) : ObservableObject
@@ -25,7 +25,7 @@ public sealed partial class NotificationsViewModel(
     public ObservableCollection<NotificationItemViewModel> Items { get; } = [];
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsEmpty))]
+    [NotifyPropertyChangedFor(nameof(IsEmpty), nameof(ShowSkeleton))]
     public partial bool IsLoading { get; set; }
 
     [ObservableProperty]
@@ -38,8 +38,16 @@ public sealed partial class NotificationsViewModel(
     public partial bool HasMore { get; set; }
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsEmpty))]
+    [NotifyPropertyChangedFor(nameof(IsEmpty), nameof(ShowSkeleton))]
     public partial bool HasLoaded { get; set; }
+
+    /// <summary>The first load failed: the page shows its error state with a retry button.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowSkeleton))]
+    public partial bool HasLoadError { get; set; }
+
+    /// <summary>Placeholders while the first load runs (not while refreshing loaded data).</summary>
+    public bool ShowSkeleton => IsLoading && !HasLoaded && !HasLoadError;
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(MarkAllReadCommand))]
@@ -55,6 +63,7 @@ public sealed partial class NotificationsViewModel(
     [RelayCommand]
     public async Task LoadAsync()
     {
+        HasLoadError = false;
         IsLoading = true;
         try
         {
@@ -72,7 +81,7 @@ public sealed partial class NotificationsViewModel(
         catch (Exception ex) when (ex is ApiException or HttpRequestException or TaskCanceledException or System.Text.Json.JsonException)
         {
             logger.LogWarning(ex, "Loading notifications failed");
-            await dialogs.AlertAsync(Texts.Error, Texts.LoadFailed);
+            HasLoadError = await LoadFailure.ReportAsync(dialogs, null, HasLoaded);
         }
         finally
         {

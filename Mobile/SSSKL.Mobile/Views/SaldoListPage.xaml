@@ -24,8 +24,8 @@
                     </DataTemplate>
                 </CollectionView.ItemTemplate>
                 <CollectionView.EmptyView>
-                    <Label Text="{x:Static loc:Texts.NoUsers}" IsVisible="{Binding IsEmpty}" Style="{StaticResource Muted}"
-                           HorizontalTextAlignment="Center" Margin="32,64" />
+                    <controls:EmptyStateView IsVisible="{Binding IsEmpty}" Icon="{x:Static loc:Icons.Users}"
+                                             Title="{x:Static loc:Texts.NoUsers}" Hint="{x:Static loc:Texts.NoUsersHint}" />
                 </CollectionView.EmptyView>
                 <CollectionView.Footer>
                     <BoxView HeightRequest="16" Color="Transparent" />
@@ -33,5 +33,8 @@
             </CollectionView>
         </RefreshView>
         <ActivityIndicator Grid.Row="1" IsRunning="{Binding IsLoading}" IsVisible="{Binding IsLoading}" HorizontalOptions="Center" VerticalOptions="Center" />
+        <!-- First load: placeholders in the page's shape; a failed first load: error with retry -->
+        <controls:SkeletonView Grid.Row="1" Kind="Rows" IsVisible="{Binding ShowSkeleton}" />
+        <controls:ErrorStateView Grid.Row="1" IsVisible="{Binding HasLoadError}" RetryCommand="{Binding LoadCommand}" />
     </Grid>
 </ContentPage>

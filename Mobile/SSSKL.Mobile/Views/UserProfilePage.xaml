@@ -48,7 +48,7 @@
                     <!-- About them -->
                     <Border Style="{StaticResource Card}">
                         <VerticalStackLayout Spacing="8">
-                            <Label Text="{x:Static loc:Texts.AboutMe}" FontAttributes="Bold" FontSize="16" SemanticProperties.HeadingLevel="Level2"
+                            <Label Text="{x:Static loc:Texts.AboutMe}" FontAttributes="Bold" FontSize="{StaticResource FontSizeCallout}" SemanticProperties.HeadingLevel="Level2"
                                    TextColor="{AppThemeBinding Light={StaticResource HeadingLight}, Dark={StaticResource HeadingDark}}" />
                             <Label Text="{Binding DescriptionHtml}" TextType="Html" IsVisible="{Binding HasDescription}"
                                    TextColor="{AppThemeBinding Light={StaticResource TextLight}, Dark={StaticResource TextDark}}" />
@@ -82,7 +82,7 @@
                                                                        Color="{AppThemeBinding Light={StaticResource Primary500}, Dark={StaticResource Primary400}}" />
                                                 </Grid>
                                             </Border>
-                                            <Label Text="{Binding Name}" FontSize="11" HorizontalTextAlignment="Center" MaxLines="2"
+                                            <Label Text="{Binding Name}" FontSize="{StaticResource FontSizeCaption}" HorizontalTextAlignment="Center" MaxLines="2"
                                                    LineBreakMode="TailTruncation" Style="{StaticResource Muted}" />
                                         </VerticalStackLayout>
                                     </controls:Pressable>

@@ -148,7 +148,7 @@ public class OrdersAndTopUpsViewModelTests
     }
 
     [TestMethod]
-    public async Task TopUps_LoadFails_ShowsAnAlert()
+    public async Task TopUps_FirstLoadFails_ShowsTheErrorState()
     {
         // Arrange
         _api.GetPersonalTopUpsAsync(Arg.Any<int>(), Arg.Any<int>(), Arg.Any<CancellationToken>()).ThrowsAsync(new HttpRequestException("offline"));
@@ -158,7 +158,15 @@ public class OrdersAndTopUpsViewModelTests
         await sut.LoadCommand.ExecuteAsync(null);
 
         // Assert
-        await _dialogs.Received(1).AlertAsync(Texts.Error, Texts.LoadFailed);
+        sut.HasLoadError.Should().BeTrue();
+        sut.IsEmpty.Should().BeFalse();
+        await _dialogs.DidNotReceive().AlertAsync(Arg.Any<string>(), Arg.Any<string>());
         sut.IsLoading.Should().BeFalse();
+
+        // A retry that works clears the error
+        _api.GetPersonalTopUpsAsync(Arg.Any<int>(), Arg.Any<int>(), Arg.Any<CancellationToken>()).Returns(new Page<TopUpItem>());
+        await sut.LoadCommand.ExecuteAsync(null);
+        sut.HasLoadError.Should().BeFalse();
+        sut.IsEmpty.Should().BeTrue();
     }
 }

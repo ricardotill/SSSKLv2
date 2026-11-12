@@ -75,6 +75,56 @@ public class ProfileViewModelTests
     }
 
     [TestMethod]
+    public async Task PictureActions_WithoutPicture_PicksAPhotoStraightAway()
+    {
+        // Arrange
+        _photoPicker.PickAsync().Returns((PickedPhoto?)null);
+        var sut = CreateSut();
+
+        // Act
+        await sut.PictureActionsCommand.ExecuteAsync(null);
+
+        // Assert
+        await _photoPicker.Received(1).PickAsync();
+        await _dialogs.DidNotReceiveWithAnyArgs().ActionSheetAsync(default, default!, default);
+    }
+
+    [TestMethod]
+    public async Task PictureActions_Remove_DeletesWithoutASecondConfirmation()
+    {
+        // Arrange
+        _api.GetMeAsync().Returns(new CurrentUser { Id = "1", FullName = "Ik Zelf", Roles = [RoleNames.User] });
+        _dialogs.ActionSheetAsync(Arg.Any<string?>(), Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<string[]>())
+            .Returns(Texts.RemoveProfilePicture);
+        var sut = CreateSut();
+        sut.PictureUrl = "https://api.test/picture";
+
+        // Act
+        await sut.PictureActionsCommand.ExecuteAsync(null);
+
+        // Assert
+        await _api.Received(1).DeleteProfilePictureAsync();
+        await _dialogs.DidNotReceiveWithAnyArgs().ConfirmAsync(default!, default!, default!, default!);
+    }
+
+    [TestMethod]
+    public async Task PictureActions_Cancelled_DoesNothing()
+    {
+        // Arrange
+        _dialogs.ActionSheetAsync(Arg.Any<string?>(), Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<string[]>())
+            .Returns((string?)null);
+        var sut = CreateSut();
+        sut.PictureUrl = "https://api.test/picture";
+
+        // Act
+        await sut.PictureActionsCommand.ExecuteAsync(null);
+
+        // Assert
+        await _api.DidNotReceiveWithAnyArgs().DeleteProfilePictureAsync();
+        await _photoPicker.DidNotReceiveWithAnyArgs().PickAsync();
+    }
+
+    [TestMethod]
     public void EditDescriptionCommand_FillsTheDraftAsPlainText()
     {
         // Arrange

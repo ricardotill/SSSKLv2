@@ -17,6 +17,8 @@ public static class Icons
     public const string ChartLine = "ti_chart_line.png";
     public const string Check = "ti_check.png";
     public const string ChevronRight = "ti_chevron_right.png";
+    public const string CircleCheck = "ti_circle_check.png";
+    public const string CloudOff = "ti_cloud_off.png";
     public const string DeviceDesktop = "ti_device_desktop.png";
     public const string Download = "ti_download.png";
     public const string Flame = "ti_flame.png";

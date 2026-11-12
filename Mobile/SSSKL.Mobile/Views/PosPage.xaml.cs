@@ -15,13 +15,42 @@ public partial class PosPage : ContentPage
         _viewModel.PropertyChanged += OnViewModelChanged;
     }
 
-    /// <summary>Fades the split toggle in or out instead of showing/hiding it, so the order bar never changes height.</summary>
     private async void OnViewModelChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName != nameof(PosViewModel.CanSplit))
+        switch (e.PropertyName)
         {
+            case nameof(PosViewModel.CanSplit):
+                await FadeSplitAsync();
+                break;
+            case nameof(PosViewModel.ShowOrderPlaced):
+                await FadeOrderPlacedAsync();
+                break;
+        }
+    }
+
+    /// <summary>The order confirmation fades in over the pay panel, its check pops; it fades out again.</summary>
+    private async Task FadeOrderPlacedAsync()
+    {
+        var show = _viewModel.ShowOrderPlaced;
+        OrderPlacedPanel.InputTransparent = !show;
+        AutomationProperties.SetIsInAccessibleTree(OrderPlacedPanel, show);
+        OrderPlacedPanel.CancelAnimations();
+        OrderPlacedBadge.CancelAnimations();
+        if (!show)
+        {
+            await OrderPlacedPanel.FadeToAsync(0, 200, Easing.CubicIn);
             return;
         }
+        OrderPlacedBadge.Scale = 0.6;
+        SemanticScreenReader.Announce($"{Core.Localization.Texts.OrderPlaced} {_viewModel.OrderPlacedDetail}");
+        await Task.WhenAll(
+            OrderPlacedPanel.FadeToAsync(1, 160, Easing.CubicOut),
+            OrderPlacedBadge.ScaleToAsync(1, 320, Easing.SpringOut));
+    }
+
+    /// <summary>Fades the split toggle in or out instead of showing/hiding it, so the order bar never changes height.</summary>
+    private async Task FadeSplitAsync()
+    {
         var canSplit = _viewModel.CanSplit;
         SplitPanel.InputTransparent = !canSplit;
         AutomationProperties.SetIsInAccessibleTree(SplitPanel, canSplit);

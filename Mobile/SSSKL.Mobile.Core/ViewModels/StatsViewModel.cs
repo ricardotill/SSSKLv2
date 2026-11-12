@@ -59,8 +59,16 @@ public sealed partial class StatsViewModel(
     public partial string? LastRecalculatedText { get; set; }
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(HasStats))]
+    [NotifyPropertyChangedFor(nameof(HasStats), nameof(ShowSkeleton))]
     public partial bool IsLoading { get; set; }
+
+    /// <summary>The first load failed: the page shows its error state with a retry button.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowSkeleton))]
+    public partial bool HasLoadError { get; set; }
+
+    /// <summary>Placeholders while the first load runs (not while refreshing loaded statistics).</summary>
+    public bool ShowSkeleton => IsLoading && !HasStats && !HasLoadError;
 
     [ObservableProperty]
     public partial bool IsRefreshing { get; set; }
@@ -85,6 +93,7 @@ public sealed partial class StatsViewModel(
     [RelayCommand]
     public async Task LoadAsync()
     {
+        HasLoadError = false;
         IsLoading = true;
         try
         {
@@ -114,7 +123,7 @@ public sealed partial class StatsViewModel(
         catch (Exception ex) when (IsExpected(ex))
         {
             logger.LogWarning(ex, "Loading statistics failed");
-            await dialogs.AlertAsync(Texts.Error, Texts.LoadFailed);
+            HasLoadError = await LoadFailure.ReportAsync(dialogs, null, HasStats);
         }
         finally
         {

@@ -1,0 +1,348 @@
+# Releases the MAUI app to the stores for a release tag vX.Y.Z on master (the same tag as the API and SPA).
+#
+#   build-android ──► android-internal (approve) ──► android-production (approve, stable tags only)
+#   build-ios     ──► ios-testflight   (approve) ──► ios-app-store      (approve, stable tags only)
+#
+# Each app is built and signed once; the store jobs only move that artifact, so production gets the exact build
+# testers had. A pre-release tag (v1.4.0-rc.1) stops after TestFlight / internal testing. The approvals are
+# GitHub environments with Ricardo as required reviewer; reject a pending one when a release needs no new app.
+# Setup (accounts, secrets, environments, the first manual Play upload): docs/mobile-release.md.
+name: Mobile release
+
+on:
+  push:
+    tags: [ "v*" ]
+  # Retry a release: Actions → Mobile release → Run workflow, and pick the tag (not a branch).
+  workflow_dispatch:
+
+concurrency:
+  group: mobile-release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_VERSION: '11.0.x'
+  # .NET for iOS 27.2 needs exactly this Xcode (runner image xcode-27).
+  XCODE_APP: /Applications/Xcode_27.2.app
+  # Store build number = run number + offset, the same on both platforms. The offset leaves room for the
+  # first Play upload, which has to be done by hand. Never lower it: the stores reject a lower number.
+  BUILD_NUMBER_OFFSET: 1000
+  FASTLANE_SKIP_UPDATE_CHECK: '1'
+  FASTLANE_HIDE_CHANGELOG: '1'
+  FASTLANE_OPT_OUT_USAGE: '1'
+  LC_ALL: en_US.UTF-8
+  LANG: en_US.UTF-8
+
+jobs:
+  version:
+    name: Version
+    uses: ./.github/workflows/version.yml
+
+  meta:
+    name: Release info
+    needs: version
+    # Only release tags; the store jobs can't take a 0.0.0-ci version.
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      build_number: ${{ steps.meta.outputs.build_number }}
+      changelog: ${{ steps.meta.outputs.changelog }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Build number and release notes
+        id: meta
+        run: |
+          echo "build_number=$((GITHUB_RUN_NUMBER + BUILD_NUMBER_OFFSET))" >> "$GITHUB_OUTPUT"
+          # Release notes for testers: the annotated tag's message, or the commit subject for a lightweight tag.
+          git fetch --force origin "refs/tags/${GITHUB_REF_NAME}:refs/tags/${GITHUB_REF_NAME}"
+          notes=$(git tag -l --format='%(contents)' "$GITHUB_REF_NAME" | sed '/-----BEGIN PGP SIGNATURE-----/,$d')
+          if [ -z "$(echo "$notes" | tr -d '[:space:]')" ]; then notes=$(git log -1 --format=%s "$GITHUB_SHA"); fi
+          {
+            echo "changelog<<CHANGELOG_EOF"
+            echo "$notes" | head -c 500
+            echo
+            echo "CHANGELOG_EOF"
+          } >> "$GITHUB_OUTPUT"
+
+  build-android:
+    name: Build Android (signed .aab)
+    needs: [ version, meta ]
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    environment: mobile-signing
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Test (Core)
+        run: dotnet test Mobile/SSSKL.Mobile.Test
+
+      - name: Setup Java
+        uses: actions/setup-java@v6
+        with:
+          java-version: 17
+          distribution: 'microsoft'
+
+      - name: Install MAUI Android workload
+        run: dotnet workload install maui-android
+
+      - name: Upload keystore
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          if [ -z "$ANDROID_KEYSTORE_BASE64" ]; then echo "::error::Secret ANDROID_KEYSTORE_BASE64 is missing (environment mobile-signing)"; exit 1; fi
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/upload.keystore"
+
+      - name: Publish
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          VERSION: ${{ needs.version.outputs.version }}
+          BUILD_NUMBER: ${{ needs.meta.outputs.build_number }}
+        # env: makes MSBuild read the passwords from the environment, so they stay out of the command line.
+        # Add -p:SssklAndroidAot=false here if a Native AOT build misbehaves (still experimental on Android).
+        run: >
+          dotnet publish Mobile/SSSKL.Mobile -f net11.0-android -c Release
+          -p:SssklTargetFrameworks=net11.0-android
+          -p:Version="$VERSION" -p:ApplicationVersion="$BUILD_NUMBER"
+          -p:AndroidPackageFormat=aab
+          -p:AndroidKeyStore=true
+          -p:AndroidSigningKeyStore="$RUNNER_TEMP/upload.keystore"
+          -p:AndroidSigningKeyAlias="$ANDROID_KEY_ALIAS"
+          -p:AndroidSigningStorePass=env:ANDROID_KEYSTORE_PASSWORD
+          -p:AndroidSigningKeyPass=env:ANDROID_KEY_PASSWORD
+          -o "$RUNNER_TEMP/publish"
+
+      - name: Collect .aab
+        run: |
+          mkdir -p "$RUNNER_TEMP/out"
+          aab=$(find "$RUNNER_TEMP/publish" -name '*-Signed.aab' | head -1)
+          if [ -z "$aab" ]; then echo "::error::No signed .aab in the publish output"; ls -R "$RUNNER_TEMP/publish"; exit 1; fi
+          cp "$aab" "$RUNNER_TEMP/out/SSSKL.aab"
+          rm -f "$RUNNER_TEMP/upload.keystore"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: android-aab
+          path: ${{ runner.temp }}/out/SSSKL.aab
+          if-no-files-found: error
+          retention-days: 90
+
+  build-ios:
+    name: Build iOS (signed .ipa)
+    needs: [ version, meta ]
+    runs-on: xcode-27
+    timeout-minutes: 90
+    environment: mobile-signing
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Setup .NET
+        # The xcode-27 image has no .NET 11 SDK.
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Select Xcode
+        run: |
+          sudo xcode-select -s "$XCODE_APP"
+          xcodebuild -version
+
+      - name: Install MAUI iOS workload
+        run: dotnet workload install maui-ios
+
+      - name: Import distribution certificate
+        uses: apple-actions/import-codesign-certs@288b8ec97b82c66b6f2a6baaf7acc8dfbcbe331c # v7.2.0
+        with:
+          p12-file-base64: ${{ secrets.IOS_DIST_CERT_P12_BASE64 }}
+          p12-password: ${{ secrets.IOS_DIST_CERT_PASSWORD }}
+
+      - name: Download App Store provisioning profile
+        uses: apple-actions/download-provisioning-profiles@233aa54e59082c0e8a8cf8b0b02c72dea2422ef9 # v7.1.0
+        with:
+          bundle-id: nl.scoutingwilo.ssskl
+          profile-type: IOS_APP_STORE
+          issuer-id: ${{ secrets.ASC_ISSUER_ID }}
+          api-key-id: ${{ secrets.ASC_KEY_ID }}
+          api-private-key: ${{ secrets.ASC_KEY_P8 }}
+
+      - name: Copy profiles to the legacy location
+        # The action installs into Xcode 16+'s folder; older .NET for iOS tooling looks in MobileDevice.
+        run: |
+          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
+          cp "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles/"*.mobileprovision "$HOME/Library/MobileDevice/Provisioning Profiles/"
+
+      - name: Publish
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          VERSION: ${{ needs.version.outputs.version }}
+          BUILD_NUMBER: ${{ needs.meta.outputs.build_number }}
+        # CodesignKey "Apple Distribution" matches the imported certificate; with CodesignProvision "Automatic"
+        # the SDK picks the downloaded App Store profile for the bundle ID.
+        run: >
+          dotnet publish Mobile/SSSKL.Mobile -f net11.0-ios -c Release -r ios-arm64
+          -p:SssklTargetFrameworks=net11.0-ios
+          -p:Version="$VERSION" -p:ApplicationVersion="$BUILD_NUMBER"
+          -p:ArchiveOnBuild=true
+          -p:CodesignKey="Apple Distribution"
+          -p:CodesignProvision=Automatic
+          -o "$RUNNER_TEMP/publish"
+
+      - name: Collect .ipa
+        run: |
+          mkdir -p "$RUNNER_TEMP/out"
+          ipa=$(find "$RUNNER_TEMP/publish" -name '*.ipa' | head -1)
+          if [ -z "$ipa" ]; then echo "::error::No .ipa in the publish output"; ls -R "$RUNNER_TEMP/publish"; exit 1; fi
+          cp "$ipa" "$RUNNER_TEMP/out/SSSKL.ipa"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ios-ipa
+          path: ${{ runner.temp }}/out/SSSKL.ipa
+          if-no-files-found: error
+          retention-days: 90
+
+  android-internal:
+    name: Google Play internal testing
+    needs: [ meta, build-android ]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: android-internal
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: android-aab
+          path: ${{ runner.temp }}/aab
+
+      - uses: ruby/setup-ruby@b3aaceaef7e0ee231b499e7b5f49c03fc1d32199 # v1.338.0
+        with:
+          ruby-version: '3.4'
+          bundler-cache: true
+          working-directory: Mobile
+
+      - name: Upload to internal testing
+        working-directory: Mobile
+        env:
+          GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          BUILD_NUMBER: ${{ needs.meta.outputs.build_number }}
+          CHANGELOG: ${{ needs.meta.outputs.changelog }}
+        run: bundle exec fastlane android internal aab:"$RUNNER_TEMP/aab/SSSKL.aab" version_code:"$BUILD_NUMBER"
+
+      - name: Summary
+        run: echo "Build ${{ needs.meta.outputs.build_number }} is on the **internal testing** track in Google Play Console." >> "$GITHUB_STEP_SUMMARY"
+
+  android-production:
+    name: Google Play production
+    needs: [ version, meta, android-internal ]
+    if: needs.version.outputs.stable == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: android-production
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: ruby/setup-ruby@b3aaceaef7e0ee231b499e7b5f49c03fc1d32199 # v1.338.0
+        with:
+          ruby-version: '3.4'
+          bundler-cache: true
+          working-directory: Mobile
+
+      - name: Promote internal → production
+        working-directory: Mobile
+        env:
+          GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          BUILD_NUMBER: ${{ needs.meta.outputs.build_number }}
+          # Fraction of users for a staged rollout (e.g. 0.2); 1 releases to everyone. Repository variable.
+          ROLLOUT: ${{ vars.ANDROID_PRODUCTION_ROLLOUT || '1' }}
+        run: bundle exec fastlane android promote version_code:"$BUILD_NUMBER" rollout:"$ROLLOUT"
+
+      - name: Summary
+        run: echo "Build ${{ needs.meta.outputs.build_number }} was promoted to **production**; Google reviews it before it goes live." >> "$GITHUB_STEP_SUMMARY"
+
+  ios-testflight:
+    name: TestFlight
+    needs: [ meta, build-ios ]
+    runs-on: macos-latest
+    timeout-minutes: 60
+    environment: ios-testflight
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: ios-ipa
+          path: ${{ runner.temp }}/ipa
+
+      - uses: ruby/setup-ruby@b3aaceaef7e0ee231b499e7b5f49c03fc1d32199 # v1.338.0
+        with:
+          ruby-version: '3.4'
+          bundler-cache: true
+          working-directory: Mobile
+
+      - name: Upload to TestFlight
+        working-directory: Mobile
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+          CHANGELOG: ${{ needs.meta.outputs.changelog }}
+        run: bundle exec fastlane ios beta ipa:"$RUNNER_TEMP/ipa/SSSKL.ipa"
+
+      - name: Summary
+        run: echo "Build ${{ needs.meta.outputs.build_number }} is in **TestFlight** for the internal testers." >> "$GITHUB_STEP_SUMMARY"
+
+  ios-app-store:
+    name: App Store
+    needs: [ version, meta, ios-testflight ]
+    if: needs.version.outputs.stable == 'true'
+    runs-on: macos-latest
+    timeout-minutes: 30
+    environment: ios-app-store
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: ruby/setup-ruby@b3aaceaef7e0ee231b499e7b5f49c03fc1d32199 # v1.338.0
+        with:
+          ruby-version: '3.4'
+          bundler-cache: true
+          working-directory: Mobile
+
+      - name: Submit for App Review
+        working-directory: Mobile
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+          VERSION: ${{ needs.version.outputs.version }}
+          BUILD_NUMBER: ${{ needs.meta.outputs.build_number }}
+        run: bundle exec fastlane ios submit version:"$VERSION" build_number:"$BUILD_NUMBER"
+
+      - name: Summary
+        run: echo "Version ${{ needs.version.outputs.version }} (build ${{ needs.meta.outputs.build_number }}) was **submitted for App Review**. Press *Release* in App Store Connect once it is approved." >> "$GITHUB_STEP_SUMMARY"

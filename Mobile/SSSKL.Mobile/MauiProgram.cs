@@ -85,7 +85,7 @@ public static class MauiProgram
         services.AddSingleton<AppNavigator>();
         services.AddSingleton<IAppNavigator>(sp => sp.GetRequiredService<AppNavigator>());
         services.AddSingleton<AchievementPopupCoordinator>();
-        services.AddSingleton<NotificationCenter>();
+        services.AddSingleton<NotificationInbox>();
         services.AddSingleton<WhatsNewCoordinator>();
         services.AddSingleton<WebNavigationPolicy>();
         services.AddSingleton<WebSession>();

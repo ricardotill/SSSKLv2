@@ -11,9 +11,9 @@ public partial class App : Application
     private readonly AppNavigator _navigator;
     private readonly AuthSession _session;
     private readonly AchievementPopupCoordinator _achievements;
-    private readonly NotificationCenter _notifications;
+    private readonly NotificationInbox _notifications;
 
-    public App(AppNavigator navigator, AuthSession session, AchievementPopupCoordinator achievements, NotificationCenter notifications, ThemePreference theme)
+    public App(AppNavigator navigator, AuthSession session, AchievementPopupCoordinator achievements, NotificationInbox notifications, ThemePreference theme)
     {
         // Dutch UI: prices as "€ 1,50" in bindings with StringFormat.
         var dutch = CultureInfo.GetCultureInfo("nl-NL");

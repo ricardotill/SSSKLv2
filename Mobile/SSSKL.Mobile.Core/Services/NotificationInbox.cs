@@ -9,8 +9,9 @@ namespace SSSKL.Mobile.Core.Services;
 /// The unread notification count behind the Notificaties tab badge. Singleton. Refreshed at sign-in, on
 /// resume and when the tab appears; marking notifications read updates it straight away.
 /// <see cref="ObservableObject.PropertyChanged"/> may be raised on any thread.
+/// (Not "NotificationCenter": the iOS bindings have a NotificationCenter namespace, which breaks the iOS build.)
 /// </summary>
-public sealed partial class NotificationCenter(ISssklApi api, ILogger<NotificationCenter> logger) : ObservableObject
+public sealed partial class NotificationInbox(ISssklApi api, ILogger<NotificationInbox> logger) : ObservableObject
 {
     /// <summary>Bumped by every local change, so a refresh that started before it can't undo it.</summary>
     private int _version;

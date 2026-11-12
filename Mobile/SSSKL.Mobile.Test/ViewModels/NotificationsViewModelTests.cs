@@ -16,12 +16,12 @@ public class NotificationsViewModelTests
     private readonly ISssklApi _api = Substitute.For<ISssklApi>();
     private readonly IAppNavigator _navigator = Substitute.For<IAppNavigator>();
     private readonly IUserDialogs _dialogs = Substitute.For<IUserDialogs>();
-    private NotificationCenter _center = null!;
+    private NotificationInbox _center = null!;
 
     [TestInitialize]
     public void Setup()
     {
-        _center = new NotificationCenter(_api, NullLogger<NotificationCenter>.Instance);
+        _center = new NotificationInbox(_api, NullLogger<NotificationInbox>.Instance);
         _api.GetUnreadNotificationCountAsync(Arg.Any<CancellationToken>()).Returns(1);
     }
 

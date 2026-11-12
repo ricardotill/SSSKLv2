@@ -8,11 +8,11 @@ using SSSKL.Mobile.Core.Services;
 namespace SSSKL.Mobile.Test.Services;
 
 [TestClass]
-public class NotificationCenterTests
+public class NotificationInboxTests
 {
     private readonly ISssklApi _api = Substitute.For<ISssklApi>();
 
-    private NotificationCenter CreateSut() => new(_api, NullLogger<NotificationCenter>.Instance);
+    private NotificationInbox CreateSut() => new(_api, NullLogger<NotificationInbox>.Instance);
 
     [TestMethod]
     [DataRow(0, null)]
@@ -97,6 +97,6 @@ public class NotificationCenterTests
         await sut.RefreshAsync();
 
         // Assert
-        changed.Should().Contain(nameof(NotificationCenter.BadgeText));
+        changed.Should().Contain(nameof(NotificationInbox.BadgeText));
     }
 }

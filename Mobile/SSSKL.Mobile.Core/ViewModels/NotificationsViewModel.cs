@@ -15,7 +15,7 @@ namespace SSSKL.Mobile.Core.ViewModels;
 /// </summary>
 public sealed partial class NotificationsViewModel(
     ISssklApi api,
-    NotificationCenter center,
+    NotificationInbox center,
     IAppNavigator navigator,
     IUserDialogs dialogs,
     ILogger<NotificationsViewModel> logger) : ObservableObject

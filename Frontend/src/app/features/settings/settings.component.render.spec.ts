@@ -66,7 +66,7 @@ describe('SettingsComponent (render)', () => {
     const root = render({ embedded: false });
 
     expect(root.querySelector('h1')?.textContent).toContain('Gebruikersinstellingen');
-    expect(root.querySelectorAll('p-tab').length).toBe(4);
+    expect(root.querySelectorAll('p-tab')).toHaveLength(4);
     expect(root.querySelector('p-selectbutton')).not.toBeNull();
   });
 

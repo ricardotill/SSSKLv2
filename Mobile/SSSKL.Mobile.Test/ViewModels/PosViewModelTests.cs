@@ -79,7 +79,7 @@ public class PosViewModelTests
     }
 
     [TestMethod]
-    public async Task UserQuery_KeepsYourOwnRowOnTop()
+    public async Task UserQuery_FiltersYourOwnRowToo()
     {
         // Arrange
         var sut = await CreateLoadedSutAsync();
@@ -88,9 +88,13 @@ public class PosViewModelTests
         sut.UserQuery = "ander";
 
         // Assert
-        sut.VisibleUsers.Select(u => u.Id).Should().Equal(MeId, OtherId);
-        sut.UserQuery = "niemand";
+        sut.VisibleUsers.Select(u => u.Id).Should().Equal(OtherId);
+        sut.UserQuery = "zelf";
         sut.VisibleUsers.Select(u => u.Id).Should().Equal(MeId);
+        sut.UserQuery = "niemand";
+        sut.VisibleUsers.Should().BeEmpty();
+        sut.UserQuery = "";
+        sut.VisibleUsers.Select(u => u.Id).Should().Equal(MeId, OtherId);
     }
 
     [TestMethod]

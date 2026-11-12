@@ -118,8 +118,17 @@
                             <controls:Pressable FlexLayout.Basis="33.3%" SemanticProperties.Description="{Binding Name}"
                                                 Command="{Binding OpenAchievementCommand, Source={RelativeSource AncestorType={x:Type vm:ProfileViewModel}}, x:DataType=vm:ProfileViewModel}"
                                                 CommandParameter="{Binding .}">
+                                <!-- Same tile as on other members' profiles (UserProfilePage) -->
                                 <VerticalStackLayout Padding="4" Spacing="4">
-                                    <Image Source="{Binding ImageUrl}" HeightRequest="64" WidthRequest="64" Aspect="AspectFit" />
+                                    <Border WidthRequest="72" HeightRequest="72" StrokeThickness="0" StrokeShape="RoundRectangle 16"
+                                            BackgroundColor="{AppThemeBinding Light={StaticResource SunkenLight}, Dark={StaticResource SunkenDark}}">
+                                        <Grid>
+                                            <Image Source="{Binding ImageUrl}" Aspect="AspectFit" Margin="8" IsVisible="{Binding HasImage}" />
+                                            <controls:IconView Icon="{x:Static loc:Icons.Rosette}" Size="32"
+                                                               IsVisible="{Binding HasImage, Converter={StaticResource Not}}"
+                                                               Color="{AppThemeBinding Light={StaticResource Primary500}, Dark={StaticResource Primary400}}" />
+                                        </Grid>
+                                    </Border>
                                     <Label Text="{Binding Name}" FontSize="12" HorizontalTextAlignment="Center"
                                            LineBreakMode="TailTruncation" MaxLines="2" />
                                 </VerticalStackLayout>

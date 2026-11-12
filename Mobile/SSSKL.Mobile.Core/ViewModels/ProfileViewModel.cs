@@ -11,7 +11,10 @@ using SSSKL.Mobile.Core.Services;
 
 namespace SSSKL.Mobile.Core.ViewModels;
 
-public sealed record AchievementItem(string Name, string Description, string? ImageUrl, string Tier, DateTime DateAdded, Guid AchievementId = default);
+public sealed record AchievementItem(string Name, string Description, string? ImageUrl, string Tier, DateTime DateAdded, Guid AchievementId = default)
+{
+    public bool HasImage => ImageUrl is not null;
+}
 
 /// <summary>
 /// Your own profile: picture, saldo, stats, description and achievements. The description is edited as plain

@@ -247,12 +247,15 @@ public sealed partial class PosViewModel(
         self.IsSaldoNegative = user.Saldo < 0;
     }
 
-    /// <summary>Your own row always stays on top, whatever is searched; the others are filtered on their name.</summary>
+    /// <summary>
+    /// Filters everyone on their name, you included: while searching you're looking for someone else, so your own
+    /// row only shows when it matches. Without a query your row is first (the list is sorted that way).
+    /// </summary>
     private void ApplyUserFilter()
     {
         var query = UserQuery.Trim();
         VisibleUsers.Clear();
-        foreach (var user in _allUsers.Where(u => u.IsSelf || query.Length == 0 || u.DisplayName.Contains(query, StringComparison.CurrentCultureIgnoreCase)))
+        foreach (var user in _allUsers.Where(u => query.Length == 0 || u.DisplayName.Contains(query, StringComparison.CurrentCultureIgnoreCase)))
         {
             VisibleUsers.Add(user);
         }

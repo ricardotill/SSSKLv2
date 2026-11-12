@@ -23,6 +23,7 @@ import * as QRCode from 'qrcode';
 
 import { CardModule } from 'primeng/card';
 import { ActivatedRoute } from '@angular/router';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { EmbeddedService } from '../../core/services/embedded.service';
 
 const TABS = ['profile', 'security', 'twofactor', 'personaldata'] as const;
@@ -38,7 +39,7 @@ type SettingsTab = (typeof TABS)[number];
       <h1 class="text-2xl font-bold mb-4 text-surface-900 dark:text-surface-0">{{ embedded ? tabTitle() : ls.t().user_settings }}</h1>
       <p-card>
 
-      <p-tabs [value]="initialTab">
+      <p-tabs [value]="activeTab()">
         <!-- The mobile app has native settings and opens one tab at a time (?tab=...). -->
         @if (!embedded) {
           <p-tablist>
@@ -440,11 +441,15 @@ export default class SettingsComponent {
   private confirmationService = inject(ConfirmationService);
   protected readonly embedded = inject(EmbeddedService).isEmbedded;
 
-  /** The tab to open, from ?tab= (the mobile app links to one tab at a time). */
-  protected readonly initialTab: SettingsTab = (() => {
-    const tab = inject(ActivatedRoute).snapshot.queryParamMap.get('tab');
+  /**
+   * The tab to open, from ?tab= (the mobile app links to one tab at a time). Follows the query, because the
+   * app reuses this page when it opens another tab (settings?tab=security, then ?tab=personaldata).
+   */
+  private readonly queryParams = toSignal(inject(ActivatedRoute).queryParamMap);
+  protected readonly activeTab = computed<SettingsTab>(() => {
+    const tab = this.queryParams()?.get('tab');
     return TABS.includes(tab as SettingsTab) ? (tab as SettingsTab) : 'profile';
-  })();
+  });
 
   protected readonly tabTitle = computed(() => {
     const t = this.ls.t();
@@ -454,7 +459,7 @@ export default class SettingsComponent {
       twofactor: t.tfa,
       personaldata: t.personal_data,
     };
-    return titles[this.initialTab];
+    return titles[this.activeTab()];
   });
 
   form: FormGroup = this.fb.group({

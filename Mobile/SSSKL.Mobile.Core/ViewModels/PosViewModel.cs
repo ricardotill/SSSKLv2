@@ -129,8 +129,10 @@ public sealed partial class PosViewModel(
         {
             // The saldo can have changed elsewhere, so refresh a cached user too (quietly: it's still usable).
             Task userTask = currentUser.User is null ? currentUser.RefreshAsync() : RefreshUserQuietlyAsync();
-            var data = await api.GetOrderInitializeAsync();
-            await userTask;
+            var orderTask = api.GetOrderInitializeAsync();
+            // Await both together: if one fails, the other's exception is still observed (no UnobservedTaskException).
+            await Task.WhenAll(userTask, orderTask);
+            var data = await orderTask;
             var me = currentUser.User?.Id;
 
             Products.Clear();

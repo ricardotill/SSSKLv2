@@ -299,6 +299,43 @@ public class PosViewModelTests
     }
 
     [TestMethod]
+    public async Task LoadAsync_UserAndOrderDataBothFail_ObservesBothFailures()
+    {
+        // Arrange: nothing cached, and both requests fail (e.g. the device is offline).
+        var unobserved = new List<Exception>();
+        void OnUnobserved(object? sender, UnobservedTaskExceptionEventArgs e)
+        {
+            if (e.Exception.InnerExceptions.Any(x => x.Message == "me offline"))
+            {
+                lock (unobserved) { unobserved.Add(e.Exception); }
+            }
+        }
+        TaskScheduler.UnobservedTaskException += OnUnobserved;
+        try
+        {
+            _api.GetMeAsync().ThrowsAsync(new HttpRequestException("me offline"));
+            _api.GetOrderInitializeAsync().ThrowsAsync(new HttpRequestException("order offline"));
+            var sut = new PosViewModel(_api, new CurrentUserService(_api),
+                new AchievementPopupCoordinator(_api, _presenter, new FakeTimeProvider(), NullLogger<AchievementPopupCoordinator>.Instance),
+                _dialogs, _haptics, new AppEndpoints(new Uri("https://api.test"), new Uri("https://web.test")), NullLogger<PosViewModel>.Instance);
+
+            // Act
+            await sut.LoadAsync();
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+
+            // Assert
+            sut.HasLoadError.Should().BeTrue();
+            unobserved.Should().BeEmpty();
+        }
+        finally
+        {
+            TaskScheduler.UnobservedTaskException -= OnUnobserved;
+        }
+    }
+
+    [TestMethod]
     public void ProductItem_PriceText_IsDutchMoney()
     {
         var sut = new ProductItemViewModel(new OrderProduct(Guid.NewGuid(), "Cola", 1, 0.8m));

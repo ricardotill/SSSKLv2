@@ -49,9 +49,15 @@ platform :ios do
 end
 
 platform :android do
-  desc "Stage 1: upload the signed .aab to the internal testing track"
+  desc "Stage 1: upload the signed .aab (and its native debug symbols) to the internal testing track"
   lane :internal do |options|
     version_code = options.fetch(:version_code).to_s
+    # native-debug-symbols.zip (<abi>/libSSSKL.Mobile.so, unstripped): supply uploads a .zip as the
+    # nativeCode deobfuscation file, so Play Console symbolicates native crashes and ANRs.
+    # The R8 mapping for Java frames is already inside the .aab.
+    symbols = options[:symbols]
+    symbols = nil unless symbols && File.exist?(symbols)
+    UI.important("No native debug symbols to upload") unless symbols
     changelog = (options[:changelog] || ENV["CHANGELOG"]).to_s.strip
     unless changelog.empty?
       # supply reads release notes from changelogs/<versionCode>.txt (max 500 characters)
@@ -59,6 +65,7 @@ platform :android do
     end
     upload_to_play_store(
       aab: options.fetch(:aab),
+      mapping: symbols,
       track: "internal",
       release_status: "completed",
       json_key_data: ENV.fetch("GOOGLE_PLAY_SERVICE_ACCOUNT_JSON"),

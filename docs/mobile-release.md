@@ -11,7 +11,7 @@ build-android ──► android-internal (approve) ──► android-production 
 build-ios     ──► ios-testflight   (approve) ──► ios-app-store      (approve, stable tags only)
 ```
 
-1. **Build** (no approval): each app is tested (Core), built, signed and stored as a workflow artifact (`android-aab`, `ios-ipa`). Symbols go to Sentry (`ssskl-mobile`).
+1. **Build** (no approval): each app is tested (Core), built, signed and stored as a workflow artifact (`android-aab`, `ios-ipa`). Symbols go to Sentry (`ssskl-mobile`) and to the stores: the `.ipa` carries a `Symbols/` folder for App Store Connect (the build fails without it), and the Android job zips the unstripped Native AOT library (`native-debug-symbols.zip`, uploaded with the bundle as native debug symbols); the R8 mapping for Java frames is already inside the `.aab`.
 2. **Testing** (approve in the run): the `.aab` goes to the Play **internal testing** track; the `.ipa` goes to **TestFlight** for internal testers.
 3. **Production** (approve after testing): the same build is promoted from internal testing to **production** (Google reviews it), and attached to a new App Store version that is **submitted for App Review**. After Apple approves it, press *Release* in App Store Connect.
 

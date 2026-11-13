@@ -135,11 +135,39 @@ jobs:
           if [ -z "$aab" ]; then echo "::error::No signed .aab in the publish output"; ls -R "$RUNNER_TEMP/publish"; exit 1; fi
           cp "$aab" "$RUNNER_TEMP/out/SSSKL.aab"
           rm -f "$RUNNER_TEMP/upload.keystore"
+          # Play deobfuscates Java/Kotlin stack traces with the R8 mapping the SDK embeds in the bundle.
+          if ! unzip -l "$RUNNER_TEMP/out/SSSKL.aab" | grep -q 'BUNDLE-METADATA/com.android.tools.build.obfuscation/proguard.map'; then
+            echo "::warning::The .aab has no R8 mapping; Play Console won't deobfuscate Java stack traces"
+          fi
+
+      - name: Collect native debug symbols
+        # Native AOT compiles the app into libSSSKL.Mobile.so; the SDK keeps an unstripped copy next to it
+        # (libSSSKL.Mobile.dbg.so, same build ID). Play Console symbolicates crashes and ANRs with these
+        # once they're uploaded with the bundle: a zip with <abi>/<lib>.so per ABI.
+        run: |
+          bin=Mobile/SSSKL.Mobile/bin/Release/net11.0-android
+          sym="$RUNNER_TEMP/symbols"
+          mkdir -p "$sym"
+          for rid_abi in android-arm64:arm64-v8a android-x64:x86_64 android-arm:armeabi-v7a android-x86:x86; do
+            dbg="$bin/${rid_abi%%:*}/native/libSSSKL.Mobile.dbg.so"
+            if [ -f "$dbg" ]; then
+              mkdir -p "$sym/${rid_abi##*:}"
+              cp "$dbg" "$sym/${rid_abi##*:}/libSSSKL.Mobile.so"
+            fi
+          done
+          if [ -z "$(ls -A "$sym")" ]; then
+            echo "::warning::No native debug symbols found (Native AOT off?); Play Console crash reports stay unsymbolicated"
+            exit 0
+          fi
+          (cd "$sym" && zip -qr -9 "$RUNNER_TEMP/out/native-debug-symbols.zip" .)
+          unzip -l "$RUNNER_TEMP/out/native-debug-symbols.zip"
 
       - uses: actions/upload-artifact@v7
         with:
           name: android-aab
-          path: ${{ runner.temp }}/out/SSSKL.aab
+          path: |
+            ${{ runner.temp }}/out/SSSKL.aab
+            ${{ runner.temp }}/out/native-debug-symbols.zip
           if-no-files-found: error
           retention-days: 90
 
@@ -210,6 +238,12 @@ jobs:
           mkdir -p "$RUNNER_TEMP/out"
           ipa=$(find "$RUNNER_TEMP/publish" -name '*.ipa' | head -1)
           if [ -z "$ipa" ]; then echo "::error::No .ipa in the publish output"; ls -R "$RUNNER_TEMP/publish"; exit 1; fi
+          # App Store Connect symbolicates crash reports with the Symbols/ folder the SDK packs into the .ipa
+          # (xcrun symbols on the dSYM), the same as Xcode's "Upload symbols" export option.
+          if ! unzip -l "$ipa" | grep -qE ' Symbols/[^/]+\.symbols$'; then
+            echo "::error::The .ipa has no Symbols/ folder; App Store Connect crash reports would stay unsymbolicated"
+            unzip -l "$ipa" | grep -v 'Payload/.*/.*/' ; exit 1
+          fi
           cp "$ipa" "$RUNNER_TEMP/out/SSSKL.ipa"
 
       - uses: actions/upload-artifact@v7
@@ -247,7 +281,9 @@ jobs:
           GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
           BUILD_NUMBER: ${{ needs.meta.outputs.build_number }}
           CHANGELOG: ${{ needs.meta.outputs.changelog }}
-        run: bundle exec fastlane android internal aab:"$RUNNER_TEMP/aab/SSSKL.aab" version_code:"$BUILD_NUMBER"
+        run: >
+          bundle exec fastlane android internal aab:"$RUNNER_TEMP/aab/SSSKL.aab" version_code:"$BUILD_NUMBER"
+          symbols:"$RUNNER_TEMP/aab/native-debug-symbols.zip"
 
       - name: Summary
         run: echo "Build ${{ needs.meta.outputs.build_number }} is on the **internal testing** track in Google Play Console." >> "$GITHUB_STEP_SUMMARY"

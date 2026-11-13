@@ -11,7 +11,9 @@ namespace SSSKL.Mobile.Views;
 /// <see cref="AppNavigator"/> keeps one instance per shell and pushes it on the "Meer" tab. After the first
 /// load, pages are opened through the SPA's bridge (<c>window.ssskl.navigate</c>), which routes inside the
 /// running app instead of reloading it. The WebView stays hidden until the SPA has rendered the page, then
-/// fades in, so the previous page or a half-built one never flashes. A theme switch reloads it. ssskl-app:// navigations are handed
+/// fades in, so the previous page or a half-built one never flashes. A theme switch reloads it. When MAUI
+/// reloads Source by itself (Shell reconnecting the handler), the page sends the SPA on to the route the app
+/// last asked for, so the first web page opened never comes back. ssskl-app:// navigations are handed
 /// to <see cref="AppNavigator"/>.
 /// </summary>
 public partial class WebPage : ContentPage
@@ -29,9 +31,17 @@ public partial class WebPage : ContentPage
     /// <summary>The SPA document has loaded, so the bridge can take navigations.</summary>
     private bool _loaded;
     private string _path = "";
+    /// <summary>
+    /// The route in <see cref="WebView.Source"/>. Pages opened through the bridge don't change it, so a
+    /// document load that MAUI starts on its own (it reapplies Source when Shell reconnects the handler)
+    /// would show this route instead of <see cref="_path"/>.
+    /// </summary>
+    private string _sourcePath = "";
     /// <summary>Bumped for every page shown; an older reveal stops when it sees a newer one.</summary>
     private int _showId;
     private bool _reloadPending;
+    /// <summary>A theme switch reloads the current document, which may legitimately differ from <see cref="_path"/>.</summary>
+    private bool _themeReload;
 
     public WebPage(AppNavigator navigator, WebNavigationPolicy policy, AppEndpoints endpoints, ThemePreference theme, ILogger<WebPage> logger)
     {
@@ -89,7 +99,38 @@ public partial class WebPage : ContentPage
     private void Load(string path)
     {
         _loaded = false;
+        _themeReload = false;
+        _sourcePath = path;
         WebView.Source = new UrlWebViewSource { Url = _endpoints.WebUrl(path).ToString() };
+    }
+
+    /// <summary>
+    /// A document finished loading Source (<see cref="_sourcePath"/>) while the app last asked for another
+    /// route through the bridge: hide it, then send the SPA to the requested route once its bridge is up.
+    /// Falls back to loading that route.
+    /// </summary>
+    private async Task RestoreRequestedPageAsync(int showId)
+    {
+        Loading.IsVisible = true;
+        WebView.CancelAnimations();
+        WebView.Opacity = 0;
+
+        var deadline = DateTime.UtcNow + LoadTimeout;
+        while (DateTime.UtcNow < deadline && showId == _showId &&
+               WebSessionScript.IsTrue(await TryEvaluateAsync(WebSessionScript.BusyScript) ?? "true"))
+        {
+            await Task.Delay(PollInterval);
+        }
+        if (showId != _showId)
+        {
+            return;
+        }
+        if (WebSessionScript.IsTrue(await TryEvaluateAsync(WebSessionScript.NavigateScript(_path))))
+        {
+            await RevealWhenRenderedAsync(showId, RouteTimeout);
+            return;
+        }
+        Load(_path);
     }
 
     private async Task GoBackAsync()
@@ -168,6 +209,7 @@ public partial class WebPage : ContentPage
             {
                 // Reload, not Load(_path): the user may have navigated inside the SPA since.
                 _loaded = false;
+                _themeReload = true;
                 WebView.Reload();
             }
             else
@@ -206,6 +248,13 @@ public partial class WebPage : ContentPage
             return;
         }
         _loaded = true;
+        var themeReload = _themeReload;
+        _themeReload = false;
+        if (!themeReload && _path.Length > 0 && _path != _sourcePath)
+        {
+            await RestoreRequestedPageAsync(++_showId);
+            return;
+        }
         await RevealWhenRenderedAsync(_showId, LoadTimeout);
     }
 

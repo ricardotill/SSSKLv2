@@ -1,0 +1,17 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls",
+      "delegate_permission/common.get_login_creds"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "nl.scoutingwilo.ssskl",
+      "sha256_cert_fingerprints": [
+        "C9:76:7C:E4:D1:52:66:E8:A0:66:93:3A:F6:96:C8:78:73:13:76:E0:DD:E4:26:67:11:4D:E8:53:BA:F3:4C:0F",
+        "0A:3D:6E:5A:14:EE:99:8C:B7:FA:26:35:C1:50:68:D4:CB:DB:46:93:0A:02:27:E4:61:27:C2:74:0A:75:7F:1D",
+        "DF:93:F4:96:4B:83:30:1A:48:54:B5:0A:AC:81:D5:CC:52:D7:4F:38:C4:F3:08:76:86:6E:3B:7E:61:DD:34:41"
+      ]
+    }
+  }
+]

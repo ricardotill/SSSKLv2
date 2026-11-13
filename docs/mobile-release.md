@@ -65,6 +65,17 @@ Settings → Environments. Restrict every environment to tags matching `v*` (*De
 
 Optional repository variable: `ANDROID_PRODUCTION_ROLLOUT`, for example `0.2` for a staged rollout to 20% of users. Without it, the release goes to everyone. `SENTRY_AUTH_TOKEN` is already a repository secret.
 
+## Store screenshots
+
+`Mobile/screenshots/screenshots.sh` generates the Android phone screenshots (1080×2160, the most Google Play allows is 2:1) into `Mobile/screenshots/output/<theme>/`:
+
+```bash
+brew install mobile-dev-inc/tap/maestro          # once
+Mobile/screenshots/screenshots.sh --theme both   # light|dark|both; --avd NAME, --skip-build, --output DIR
+```
+
+It starts the API in the E2E environment with `E2E:DemoData=true` (fictional members, products, orders, events, quotes and achievements from `Backend/SSSKL.Web/Registrations/DemoDataSeeder.cs`, in a throwaway SQLite database) on :5253, and the SPA (`start:mobile`) on :4300. It then boots the emulator (or uses the connected device), installs a Debug build and runs the Maestro flow `Mobile/screenshots/flow.yaml`. That flow signs in as `lotte` and visits the screens. Afterwards the script restores the device's screen size, status bar and dark mode. Port 4300 must be free. Logs are in `output/logs/`. Change the screens in `flow.yaml`; Google Play takes at most 8 phone screenshots.
+
 ## Maintenance
 
 - **Xcode**: .NET for iOS needs one exact Xcode. When the iOS workload moves on, update `XCODE_APP` in `mobile-release.yml` and the *Select Xcode* step in `mobile.yml`. Both run on the `xcode-27` runner image, which has no .NET 11, so `setup-dotnet` installs it.

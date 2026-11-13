@@ -42,7 +42,11 @@ public static class DatabaseInitialization
 
         if (app.Environment.IsE2E())
         {
-            await E2ESeeder.SeedAsync(scope.ServiceProvider);
+            // E2E:DemoData swaps the Playwright fixtures for realistic data (store screenshots).
+            if (app.Configuration.GetValue<bool>("E2E:DemoData"))
+                await DemoDataSeeder.SeedAsync(scope.ServiceProvider);
+            else
+                await E2ESeeder.SeedAsync(scope.ServiceProvider);
         }
     }
 }

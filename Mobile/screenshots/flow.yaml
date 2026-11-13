@@ -1,0 +1,105 @@
+# Store screenshots: signs in as the demo user and captures the main screens.
+# Run through screenshots.sh, which starts the API with demo data (DemoDataSeeder) and the SPA, and passes
+# USERNAME/PASSWORD. takeScreenshot writes <name>.png to the directory Maestro runs in.
+appId: nl.scoutingwilo.ssskl
+---
+- launchApp:
+    clearState: true
+- extendedWaitUntil: # the first launch after an install can take 20 s on an emulator
+    visible: "Inloggen"
+    timeout: 60000
+- tapOn: "Inloggen"
+
+# Login sheet: the SPA's /login page in a WebView
+- extendedWaitUntil:
+    visible:
+      id: "userName"
+    timeout: 180000 # a fresh dev server serves the SPA unbundled; the first load can take minutes
+- tapOn:
+    id: "userName"
+- inputText: ${USERNAME}
+- tapOn:
+    id: "password"
+- inputText: ${PASSWORD}
+- hideKeyboard
+- tapOn:
+    text: "Inloggen"
+    below: "Wachtwoord vergeten?"
+
+# Kassa
+- extendedWaitUntil:
+    visible: "Cola"
+    timeout: 60000
+- waitForAnimationToEnd
+- takeScreenshot: 01-kassa
+
+- tapOn: "Notificaties"
+- extendedWaitUntil:
+    visible: "Pubquiz is gepland. Ben je erbij?"
+    timeout: 20000
+- waitForAnimationToEnd
+- takeScreenshot: 02-notificaties
+
+- tapOn: "Profiel"
+- extendedWaitUntil:
+    visible: "Lotte.*"
+    timeout: 20000
+- waitForAnimationToEnd
+- takeScreenshot: 03-profiel
+
+- tapOn: "Meer"
+- tapOn: "Mijn saldo"
+- extendedWaitUntil:
+    visible: ".*€.*"
+    timeout: 20000
+- waitForAnimationToEnd
+- takeScreenshot: 04-saldo
+- back
+
+- tapOn: "Evenementen"
+- extendedWaitUntil:
+    visible: "Kampvuuravond"
+    timeout: 20000
+- waitForAnimationToEnd
+- takeScreenshot: 05-evenementen
+- tapOn: "Kampvuuravond"
+- extendedWaitUntil:
+    visible: ".*Marshmallows.*"
+    timeout: 20000
+- waitForAnimationToEnd
+- takeScreenshot: 06-evenement
+- back
+- back
+
+- tapOn: "Leaderboard"
+# Pick the product explicitly: the picker shows no selection after the first load, and the period
+# switch then shows an empty list.
+- extendedWaitUntil:
+    visible: "Product"
+    timeout: 20000
+- tapOn:
+    text: "Product"
+    index: 1
+- tapOn: "Bier"
+- tapOn: "Totaal" # opens on the last 12 hours
+- extendedWaitUntil:
+    visible: "Lotte.*"
+    timeout: 20000
+- waitForAnimationToEnd
+- takeScreenshot: 07-leaderboard
+- back
+
+- tapOn: "Achievements"
+- extendedWaitUntil:
+    visible: "Vaste klant"
+    timeout: 20000
+- waitForAnimationToEnd
+- takeScreenshot: 08-achievements
+- back
+
+- tapOn: "Quotes"
+- extendedWaitUntil:
+    visible: ".*alternatieve route.*"
+    timeout: 20000
+- waitForAnimationToEnd
+- takeScreenshot: 09-quotes

@@ -776,3 +776,8 @@ Backend/SSSKL.Web/e2e-blobs/
 
 # Claude Code agent worktrees (temporary checkouts; .claude/settings.json stays tracked)
 .claude/worktrees/
+
+# Store screenshots (Mobile/screenshots/screenshots.sh)
+Mobile/screenshots/output/
+Backend/SSSKL.Web/ssskl-screenshots.db*
+Backend/SSSKL.Web/screenshots-blobs/

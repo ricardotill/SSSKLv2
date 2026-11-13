@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- "Vingeren": everyone puts a finger on the screen and the app picks winners or teams (like Chwazi). App only. -->
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:SSSKL.Mobile.Controls"
+             xmlns:vm="clr-namespace:SSSKL.Mobile.Core.ViewModels;assembly=SSSKL.Mobile.Core"
+             xmlns:chooser="clr-namespace:SSSKL.Mobile.Core.Chooser;assembly=SSSKL.Mobile.Core"
+             xmlns:loc="clr-namespace:SSSKL.Mobile.Core.Localization;assembly=SSSKL.Mobile.Core"
+             x:Class="SSSKL.Mobile.Views.ChooserPage"
+             x:DataType="vm:ChooserViewModel"
+             Shell.TabBarIsVisible="False"
+             Title="{x:Static loc:Texts.Chooser}">
+    <Grid>
+        <!-- The whole page takes fingers; the overlays below never change its size, so positions stay put. -->
+        <controls:MultiTouchView x:Name="Canvas" BackgroundColor="Transparent"
+                                 SemanticProperties.Description="{x:Static loc:Texts.ChooserHint}" />
+
+        <Label Text="{Binding Status}" Style="{StaticResource Muted}" FontSize="{StaticResource FontSizeCallout}"
+               HorizontalTextAlignment="Center" HorizontalOptions="Center" VerticalOptions="Start"
+               Margin="24,24,24,0" InputTransparent="True" SemanticProperties.HeadingLevel="Level1" />
+
+        <!-- Mode and count: only between rounds -->
+        <Border Style="{StaticResource Card}" IsVisible="{Binding IsIdle}" VerticalOptions="End" Margin="16,0,16,24" Padding="12">
+            <VerticalStackLayout Spacing="12">
+                <controls:SegmentedControl SelectedValue="{Binding Mode}" Command="{Binding SetModeCommand}">
+                    <controls:SegmentItem Text="{x:Static loc:Texts.ChooserWinners}" Icon="{x:Static loc:Icons.Trophy}" Value="{x:Static chooser:ChooserMode.Winners}" />
+                    <controls:SegmentItem Text="{x:Static loc:Texts.ChooserTeams}" Icon="{x:Static loc:Icons.Users}" Value="{x:Static chooser:ChooserMode.Teams}" />
+                </controls:SegmentedControl>
+
+                <Grid ColumnDefinitions="Auto,*,Auto">
+                    <controls:Pressable Grid.Column="0" Command="{Binding DecrementCommand}" IsEnabled="{Binding CanDecrement}"
+                                        SemanticProperties.Description="{x:Static loc:Texts.ChooserFewer}">
+                        <controls:Pressable.Triggers>
+                            <Trigger TargetType="controls:Pressable" Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.35" />
+                            </Trigger>
+                        </controls:Pressable.Triggers>
+                        <Border Style="{StaticResource SegmentTrack}" WidthRequest="44" HeightRequest="44" Padding="0">
+                            <controls:IconView Icon="{x:Static loc:Icons.Minus}" Size="20" />
+                        </Border>
+                    </controls:Pressable>
+
+                    <Label Grid.Column="1" Text="{Binding CountText}" Style="{StaticResource BodyStrong}"
+                           HorizontalOptions="Center" VerticalOptions="Center" />
+
+                    <controls:Pressable Grid.Column="2" Command="{Binding IncrementCommand}" IsEnabled="{Binding CanIncrement}"
+                                        SemanticProperties.Description="{x:Static loc:Texts.ChooserMore}">
+                        <controls:Pressable.Triggers>
+                            <Trigger TargetType="controls:Pressable" Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.35" />
+                            </Trigger>
+                        </controls:Pressable.Triggers>
+                        <Border Style="{StaticResource SegmentTrack}" WidthRequest="44" HeightRequest="44" Padding="0">
+                            <controls:IconView Icon="{x:Static loc:Icons.Plus}" Size="20" />
+                        </Border>
+                    </controls:Pressable>
+                </Grid>
+            </VerticalStackLayout>
+        </Border>
+    </Grid>
+</ContentPage>

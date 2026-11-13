@@ -109,6 +109,7 @@ public sealed class AppNavigator(
         { Page: NativePage.EventDetail } route => PushAsync<EventDetailPage>(route),
         { Page: NativePage.Quotes } route => PushAsync<QuotesPage>(route),
         { Page: NativePage.QuoteDetail } route => PushAsync<QuoteDetailPage>(route),
+        { Page: NativePage.Chooser } route => PushAsync<ChooserPage>(route),
         _ => OpenWebAsync(path.TrimStart('/'))
     };
 

@@ -12,10 +12,16 @@ public sealed class WhatsNewPopupPage : PopupPage
             <!doctype html><html><head><meta charset="utf-8">
             <meta name="viewport" content="width=device-width, initial-scale=1">
             <style>
+              html, body { overflow-x: hidden; max-width: 100%; }
               body { font-family: -apple-system, system-ui, sans-serif; margin: 0; padding: 0 4px;
                      color: {{(dark ? "#e4e4e7" : "#27272a")}}; background: transparent; line-height: 1.5; }
+              /* The editor's HTML can hold long words, URLs, &nbsp; runs and pre-wrap whitespace: wrap them all
+                 (like the SPA's what's-new modal) so the popup only scrolls vertically. */
+              body * { white-space: normal !important; overflow-wrap: anywhere; word-break: normal;
+                       max-width: 100%; box-sizing: border-box; }
               a { color: {{(dark ? "#34d399" : "#047857")}}; }
-              img { max-width: 100%; height: auto; }
+              img, video, iframe { max-width: 100%; height: auto; }
+              ul, ol { padding-left: 1.25rem; }
             </style></head><body>{{html}}</body></html>
             """;
 

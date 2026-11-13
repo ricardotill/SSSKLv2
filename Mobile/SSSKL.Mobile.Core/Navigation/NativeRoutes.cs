@@ -21,7 +21,8 @@ public enum NativePage
     Events,
     EventDetail,
     Quotes,
-    QuoteDetail
+    QuoteDetail,
+    Chooser
 }
 
 /// <param name="Id">The route's id segment (a user or achievement id), for pages that show one item.</param>
@@ -66,9 +67,14 @@ public static class NativeRoutes
             ["events", var id] when Guid.TryParse(id, out _) => new NativeRoute(NativePage.EventDetail, id),
             ["quotes"] when QueryValue(query, "new") is null && QueryValue(query, "edit") is null => new NativeRoute(NativePage.Quotes),
             ["quotes", var id] when Guid.TryParse(id, out _) => new NativeRoute(NativePage.QuoteDetail, id),
+            // Not an SPA route: the app's own finger chooser ("Vingeren").
+            [ChooserPath] => new NativeRoute(NativePage.Chooser),
             _ => null
         };
     }
+
+    /// <summary>The app's path for "Vingeren" (see <see cref="NativePage.Chooser"/>).</summary>
+    public const string ChooserPath = "chooser";
 
     /// <summary>The app's path for a member's profile (see <see cref="NativePage.UserProfile"/>).</summary>
     public static string UserProfilePath(string userId) => $"users/{Uri.EscapeDataString(userId)}";

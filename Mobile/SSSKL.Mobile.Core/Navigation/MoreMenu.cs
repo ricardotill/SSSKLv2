@@ -28,7 +28,7 @@ public sealed record MenuSection
 /// <summary>
 /// The "Meer" tab: every SPA feature without a tab of its own, grouped like the SPA's side menu
 /// (Frontend layout/sidebar/sidebar.component.ts) and filtered on the same roles. Keep the two in step.
-/// Notificaties has its own tab.
+/// Notificaties has its own tab; "Vingeren" is the only app-only entry.
 /// </summary>
 public static class MoreMenu
 {
@@ -50,6 +50,8 @@ public static class MoreMenu
             new(Texts.Leaderboard, Icons.ChartBar, "leaderboard"),
             new(Texts.Stats, Icons.ChartLine, "stats"),
             new(Texts.SaldoList, Icons.Users, "users"),
+            // App only: the SPA has no finger chooser.
+            new(Texts.Chooser, Icons.HandFinger, NativeRoutes.ChooserPath),
         ]);
 
         var sections = new List<MenuSection> { new(Texts.SectionGeneral, general) };

@@ -47,6 +47,14 @@ public static class MauiProgram
                 WebViewPlatform.Configure(handler, webView);
             }
         });
+        // Every finger, not just one, for "Vingeren" (Controls/MultiTouchView).
+        Microsoft.Maui.Handlers.GraphicsViewHandler.Mapper.AppendToMapping(nameof(MultiTouchView), (handler, view) =>
+        {
+            if (view is MultiTouchView multiTouch)
+            {
+                MultiTouchPlatform.Connect(handler, multiTouch);
+            }
+        });
         // Entries sit in their own rounded boxes (FieldBox style): drop the platform underline / border.
         Microsoft.Maui.Handlers.EntryHandler.Mapper.AppendToMapping("Borderless", (handler, _) =>
         {
@@ -111,6 +119,7 @@ public static class MauiProgram
         services.AddTransient<EventDetailViewModel>();
         services.AddTransient<QuotesViewModel>();
         services.AddTransient<QuoteDetailViewModel>();
+        services.AddTransient<ChooserViewModel>();
         services.AddTransient<PosPage>();
         services.AddTransient<ProfilePage>();
         services.AddTransient<MorePage>();
@@ -129,6 +138,7 @@ public static class MauiProgram
         services.AddTransient<EventDetailPage>();
         services.AddTransient<QuotesPage>();
         services.AddTransient<QuoteDetailPage>();
+        services.AddTransient<ChooserPage>();
         // Transient: AppNavigator creates one per AppShell (one per sign-in) and releases it on sign-out, so
         // no SPA state of a previous user survives.
         services.AddTransient<WebPage>();

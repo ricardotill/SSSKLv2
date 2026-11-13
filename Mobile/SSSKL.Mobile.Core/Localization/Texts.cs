@@ -273,6 +273,19 @@ public static class Texts
     public static string AdminGlobalSettings => "Globale instellingen";
     public static string ViewProfile => "Bekijk je profiel";
 
+    // Vingeren (finger chooser)
+    public static string Chooser => "Vingeren";
+    public static string ChooserWinners => "Winnaars";
+    public static string ChooserTeams => "Teams";
+    public static string ChooserFewer => "Minder";
+    public static string ChooserMore => "Meer";
+    public static string ChooserHint => "Leg allemaal een vinger op het scherm";
+    public static string ChooserHold => "Blijf liggen…";
+    public static string ChooserLift => "Til je vingers op voor een nieuwe ronde";
+    public static string WinnerCount(int count) => count == 1 ? "1 winnaar" : $"{count} winnaars";
+    public static string TeamCount(int count) => $"{count} teams";
+    public static string ChooserNeedMore(int count) => count == 1 ? "Nog 1 vinger nodig" : $"Nog {count} vingers nodig";
+
     // Settings
     public static string SectionProfile => "Profiel";
     public static string SectionAppearance => "Weergave";

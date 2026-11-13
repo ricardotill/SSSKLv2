@@ -23,7 +23,7 @@ public class MoreMenuTests
         sections.Select(s => s.Title).Should().Equal(Texts.SectionGeneral, Texts.SectionApp);
         Paths(sections).Should().Equal(
             "orders/personal", "orders/saldo", "events", "quotes", "achievements",
-            "leaderboard", "stats", "users", "settings", "about");
+            "leaderboard", "stats", "users", "chooser", "settings", "about");
     }
 
     [TestMethod]

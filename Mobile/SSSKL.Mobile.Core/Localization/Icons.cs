@@ -22,6 +22,7 @@ public static class Icons
     public const string DeviceDesktop = "ti_device_desktop.png";
     public const string Download = "ti_download.png";
     public const string Flame = "ti_flame.png";
+    public const string HandFinger = "ti_hand_finger.png";
     public const string Heart = "ti_heart.png";
     public const string HeartFilled = "ti_heart_filled.png";
     public const string History = "ti_history.png";
@@ -33,6 +34,7 @@ public static class Icons
     public const string Mail = "ti_mail.png";
     public const string MapPin = "ti_map_pin.png";
     public const string Message = "ti_message.png";
+    public const string Minus = "ti_minus.png";
     public const string Moon = "ti_moon.png";
     public const string Pencil = "ti_pencil.png";
     public const string Photo = "ti_photo.png";

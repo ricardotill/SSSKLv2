@@ -39,6 +39,7 @@ public class NativeRoutesTests
     [DataRow("stats", NativePage.Stats)]
     [DataRow("/achievements", NativePage.Achievements)]
     [DataRow("about", NativePage.About)]
+    [DataRow("/chooser", NativePage.Chooser)]
     public void Resolve_Phase2Pages(string path, NativePage expected) =>
         NativeRoutes.Resolve(path)!.Page.Should().Be(expected);
 
